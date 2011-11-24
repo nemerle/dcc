@@ -1,0 +1,99 @@
+		main  PROC  NEAR
+000 0002FA 55                  PUSH           bp
+001 0002FB 8BEC                MOV            bp, sp
+002 0002FD 83EC0C              SUB            sp, 0Ch
+003 000300 56                  PUSH           si
+004 000301 B89401              MOV            ax, 194h
+005 000304 50                  PUSH           ax
+006 000305 E8530C              CALL  near ptr printf
+007 000308 59                  POP            cx
+008 000309 8D46FC              LEA            ax, [bp-4]
+009 00030C 50                  PUSH           ax
+010 00030D B8B001              MOV            ax, 1B0h
+011 000310 50                  PUSH           ax
+012 000311 E8D014              CALL  near ptr scanf
+013 000314 59                  POP            cx
+014 000315 59                  POP            cx
+015 000316 FF76FE              PUSH  word ptr [bp-2]
+016 000319 FF76FC              PUSH  word ptr [bp-4]
+017 00031C B8B401              MOV            ax, 1B4h
+018 00031F 50                  PUSH           ax
+019 000320 E8380C              CALL  near ptr printf
+020 000323 83C406              ADD            sp, 6
+021 000326 8D46F4              LEA            ax, [bp-0Ch]
+022 000329 50                  PUSH           ax
+023 00032A B8CE01              MOV            ax, 1CEh
+024 00032D 50                  PUSH           ax
+025 00032E E8B314              CALL  near ptr scanf
+026 000331 59                  POP            cx
+027 000332 59                  POP            cx
+028 000333 8D46F6              LEA            ax, [bp-0Ah]
+029 000336 50                  PUSH           ax
+030 000337 B8D101              MOV            ax, 1D1h
+031 00033A 50                  PUSH           ax
+032 00033B E8A614              CALL  near ptr scanf
+033 00033E 59                  POP            cx
+034 00033F 59                  POP            cx
+035 000340 C746FA0000          MOV   word ptr [bp-6], 0
+036 000345 C746F80100          MOV   word ptr [bp-8], 1
+
+038 0003B2 8B56FA         L1:  MOV            dx, [bp-6]
+039 0003B5 8B46F8              MOV            ax, [bp-8]
+040 0003B8 3B56FE              CMP            dx, [bp-2]
+041 0003BB 7C8F                JL             L2
+042 0003BD 7F05                JG             L3
+043 0003BF 3B46FC              CMP            ax, [bp-4]
+044 0003C2 7688                JBE            L2
+
+045 0003C4 FF76F4         L3:  PUSH  word ptr [bp-0Ch]
+046 0003C7 B8D401              MOV            ax, 1D4h
+047 0003CA 50                  PUSH           ax
+048 0003CB E88D0B              CALL  near ptr printf
+049 0003CE 59                  POP            cx
+050 0003CF 59                  POP            cx
+051 0003D0 5E                  POP            si
+052 0003D1 8BE5                MOV            sp, bp
+053 0003D3 5D                  POP            bp
+054 0003D4 C3                  RET
+
+055 00034C BE0100         L2:  MOV            si, 1
+
+057 0003A5 83FE28         L4:  CMP            si, 28h
+058 0003A8 7EA7                JLE            L5
+059 0003AA 8346F801            ADD   word ptr [bp-8], 1
+060 0003AE 8356FA00            ADC   word ptr [bp-6], 0
+061                            JMP            L1                 ;Synthetic inst
+
+062 000351 8B46F4         L5:  MOV            ax, [bp-0Ch]
+063 000354 F766F4              MUL   word ptr [bp-0Ch]
+064 000357 F766F4              MUL   word ptr [bp-0Ch]
+065 00035A F766F4              MUL   word ptr [bp-0Ch]
+066 00035D F766F4              MUL   word ptr [bp-0Ch]
+067 000360 F766F4              MUL   word ptr [bp-0Ch]
+068 000363 F766F4              MUL   word ptr [bp-0Ch]
+069 000366 F766F4              MUL   word ptr [bp-0Ch]
+070 000369 F766F4              MUL   word ptr [bp-0Ch]
+071 00036C F766F4              MUL   word ptr [bp-0Ch]
+072 00036F F766F4              MUL   word ptr [bp-0Ch]
+073 000372 F766F4              MUL   word ptr [bp-0Ch]
+074 000375 F766F4              MUL   word ptr [bp-0Ch]
+075 000378 F766F4              MUL   word ptr [bp-0Ch]
+076 00037B F766F4              MUL   word ptr [bp-0Ch]
+077 00037E F766F4              MUL   word ptr [bp-0Ch]
+078 000381 F766F4              MUL   word ptr [bp-0Ch]
+079 000384 F766F4              MUL   word ptr [bp-0Ch]
+080 000387 F766F4              MUL   word ptr [bp-0Ch]
+081 00038A F766F4              MUL   word ptr [bp-0Ch]
+082 00038D F766F4              MUL   word ptr [bp-0Ch]
+083 000390 F766F4              MUL   word ptr [bp-0Ch]
+084 000393 F766F4              MUL   word ptr [bp-0Ch]
+085 000396 F766F4              MUL   word ptr [bp-0Ch]
+086 000399 F766F4              MUL   word ptr [bp-0Ch]
+087 00039C BA0300              MOV            dx, 3
+088 00039F F7E2                MUL            dx
+089 0003A1 8946F4              MOV            [bp-0Ch], ax
+090 0003A4 46                  INC            si
+091                            JMP            L4                 ;Synthetic inst
+
+		main  ENDP
+
