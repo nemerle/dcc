@@ -85,9 +85,9 @@ void parse (CALL_GRAPH * *pcallGraph)
 }
 
 
-static void updateSymType (dword symbol, hlType symType, Int size)
 /* Updates the type of the symbol in the symbol table.  The size is updated
  * if necessary (0 means no update necessary).      */
+static void updateSymType (dword symbol, hlType symType, Int size)
 { Int i;
 
     for (i = 0; i < symtab.csym; i++)

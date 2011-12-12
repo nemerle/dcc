@@ -227,7 +227,8 @@ static Int idiom2(ICODE * pIcode, ICODE * pEnd, Int ip, Function * pProc)
 static Int idiom3(ICODE * pIcode, ICODE * pEnd)
 {
     /* Match ADD  SP, immed */
-    if ((++pIcode < pEnd) && (pIcode->ic.ll.flg & I) &&
+    ++pIcode;
+    if ((pIcode < pEnd) && (pIcode->ic.ll.flg & I) &&
         (pIcode->ic.ll.opcode == iADD) && (pIcode->ic.ll.dst.regi == rSP))
         return (pIcode->ic.ll.immed.op);
     else if ((pIcode->ic.ll.opcode == iMOV) && (pIcode->ic.ll.dst.regi == rSP)
@@ -254,15 +255,20 @@ static Int idiom17 (ICODE * pIcode, ICODE * pEnd)
     byte regi;
 
     /* Match POP reg */
-    if ((++pIcode < pEnd) && (pIcode->ic.ll.opcode == iPOP))
+    ++pIcode;
+    if ((pIcode < pEnd) && (pIcode->ic.ll.opcode == iPOP))
     {
         regi = pIcode->ic.ll.dst.regi;
         if ((regi >= rAX) && (regi <= rBX))
             i++;
-        while ((++pIcode)->ic.ll.opcode == iPOP)
+        ++pIcode;
+        while (pIcode->ic.ll.opcode == iPOP)
         {
             if (pIcode->ic.ll.dst.regi == regi)
+            {
                 i++;
+                ++pIcode;
+            }
             else
                 break;
         }
@@ -1082,10 +1088,15 @@ void Function::findIdioms()
                         (pIcode++)->invalidate();
                         ip++;
                     }
+                    else
+                    {
+                        printf("Indirect call at idiom3\n");
+                        pIcode++;
+                    }
                 }
                 else if (idx = idiom17 (pIcode, pEnd))  /* idiom 17 */
                 {
-                    if (pIcode->ic.ll.flg & I)
+                    if (pIcode->isLlFlag(I))
                     {
                         (pIcode->ic.ll.immed.proc.proc)->cbParam = (int16)idx;
                         pIcode->ic.ll.immed.proc.cb = idx;
@@ -1094,6 +1105,12 @@ void Function::findIdioms()
                         pIcode++;
                         for (idx /= 2; idx > 0; idx--)
                             (pIcode++)->invalidate();
+                    }
+                    // TODO : it's a calculated call
+                    else
+                    {
+                        printf("Indirect call at idiom17\n");
+                        pIcode++;
                     }
                 }
                 else

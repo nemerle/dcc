@@ -112,6 +112,11 @@ public:
     void controlFlowAnalysis();
     void newRegArg(ICODE *picode, ICODE *ticode);
 protected:
+    // TODO: replace those with friend visitor ?
+    void propLongReg(Int i, ID *pLocId);
+    void propLongStk(Int i, ID *pLocId);
+    void propLongGlb(Int i, ID *pLocId);
+
     void structCases();
     void findExps();
     void genDU1();

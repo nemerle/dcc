@@ -21,9 +21,10 @@ static boolT isJCond (llIcode opcode)
 }
 
 
-static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
 /* Returns whether the conditions for a 2-3 long variable are satisfied */
-{ BB * t, * e, * obb2;
+static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
+{
+ BB * t, * e, * obb2;
 
     if (pbb->nodeType != TWO_BRANCH)
         return false;
@@ -224,17 +225,17 @@ static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
  * Arguments: i     : index into the local identifier table
  *            pLocId: ptr to the long local identifier
  *            pProc : ptr to current procedure's record.        */
-static void propLongStk (Int i, ID *pLocId, Function * pProc)
+void Function::propLongStk (Int i, ID *pLocId)
 {
     Int idx, off, arc;
     COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
     ICODE * pIcode, * pEnd;
 
     /* Check all icodes for offHi:offLo */
-    pEnd = pProc->Icode.GetIcode(pProc->Icode.GetNumIcodes() -1);
-    for (idx = 0; idx < (pProc->Icode.GetNumIcodes() - 1); idx++)
+    pEnd = this->Icode.GetIcode(this->Icode.GetNumIcodes() -1);
+    for (idx = 0; idx < (this->Icode.GetNumIcodes() - 1); idx++)
     {
-        pIcode = pProc->Icode.GetIcode(idx);
+        pIcode = this->Icode.GetIcode(idx);
         if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
             continue;
 
@@ -242,7 +243,7 @@ static void propLongStk (Int i, ID *pLocId, Function * pProc)
         {
             switch (pIcode->ic.ll.opcode) {
                 case iMOV:
-                    if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, pProc,
+                    if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, this,
                                      &rhs, &lhs, 1) == TRUE)
                     {
                         pIcode->setAsgn(lhs, rhs);
@@ -252,7 +253,7 @@ static void propLongStk (Int i, ID *pLocId, Function * pProc)
                     break;
 
                 case iAND: case iOR: case iXOR:
-                    if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, pProc,
+                    if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, this,
                                      &rhs, &lhs, 1) == TRUE)
                     {
                         switch (pIcode->ic.ll.opcode) {
@@ -270,7 +271,7 @@ static void propLongStk (Int i, ID *pLocId, Function * pProc)
                     break;
 
                 case iPUSH:
-                    if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, pProc,
+                    if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, this,
                                      &rhs, &lhs, 1) == TRUE)
                     {
                         pIcode->setUnary( HLI_PUSH, lhs);
@@ -282,10 +283,10 @@ static void propLongStk (Int i, ID *pLocId, Function * pProc)
         }
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, pProc->Icode.GetFirstIcode(),&off, &arc)))
+        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, this->Icode.GetFirstIcode(),&off, &arc)))
         {
-            if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, pProc, &rhs, &lhs, off) == TRUE)
-                longJCond23 (rhs, lhs, pIcode, &idx, pProc, arc, off);
+            if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, this, &rhs, &lhs, off) == TRUE)
+                longJCond23 (rhs, lhs, pIcode, &idx, this, arc, off);
         }
 
         /* Check for long conditional equality or inequality.  This requires
@@ -293,7 +294,7 @@ static void propLongStk (Int i, ID *pLocId, Function * pProc)
         else if ((pIcode->ic.ll.opcode == iCMP) &&
                  isLong22 (pIcode, pEnd, &off))
         {
-            if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, pProc,
+            if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, this,
                              &rhs, &lhs, off) == TRUE)
                 longJCond22 (rhs, lhs, pIcode, &idx);
         }
@@ -306,7 +307,7 @@ static void propLongStk (Int i, ID *pLocId, Function * pProc)
  * Arguments: i     : index into the local identifier table
  *            pLocId: ptr to the long local identifier
  *            pProc : ptr to current procedure's record.        */
-static void propLongReg (Int i, ID *pLocId, Function * pProc)
+void Function::propLongReg (Int i, ID *pLocId)
 {
     COND_EXPR *lhs, *rhs;
     Int idx, j, off, arc;
@@ -314,13 +315,13 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
     ICODEMEM * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
 
     /* Process all definitions/uses of long registers at an icode position */
-    pEnd = pProc->Icode.GetIcode(pProc->Icode.GetNumIcodes() -1);
+    pEnd = this->Icode.GetIcode(this->Icode.GetNumIcodes() -1);
     for (j = 0; j < pLocId->idx.size(); j++)
     {
         /* Check backwards for a definition of this long register */
         for (idx = pLocId->idx[j] - 1; idx > 0 ; idx--)
         {
-            pIcode = pProc->Icode.GetIcode(idx-1);
+            pIcode = this->Icode.GetIcode(idx-1);
             if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
                 continue;
 
@@ -333,9 +334,9 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
                         if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
                         {
                             lhs = COND_EXPR::idLongIdx (i);
-                            pProc->localId.id_arr[i].idx.push_back(idx-1);
+                            this->localId.id_arr[i].idx.push_back(idx-1);
                             pIcode->setRegDU( pmL->regi, eDEF);
-                            rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, idx, eUSE, 1);
+                            rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, idx, eUSE, 1);
                             pIcode->setAsgn(lhs, rhs);
                             (pIcode+1)->invalidate();
                             idx = 0;    /* to exit the loop */
@@ -364,7 +365,7 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
                         {
                             lhs = COND_EXPR::idLongIdx (i);
                             pIcode->setRegDU( pmH->regi, USE_DEF);
-                            rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, LOW_FIRST, idx, eUSE, 1);
+                            rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, idx, eUSE, 1);
                             switch (pIcode->ic.ll.opcode) {
                                 case iAND: rhs = COND_EXPR::boolOp (lhs, rhs, AND);
                                     break;
@@ -384,9 +385,9 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
 
         /* If no definition backwards, check forward for a use of this long reg */
         if (idx <= 0)
-            for (idx = pLocId->idx[j] + 1; idx < pProc->Icode.GetNumIcodes() - 1; idx++)
+            for (idx = pLocId->idx[j] + 1; idx < this->Icode.GetNumIcodes() - 1; idx++)
             {
-                pIcode = pProc->Icode.GetIcode(idx);
+                pIcode = this->Icode.GetIcode(idx);
                 if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
                     continue;
 
@@ -398,11 +399,11 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
                             {
                                 rhs = COND_EXPR::idLongIdx (i);
                                 pIcode->setRegDU( (pIcode+1)->ic.ll.src.regi, eUSE);
-                                lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode,
+                                lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,
                                                      HIGH_FIRST, idx, eDEF, 1);
                                 pIcode->setAsgn(lhs, rhs);
                                 (pIcode+1)->invalidate();
-                                idx = pProc->Icode.GetNumIcodes();    /* to exit the loop */
+                                idx = this->Icode.GetNumIcodes();    /* to exit the loop */
                             }
                             break;
 
@@ -415,7 +416,7 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
                                 pIcode->setUnary(HLI_PUSH, lhs);
                                 (pIcode+1)->invalidate();
                             }
-                            idx = pProc->Icode.GetNumIcodes();    /* to exit the loop  */
+                            idx = this->Icode.GetNumIcodes();    /* to exit the loop  */
                             break;
 
                             /*** others missing ****/
@@ -428,7 +429,7 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
                             {
                                 lhs = COND_EXPR::idLongIdx (i);
                                 pIcode->setRegDU( pmH->regi, USE_DEF);
-                                rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode,
+                                rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode,
                                                      LOW_FIRST, idx, eUSE, 1);
                                 switch (pIcode->ic.ll.opcode) {
                                     case iAND: rhs = COND_EXPR::boolOp (lhs, rhs, AND);
@@ -447,12 +448,12 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
 
                 /* Check long conditional (i.e. 2 CMPs and 3 branches */
                 else if ((pIcode->ic.ll.opcode == iCMP) &&
-                         (isLong23 (idx, pIcode->inBB, pProc->Icode.GetFirstIcode(),
+                         (isLong23 (idx, pIcode->inBB, this->Icode.GetFirstIcode(),
                                     &off, &arc)))
                 {
-                    if (checkLongRegEq (pLocId->id.longId, pIcode, i, idx, pProc,
+                    if (checkLongRegEq (pLocId->id.longId, pIcode, i, idx, this,
                                         &rhs, &lhs, off) == TRUE)
-                        longJCond23 (rhs, lhs, pIcode, &idx, pProc, arc, off);
+                        longJCond23 (rhs, lhs, pIcode, &idx, this, arc, off);
                 }
 
                 /* Check for long conditional equality or inequality.  This requires
@@ -460,7 +461,7 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
                 else if ((pIcode->ic.ll.opcode == iCMP) &&
                          (isLong22 (pIcode, pEnd, &off)))
                 {
-                    if (checkLongRegEq (pLocId->id.longId, pIcode, i, idx, pProc,
+                    if (checkLongRegEq (pLocId->id.longId, pIcode, i, idx, this,
                                         &rhs, &lhs, off) == TRUE)
                         longJCond22 (rhs, lhs, pIcode, &idx);
                 }
@@ -493,9 +494,9 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
 
 /* Propagates the long global address across all LOW_LEVEL icodes.
  * Transforms some LOW_LEVEL icodes into HIGH_LEVEL     */
-static void propLongGlb (Int i, ID *pLocId, Function * pProc)
+void Function::propLongGlb (Int i, ID *pLocId)
 {
-
+    printf("WARN: Function::propLongGlb not implemented");
 }
 
 
@@ -514,13 +515,13 @@ void Function::propLong()
             switch (pLocId->loc)
             {
                 case STK_FRAME:
-                    propLongStk (i, pLocId, this);
+                    propLongStk (i, pLocId);
                     break;
                 case REG_FRAME:
-                    propLongReg (i, pLocId, this);
+                    propLongReg (i, pLocId);
                     break;
                 case GLB_FRAME:
-                    propLongGlb (i, pLocId, this);
+                    propLongGlb (i, pLocId);
                     break;
             }
         }

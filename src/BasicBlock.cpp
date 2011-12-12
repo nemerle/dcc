@@ -153,7 +153,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
                 if (numHlIcodes > 1)
                 {
                     /* Write the code for this basic block */
-                    writeBB(pProc->Icode.GetFirstIcode(), indLevel, pProc, numLoc);
+                    writeBB(&pProc->Icode.front(), indLevel, pProc, numLoc);
                     repCond = TRUE;
                 }
 
@@ -183,7 +183,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
 
     /* Write the code for this basic block */
     if (repCond == FALSE)
-        writeBB (pProc->Icode.GetFirstIcode(), indLevel, pProc, numLoc);
+        writeBB (&pProc->Icode.front(), indLevel, pProc, numLoc);
 
     /* Check for end of path */
     _nodeType = nodeType;
@@ -218,7 +218,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
             /* Check if there is need to repeat other statements involved
                          * in while condition, then, emit the loop trailer */
             if (repCond)
-                writeBB (pProc->Icode.GetFirstIcode(), indLevel+1, pProc, numLoc);
+                writeBB (&pProc->Icode.front(), indLevel+1, pProc, numLoc);
             cCode.appendCode( "%s}	/* end of while */\n",indent(indLevel));
         }
         else if (_loopType == ENDLESS_TYPE)
@@ -363,6 +363,11 @@ int BB::end()
 ICODE &BB::back()
 {
     return Parent->Icode[rbegin()];
+}
+
+size_t BB::size()
+{
+    return length;
 }
 
 ICODE &BB::front()

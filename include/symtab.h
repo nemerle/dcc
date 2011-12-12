@@ -36,15 +36,6 @@ enum tableType                     /* The table types */
 
 void    createSymTables(void);
 void    destroySymTables(void);
-void    enterSym(char *symName, dword   symOff, Function *symProc, boolT bSymToo);
-boolT   readSym (char *symName, dword *pSymOff, Function **pSymProc);
 boolT   readVal (char *symName, dword   symOff, Function *symProc);
-void    deleteSym(char *symName);
-void    deleteVal(dword symOff, Function * symProc, boolT bSymToo);
-std::string findVal(dword symOff, Function * symProc, word *pIndex);
-word    symHash(char *name, word *pre);
-word    valHash(dword off, Function * proc, word *pre);
 void    selectTable(tableType);     /* Select a particular table */
-
-char   *addStrTbl(char *pStr);      /* Add string to string table */
 

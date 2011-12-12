@@ -603,11 +603,9 @@ static void trans(Int i)
         pIcode->ic.ll.flagDU.d = df[REG(*pInst)];
         rm(i);
         memcpy(&pIcode->ic.ll.src, &pIcode->ic.ll.dst, sizeof(ICODEMEM));
-        if (pIcode->ic.ll.opcode == iJMP || pIcode->ic.ll.opcode == iCALL ||
-                pIcode->ic.ll.opcode == iCALLF)
+        if (pIcode->ic.ll.opcode == iJMP || pIcode->ic.ll.opcode == iCALL || pIcode->ic.ll.opcode == iCALLF)
             pIcode->ic.ll.flg |= NO_OPS;
-        else if (pIcode->ic.ll.opcode == iINC || pIcode->ic.ll.opcode == iPUSH
-                 || pIcode->ic.ll.opcode == iDEC)
+        else if (pIcode->ic.ll.opcode == iINC || pIcode->ic.ll.opcode == iPUSH || pIcode->ic.ll.opcode == iDEC)
             pIcode->ic.ll.flg |= NO_SRC;
     }
 }

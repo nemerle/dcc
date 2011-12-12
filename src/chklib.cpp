@@ -329,17 +329,17 @@ void SetupLibCheck(void)
     }
 
     /* Initialise the perfhlib stuff. Also allocates T1, T2, g, etc */
-    hashParams(     /* Set the parameters for the hash table */
+    /* Set the parameters for the hash table */
+    g_pattern_hasher.init(
                     numKeys,                /* The number of symbols */
                     PatLen,                 /* The length of the pattern to be hashed */
                     256,                    /* The character set of the pattern (0-FF) */
                     0,                      /* Minimum pattern character value */
                     numVert);               /* Specifies c, the sparseness of the graph.
                                     See Czech, Havas and Majewski for details */
-
-    T1base  = readT1();
-    T2base  = readT2();
-    g       = readG();
+    T1base  = g_pattern_hasher.readT1();
+    T2base  = g_pattern_hasher.readT2();
+    g       = g_pattern_hasher.readG();
 
     /* Read T1 and T2 tables */
     grab(2, f);
@@ -461,7 +461,7 @@ boolT LibCheck(Function & pProc)
 
     memmove(pat, &prog.Image[fileOffset], PATLEN);
     fixWildCards(pat);                  /* Fix wild cards in the copy */
-    h = hash(pat);                      /* Hash the found proc */
+    h = g_pattern_hasher.hash(pat);                      /* Hash the found proc */
     /* We always have to compare keys, because the hash function will
         always return a valid index */
     if (memcmp(ht[h].htPat, pat, PATLEN) == 0)

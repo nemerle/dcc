@@ -97,8 +97,7 @@ chop(byte pat[])
     memset(&pat[pc], 0, PATLEN - pc);
 }
 
-static bool
-op0F(byte pat[])
+static bool op0F(byte pat[])
 {
     /* The two byte opcodes */
     byte op = pat[pc++];

@@ -218,7 +218,7 @@ void Function::compressCFG()
             if (pBB->numOutEdges)   /* Might have been clobbered */
             {
                 pBB->edges[i].BBptr = pNxt;
-                Icode.SetImmediateOp(ip, (dword)pNxt->start);
+                Icode.SetImmediateOp(ip, (dword)pNxt->begin());
             }
         }
     }
@@ -270,7 +270,7 @@ static BB * rmJMP(Function * pProc, Int marker, BB * pBB)
 {
     marker += DFS_JMP;
 
-    while (pBB->nodeType == ONE_BRANCH && pBB->length == 1)
+    while (pBB->nodeType == ONE_BRANCH && pBB->size() == 1)
     {
         if (pBB->traversed != marker)
         {
@@ -282,13 +282,15 @@ static BB * rmJMP(Function * pProc, Int marker, BB * pBB)
             }
             else
             {
-                pProc->Icode.SetLlFlag(pBB->start, NO_CODE);
-                pProc->Icode.SetLlInvalid(pBB->start, TRUE);
+                pBB->front().SetLlFlag(NO_CODE);
+                pBB->front().invalidate(); //pProc->Icode.SetLlInvalid(pBB->begin(), TRUE);
             }
 
             pBB = pBB->edges[0].BBptr;
         }
-        else {			/* We are going around in circles */
+        else
+        {
+            /* We are going around in circles */
             pBB->nodeType = NOWHERE_NODE;
             pProc->Icode.GetIcode(pBB->start)->ic.ll.immed.op = (dword)pBB->start;
             pProc->Icode.SetImmediateOp(pBB->start, (dword)pBB->start);
