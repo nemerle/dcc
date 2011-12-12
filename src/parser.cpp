@@ -687,7 +687,8 @@ static hlType cbType[] = {TYPE_UNKNOWN, TYPE_BYTE_UNSIGN, TYPE_WORD_SIGN,
  * is checked and updated if the old size was less than the new size (ie.
  * the maximum size is always saved).   */
 static SYM * updateGlobSym (dword operand, Int size, word duFlag)
-{	Int i;
+{	
+		Int i;
 
         /* Check for symbol in symbol table */
         for (i = 0; i < symtab.csym; i++)
@@ -849,7 +850,7 @@ void STATE::setState(word reg, int16 value)
 
 /* labelSrchRepl - Searches Icode for instruction with label = target, and
     replaces *pIndex with an icode index */
-boolT labelSrch(ICODE *pIcode, Int numIp, dword target, Int *pIndex)
+boolT labelSrch(CIcodeRec &pIcode, Int numIp, dword target, Int *pIndex)
 {
     Int  i;
 

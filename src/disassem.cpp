@@ -138,7 +138,7 @@ static void  flops(ICODE * pi);
 boolT callArg(word off, char *temp);  /* Check for procedure name */
 
 static  FILE   *fp;
-static  ICODE * pc;
+static  CIcodeRec pc;
 static  char    buf[200], *p;
 static  Int     cb, j, numIcode, allocIcode, eop;
 static  vector<int> pl;
@@ -199,10 +199,10 @@ void disassem(Int pass, Function * ppProc)
             fatalError(CANNOT_OPEN, p);
         }
     }
-
+    pc=pProc->Icode;
     /* Create temporary code array */
     // Mike: needs objectising!
-    pc = (ICODE *)memcpy(allocMem(cb), pProc->Icode.GetFirstIcode(), (size_t)cb);
+    //pc = (ICODE *)memcpy(allocMem(cb), pProc->Icode.GetFirstIcode(), (size_t)cb);
 
     if (pass == 1)
     {
@@ -249,7 +249,7 @@ void disassem(Int pass, Function * ppProc)
         fclose(fp);
     }
 
-    free(pc);
+    pc.clear();
     destroySymTables();
 }
 

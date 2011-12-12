@@ -573,7 +573,7 @@ static boolT xClear (COND_EXPR *rhs, Int f, Int t, Int lastBBinst, Function * pp
         case IDENTIFIER:
             if (rhs->expr.ident.idType == REGISTER)
             {
-                picode = pproc->Icode.GetFirstIcode();
+                picode = &pproc->Icode.front();
                 regi= pproc->localId.id_arr[rhs->expr.ident.idNode.regiIdx].id.regi;
                 for (i = (f + 1); (i < lastBBinst) && (i < t); i++)
                     if ((picode[i].type == HIGH_LEVEL) &&
@@ -703,8 +703,7 @@ void Function::findExps()
                                      (ticode->ic.hl.opcode != HLI_RET)))
                                     continue;
 
-                                if (xClear (picode->ic.hl.oper.asgn.rhs, j,
-                                            picode->du1.idx[0][0],  lastInst, this))
+                                if (xClear (picode->ic.hl.oper.asgn.rhs, j, picode->du1.idx[0][0],  lastInst, this))
                                 {
                                     switch (ticode->ic.hl.opcode) {
                                         case HLI_ASSIGN:

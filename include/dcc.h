@@ -170,7 +170,7 @@ void    BackEnd(char *filename, CALL_GRAPH *);              /* backend.c    */
 char   *cChar(byte c);                                      /* backend.c    */
 Int     scan(dword ip, ICODE * p);                          /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */
-boolT   labelSrch(ICODE * pIc, Int n, dword tg, Int *pIdx); /* parser.c     */
+boolT   labelSrch(CIcodeRec &pIc, Int n, dword tg, Int *pIdx); /* parser.c     */
 Int     strSize (byte *, char);                             /* parser.c     */
 void    disassem(Int pass, Function * pProc);              /* disassem.c   */
 void    interactDis(Function * initProc, Int initIC);      /* disassem.c   */
