@@ -22,20 +22,20 @@ static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, Int *first, Int *l
 void Function::createCFG()
 {
     /* Splits Icode associated with the procedure into Basic Blocks.
-         * The links between BBs represent the control flow graph of the
-         * procedure.
-         * A Basic Block is defined to end on one of the following instructions:
-         * 1) Conditional and unconditional jumps
-         * 2) CALL(F)
-         * 3) RET(F)
-         * 4) On the instruction before a join (a flagged TARGET)
-         * 5) Repeated string instructions
-         * 6) End of procedure
-        */
+     * The links between BBs represent the control flow graph of the
+     * procedure.
+     * A Basic Block is defined to end on one of the following instructions:
+     * 1) Conditional and unconditional jumps
+     * 2) CALL(F)
+     * 3) RET(F)
+     * 4) On the instruction before a join (a flagged TARGET)
+     * 5) Repeated string instructions
+     * 6) End of procedure
+     */
     Int		i;
     Int		ip, start;
-    BB *		psBB;
-    BB *		pBB;
+    BB *        psBB;
+    BB *        pBB;
     ICODE *	pIcode = Icode.GetFirstIcode();
 
     stats.numBBbef = stats.numBBaft = 0;
@@ -47,7 +47,9 @@ void Function::createCFG()
                 ! (pIcode->ic.ll.flg & TERMINATES) &&
                 pIcode->ic.ll.opcode != iJMP && pIcode->ic.ll.opcode != iJMPF &&
                 pIcode->ic.ll.opcode != iRET && pIcode->ic.ll.opcode != iRETF)
+        {
             pBB=BB::Create(start, ip, NOWHERE_NODE, 0, this);
+        }
 
         /* Only process icodes that have valid instructions */
         else if ((pIcode->ic.ll.flg & NO_CODE) != NO_CODE)
@@ -64,7 +66,10 @@ CondJumps:
                     pBB->edges[0].ip = (dword)start;
                     /* This is for jumps off into nowhere */
                     if (pIcode->ic.ll.flg & NO_LABEL)
+                    {
                         pBB->numOutEdges--;
+                        pBB->edges.pop_back();
+                    }
                     else
                         pBB->edges[1].ip = pIcode->ic.ll.immed.op;
                     break;
@@ -76,13 +81,13 @@ CondJumps:
                 case iJMPF: case iJMP:
                     if (pIcode->ic.ll.flg & SWITCH)
                     {
-                        pBB = BB::Create(start, ip, MULTI_BRANCH,
-                                    pIcode->ic.ll.caseTbl.numEntries, this);
+                        pBB = BB::Create(start, ip, MULTI_BRANCH, pIcode->ic.ll.caseTbl.numEntries, this);
                         for (i = 0; i < pIcode->ic.ll.caseTbl.numEntries; i++)
                             pBB->edges[i].ip = pIcode->ic.ll.caseTbl.entries[i];
                         hasCase = TRUE;
                     }
-                    else if ((pIcode->ic.ll.flg & (I | NO_LABEL)) == I) {
+                    else if ((pIcode->ic.ll.flg & (I | NO_LABEL)) == I)
+                    {
                         pBB = BB::Create(start, ip, ONE_BRANCH, 1, this);
                         pBB->edges[0].ip = pIcode->ic.ll.immed.op;
                     }
@@ -137,17 +142,17 @@ CondJumps:
         {
             ip = pBB->edges[i].ip;
             if (ip >= SYNTHESIZED_MIN)
-                fatalError (INVALID_SYNTHETIC_BB);
-            else
             {
-                auto iter2=std::find_if(heldBBs.begin(),heldBBs.end(),
-                             [ip](BB *psBB)->bool {return psBB->start==ip;});
+                fatalError (INVALID_SYNTHETIC_BB);
+                return ;
+            }
+            auto iter2=std::find_if(heldBBs.begin(),heldBBs.end(),
+                         [ip](BB *psBB)->bool {return psBB->begin()==ip;});
             if(iter2==heldBBs.end())
                 fatalError(NO_BB, ip, name);
             psBB = *iter2;
             pBB->edges[i].BBptr = psBB;
-            psBB->numInEdges++;
-            }
+            psBB->inEdges.push_back(0);
         }
     }
 }
@@ -203,19 +208,19 @@ void Function::compressCFG()
     for (;iter!=cfg.end(); ++iter)
     {
         pBB = *iter;
-        pBB->inEdges.resize(pBB->numInEdges,0);
-        if (pBB->numInEdges != 0 && (pBB->nodeType == ONE_BRANCH || pBB->nodeType == TWO_BRANCH))
-            for (i = 0; i < pBB->numOutEdges; i++)
-            {
-                ip   = pBB->start + pBB->length - 1;
-                pNxt = rmJMP(this, ip, pBB->edges[i].BBptr);
+        if(pBB->inEdges.empty() || (pBB->nodeType != ONE_BRANCH && pBB->nodeType != TWO_BRANCH))
+            continue;
+        for (i = 0; i < pBB->numOutEdges; i++)
+        {
+            ip   = pBB->rbegin();
+            pNxt = rmJMP(this, ip, pBB->edges[i].BBptr);
 
-                if (pBB->numOutEdges)   /* Might have been clobbered */
-                {
-                    pBB->edges[i].BBptr = pNxt;
-                    Icode.SetImmediateOp(ip, (dword)pNxt->start);
-                }
+            if (pBB->numOutEdges)   /* Might have been clobbered */
+            {
+                pBB->edges[i].BBptr = pNxt;
+                Icode.SetImmediateOp(ip, (dword)pNxt->start);
             }
+        }
     }
 
     /* Next is a depth-first traversal merging any FALL_NODE or
@@ -230,7 +235,7 @@ void Function::compressCFG()
     for(auto iter=cfg.begin(); iter!=cfg.end(); ++iter)
     {
         pBB = *iter;
-        if (pBB->numInEdges == 0)
+        if (pBB->inEdges.empty())
         {
             if (iter == cfg.begin())	/* Init it misses out on */
                 pBB->index = UN_INIT;
@@ -244,7 +249,7 @@ void Function::compressCFG()
         }
         else
         {
-            pBB->inEdgeCount = pBB->numInEdges;
+            pBB->inEdgeCount = pBB->inEdges.size();
         }
     }
 
@@ -265,11 +270,16 @@ static BB * rmJMP(Function * pProc, Int marker, BB * pBB)
 {
     marker += DFS_JMP;
 
-    while (pBB->nodeType == ONE_BRANCH && pBB->length == 1) {
-        if (pBB->traversed != marker) {
+    while (pBB->nodeType == ONE_BRANCH && pBB->length == 1)
+    {
+        if (pBB->traversed != marker)
+        {
             pBB->traversed = marker;
-            if (--pBB->numInEdges)
-                pBB->edges[0].BBptr->numInEdges++;
+            pBB->inEdges.pop_back();
+            if (not pBB->inEdges.empty())
+            {
+                pBB->edges[0].BBptr->inEdges.push_back(0);
+            }
             else
             {
                 pProc->Icode.SetLlFlag(pBB->start, NO_CODE);
@@ -284,7 +294,8 @@ static BB * rmJMP(Function * pProc, Int marker, BB * pBB)
             pProc->Icode.SetImmediateOp(pBB->start, (dword)pBB->start);
             do {
                 pBB = pBB->edges[0].BBptr;
-                if (! --pBB->numInEdges)
+                pBB->inEdges.pop_back(); // was --numInedges
+                if (! pBB->inEdges.empty())
                 {
                     pProc->Icode.SetLlFlag(pBB->start, NO_CODE);
                     pProc->Icode.SetLlInvalid(pBB->start, TRUE);
@@ -328,7 +339,7 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
 
         }
         /* If there's no other edges into child can merge */
-        if (pChild->numInEdges != 1)
+        if (pChild->inEdges.size() != 1)
             break;
 
         nodeType = pChild->nodeType;
@@ -337,7 +348,8 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
         numOutEdges = pChild->numOutEdges;
         edges.swap(pChild->edges);
 
-        pChild->numOutEdges = pChild->numInEdges = 0;
+        pChild->numOutEdges = 0;
+        pChild->inEdges.clear();
         pChild->edges.clear();
     }
     traversed = DFS_MERGE;
@@ -368,7 +380,7 @@ void BB::dfsNumbering(std::vector<BB *> &dfsLast, Int *first, Int *last)
         pChild->inEdges[pChild->index++] = this;
 
         /* Is this the last visit? */
-        if (pChild->index == pChild->numInEdges)
+        if (pChild->index == pChild->inEdges.size())
             pChild->index = UN_INIT;
 
         if (pChild->traversed != DFS_NUM)

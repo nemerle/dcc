@@ -324,8 +324,8 @@ static boolT idiom5 (ICODE * pIcode, ICODE * pEnd)
 {
     if (pIcode < pEnd)
         if ((pIcode+1)->ic.ll.opcode == iADC)
-            return (TRUE);
-    return (FALSE);
+            return true;
+    return false;
 }
 
 
@@ -343,8 +343,8 @@ static boolT idiom6 (ICODE * pIcode, ICODE * pEnd)
 {
     if (pIcode < pEnd)
         if ((pIcode+1)->ic.ll.opcode == iSBB)
-            return (TRUE);
-    return (FALSE);
+            return true;
+    return false;
 }
 
 
@@ -364,21 +364,21 @@ static boolT idiom7 (ICODE * pIcode)
     if (dst->regi == 0)                 /* global variable */
     {
         if ((dst->segValue == src->segValue) && (dst->off == src->off))
-            return (TRUE);
+            return true;
     }
     else if (dst->regi < INDEXBASE)     /* register */
     {
         if (dst->regi == src->regi)
-            return (TRUE);
+            return true;
     }
     else if ((dst->off) && (dst->seg == rSS) && (dst->regi == INDEXBASE + 6))
         /* offset from BP */
     {
         if ((dst->off == src->off) && (dst->seg == src->seg) &&
             (dst->regi == src->regi))
-            return (TRUE);
+            return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -406,12 +406,12 @@ static boolT idiom21 (ICODE * picode, ICODE * pend)
             (dst->regi < INDEXBASE))
         {
             if ((dst->regi == rDX) && ((picode+1)->ic.ll.dst.regi == rAX))
-                return (TRUE);
+                return true;
             if ((dst->regi == rCX) && ((picode+1)->ic.ll.dst.regi == rBX))
-                return (TRUE);
+                return true;
         }
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -432,9 +432,9 @@ static boolT idiom8 (ICODE * pIcode, ICODE * pEnd)
             if (((pIcode+1)->ic.ll.opcode == iRCR) &&
                 (((pIcode+1)->ic.ll.flg & I) == I) &&
                 ((pIcode+1)->ic.ll.immed.op == 1))
-                return (TRUE);
+                return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -496,9 +496,9 @@ static boolT idiom12 (ICODE * pIcode, ICODE * pEnd)
             if (((pIcode+1)->ic.ll.opcode == iRCL) &&
                 (((pIcode+1)->ic.ll.flg & I) == I) &&
                 ((pIcode+1)->ic.ll.immed.op == 1))
-                return (TRUE);
+                return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -519,9 +519,9 @@ static boolT idiom9 (ICODE * pIcode, ICODE * pEnd)
             if (((pIcode+1)->ic.ll.opcode == iRCR) &&
                 (((pIcode+1)->ic.ll.flg & I) == I) &&
                 ((pIcode+1)->ic.ll.immed.op == 1))
-                return (TRUE);
+                return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -552,13 +552,13 @@ static boolT idiom10old (ICODE * pIcode, ICODE * pEnd)
                 if (((pIcode+1)->ic.ll.opcode == iJNE) &&
                     ((pIcode+2)->ic.ll.opcode != iCMP) &&
                     ((pIcode+3)->ic.ll.opcode != iJE))
-                    return (TRUE);
+                    return true;
             }
             else	/* at the end of the procedure */
                 if (((pIcode+1) < pEnd) && ((pIcode+1)->ic.ll.opcode == iJNE))
-                    return (TRUE);
+                    return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -664,14 +664,14 @@ static boolT idiom14 (ICODE * picode, ICODE * pend, byte *regL, byte *regH)
                 if (*regH == (picode+1)->ic.ll.src.regi)
                 {
                     if ((*regL == rAX) && (*regH == rDX))
-                        return (TRUE);
+                        return true;
                     if ((*regL == rBX) && (*regH == rCX))
-                        return (TRUE);
+                        return true;
                 }
             }
         }
     }
-    return (FALSE);
+    return false;
 }
 
 /*****************************************************************************
@@ -702,21 +702,21 @@ static boolT idiom11 (ICODE * pIcode, ICODE * pEnd)
                                                pIcode->ic.ll.dst.segValue) &&
                                               ((pIcode+2)->ic.ll.dst.off ==
                                                pIcode->ic.ll.dst.off))
-                                return (TRUE);
+                                return true;
                             break;
                         case REGISTER:    if ((pIcode+2)->ic.ll.dst.regi ==
                                               pIcode->ic.ll.dst.regi)
-                                return (TRUE);
+                                return true;
                             break;
                         case PARAM:
                         case LOCAL_VAR:   if ((pIcode+2)->ic.ll.dst.off ==
                                               pIcode->ic.ll.dst.off)
-                                return (TRUE);
+                                return true;
                             break;
                     }
             }
         }
-        return (FALSE);
+        return false;
 }
 
 
@@ -746,10 +746,10 @@ static boolT idiom16 (ICODE * picode, ICODE * pend)
                      ((picode+1)->ic.ll.src.regi)) &&
                     ((picode+1)->ic.ll.dst.regi == regi) &&
                     ((picode+2)->ic.ll.dst.regi == regi))
-                    return (TRUE);
+                    return true;
         }
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -800,7 +800,7 @@ static boolT idiom18 (ICODE * picode, ICODE * pend, Function * pproc)
                     ((picode+1)->ic.ll.dst.regi == regi) &&
                     (((picode+2)->ic.ll.opcode >= iJB) &&
                      ((picode+2)->ic.ll.opcode < iJCXZ)))
-                    return (TRUE);
+                    return true;
             }
         }
     }
@@ -817,11 +817,11 @@ static boolT idiom18 (ICODE * picode, ICODE * pend, Function * pproc)
                     ((picode+1)->ic.ll.dst.regi == regi) &&
                     (((picode+2)->ic.ll.opcode >= iJB) &&
                      ((picode+2)->ic.ll.opcode < iJCXZ)))
-                    return (TRUE);
+                    return true;
             }
         }
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -846,17 +846,17 @@ static boolT idiom19 (ICODE * picode, ICODE * pend, Function * pproc)
             ((picode->ic.ll.dst.regi == rDI) && (pproc->flg & DI_REGVAR)))
             if ((picode < pend) && ((picode+1)->ic.ll.opcode >= iJB) &&
                 ((picode+1)->ic.ll.opcode < iJCXZ))
-                return (TRUE);
+                return true;
     }
     else if (picode->ic.ll.dst.off)		/* stack variable */
     {
         if ((picode < pend) && ((picode+1)->ic.ll.opcode >= iJB) &&
             ((picode+1)->ic.ll.opcode < iJCXZ))
-            return (TRUE);
+            return true;
     }
     else	/* indexed */
         /* not supported yet */ ;
-    return (FALSE);
+    return false;
 }
 
 
@@ -908,7 +908,7 @@ static boolT idiom20 (ICODE * picode, ICODE * pend, Function * pproc)
                     ((picode+2)->ic.ll.dst.regi == regi) &&
                     (((picode+3)->ic.ll.opcode >= iJB) &&
                      ((picode+3)->ic.ll.opcode < iJCXZ)))
-                    return (TRUE);
+                    return true;
             }
         }
     }
@@ -925,11 +925,11 @@ static boolT idiom20 (ICODE * picode, ICODE * pend, Function * pproc)
                     ((picode+2)->ic.ll.dst.regi == regi) &&
                     (((picode+3)->ic.ll.opcode >= iJB) &&
                      ((picode+3)->ic.ll.opcode < iJCXZ)))
-                    return (TRUE);
+                    return true;
             }
         }
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -946,7 +946,7 @@ void Function::findIdioms()
     Int     idx;            /* Index into local identifier table        */
     byte    regH, regL;     /* High and low registers for long word reg */
 
-    pIcode = Icode.GetFirstIcode();
+    pIcode = &Icode.front();
     pEnd = pIcode + Icode.GetNumIcodes();
     ip = 0;
 
@@ -1192,10 +1192,8 @@ void Function::findIdioms()
             case iSUB:          /* Idiom 6 */
                 if (idiom6 (pIcode, pEnd))
                 {
-                    lhs = COND_EXPR::idLong (&localId, DST, pIcode, LOW_FIRST,
-                                         ip, USE_DEF, 1);
-                    rhs = COND_EXPR::idLong (&localId, SRC, pIcode, LOW_FIRST,
-                                         ip, eUSE, 1);
+                    lhs = COND_EXPR::idLong (&localId, DST, pIcode, LOW_FIRST, ip, USE_DEF, 1);
+                    rhs = COND_EXPR::idLong (&localId, SRC, pIcode, LOW_FIRST, ip, eUSE, 1);
                     exp = COND_EXPR::boolOp (lhs, rhs, SUB);
                     pIcode->setAsgn(lhs, exp);
                     (pIcode+1)->invalidate();

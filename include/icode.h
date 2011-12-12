@@ -6,7 +6,7 @@
 #include <vector>
 #include "Enums.h"
 //enum condId;
-
+struct LOCAL_ID;
 /* LOW_LEVEL icode flags */
 enum eLLFlags
 {
@@ -45,16 +45,19 @@ enum eLLFlags
 
 /*  Parser flags  */
 #define TO_REG      0x000100    /* rm is source  */
-#define S           0x000200    /* sign extend   */
+#define S_EXT       0x000200    /* sign extend   */
 #define OP386       0x000400    /* 386 op-code   */
 #define NSP         0x000800    /* NOT_HLL if SP is src or dst */
 #define ICODEMASK   0xFF00FF    /* Masks off parser flags */
 
 /* LOW_LEVEL icode, DU flag bits */
-#define Cf           1
-#define Sf           2
-#define Zf           4
-#define Df           8
+enum eDuFlags
+{
+    Cf=1,
+    Sf=2,
+    Zf=4,
+    Df=8
+};
 
 /* Machine registers */
 #define rAX          1  /* These are numbered relative to real 8086 */
@@ -227,7 +230,7 @@ typedef enum {
     HLI_RET,			/* Return from procedure	*/
     /* pseudo high-level icodes */
     HLI_POP,			/* Pop expression			*/
-    HLI_PUSH,			/* Push expression			*/
+    HLI_PUSH			/* Push expression			*/
 } hlIcode;
 
 /* Def/use of flags - low 4 bits represent flags */
@@ -249,13 +252,6 @@ struct DU_ICODE
 /* Definition-use chain for level 1 (within a basic block) */
 #define MAX_REGS_DEF	2		/* 2 regs def'd for long-reg vars */
 #define MAX_USES		5
-
-struct DU1
-{
-    Int		numRegsDef;			/* # registers defined by this inst		*/
-    byte	regi[MAX_REGS_DEF];	/* registers defined by this inst		*/
-    Int		idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
-};
 
 
 /* LOW_LEVEL icode operand record */
@@ -312,6 +308,12 @@ typedef struct
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
 struct ICODE
 {
+struct DU1
+{
+    Int		numRegsDef;			/* # registers defined by this inst		*/
+    byte	regi[MAX_REGS_DEF];	/* registers defined by this inst		*/
+    Int		idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
+};
     icodeType           type;           /* Icode type                   */
     boolT               invalid;        /* Has no HIGH_LEVEL equivalent */
     BB			*inBB;      	/* BB to which this icode belongs */
@@ -323,6 +325,13 @@ struct ICODE
         HLTYPE hl;  	/* For HIGH_LEVEL icodes    */
     };
     IC ic;/* intermediate code        */
+    int loc_ip; // used by CICodeRec to number ICODEs
+
+    void  SetLlFlag(dword flag) {ic.ll.flg |= flag;}
+    dword GetLlFlag() {return ic.ll.flg;}
+    bool isLlFlag(dword flg) {return (ic.ll.flg&flg)==flg;}
+    llIcode GetLlOpcode() const { return ic.ll.opcode; }
+
     void writeIntComment(char *s);
     void setRegDU(byte regi, operDu du_in);
     void invalidate();
@@ -333,7 +342,10 @@ struct ICODE
     void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs); // set this icode to be an assign
     void setUnary(hlIcode op, COND_EXPR *exp);
     void setJCond(COND_EXPR *cexp);
-    int loc_ip; // used by CICodeRec to number ICODEs
+    void emitGotoLabel(Int indLevel);
+	void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
+public:
+    boolT removeDefRegi(byte regi, Int thisDefIdx, LOCAL_ID *locId);
 };
 
 // This is the icode array object.

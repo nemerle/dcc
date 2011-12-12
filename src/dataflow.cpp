@@ -24,7 +24,8 @@ Int STKFRAME::getLocVar(Int off)
 
 /* Returns a string with the source operand of Icode */
 static COND_EXPR *srcIdent (ICODE * Icode, Function * pProc, Int i, ICODE * duIcode, operDu du)
-{    COND_EXPR *n;
+{
+    COND_EXPR *n;
 
      if (Icode->ic.ll.flg & I)   /* immediate operand */
      {
@@ -99,7 +100,7 @@ void Function::elimCondCodes ()
 
                                 case iOR:
                                     lhs = Icode.GetIcode(defAt-1)->ic.hl.oper.asgn.lhs->clone();
-                                    copyDU (Icode.GetIcode(useAt-1),Icode.GetIcode(defAt-1), eUSE, eDEF);
+                                    Icode[useAt-1].copyDU(Icode[defAt-1], eUSE, eDEF);
                                     if (Icode.GetLlFlag(defAt-1) & B)
                                         rhs = COND_EXPR::idKte (0, 1);
                                     else
@@ -164,8 +165,8 @@ void Function::elimCondCodes ()
                     {
                         exp = prev->ic.hl.oper.exp->clone();
                         exp->changeBoolOp (condOpJCond[Icode.GetLlOpcode(useAt-1)-iJB]);
-                        copyDU (Icode.GetIcode(useAt-1), prev, eUSE, eUSE);
-                        Icode.GetIcode(useAt-1)->setJCond(exp);
+                        Icode[useAt-1].copyDU(*prev, eUSE, eUSE);
+                        Icode[useAt-1].setJCond(exp);
                     }
                 }
                 /* Error - definition not found for use of a cond code */
@@ -452,8 +453,7 @@ void Function::genDU1 ()
                         {
                             if (! (pbb->liveOut & duReg[regi]))	/* not liveOut */
                             {
-                                res = removeDefRegi (regi, picode, defRegIdx+1,
-                                                     &localId);
+                                res = picode->removeDefRegi (regi, defRegIdx+1,&localId);
 
                                 /* Backpatch any uses of this instruction, within
                                  * the same BB, if the instruction was invalidated */
@@ -567,7 +567,7 @@ static boolT xClear (COND_EXPR *rhs, Int f, Int t, Int lastBBinst, Function * pp
     ICODE * picode;
 
     if (rhs == NULL)
-        return (FALSE);
+        return false;
 
     switch (rhs->type) {
         case IDENTIFIER:
@@ -580,15 +580,15 @@ static boolT xClear (COND_EXPR *rhs, Int f, Int t, Int lastBBinst, Function * pp
                         (picode[i].invalid == FALSE))
                     {
                         if (picode[i].du.def & duReg[regi])
-                            return (FALSE);
+                            return false;
                     }
                 if (i < lastBBinst)
-                    return (TRUE);
+                    return true;
                 else
-                    return (FALSE);
+                    return false;
             }
             else
-                return (TRUE);
+                return true;
             /* else if (rhs->expr.ident.idType == LONG_VAR)
                         {
 missing all other identifiers ****
@@ -597,7 +597,7 @@ missing all other identifiers ****
         case BOOLEAN_OP:
             res = xClear (rhs->expr.boolExpr.rhs, f, t, lastBBinst, pproc);
             if (res == FALSE)
-                return (FALSE);
+                return false;
             return (xClear (rhs->expr.boolExpr.lhs, f, t, lastBBinst, pproc));
 
         case NEGATION:
@@ -652,7 +652,7 @@ static void processCArg (Function * pp, Function * pProc, ICODE * picode, Int nu
  * For HLI_CALL hlIcodes, places the arguments in the argument list.    */
 void Function::findExps()
 {
-    Int i, j, k, lastInst, lastInstN, numHlIcodes;
+    Int i, j, k, lastInst, numHlIcodes;
     ICODE * picode,        /* Current icode                            */
             * ticode;        /* Target icode                             */
     BB * pbb;         /* Current and next basic block             */
@@ -728,7 +728,7 @@ void Function::findExps()
                                             break;
 
                                         case HLI_CALL:    /* register arguments */
-                                            newRegArg (this, picode, ticode);
+                                            newRegArg (picode, ticode);
                                             picode->invalidate();
                                             numHlIcodes--;
                                             break;
@@ -866,7 +866,7 @@ void Function::findExps()
                                             break;
 
                                         case HLI_CALL:    /* register arguments */
-                                            newRegArg (this, picode, ticode);
+                                            newRegArg ( picode, ticode);
                                             picode->invalidate();
                                             numHlIcodes--;
                                             break;

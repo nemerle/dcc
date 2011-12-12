@@ -23,7 +23,7 @@ PROG    prog;               /* programs fields      				  */
 OPTION  option;             /* Command line options     			  */
 //Function *   pProcList;			/* List of procedures, topologically sort */
 //Function *	pLastProc;			/* Pointer to last node in procedure list */
-std::list<Function> pProcList;
+FunctionListType pProcList;
 CALL_GRAPH	*callGraph;		/* Call graph of the program			  */
 
 static char *initargs(int argc, char *argv[]);

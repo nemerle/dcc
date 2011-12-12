@@ -5,6 +5,7 @@
 #pragma once
 #include <list>
 #include <vector>
+struct Function;
 /* Types of basic block nodes */
 /* Real basic blocks: type defined according to their out-edges */
 enum eBBKind
@@ -88,7 +89,7 @@ struct derSeq_Entry
     }
     ~derSeq_Entry();
 public:
-    void findIntervals();
+    void findIntervals(Function *c);
 };
 class derSeq : public std::list<derSeq_Entry>
 {

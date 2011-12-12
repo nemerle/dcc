@@ -22,18 +22,16 @@ static char indentBuf[indSize] =
 
 
 /* Indentation according to the depth of the statement */
-static char *indent (Int indLevel)
+char *indent (Int indLevel)
 {
-
-
     return (&indentBuf[indSize-(indLevel*4)-1]);
 }
 
 
-static Int getNextLabel()
 /* Returns a unique index to the next label */
-{ static Int labelIdx = 1;	/* index of the next label		*/
-
+Int getNextLabel()
+{
+    static Int labelIdx = 1;	/* index of the next label		*/
     return (labelIdx++);
 }
 
@@ -206,36 +204,14 @@ static void writeBitVector (dword regi)
 }
 
 
-/* Checks the given icode to determine whether it has a label associated
- * to it.  If so, a goto is emitted to this label; otherwise, a new label
- * is created and a goto is also emitted.
- * Note: this procedure is to be used when the label is to be backpatched
- *       onto code in cCode.code */
-static void emitGotoLabel (ICODE * pt, Int indLevel)
-{
-    if (! (pt->ic.ll.flg & HLL_LABEL)) /* node hasn't got a lab */
-    {
-        /* Generate new label */
-        pt->ic.ll.hllLabNum = getNextLabel();
-        pt->ic.ll.flg |= HLL_LABEL;
-
-        /* Node has been traversed already, so backpatch this label into
-                 * the code */
-        addLabelBundle (cCode.code, pt->codeIdx, pt->ic.ll.hllLabNum);
-    }
-    cCode.appendCode( "%sgoto L%ld;\n", indent(indLevel),
-                      pt->ic.ll.hllLabNum);
-    stats.numHLIcode++;
-}
-
 
 // Note: Not currently called!
-static void emitFwdGotoLabel (ICODE * pt, Int indLevel)
 /* Checks the given icode to determine whether it has a label associated
  * to it.  If so, a goto is emitted to this label; otherwise, a new label
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be forward on
  *		 the code; that is, the target code has not been traversed yet. */
+static void emitFwdGotoLabel (ICODE * pt, Int indLevel)
 {
     if (! (pt->ic.ll.flg & HLL_LABEL)) /* node hasn't got a lab */
     {
@@ -245,254 +221,6 @@ static void emitFwdGotoLabel (ICODE * pt, Int indLevel)
     }
     cCode.appendCode( "%sgoto l%ld;\n", indent(indLevel),
                       pt->ic.ll.hllLabNum);
-}
-
-
-/* Writes the code for the current basic block.
- * Args: pBB: pointer to the current basic block.
- *		 Icode: pointer to the array of icodes for current procedure.
- *		 lev: indentation level - used for formatting.	*/
-static void writeBB (const BB * const pBB, ICODE * hli, Int lev, Function * pProc, Int *numLoc)
-{ Int	i, last;
-    char *line;           /* Pointer to the HIGH-LEVEL line   */
-
-    /* Save the index into the code table in case there is a later goto
-  * into this instruction (first instruction of the BB) */
-    hli[pBB->start].codeIdx = nextBundleIdx (&cCode.code);
-
-    /* Generate code for each hlicode that is not a HLI_JCOND */
-    for (i = pBB->start, last = i + pBB->length; i < last; i++)
-        if ((hli[i].type == HIGH_LEVEL) && (hli[i].invalid == FALSE))
-        {
-            line = write1HlIcode (hli[i].ic.hl, pProc, numLoc);
-            if (line[0] != '\0')
-            {
-                cCode.appendCode( "%s%s", indent(lev), line);
-                stats.numHLIcode++;
-            }
-            if (option.verbose)
-                hli[i].writeDU(i);
-        }
-    //if (hli[i].invalid)
-    //printf("Invalid icode: %d!\n", hli[i].invalid);
-}
-
-
-/* Recursive procedure that writes the code for the given procedure, pointed
- * to by pBB.
- * Parameters:	pBB:	pointer to the cfg.
- *				Icode:	pointer to the Icode array for the cfg graph of the
- *						current procedure.
- *				indLevel: indentation level - used for formatting.
- *				numLoc: last # assigned to local variables 				*/
-void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, Int _ifFollow)
-{
-    Int follow,						/* ifFollow						*/
-            _loopType, 					/* Type of loop, if any 		*/
-            _nodeType;						/* Type of node 				*/
-    BB * succ, *latch;					/* Successor and latching node 	*/
-    ICODE * picode;					/* Pointer to HLI_JCOND instruction	*/
-    char *l;							/* Pointer to HLI_JCOND expression	*/
-    boolT emptyThen,					/* THEN clause is empty			*/
-            repCond;					/* Repeat condition for while() */
-
-    /* Check if this basic block should be analysed */
-    if ((_ifFollow != UN_INIT) && (this == pProc->dfsLast[_ifFollow]))
-        return;
-
-    if (traversed == DFS_ALPHA)
-        return;
-    traversed = DFS_ALPHA;
-
-    /* Check for start of loop */
-    repCond = FALSE;
-    latch = NULL;
-    _loopType = loopType;
-    if (_loopType)
-    {
-        latch = pProc->dfsLast[this->latchNode];
-        switch (_loopType)
-        {
-            case WHILE_TYPE:
-                picode = pProc->Icode.GetIcode(start + length - 1);
-
-                /* Check for error in while condition */
-                if (picode->ic.hl.opcode != HLI_JCOND)
-                    reportError (WHILE_FAIL);
-
-                /* Check if condition is more than 1 HL instruction */
-                if (numHlIcodes > 1)
-                {
-                    /* Write the code for this basic block */
-                    writeBB(this, pProc->Icode.GetFirstIcode(), indLevel, pProc, numLoc);
-                    repCond = TRUE;
-                }
-
-                /* Condition needs to be inverted if the loop body is along
-                 * the THEN path of the header node */
-                if (edges[ELSE].BBptr->dfsLastNum == loopFollow)
-                    inverseCondOp (&picode->ic.hl.oper.exp);
-                {
-                    std::string e=walkCondExpr (picode->ic.hl.oper.exp, pProc, numLoc);
-                    cCode.appendCode( "\n%swhile (%s) {\n", indent(indLevel),e.c_str());
-                }
-                picode->invalidate();
-                break;
-
-            case REPEAT_TYPE:
-                cCode.appendCode( "\n%sdo {\n", indent(indLevel));
-                picode = pProc->Icode.GetIcode(latch->start+latch->length-1);
-                picode->invalidate();
-                break;
-
-            case ENDLESS_TYPE:
-                cCode.appendCode( "\n%sfor (;;) {\n", indent(indLevel));
-        }
-        stats.numHLIcode += 1;
-        indLevel++;
-    }
-
-    /* Write the code for this basic block */
-    if (repCond == FALSE)
-        writeBB (this, pProc->Icode.GetFirstIcode(), indLevel, pProc, numLoc);
-
-    /* Check for end of path */
-    _nodeType = nodeType;
-    if (_nodeType == RETURN_NODE || _nodeType == TERMINATE_NODE ||
-        _nodeType == NOWHERE_NODE || (dfsLastNum == latchNode))
-        return;
-
-    /* Check type of loop/node and process code */
-    if (_loopType)	/* there is a loop */
-    {
-        assert(latch);
-        if (this != latch)		/* loop is over several bbs */
-        {
-            if (_loopType == WHILE_TYPE)
-            {
-                succ = edges[THEN].BBptr;
-                if (succ->dfsLastNum == loopFollow)
-                    succ = edges[ELSE].BBptr;
-            }
-            else
-                succ = edges[0].BBptr;
-            if (succ->traversed != DFS_ALPHA)
-                succ->writeCode (indLevel, pProc, numLoc, latch->dfsLastNum,_ifFollow);
-            else	/* has been traversed so we need a goto */
-                emitGotoLabel (pProc->Icode.GetIcode(succ->start), indLevel);
-        }
-
-        /* Loop epilogue: generate the loop trailer */
-        indLevel--;
-        if (_loopType == WHILE_TYPE)
-        {
-            /* Check if there is need to repeat other statements involved
-                         * in while condition, then, emit the loop trailer */
-            if (repCond)
-                writeBB (this, pProc->Icode.GetFirstIcode(), indLevel+1, pProc, numLoc);
-            cCode.appendCode( "%s}	/* end of while */\n",indent(indLevel));
-        }
-        else if (_loopType == ENDLESS_TYPE)
-            cCode.appendCode( "%s}	/* end of loop */\n",indent(indLevel));
-        else if (_loopType == REPEAT_TYPE)
-        {
-            if (picode->ic.hl.opcode != HLI_JCOND)
-                reportError (REPEAT_FAIL);
-            {
-                string e=walkCondExpr (picode->ic.hl.oper.exp, pProc, numLoc);
-                cCode.appendCode( "%s} while (%s);\n", indent(indLevel),e.c_str());
-            }
-        }
-
-        /* Recurse on the loop follow */
-        if (loopFollow != MAX)
-        {
-            succ = pProc->dfsLast[loopFollow];
-            if (succ->traversed != DFS_ALPHA)
-                succ->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
-            else		/* has been traversed so we need a goto */
-                emitGotoLabel (pProc->Icode.GetIcode(succ->start), indLevel);
-        }
-    }
-
-    else		/* no loop, process nodeType of the graph */
-    {
-        if (_nodeType == TWO_BRANCH)		/* if-then[-else] */
-        {
-            stats.numHLIcode++;
-            indLevel++;
-            emptyThen = FALSE;
-
-            if (ifFollow != MAX)		/* there is a follow */
-            {
-                /* process the THEN part */
-                follow = ifFollow;
-                succ = edges[THEN].BBptr;
-                if (succ->traversed != DFS_ALPHA)	/* not visited */
-                {
-                    if (succ->dfsLastNum != follow)	/* THEN part */
-                    {
-                        l = writeJcond ( pProc->Icode.GetIcode(start + length -1)->ic.hl,
-                                pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indent(indLevel-1), l);
-                        succ->writeCode (indLevel, pProc, numLoc, latchNode,follow);
-                    }
-                    else		/* empty THEN part => negate ELSE part */
-                    {
-                        l = writeJcondInv ( pProc->Icode.GetIcode(start + length -1)->ic.hl,
-                                pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indent(indLevel-1), l);
-                        edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, follow);
-                        emptyThen = TRUE;
-                    }
-                }
-                else	/* already visited => emit label */
-                    emitGotoLabel (pProc->Icode.GetIcode(succ->start), indLevel);
-
-                /* process the ELSE part */
-                succ = edges[ELSE].BBptr;
-                if (succ->traversed != DFS_ALPHA)		/* not visited */
-                {
-                    if (succ->dfsLastNum != follow)		/* ELSE part */
-                    {
-                        cCode.appendCode( "%s}\n%selse {\n",
-                                          indent(indLevel-1), indent(indLevel - 1));
-                        succ->writeCode (indLevel, pProc, numLoc, latchNode, follow);
-                    }
-                    /* else (empty ELSE part) */
-                }
-                else if (! emptyThen) 	/* already visited => emit label */
-                {
-                    cCode.appendCode( "%s}\n%selse {\n",
-                                      indent(indLevel-1), indent(indLevel - 1));
-                    emitGotoLabel (pProc->Icode.GetIcode(succ->start), indLevel);
-                }
-                cCode.appendCode( "%s}\n", indent(--indLevel));
-
-                /* Continue with the follow */
-                succ = pProc->dfsLast[follow];
-                if (succ->traversed != DFS_ALPHA)
-                    succ->writeCode (indLevel, pProc, numLoc, latchNode,_ifFollow);
-            }
-            else		/* no follow => if..then..else */
-            {
-                l = writeJcond (
-                        pProc->Icode.GetIcode(start + length -1)->ic.hl, pProc, numLoc);
-                cCode.appendCode( "%s%s", indent(indLevel-1), l);
-                edges[THEN].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
-                cCode.appendCode( "%s}\n%selse {\n", indent(indLevel-1), indent(indLevel - 1));
-                edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
-                cCode.appendCode( "%s}\n", indent(--indLevel));
-            }
-        }
-
-        else 	/* fall, call, 1w */
-        {
-            succ = edges[0].BBptr;		/* fall-through edge */
-            if (succ->traversed != DFS_ALPHA)
-                succ->writeCode (indLevel, pProc,numLoc, latchNode,_ifFollow);
-        }
-    }
 }
 
 
@@ -522,7 +250,7 @@ void Function::codeGen (std::ostream &fs)
         {
             sprintf (arg,"%s %s",hlTypes[args.sym[i].type], args.sym[i].name);
             strcat (buf, arg);
-            if (i < (args.numArgs - 1))
+            if (i < (args.sym.size() - 1))
                 strcat (buf, ", ");
         }
     }
@@ -581,8 +309,7 @@ void Function::codeGen (std::ostream &fs)
             pBB = dfsLast[i];
             if (pBB->flg & INVALID_BB)	continue;	/* skip invalid BBs */
             printf ("BB %d\n", i);
-            printf ("  Start = %d, end = %d\n", pBB->start, pBB->start +
-                    pBB->length - 1);
+            printf ("  Start = %d, end = %d\n", pBB->begin(), pBB->end());
             printf ("  LiveUse = ");
             writeBitVector (pBB->liveUse);
             printf ("\n  Def = ");

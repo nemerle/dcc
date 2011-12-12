@@ -87,7 +87,7 @@ static void appendNodeInt (queue &pqH, BB *node, interval *pI)
         auto found_iter=std::find(pqH.begin(),pqH.end(),node);
         if(found_iter!=pqH.end())
         {
-            pI->numOutEdges -= (byte)(*found_iter)->numInEdges - 1;
+            pI->numOutEdges -= (byte)(*found_iter)->inEdges.size() - 1;
             pqH.erase(found_iter);
         }
     }
@@ -99,7 +99,7 @@ static void appendNodeInt (queue &pqH, BB *node, interval *pI)
 /* Finds the intervals of graph derivedGi->Gi and places them in the list
  * of intervals derivedGi->Ii.
  * Algorithm by M.S.Hecht.                      */
-void derSeq_Entry::findIntervals ()
+void derSeq_Entry::findIntervals (Function *c)
 {
     interval *pI,        /* Interval being processed         */
             *J;         /* ^ last interval in derivedGi->Ii */
@@ -112,7 +112,7 @@ void derSeq_Entry::findIntervals ()
 
     appendQueue (H, Gi);  /* H = {first node of G} */
     Gi->beenOnH = TRUE;
-    Gi->reachingInt = BB::Create(); /* ^ empty BB */
+    Gi->reachingInt = BB::Create(0,"",c); /* ^ empty BB */
 
     /* Process header nodes list H */
     while (!H.empty())
@@ -185,10 +185,9 @@ static void displayIntervals (interval *pI)
         while (nodePtr!=pI->nodes.end())
         {
             if ((*nodePtr)->correspInt == NULL)    /* real BBs */
-                printf ("    Node: %ld\n", (*nodePtr)->start);
+                printf ("    Node: %ld\n", (*nodePtr)->begin());
             else              /* BBs represent intervals */
-                printf ("   Node (corresp int): %d\n",
-                        (*nodePtr)->correspInt->numInt);
+                printf ("   Node (corresp int): %d\n", (*nodePtr)->correspInt->numInt);
             ++nodePtr;
         }
         pI = pI->next;
@@ -240,7 +239,7 @@ derSeq_Entry::~derSeq_Entry()
 
 /* Finds the next order graph of derivedGi->Gi according to its intervals
  * (derivedGi->Ii), and places it in derivedGi->next->Gi.       */
-static boolT nextOrderGraph (derSeq *derivedGi)
+bool Function::nextOrderGraph (derSeq *derivedGi)
 {
     interval *Ii;     /* Interval being processed         */
     BB *BBnode,       /* New basic block of intervals         */
@@ -263,7 +262,7 @@ static boolT nextOrderGraph (derSeq *derivedGi)
     while (Ii)
     {
         i = 0;
-        bbs.push_back(BB::Create(-1, -1, INTERVAL_NODE, Ii->numOutEdges, NULL));
+        bbs.push_back(BB::Create(-1, -1, INTERVAL_NODE, Ii->numOutEdges, this));
         BBnode = bbs.back();
         BBnode->correspInt = Ii;
         const queue &listIi(Ii->nodes);
@@ -307,7 +306,7 @@ static boolT nextOrderGraph (derSeq *derivedGi)
             if(iter==bbs.end())
                 fatalError (INVALID_INT_BB);
             edge.BBptr = *iter;
-            (*iter)->numInEdges++;
+            (*iter)->inEdges.push_back(0);
             (*iter)->inEdgeCount++;
         }
     }
@@ -319,7 +318,7 @@ static boolT nextOrderGraph (derSeq *derivedGi)
 /* Finds the derived sequence of the graph derivedG->Gi (ie. cfg).
  * Constructs the n-th order graph and places all the intermediate graphs
  * in the derivedG list sequence.                   */
-static byte findDerivedSeq (derSeq *derivedGi)
+byte Function::findDerivedSeq (derSeq *derivedGi)
 {
     BB *Gi;      /* Current derived sequence graph       */
 
@@ -328,7 +327,7 @@ static byte findDerivedSeq (derSeq *derivedGi)
     while (! trivialGraph (Gi))
     {
         /* Find the intervals of Gi and place them in derivedGi->Ii */
-        iter->findIntervals ();
+        iter->findIntervals(this);
 
         /* Create Gi+1 and check if it is equivalent to Gi */
         if (! nextOrderGraph (derivedGi))
@@ -346,7 +345,7 @@ static byte findDerivedSeq (derSeq *derivedGi)
         //        derivedGi->next = NULL;
         return FALSE;
     }
-    derivedGi->back().findIntervals ();
+    derivedGi->back().findIntervals (this);
     return TRUE;
 }
 

@@ -72,30 +72,31 @@ void ICODE::setRegDU (byte regi, operDu du_in)
 
 
 /* Copies the def, use, or def and use fields of duIcode into pIcode */
-void copyDU (ICODE *pIcode, const ICODE *duIcode, operDu du, operDu duDu)
+void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
 {
     //    printf("%s %d,%d from %d to %d\n",__FUNCTION__,int(du),int(duDu),duIcode->ic.ll.opcode,pIcode->ic.ll.opcode);
-    switch (du) {
+    switch (_du)
+    {
         case eDEF:
             if (duDu == eDEF)
-                pIcode->du.def=duIcode->du.def;
+                du.def=duIcode.du.def;
             else
-                pIcode->du.def=duIcode->du.use;
+                du.def=duIcode.du.use;
             break;
         case eUSE:
             if (duDu == eDEF)
-                pIcode->du.use=duIcode->du.def;
+                du.use=duIcode.du.def;
             else
-                pIcode->du.use =duIcode->du.use;
+                du.use =duIcode.du.use;
             break;
         case USE_DEF:
-            pIcode->du = duIcode->du;
+            du = duIcode.du;
             break;
         case NONE:
             assert(false);
             break;
     }
-    printf("%s end: %x,%x\n",__FUNCTION__,pIcode->du.def,pIcode->du.use);
+    printf("%s end: %x,%x\n",__FUNCTION__,du.def,du.use);
 }
 
 

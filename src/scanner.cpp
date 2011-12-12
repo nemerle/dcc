@@ -126,8 +126,8 @@ static struct {
     {  none1,   none2, OP386 				, iZERO	, 0	,				},	/* 67 */
     {  data2,   none2, NO_SRC				, iPUSH	, 0		,			},	/* 68 */
     {  modrm,   data2, TO_REG | NSP		, iIMUL	, Sf | Zf | Cf,		},	/* 69 */
-    {  data1,   none2, S | NO_SRC			, iPUSH	, 0	,				},	/* 6A */
-    {  modrm,   data1, TO_REG | NSP | S	, iIMUL	, Sf | Zf | Cf,		},	/* 6B */
+    {  data1,   none2, S_EXT | NO_SRC			, iPUSH	, 0	,				},	/* 6A */
+    {  modrm,   data1, TO_REG | NSP | S_EXT	, iIMUL	, Sf | Zf | Cf,		},	/* 6B */
     {  strop,  memImp, NOT_HLL | B|IM_OPS , iINS	, 0	, Df			},	/* 6C */
     {  strop,  memImp, NOT_HLL | IM_OPS	, iINS	, 0	, Df			},	/* 6D */
     {  strop,  memImp, NOT_HLL | B|IM_OPS , iOUTS	, 0	, Df			},	/* 6E */
@@ -151,7 +151,7 @@ static struct {
     {  immed,   data1, B					, iZERO	, 0	,				},	/* 80 */
     {  immed,   data2, NSP				, iZERO	, 0	,				},	/* 81 */
     {  immed,   data1, B					, iZERO	, 0	,				},	/* 82 */ /* ?? */
-    {  immed,   data1, NSP | S			, iZERO	, 0	,				},	/* 83 */
+    {  immed,   data1, NSP | S_EXT			, iZERO	, 0	,				},	/* 83 */
     {  modrm,   none2, TO_REG | B			, iTEST	, Sf | Zf | Cf, 	},	/* 84 */
     {  modrm,   none2, TO_REG | NSP		, iTEST	, Sf | Zf | Cf, 	},	/* 85 */
     {  modrm,   none2, TO_REG | B			, iXCHG	, 0	,				},	/* 86 */
@@ -172,8 +172,8 @@ static struct {
     {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 95 */
     {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 96 */
     {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 97 */
-    {  alImp,   axImp, SRC_B | S			, iSIGNEX,0	,				},	/* 98 */
-    {axSrcIm,   axImp, IM_DST | S			, iSIGNEX,0	,				},	/* 99 */
+    {  alImp,   axImp, SRC_B | S_EXT			, iSIGNEX,0	,				},	/* 98 */
+    {axSrcIm,   axImp, IM_DST | S_EXT			, iSIGNEX,0	,				},	/* 99 */
     {  dispF,   none2, 0					, iCALLF ,0	,				},	/* 9A */
     {  none1,   none2, FLOAT_OP| NO_OPS	, iWAIT	, 0	,				},	/* 9B */
     {  none1,   none2, NOT_HLL | NO_OPS	, iPUSHF, 0	,				},	/* 9C */
@@ -658,7 +658,7 @@ static void arith(Int i)
  *****************************************************************************/
 static void data1(Int i)
 {
-    pIcode->ic.ll.immed.op = (stateTable[i].flg & S)? signex(*pInst++):
+    pIcode->ic.ll.immed.op = (stateTable[i].flg & S_EXT)? signex(*pInst++):
                                                       *pInst++;
     pIcode->ic.ll.flg |= I;
 }

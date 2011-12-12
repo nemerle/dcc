@@ -6,7 +6,7 @@
 #include "dcc.h"
 
 
-long LMOD@ (long arg0, int arg2int arg3)
+long LMOD@ (long arg0, int arg2, int arg3)
 /* Takes 8 bytes of parameters.
  * Runtime support routine of the compiler.
  * Untranslatable routine.  Assembler provided.

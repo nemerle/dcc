@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include <memory.h>
 
+#include "dcc.h"
 #include "types.h"		// Common types like byte, etc
 #include "ast.h"		// Some icode types depend on these
 #include "icode.h"
@@ -118,6 +119,27 @@ ICODE * CIcodeRec::GetIcode(int ip)
     return &at(ip);
 }
 
+extern char *indent(int level);
+extern Int getNextLabel();
+extern bundle cCode;
+/* Checks the given icode to determine whether it has a label associated
+ * to it.  If so, a goto is emitted to this label; otherwise, a new label
+ * is created and a goto is also emitted.
+ * Note: this procedure is to be used when the label is to be backpatched
+ *       onto code in cCode.code */
+void ICODE::emitGotoLabel (Int indLevel)
+{
+    if (! (ic.ll.flg & HLL_LABEL)) /* node hasn't got a lab */
+    {
+        /* Generate new label */
+        ic.ll.hllLabNum = getNextLabel();
+        ic.ll.flg |= HLL_LABEL;
 
-
+        /* Node has been traversed already, so backpatch this label into
+                 * the code */
+        addLabelBundle (cCode.code, codeIdx, ic.ll.hllLabNum);
+    }
+    cCode.appendCode( "%sgoto L%ld;\n", indent(indLevel), ic.ll.hllLabNum);
+    stats.numHLIcode++;
+}
 

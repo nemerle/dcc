@@ -83,37 +83,39 @@ void ICODE ::invalidate()
 /* Removes the defined register regi from the lhs subtree.  If all registers
  * of this instruction are unused, the instruction is invalidated (ie.
  * removed) */
-boolT removeDefRegi (byte regi, ICODE *picode, Int thisDefIdx, LOCAL_ID *locId)
-{ Int numDefs;
+boolT ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
+{
+    Int numDefs;
 
-    numDefs = picode->du1.numRegsDef;
+    numDefs = du1.numRegsDef;
     if (numDefs == thisDefIdx)
         for ( ; numDefs > 0; numDefs--)
         {
-            if ((picode->du1.idx[numDefs-1][0] != 0)||(picode->du.lastDefRegi))
+            if ((du1.idx[numDefs-1][0] != 0)||(du.lastDefRegi))
                 break;
         }
 
     if (numDefs == 0)
     {
-        picode->invalidate();
-        return (TRUE);
+        invalidate();
+        return true;
     }
     else
     {
-        switch (picode->ic.hl.opcode) {
-            case HLI_ASSIGN:    removeRegFromLong (regi, locId,
-                                                   picode->ic.hl.oper.asgn.lhs);
-                picode->du1.numRegsDef--;
-                picode->du.def &= maskDuReg[regi];
+        switch (ic.hl.opcode) {
+            case HLI_ASSIGN:
+                removeRegFromLong (regi, locId,ic.hl.oper.asgn.lhs);
+                du1.numRegsDef--;
+                du.def &= maskDuReg[regi];
                 break;
             case HLI_POP:
-            case HLI_PUSH:      removeRegFromLong (regi, locId, picode->ic.hl.oper.exp);
-                picode->du1.numRegsDef--;
-                picode->du.def &= maskDuReg[regi];
+            case HLI_PUSH:
+                removeRegFromLong (regi, locId, ic.hl.oper.exp);
+                du1.numRegsDef--;
+                du.def &= maskDuReg[regi];
                 break;
         }
-        return (FALSE);
+        return false;
     }
 }
 

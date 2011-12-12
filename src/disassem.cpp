@@ -1483,17 +1483,17 @@ boolT callArg(word off, char *sym)
 
     imageOff = off + ((dword)pProc->state.r[rCS] << 4);
     /* Search procedure list for one with appropriate entry point */
-    std::list<Function>::iterator iter= std::find_if(pProcList.begin(),pProcList.end(),
+    FunctionListType::iterator iter= std::find_if(pProcList.begin(),pProcList.end(),
         [imageOff](const Function &f) -> bool { return f.procEntry==imageOff; });
     if(iter==pProcList.end())
     {
         /* No existing proc entry */
     //ERROR: dereferencing NULL !?!
         //LibCheck(*iter);
-        Function x;
-        x.procEntry=imageOff;
-        LibCheck(x);
-        if (x.flg & PROC_ISLIB)
+        Function *x=Function::Create();
+        x->procEntry=imageOff;
+        LibCheck(*x);
+        if (x->flg & PROC_ISLIB)
         {
             /* No entry for this proc, but it is a library function.
                 Create an entry for it */

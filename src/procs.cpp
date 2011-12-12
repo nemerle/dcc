@@ -49,7 +49,7 @@ boolT CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
     if (proc == caller)
     {
         insertArc (callee);
-        return (TRUE);
+        return true;
     }
     else
     {
@@ -96,7 +96,7 @@ void CALL_GRAPH::write()
 /* Updates the argument table by including the register(s) (ie. lhs of
  * picode) and the actual expression (ie. rhs of picode).
  * Note: register(s) are only included once in the table.   */
-void newRegArg (Function * pproc, ICODE *picode, ICODE *ticode)
+void Function::newRegArg(ICODE *picode, ICODE *ticode)
 {
     COND_EXPR *lhs;
     STKFRAME * ps, *ts;
@@ -118,7 +118,7 @@ void newRegArg (Function * pproc, ICODE *picode, ICODE *ticode)
     type = lhs->expr.ident.idType;
     if (type == REGISTER)
     {
-        regL = pproc->localId.id_arr[lhs->expr.ident.idNode.regiIdx].id.regi;
+        regL = localId.id_arr[lhs->expr.ident.idNode.regiIdx].id.regi;
         if (regL < rAL)
             tidx = tproc->localId.newByteWordReg(TYPE_WORD_SIGN, regL);
         else
@@ -126,8 +126,8 @@ void newRegArg (Function * pproc, ICODE *picode, ICODE *ticode)
     }
     else if (type == LONG_VAR)
     {
-        regL = pproc->localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.l;
-        regH = pproc->localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.h;
+        regL = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.l;
+        regH = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.h;
         tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, 0);
     }
 
@@ -194,7 +194,7 @@ void newRegArg (Function * pproc, ICODE *picode, ICODE *ticode)
     /* Mask off high and low register(s) in picode */
     switch (type) {
         case REGISTER:
-            id = &pproc->localId.id_arr[lhs->expr.ident.idNode.regiIdx];
+            id = &localId.id_arr[lhs->expr.ident.idNode.regiIdx];
             picode->du.def &= maskDuReg[id->id.regi];
             if (id->id.regi < rAL)
                 newsym.type = TYPE_WORD_SIGN;
@@ -202,7 +202,7 @@ void newRegArg (Function * pproc, ICODE *picode, ICODE *ticode)
                 newsym.type = TYPE_BYTE_SIGN;
             break;
         case LONG_VAR:
-            id = &pproc->localId.id_arr[lhs->expr.ident.idNode.longIdx];
+            id = &localId.id_arr[lhs->expr.ident.idNode.longIdx];
             picode->du.def &= maskDuReg[id->id.longId.h];
             picode->du.def &= maskDuReg[id->id.longId.l];
             newsym.type = TYPE_LONG_SIGN;
@@ -225,12 +225,13 @@ void allocStkArgs (ICODE *picode, Int num)
 }
 
 
-boolT newStkArg (ICODE *picode, COND_EXPR *exp, llIcode opcode, Function * pproc)
 /* Inserts the new expression (ie. the actual parameter) on the argument
  * list.
  * Returns: TRUE if it was a near call that made use of a segment register.
  *			FALSE elsewhere	*/
-{ STKFRAME * ps;
+boolT newStkArg (ICODE *picode, COND_EXPR *exp, llIcode opcode, Function * pproc)
+{
+	STKFRAME * ps;
     byte regi;
 
     /* Check for far procedure call, in which case, references to segment
@@ -243,9 +244,9 @@ boolT newStkArg (ICODE *picode, COND_EXPR *exp, llIcode opcode, Function * pproc
             regi =  pproc->localId.id_arr[exp->expr.ident.idNode.regiIdx].id.regi;
             if ((regi >= rES) && (regi <= rDS))
                 if (opcode == iCALLF)
-                    return (FALSE);
+                    return false;
                 else
-                    return (TRUE);
+                    return true;
         }
     }
 

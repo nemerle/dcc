@@ -1,4 +1,7 @@
 #pragma once
+#include <llvm/ADT/ilist.h>
+#include <llvm/ADT/ilist_node.h>
+#include "BasicBlock.h"
 #include "types.h"
 #include "ast.h"
 #include "icode.h"
@@ -9,8 +12,44 @@
 #include "StackFrame.h"
 /* PROCEDURE NODE */
 struct CALL_GRAPH;
-struct Function
+namespace llvm
 {
+// Traits for intrusive list of basic blocks...
+template<>
+struct ilist_traits<BB> : public ilist_default_traits<BB>
+{
+
+    // createSentinel is used to get hold of the node that marks the end of the
+    // list... (same trick used here as in ilist_traits<Instruction>)
+    BB *createSentinel() const {
+        return static_cast<BB*>(&Sentinel);
+    }
+    static void destroySentinel(BB*) {}
+
+    BB *provideInitialHead() const { return createSentinel(); }
+    BB *ensureHead(BB*) const { return createSentinel(); }
+    static void noteHead(BB*, BB*) {}
+
+    //static ValueSymbolTable *getSymTab(Function *ItemParent);
+private:
+    mutable ilist_half_node<BB> Sentinel;
+};
+}
+struct FunctionType
+{
+    bool m_vararg;
+    bool isVarArg() const {return m_vararg;}
+};
+struct Function : public llvm::ilist_node<Function>
+{
+    typedef llvm::iplist<BB> BasicBlockListType;
+    // BasicBlock iterators...
+    typedef BasicBlockListType::iterator iterator;
+    typedef BasicBlockListType::const_iterator const_iterator;
+private:
+    BasicBlockListType  BasicBlocks;        ///< The basic blocks
+
+public:
     dword        procEntry; /* label number                         	 */
     char         name[SYMLEN]; /* Meaningful name for this proc     	 */
     STATE        state;     /* Entry state                          	 */
@@ -36,14 +75,15 @@ struct Function
     dword		 liveOut;	/* Registers that may be used in successors	 */
     boolT		 liveAnal;	/* Procedure has been analysed already		 */
 
-        /* Double-linked list */
-//    Function *next;
-//    Function *prev;
-public:
-    Function() : procEntry(0),depth(0),flg(0),cbParam(0),cfg(0),dfsLast(0),numBBs(0),
+    Function(void *ty=0) : procEntry(0),depth(0),flg(0),cbParam(0),cfg(0),dfsLast(0),numBBs(0),
         hasCase(false),liveIn(0),liveOut(0),liveAnal(0)//,next(0),prev(0)
     {
         memset(name,0,SYMLEN);
+    }
+public:
+    static Function *Create(void *ty=0,int Linkage=0,const std::string &nm="",void *module=0)
+    {
+        return new Function(ty);
     }
     void compoundCond();
     void writeProcComments();
@@ -66,7 +106,13 @@ public:
     void codeGen(std::ostream &fs);
     void displayStats();
     void mergeFallThrough(BB *pBB);
+    void structIfs();
+    void structLoops(derSeq *derivedG);
+    void buildCFG();
+    void controlFlowAnalysis();
+    void newRegArg(ICODE *picode, ICODE *ticode);
 protected:
+    void structCases();
     void findExps();
     void genDU1();
     void elimCondCodes();
@@ -74,4 +120,6 @@ protected:
     void findIdioms();
     void propLong();
     void genLiveKtes();
+    byte findDerivedSeq (derSeq *derivedGi);
+    bool nextOrderGraph(derSeq *derivedGi);
 };

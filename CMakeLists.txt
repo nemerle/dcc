@@ -1,15 +1,23 @@
-#CC = gcc -g -O -D__UNIX__
 PROJECT(dcc_original)
-cmake_minimum_required(VERSION 2.6)
-SET(CMAKE_BUILD_TYPE Debug)
-ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__)
-INCLUDE_DIRECTORIES(include  ${Boost_INCLUDE_DIRS})
+cmake_minimum_required(VERSION 2.8)
+
+ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS)
 if(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE)
     add_definitions(/W4)
 else()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall --std=c++0x")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_DEBUG ${CMAKE_CXX_FLAGS_DEBUG}"  )
 endif()
+
+FIND_PACKAGE(LLVM)
+FIND_PACKAGE(Boost)
+llvm_map_components_to_libraries(REQ_LLVM_LIBRARIES jit native)
+INCLUDE_DIRECTORIES(
+    include
+    ${Boost_INCLUDE_DIRS}
+    ${LLVM_INCLUDE_DIRS}
+)
 
 set(dcc_SOURCES
 src/dcc.cpp
@@ -60,4 +68,5 @@ set(dcc_HEADERS
     include/BasicBlock.h
 )
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
+TARGET_LINK_LIBRARIES(dcc_original ${REQ_LLVM_LIBRARIES})
 

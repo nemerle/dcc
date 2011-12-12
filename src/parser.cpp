@@ -48,7 +48,9 @@ void parse (CALL_GRAPH * *pcallGraph)
     state.checkStartup();
 
     /* Make a struct for the initial procedure */
-    pProcList.resize(1); // default-construct a Function object !
+
+    // default-construct a Function object !
+    pProcList.push_back(Function::Create());
     if (prog.offMain != -1)
     {
         /* We know where main() is. Start the flow of control from there */
@@ -558,14 +560,14 @@ boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *ps
     if (pIcode->ic.ll.flg & I)
     {
         /* Search procedure list for one with appropriate entry point */
-        std::list<Function>::iterator iter= std::find_if(pProcList.begin(),pProcList.end(),
+        ilFunction iter= std::find_if(pProcList.begin(),pProcList.end(),
             [pIcode](const Function &f) ->
             bool { return f.procEntry==pIcode->ic.ll.immed.op; });
 
         /* Create a new procedure node and save copy of the state */
         if (iter==pProcList.end())
         {
-            pProcList.push_back(Function());
+            pProcList.push_back(Function::Create());
             Function &x(pProcList.back());
             iter = (++pProcList.rbegin()).base();
             x.procEntry = pIcode->ic.ll.immed.op;
@@ -576,7 +578,6 @@ boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *ps
                 /* A library function. No need to do any more to it */
                 pcallGraph->insertCallGraph (this, iter);
                 iter = (++pProcList.rbegin()).base();
-
                 Icode.GetIcode(ip)->ic.ll.immed.proc.proc = &x;
                 return false;
             }

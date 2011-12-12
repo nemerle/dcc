@@ -321,16 +321,16 @@ boolT checkLongEq (LONG_STKID_TYPE longId, ICODE *pIcode, Int i, Int idx,
         if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
             *rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,
                                   idx, eUSE, off);
-        return (TRUE);
+        return true;
     }
     else if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
     {
         *lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx,
                               eDEF, off);
         *rhs = COND_EXPR::idLongIdx (i);
-        return (TRUE);
+        return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -358,15 +358,15 @@ boolT checkLongRegEq (LONGID_TYPE longId, ICODE *pIcode, Int i, Int idx,
         *lhs = COND_EXPR::idLongIdx (i);
         if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
             *rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  idx, eUSE, off);
-        return (TRUE);
+        return true;
     }
     else if ((longId.h == pmHsrc->regi) && (longId.l == pmLsrc->regi))
     {
         *lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx, eDEF, off);
         *rhs = COND_EXPR::idLongIdx (i);
-        return (TRUE);
+        return true;
     }
-    return (FALSE);
+    return false;
 }
 
 

@@ -16,8 +16,8 @@ static boolT isJCond (llIcode opcode)
  * high-level conditional jump icodes (iJB..iJG) */
 {
     if ((opcode >= iJB) && (opcode <= iJG))
-        return (TRUE);
-    return (FALSE);
+        return true;
+    return false;
 }
 
 
@@ -26,12 +26,12 @@ static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
 { BB * t, * e, * obb2;
 
     if (pbb->nodeType != TWO_BRANCH)
-        return (FALSE);
+        return false;
     t = pbb->edges[THEN].BBptr;
     e = pbb->edges[ELSE].BBptr;
 
     /* Check along the THEN path */
-    if ((t->length == 1) && (t->nodeType == TWO_BRANCH) && (t->numInEdges == 1))
+    if ((t->length == 1) && (t->nodeType == TWO_BRANCH) && (t->inEdges.size() == 1))
     {
         obb2 = t->edges[THEN].BBptr;
         if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&
@@ -39,13 +39,13 @@ static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
         {
             *off = obb2->start - i;
             *arc = THEN;
-            return (TRUE);
+            return true;
         }
     }
 
     /* Check along the ELSE path  */
     else if ((e->length == 1) && (e->nodeType == TWO_BRANCH) &&
-             (e->numInEdges == 1))
+             (e->inEdges.size() == 1))
     {
         obb2 = e->edges[THEN].BBptr;
         if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&
@@ -53,10 +53,10 @@ static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
         {
             *off = obb2->start - i;
             *arc = ELSE;
-            return (TRUE);
+            return true;
         }
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -68,9 +68,9 @@ static boolT isLong22 (ICODE * pIcode, ICODE * pEnd, Int *off)
             (isJCond ((pIcode+3)->ic.ll.opcode)))
     {
         *off = 2;
-        return (TRUE);
+        return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -101,17 +101,13 @@ static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
                                     }
                                     );
         tbb->inEdges.erase(newlast,tbb->inEdges.end());
-        tbb->numInEdges--;	/* looses 2 arcs, gains 1 arc */
-        tbb->inEdges.push_back(pbb);
-        assert(tbb->inEdges.size()==tbb->numInEdges);
+        tbb->inEdges.push_back(pbb); /* looses 2 arcs, gains 1 arc */
 
         /* Modify in edges of the ELSE basic block */
         tbb = pbb->edges[ELSE].BBptr;
         auto iter=std::find(tbb->inEdges.begin(),tbb->inEdges.end(),obb2);
         assert(iter!=tbb->inEdges.end());
-        tbb->inEdges.erase(iter);
-        tbb->numInEdges--;	/* looses 1 arc */       
-        assert(tbb->inEdges.size()==tbb->numInEdges);
+        tbb->inEdges.erase(iter); /* looses 1 arc */
         /* Update icode index */
         (*idx) += 5;
     }
@@ -127,9 +123,7 @@ static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
         /* Modify in edges of target basic block */
         auto iter=std::find(tbb->inEdges.begin(),tbb->inEdges.end(),obb2);
         assert(iter!=tbb->inEdges.end());
-        tbb->inEdges.erase(iter);
-        tbb->numInEdges--;	/* looses 1 arc */
-        assert(tbb->inEdges.size()==tbb->numInEdges);
+        tbb->inEdges.erase(iter); /* looses 1 arc */
 
         /* Modify in edges of the ELSE basic block */
         tbb = obb2->edges[ELSE].BBptr;
@@ -140,9 +134,7 @@ static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
                                     }
                                     );
         tbb->inEdges.erase(newlast,tbb->inEdges.end());
-        tbb->numInEdges--;	/* looses 2 arcs, gains 1 arc */
-        tbb->inEdges.push_back(pbb);
-        assert(tbb->inEdges.size()==tbb->numInEdges);
+        tbb->inEdges.push_back(pbb); /* looses 2 arcs, gains 1 arc */
 
         /* Modify out edge of header basic block */
         pbb->edges[ELSE].BBptr = tbb;
@@ -154,7 +146,7 @@ static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
     /* Create new HLI_JCOND and condition */
     lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[(pIcode+off+1)->ic.ll.opcode-iJB]);
     (pIcode+1)->setJCond(lhs);
-    copyDU (pIcode+1, pIcode, eUSE, eUSE);
+    (pIcode+1)->copyDU(*pIcode, eUSE, eUSE);
     (pIcode+1)->du.use |= (pIcode+off)->du.use;
 
     /* Update statistics */
@@ -181,7 +173,7 @@ static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
     /* Form conditional expression */
     lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[(pIcode+3)->ic.ll.opcode - iJB]);
     (pIcode+1)->setJCond(lhs);
-    copyDU (pIcode+1, pIcode, eUSE, eUSE);
+    (pIcode+1)->copyDU (*pIcode, eUSE, eUSE);
     (pIcode+1)->du.use |= (pIcode+2)->du.use;
 
     /* Adjust outEdges[0] to the new target basic block */
@@ -200,11 +192,8 @@ static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
         assert(iter!=tbb->inEdges.end());
         tbb->inEdges.erase(iter);
 
-        if ((pIcode+3)->ic.ll.opcode == iJE)
-            tbb->numInEdges--;	/* looses 1 arc */
-        else					/* iJNE => replace arc */
-            tbb->inEdges.push_back(pbb);
-        assert(tbb->inEdges.size()==tbb->numInEdges);
+        if ((pIcode+3)->ic.ll.opcode != iJE)
+            tbb->inEdges.push_back(pbb); /* iJNE => replace arc */
 
         /* Modify ELSE out edge of header basic block */
         tbb = obb1->edges[ELSE].BBptr;
@@ -215,9 +204,8 @@ static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
         tbb->inEdges.erase(iter);
         if ((pIcode+3)->ic.ll.opcode == iJE)	/* replace */
             tbb->inEdges.push_back(pbb);
-        else
-            tbb->numInEdges--;		/* iJNE => looses 1 arc */
-        assert(tbb->inEdges.size()==tbb->numInEdges);
+//        else
+//            tbb->numInEdges--;		/* iJNE => looses 1 arc */
 
 
         /* Update statistics */
@@ -493,7 +481,7 @@ static void propLongReg (Int i, ID *pLocId, Function * pProc)
                         lhs = COND_EXPR::boolOp (lhs, rhs,
                                            condOpJCond[(pIcode+1)->ic.ll.opcode - iJB]);
                         (pIcode+1)->setJCond(lhs);
-                        copyDU (pIcode+1, pIcode, eUSE, eUSE);
+                        (pIcode+1)->copyDU(*pIcode, eUSE, eUSE);
                         pIcode->invalidate();
                     }
                 }

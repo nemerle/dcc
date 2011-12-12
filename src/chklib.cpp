@@ -505,7 +505,8 @@ boolT LibCheck(Function & pProc)
                             /*** other types are not considered yet ***/
                     }
                 }
-                if (pFunc[i].bVararg) pProc.flg |= PROC_VARARG;
+                if (pFunc[i].bVararg)
+                    pProc.flg |= PROC_VARARG;
             }
         }
         else if (i == NIL)
@@ -707,7 +708,7 @@ void STATE::checkStartup()
         else if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainCompact,
                                sizeof(pattMainCompact), &i))
         {
-            rel = LHS(&prog.Image[i+OFFMAINCOMPACT]);/* This is the rel addr of main */
+            rel = LH_SIGNED(&prog.Image[i+OFFMAINCOMPACT]);/* This is the rel addr of main */
             prog.offMain = i+OFFMAINCOMPACT+2+rel;  /* Save absolute image offset */
             prog.segMain = prog.initCS;
             chModel = 'c';                          /* Compact model */
@@ -724,14 +725,14 @@ void STATE::checkStartup()
         else if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainSmall,
                                sizeof(pattMainSmall), &i))
         {
-            rel = LHS(&prog.Image[i+OFFMAINSMALL]); /* This is rel addr of main */
+            rel = LH_SIGNED(&prog.Image[i+OFFMAINSMALL]); /* This is rel addr of main */
             prog.offMain = i+OFFMAINSMALL+2+rel;    /* Save absolute image offset */
             prog.segMain = prog.initCS;
             chModel = 's';                          /* Small model */
         }
         else if (memcmp(&prog.Image[startOff], pattTPasStart, sizeof(pattTPasStart)) == 0)
         {
-            rel = LHS(&prog.Image[startOff+1]);     /* Get the jump offset */
+            rel = LH_SIGNED(&prog.Image[startOff+1]);     /* Get the jump offset */
             prog.offMain = rel+startOff+3;          /* Save absolute image offset */
             prog.offMain += 0x20;                   /* These first 32 bytes are setting up */
             prog.segMain = prog.initCS;

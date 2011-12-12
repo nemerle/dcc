@@ -8,6 +8,7 @@
 #pragma once
 #include <vector>
 #include <algorithm>
+#include "icode.h"
 /* Type definition */
 struct IDX_ARRAY : public std::vector<int>
 {
@@ -111,7 +112,9 @@ struct LOCAL_ID
     std::vector<ID> id_arr;
 public:
     LOCAL_ID()
-    {}
+    {
+        id_arr.reserve(256);
+    }
     Int newByteWordReg(hlType t, byte regi);
     Int newByteWordStk(hlType t, Int off, byte regOff);
     Int newIntIdx(int16 seg, int16 off, byte regi, Int ix, hlType t);

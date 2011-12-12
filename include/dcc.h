@@ -3,7 +3,7 @@
  * (C) Cristina Cifuentes, Mike van Emmerik
  ****************************************************************************/
 #pragma once
-
+#include <llvm/ADT/ilist.h>
 #include "types.h"
 #include "ast.h"
 #include "icode.h"
@@ -13,8 +13,11 @@
 #include "bundle.h"
 #include "Procedure.h"
 #include "BasicBlock.h"
-typedef std::list<Function> lFunction;
-typedef std::list<Function>::iterator ilFunction;
+
+typedef llvm::iplist<Function> FunctionListType;
+typedef FunctionListType lFunction;
+typedef lFunction::iterator ilFunction;
+
 
 /* SYMBOL TABLE */
 struct SYM {
@@ -50,7 +53,8 @@ public:
         void insertArc(ilFunction newProc);
 };
 #define NUM_PROCS_DELTA		5		/* delta # procs a proc invokes		 	*/
-extern std::list<Function> pProcList;
+//extern std::list<Function> pProcList;
+extern FunctionListType pProcList;
 extern CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
 extern bundle cCode;			/* Output C procedure's declaration and code */
 
@@ -179,7 +183,6 @@ boolT   LibCheck(Function &p);                            /* chklib.c     */
 
 /* Exported functions from procs.c */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
-void 	newRegArg (Function *, ICODE *, ICODE *);
 boolT 	newStkArg (ICODE *, COND_EXPR *, llIcode, Function *);
 void	allocStkArgs (ICODE *, Int);
 void	placeStkArg (ICODE *, COND_EXPR *, Int);
@@ -190,7 +193,6 @@ void	  removeRegFromLong (byte, LOCAL_ID *, COND_EXPR *);
 std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, Int *);
 Int       hlTypeSize (const COND_EXPR *, Function *);
 hlType	  expType (const COND_EXPR *, Function *);
-void	  copyDU (ICODE *, const ICODE *, operDu, operDu);
 boolT	  insertSubTreeReg (COND_EXPR *, COND_EXPR **, byte, LOCAL_ID *);
 boolT	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, Int);
 //COND_EXPR *concatExps (SEQ_COND_EXPR *, COND_EXPR *, condNodeType);
@@ -202,7 +204,6 @@ Int       numElemExpStk();
 boolT	  emptyExpStk();
 
 /* Exported functions from hlicode.c */
-boolT	removeDefRegi (byte, ICODE *, Int, LOCAL_ID *);
 std::string writeCall (Function *, STKFRAME *, Function *, Int *);
 char 	*write1HlIcode (HLTYPE, Function *, Int *);
 char 	*writeJcond (HLTYPE, Function *, Int *);
