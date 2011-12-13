@@ -35,24 +35,21 @@ static boolT isLong23 (Int i, BB * pbb, Int *off, Int *arc)
     if ((t->length == 1) && (t->nodeType == TWO_BRANCH) && (t->inEdges.size() == 1))
     {
         obb2 = t->edges[THEN].BBptr;
-        if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&
-                (obb2->front().ic.ll.opcode == iCMP))
+        if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ic.ll.opcode == iCMP))
         {
-            *off = obb2->start - i;
+            *off = obb2->front().loc_ip - i;
             *arc = THEN;
             return true;
         }
     }
 
     /* Check along the ELSE path  */
-    else if ((e->length == 1) && (e->nodeType == TWO_BRANCH) &&
-             (e->inEdges.size() == 1))
+    else if ((e->length == 1) && (e->nodeType == TWO_BRANCH) && (e->inEdges.size() == 1))
     {
         obb2 = e->edges[THEN].BBptr;
-        if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&
-                (obb2->front().ic.ll.opcode == iCMP))
+        if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ic.ll.opcode == iCMP))
         {
-            *off = obb2->start - i;
+            *off = obb2->front().loc_ip - i;
             *arc = ELSE;
             return true;
         }
@@ -178,7 +175,7 @@ static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode, Int *id
 
     /* Adjust outEdges[0] to the new target basic block */
     pbb = pIcode->inBB;
-    if ((pbb->start + pbb->length - 1) == (*idx + 1))
+    if (pbb->back().loc_ip == (*idx + 1))
     {
         /* Find intermediate and target basic blocks */
         obb1 = pbb->edges[THEN].BBptr;

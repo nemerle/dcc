@@ -55,67 +55,59 @@ static COND_EXPR *dstIdent (ICODE * pIcode, Function * pProc, Int i, ICODE * duI
 /* Eliminates all condition codes and generates new hlIcode instructions */
 void Function::elimCondCodes ()
 {
-    Int i,
-            useAt,            /* Index to instruction that used flag    */
-            defAt;            /* Index to instruction that defined flag */
-    byte use;             /* Used flags bit vector                  */
-    byte def;             /* Defined flags bit vector               */
-    boolT notSup;         /* Use/def combination not supported      */
-    COND_EXPR *rhs;       /* Source operand                         */
-    COND_EXPR *lhs;       /* Destination operand                    */
-    COND_EXPR *exp;       /* Boolean expression                     */
-    BB * pBB;              /* Pointer to BBs in dfs last ordering    */
-    ICODE *prev;          /* For extended basic blocks - previous icode inst */
+    Int i;
 
+    byte use;           /* Used flags bit vector                  */
+    byte def;           /* Defined flags bit vector               */
+    boolT notSup;       /* Use/def combination not supported      */
+    COND_EXPR *rhs;     /* Source operand                         */
+    COND_EXPR *lhs;     /* Destination operand                    */
+    COND_EXPR *exp;     /* Boolean expression                     */
+    BB * pBB;           /* Pointer to BBs in dfs last ordering    */
+    riICODE useAt;      /* Instruction that used flag    */
+    riICODE defAt;      /* Instruction that defined flag */
     for (i = 0; i < numBBs; i++)
     {
         pBB = dfsLast[i];
-        if (pBB->flg & INVALID_BB)	continue; /* Do not process invalid BBs */
+        if (pBB->flg & INVALID_BB)
+            continue; /* Do not process invalid BBs */
 
-        for (useAt = pBB->start + pBB->length; useAt != pBB->start; useAt--)
-            if ((Icode.GetIcode(useAt-1)->type == LOW_LEVEL) &&
-                (Icode.GetIcode(useAt-1)->invalid == FALSE) &&
-                (use = Icode.GetIcode(useAt-1)->ic.ll.flagDU.u))
+        for (useAt = pBB->rbegin2(); useAt != pBB->rend2(); useAt++)
+        {
+            if ((useAt->type == LOW_LEVEL) &&
+                    (useAt->invalid == FALSE) &&
+                    (use = useAt->ic.ll.flagDU.u))
             {
                 /* Find definition within the same basic block */
-                for (defAt = useAt-1; defAt != pBB->start; defAt--)
+                for (defAt = useAt+1; defAt != pBB->rend2(); defAt++)
                 {
-                    def = Icode.GetIcode(defAt-1)->ic.ll.flagDU.d;
+                    def = defAt->ic.ll.flagDU.d;
                     if ((use & def) == use)
                     {
                         notSup = FALSE;
-                        if ((Icode.GetLlOpcode(useAt-1) >= iJB) &&
-                            (Icode.GetLlOpcode(useAt-1) <= iJNS))
+                        if ((useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
                         {
-                            switch (Icode.GetLlOpcode(defAt-1))
+                            switch (defAt->GetLlOpcode())
                             {
                                 case iCMP:
-                                    rhs = srcIdent (Icode.GetIcode(defAt-1),
-                                                    this, defAt-1,
-                                                    Icode.GetIcode(useAt-1), eUSE);
-                                    lhs = dstIdent (Icode.GetIcode(defAt-1),
-                                                    this, defAt-1,
-                                                    Icode.GetIcode(useAt-1), eUSE);
+                                    rhs = srcIdent (&(*defAt), this, defAt->loc_ip,&(*useAt), eUSE);
+                                    lhs = dstIdent (&(*defAt), this, defAt->loc_ip,&(*useAt), eUSE);
                                     break;
 
                                 case iOR:
-                                    lhs = Icode.GetIcode(defAt-1)->ic.hl.oper.asgn.lhs->clone();
-                                    Icode[useAt-1].copyDU(Icode[defAt-1], eUSE, eDEF);
-                                    if (Icode.GetLlFlag(defAt-1) & B)
+                                    lhs = defAt->ic.hl.oper.asgn.lhs->clone();
+                                    useAt->copyDU(*defAt, eUSE, eDEF);
+                                    if (defAt->isLlFlag(B))
                                         rhs = COND_EXPR::idKte (0, 1);
                                     else
                                         rhs = COND_EXPR::idKte (0, 2);
                                     break;
 
                                 case iTEST:
-                                    rhs = srcIdent (Icode.GetIcode(defAt-1),
-                                                    this, defAt-1,
-                                                    Icode.GetIcode(useAt-1), eUSE);
-                                    lhs = dstIdent (Icode.GetIcode(defAt-1),
-                                                    this, defAt-1,
-                                                    Icode.GetIcode(useAt-1), eUSE);
+                                    rhs = srcIdent (&(*defAt),this, defAt->loc_ip,&(*useAt), eUSE);
+                                    lhs = dstIdent (&(*defAt),this, defAt->loc_ip,&(*useAt), eUSE);
                                     lhs = COND_EXPR::boolOp (lhs, rhs, AND);
-                                    if (Icode.GetLlFlag(defAt-1) & B)
+                                    if (defAt->isLlFlag(B))
                                         rhs = COND_EXPR::idKte (0, 1);
                                     else
                                         rhs = COND_EXPR::idKte (0, 2);
@@ -123,31 +115,29 @@ void Function::elimCondCodes ()
 
                                 default:
                                     notSup = TRUE;
-                                    reportError (JX_NOT_DEF, Icode.GetLlOpcode(defAt-1));
+                                    reportError (JX_NOT_DEF, defAt->GetLlOpcode());
                                     flg |= PROC_ASM;		/* generate asm */
                             }
                             if (! notSup)
                             {
                                 exp = COND_EXPR::boolOp (lhs, rhs,
-                                                   condOpJCond[Icode.GetLlOpcode(useAt-1)-iJB]);
-                                Icode.GetIcode(useAt-1)->setJCond(exp);
+                                                         condOpJCond[useAt->GetLlOpcode()-iJB]);
+                                useAt->setJCond(exp);
                             }
                         }
 
-                        else if (Icode.GetLlOpcode(useAt-1) == iJCXZ)
+                        else if (useAt->GetLlOpcode() == iJCXZ)
                         {
                             lhs = COND_EXPR::idReg (rCX, 0, &localId);
-                            Icode.GetIcode(useAt-1)->setRegDU (rCX, eUSE);
+                            useAt->setRegDU (rCX, eUSE);
                             rhs = COND_EXPR::idKte (0, 2);
                             exp = COND_EXPR::boolOp (lhs, rhs, EQUAL);
-                            Icode.GetIcode(useAt-1)->setJCond(exp);
+                            useAt->setJCond(exp);
                         }
 
                         else
                         {
-                            reportError (NOT_DEF_USE,
-                                         Icode.GetLlOpcode(defAt-1),
-                                         Icode.GetLlOpcode(useAt-1));
+                            reportError (NOT_DEF_USE,defAt->GetLlOpcode(),useAt->GetLlOpcode());
                             flg |= PROC_ASM;		/* generate asm */
                         }
                         break;
@@ -155,26 +145,25 @@ void Function::elimCondCodes ()
                 }
 
                 /* Check for extended basic block */
-                if ((pBB->length == 1) &&
-                    (Icode.GetLlOpcode(useAt-1) >= iJB) &&
-                    (Icode.GetLlOpcode(useAt-1) <= iJNS))
+                if ((pBB->length == 1) &&(useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
                 {
-                    ICODE & prev(pBB->back());
+                    ICODE & prev(pBB->back()); /* For extended basic blocks - previous icode inst */
                     if (prev.ic.hl.opcode == HLI_JCOND)
                     {
                         exp = prev.ic.hl.oper.exp->clone();
-                        exp->changeBoolOp (condOpJCond[Icode.GetLlOpcode(useAt-1)-iJB]);
-                        Icode[useAt-1].copyDU(prev, eUSE, eUSE);
-                        Icode[useAt-1].setJCond(exp);
+                        exp->changeBoolOp (condOpJCond[useAt->GetLlOpcode()-iJB]);
+                        useAt->copyDU(prev, eUSE, eUSE);
+                        useAt->setJCond(exp);
                     }
                 }
                 /* Error - definition not found for use of a cond code */
-                else if (defAt == pBB->start)
+                else if (defAt == pBB->rend2())
                 {
-                    reportError(DEF_NOT_FOUND,Icode.GetLlOpcode(useAt-1));
+                    reportError(DEF_NOT_FOUND,useAt->GetLlOpcode());
                     //fatalError (DEF_NOT_FOUND, Icode.GetLlOpcode(useAt-1));
                 }
             }
+        }
     }
 }
 
@@ -219,8 +208,8 @@ void Function::liveRegAnalysis (dword in_liveOut)
     Int i, j;
     BB * pbb=0;              /* pointer to current basic block   */
     Function * pcallee;        /* invoked subroutine               */
-    ICODE  *ticode,        /* icode that invokes a subroutine  */
-            *picode;		/* icode of function return			*/
+    ICODE  *ticode        /* icode that invokes a subroutine  */
+            ;
     dword prevLiveOut,	/* previous live out 				*/
             prevLiveIn;		/* previous live in					*/
     boolT change;			/* is there change in the live sets?*/
@@ -244,7 +233,7 @@ void Function::liveRegAnalysis (dword in_liveOut)
             prevLiveOut = pbb->liveOut;
 
             /* liveOut(b) = U LiveIn(s); where s is successor(b)
-         * liveOut(b) = {liveOut}; when b is a HLI_RET node     */
+             * liveOut(b) = {liveOut}; when b is a HLI_RET node     */
             if (pbb->edges.empty())      /* HLI_RET node         */
             {
                 pbb->liveOut = in_liveOut;
@@ -252,10 +241,9 @@ void Function::liveRegAnalysis (dword in_liveOut)
                 /* Get return expression of function */
                 if (flg & PROC_IS_FUNC)
                 {
-                    picode = Icode.GetIcode(pbb->start + pbb->length - 1);
+                    auto picode = pbb->rbegin2(); /* icode of function return */
                     if (picode->ic.hl.opcode == HLI_RET)
                     {
-                        assert(pbb->back().loc_ip == pbb->start+pbb->length-1);
                         picode->ic.hl.oper.exp = COND_EXPR::idID (&retVal, &localId, pbb->back().loc_ip);
                         picode->du.use = in_liveOut;
                     }
@@ -269,8 +257,8 @@ void Function::liveRegAnalysis (dword in_liveOut)
                 /* propagate to invoked procedure */
                 if (pbb->nodeType == CALL_NODE)
                 {
-                    ticode = Icode.GetIcode(pbb->start + pbb->length - 1);
-                    pcallee = ticode->ic.hl.oper.call.proc;
+                    ICODE &ticode(pbb->back());
+                    pcallee = ticode.ic.hl.oper.call.proc;
 
                     /* user/runtime routine */
                     if (! (pcallee->flg & PROC_ISLIB))
@@ -292,17 +280,17 @@ void Function::liveRegAnalysis (dword in_liveOut)
                     {
                         switch (pcallee->retVal.type) {
                             case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
-                                ticode->du1.numRegsDef = 2;
+                                ticode.du1.numRegsDef = 2;
                                 break;
                             case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
                             case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
-                                ticode->du1.numRegsDef = 1;
+                                ticode.du1.numRegsDef = 1;
                                 break;
                         } /*eos*/
 
                         /* Propagate def/use results to calling icode */
-                        ticode->du.use = pcallee->liveIn;
-                        ticode->du.def = pcallee->liveOut;
+                        ticode.du.use = pcallee->liveIn;
+                        ticode.du.def = pcallee->liveOut;
                     }
                 }
             }
@@ -338,8 +326,8 @@ void Function::liveRegAnalysis (dword in_liveOut)
 void Function::genDU1 ()
 {
     byte regi;            /* Register that was defined */
-    Int i, j, k, p, n, lastInst, defRegIdx, useIdx;
-    ICODE * picode, *ticode;/* Current and target bb    */
+    Int i,  k, defRegIdx, useIdx;
+    iICODE picode, ticode,lastInst;/* Current and target bb    */
     BB * pbb, *tbb;         /* Current and target basic block */
     boolT res;
     COND_EXPR *exp, *lhs;
@@ -353,10 +341,9 @@ void Function::genDU1 ()
         /* Process each register definition of a HIGH_LEVEL icode instruction.
          * Note that register variables should not be considered registers.
          */
-        lastInst = pbb->start + pbb->length;
-        for (j = pbb->start; j < lastInst; j++)
+        lastInst = pbb->end2();
+        for (picode = pbb->begin2(); picode != lastInst; picode++)
         {
-            picode = Icode.GetIcode(j);
             if (picode->type == HIGH_LEVEL)
             {
                 regi = 0;
@@ -369,34 +356,33 @@ void Function::genDU1 ()
                         picode->du1.regi[defRegIdx] = regi;
 
                         /* Check remaining instructions of the BB for all uses
-                     * of register regi, before any definitions of the
-                     * register */
+                         * of register regi, before any definitions of the
+                         * register */
                         if ((regi == rDI) && (flg & DI_REGVAR))
                             continue;
                         if ((regi == rSI) && (flg & SI_REGVAR))
                             continue;
-                        if ((j + 1) < lastInst)		/* several instructions */
+                        if ((picode + 1) != lastInst)		/* several instructions */
                         {
                             useIdx = 0;
-                            for (n = j+1; n < lastInst; n++)
+                            for (auto ricode = picode + 1; ricode != lastInst; ricode++)
                             {
+                                ticode=ricode;
                                 /* Only check uses of HIGH_LEVEL icodes */
-                                ticode = Icode.GetIcode(n);
-                                if (ticode->type == HIGH_LEVEL)
+                                if (ricode->type == HIGH_LEVEL)
                                 {
                                     /* if used, get icode index */
-                                    if (ticode->du.use & duReg[regi])
-                                        picode->du1.idx[defRegIdx][useIdx++] = n;
+                                    if (ricode->du.use & duReg[regi])
+                                        picode->du1.idx[defRegIdx][useIdx++] = ricode->loc_ip;
 
                                     /* if defined, stop finding uses for this reg */
-                                    if (ticode->du.def & duReg[regi])
+                                    if (ricode->du.def & duReg[regi])
                                         break;
                                 }
                             }
 
                             /* Check if last definition of this register */
-                            if ((! (ticode->du.def & duReg[regi])) &&
-                                (pbb->liveOut & duReg[regi]))
+                            if ((! (ticode->du.def & duReg[regi])) && (pbb->liveOut & duReg[regi]))
                                 picode->du.lastDefRegi |= duReg[regi];
                         }
                         else		/* only 1 instruction in this basic block */
@@ -415,14 +401,13 @@ void Function::genDU1 ()
                         {
                             tbb = pbb->edges[0].BBptr;
                             useIdx = 0;
-                            for (n = tbb->start; n < tbb->start + tbb->length; n++)
+                            for (ticode = tbb->begin2(); ticode != tbb->end2(); ticode++)
                             {
-                                ticode = Icode.GetIcode(n);
                                 if (ticode->type == HIGH_LEVEL)
                                 {
                                     /* if used, get icode index */
                                     if (ticode->du.use & duReg[regi])
-                                        picode->du1.idx[defRegIdx][useIdx++] = n;
+                                        picode->du1.idx[defRegIdx][useIdx++] = ticode->loc_ip;
 
                                     /* if defined, stop finding uses for this reg */
                                     if (ticode->du.def & duReg[regi])
@@ -458,12 +443,11 @@ void Function::genDU1 ()
                                 /* Backpatch any uses of this instruction, within
                                  * the same BB, if the instruction was invalidated */
                                 if (res == TRUE)
-                                    for (p = j; p > pbb->start; p--)
+                                    for (auto ticode = riICODE(picode); ticode != pbb->rend2(); ticode++)
                                     {
-                                        ticode = Icode.GetIcode(p-1);
-                                        for (n = 0; n < MAX_USES; n++)
+                                        for (int n = 0; n < MAX_USES; n++)
                                         {
-                                            if (ticode->du1.idx[0][n] == j)
+                                            if (ticode->du1.idx[0][n] == picode->loc_ip)
                                             {
                                                 if (n < MAX_USES - 1)
                                                 {

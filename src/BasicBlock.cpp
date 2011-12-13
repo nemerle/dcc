@@ -55,8 +55,7 @@ static const char *const s_loopType[] = {"noLoop", "while", "repeat", "loop", "f
 void BB::display()
 {
     printf("\nnode type = %s, ", s_nodeType[nodeType]);
-    printf("start = %ld, length = %ld, #out edges = %ld\n",
-           start, length, edges.size());
+    printf("start = %ld, length = %ld, #out edges = %ld\n", start, length, edges.size());
 
     for (int i = 0; i < edges.size(); i++)
         printf(" outEdge[%2d] = %ld\n",i, edges[i].BBptr->start);
@@ -385,4 +384,16 @@ size_t BB::size()
 ICODE &BB::front()
 {
     return Parent->Icode[start];
+}
+
+riICODE BB::rbegin2()
+{
+    riICODE res(Parent->Icode.begin()+start+length);
+    assert(res->loc_ip==back().loc_ip);
+    return res;
+}
+riICODE BB::rend2()
+{
+    riICODE res(Parent->Icode.begin()+start);
+    return res;
 }

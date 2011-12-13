@@ -289,7 +289,7 @@ BB *BB::rmJMP(Int marker, BB * pBB)
         {
             /* We are going around in circles */
             pBB->nodeType = NOWHERE_NODE;
-            pBB->front().ic.ll.immed.op = (dword)pBB->start;
+            pBB->front().ic.ll.immed.op = pBB->front().loc_ip;
             do {
                 pBB = pBB->edges[0].BBptr;
                 pBB->inEdges.pop_back(); // was --numInedges
@@ -315,7 +315,7 @@ BB *BB::rmJMP(Int marker, BB * pBB)
 void BB::mergeFallThrough( CIcodeRec &Icode)
 {
     BB *	pChild;
-    Int	i, _ip;
+    Int	i;
 
     if (!this)
     {
@@ -327,12 +327,16 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
         /* Jump to next instruction can always be removed */
         if (nodeType == ONE_BRANCH)
         {
-            _ip = start + length;
-            for (i = _ip; i < pChild->start && (Icode.GetLlFlag(i) & NO_CODE); i++);
-                if (i != pChild->start)
-                    break;
-            Icode.SetLlFlag(_ip - 1, NO_CODE);
-            Icode.SetLlInvalid(_ip - 1, TRUE);
+            assert(Parent==pChild->Parent);
+            if(back().loc_ip>pChild->front().loc_ip) // back edege
+                break;
+            auto iter=std::find_if(this->end2(),pChild->begin2(),[](ICODE &c)
+                {return not c.isLlFlag(NO_CODE);});
+
+            if (iter != pChild->begin2())
+                break;
+            back().SetLlFlag(NO_CODE);
+            back().invalidate();
             nodeType = FALL_NODE;
             length--;
 
@@ -342,8 +346,8 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             break;
 
         nodeType = pChild->nodeType;
-        length = pChild->start + pChild->length - start;
-        Icode.ClearLlFlag(pChild->start, TARGET);
+        length = (pChild->start - start) + pChild->length ;
+        pChild->front().ClrLlFlag(TARGET);
         edges.swap(pChild->edges);
 
         pChild->inEdges.clear();

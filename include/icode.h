@@ -327,6 +327,7 @@ struct DU1
     IC ic;/* intermediate code        */
     int loc_ip; // used by CICodeRec to number ICODEs
 
+    void  ClrLlFlag(dword flag) {ic.ll.flg &= ~flag;}
     void  SetLlFlag(dword flag) {ic.ll.flg |= flag;}
     dword GetLlFlag() {return ic.ll.flg;}
     bool isLlFlag(dword flg) {return (ic.ll.flg&flg)==flg;}
@@ -373,3 +374,4 @@ public:
     ICODE *	GetIcode(int ip);
 };
 typedef CIcodeRec::iterator iICODE;
+typedef CIcodeRec::reverse_iterator riICODE;

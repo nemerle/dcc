@@ -45,6 +45,8 @@ public:
     Int	   end();
     Int    rbegin();
     Int    rend();
+    riICODE rbegin2();
+    riICODE rend2();
     ICODE &front();
     ICODE &back();
     size_t size();
