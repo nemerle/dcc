@@ -344,7 +344,6 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
         nodeType = pChild->nodeType;
         length = pChild->start + pChild->length - start;
         Icode.ClearLlFlag(pChild->start, TARGET);
-        numOutEdges = pChild->numOutEdges;
         edges.swap(pChild->edges);
 
         pChild->inEdges.clear();

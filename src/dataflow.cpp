@@ -247,7 +247,7 @@ void Function::liveRegAnalysis (dword in_liveOut)
 
             /* liveOut(b) = U LiveIn(s); where s is successor(b)
          * liveOut(b) = {liveOut}; when b is a HLI_RET node     */
-            if (pbb->numOutEdges == 0)      /* HLI_RET node         */
+            if (pbb->edges.empty())      /* HLI_RET node         */
             {
                 pbb->liveOut = in_liveOut;
 
@@ -265,7 +265,7 @@ void Function::liveRegAnalysis (dword in_liveOut)
             }
             else                            /* Check successors */
             {
-                for (j = 0; j < pbb->numOutEdges; j++)
+                for (j = 0; j < pbb->edges.size(); j++)
                     pbb->liveOut |= pbb->edges[j].BBptr->liveIn;
 
                 /* propagate to invoked procedure */

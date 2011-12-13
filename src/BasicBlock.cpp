@@ -22,7 +22,6 @@ BB *BB::Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function *pare
     pnewBB->nodeType = nodeType;	/* Initialise */
     pnewBB->start = start;
     pnewBB->length = ip - start + 1;
-    pnewBB->numOutEdges = (byte)numOutEdges;
     pnewBB->immedDom = NO_DOM;
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
             pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
@@ -57,9 +56,9 @@ void BB::display()
 {
     printf("\nnode type = %s, ", s_nodeType[nodeType]);
     printf("start = %ld, length = %ld, #out edges = %ld\n",
-           start, length, numOutEdges);
+           start, length, edges.size());
 
-    for (int i = 0; i < numOutEdges; i++)
+    for (int i = 0; i < edges.size(); i++)
         printf(" outEdge[%2d] = %ld\n",i, edges[i].BBptr->start);
 }
 /*****************************************************************************
@@ -73,7 +72,7 @@ void BB::displayDfs()
 
     printf("node type = %s, ", s_nodeType[nodeType]);
     printf("start = %ld, length = %ld, #in-edges = %ld, #out-edges = %ld\n",
-           start, length, inEdges.size(), numOutEdges);
+           start, length, inEdges.size(), edges.size());
     printf("dfsFirst = %ld, dfsLast = %ld, immed dom = %ld\n",
            dfsFirstNum, dfsLastNum,
            immedDom == MAX ? -1 : immedDom);
@@ -94,7 +93,7 @@ void BB::displayDfs()
         printf ("  inEdge[%ld] = %ld\n", i, inEdges[i]->begin());
 
     /* Display out edges information */
-    for (i = 0; i < numOutEdges; i++)
+    for (i = 0; i < edges.size(); i++)
         if (nodeType == INTERVAL_NODE)
             printf(" outEdge[%ld] = %ld\n", i,
                    edges[i].BBptr->correspInt->numInt);
@@ -103,9 +102,12 @@ void BB::displayDfs()
     printf("----\n");
 
     /* Recursive call on successors of current node */
-    for (i = 0; i < numOutEdges; i++)
-        if (edges[i].BBptr->traversed != DFS_DISP)
-            edges[i].BBptr->displayDfs();
+    std::for_each(edges.begin(), edges.end(),
+    [](TYPEADR_TYPE &pb)
+    {
+        if (pb.BBptr->traversed != DFS_DISP)
+            pb.BBptr->displayDfs();
+    });
 }
 /* Recursive procedure that writes the code for the given procedure, pointed
  * to by pBB.

@@ -19,8 +19,10 @@ static Int      numInt;     /* Number of intervals      */
 
 #define nonEmpty(q)     (q != NULL)
 /* Returns whether the queue q is empty or not */
-
-#define trivialGraph(G)     (G->numOutEdges == 0)
+bool trivialGraph(BB *G)
+{
+    return G->edges.empty();
+}
 /* Returns whether the graph is a trivial graph or not */
 
 
@@ -297,7 +299,7 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
     curr = new_entry.Gi = bbs.front();
     for(auto curr=bbs.begin(); curr!=bbs.end(); ++curr)
     {
-        for (i = 0; i < (*curr)->numOutEdges; i++)
+        for (i = 0; i < (*curr)->edges.size(); i++)
         {
             BBnode = new_entry.Gi;    /* BB of an interval */
             TYPEADR_TYPE &edge=(*curr)->edges[i];

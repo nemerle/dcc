@@ -26,7 +26,7 @@ private:
     BB() : nodeType(0),traversed(0),start(0),length(0),
         numHlIcodes(0),flg(0),
         inEdges(0),
-        numOutEdges(0),edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
+        edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
         inInterval(0),correspInt(0),liveUse(0),def(0),liveIn(0),liveOut(0),
         dfsFirstNum(0),dfsLastNum(0),immedDom(0),ifFollow(0),loopType(0),latchNode(0),
         numBackEdges(0),loopHead(0),loopFollow(0),caseHead(0),caseTail(0),index(0)
@@ -37,24 +37,24 @@ private:
     //Int             numInEdges;     /* Number of in edges           */
 
 public:
-	Int    begin();
-	Int	   end();
-	Int    rbegin();
-	Int    rend();
-	ICODE &front();
-	ICODE &back();
-	size_t size();
+    Int    begin();
+    Int	   end();
+    Int    rbegin();
+    Int    rend();
+    ICODE &front();
+    ICODE &back();
+    size_t size();
     byte            nodeType;       /* Type of node                 */
     int             traversed;      /* Boolean: traversed yet?      */
     Int             start;          /* First instruction offset     */
     Int             length;         /* No. of instructions this BB  */
     Int             numHlIcodes;	/* No. of high-level icodes		*/
     flags32         flg;			/* BB flags						*/
-	
+
     /* In edges and out edges */
     std::vector<BB *> inEdges; // does not own held pointers
 
-    Int             numOutEdges;    /* Number of out edges          */
+    //Int             numOutEdges;    /* Number of out edges          */
     std::vector<TYPEADR_TYPE> edges;/* Array of ptrs. to out edges  */
 
     /* For interval construction */

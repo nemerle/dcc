@@ -127,7 +127,7 @@ static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
     nodeList::iterator p = loopNodes.begin();
     for( ;p != loopNodes.end();++p)
     {
-        for (j = 0; j < pProc->dfsLast[*p]->numOutEdges; j++)
+        for (j = 0; j < pProc->dfsLast[*p]->edges.size(); j++)
         {
             succ = pProc->dfsLast[*p]->edges[j].BBptr->dfsLastNum;
             if ((! inList(loopNodes, succ)) && (succ < head->loopFollow))
