@@ -20,26 +20,6 @@ void newBundle (bundle *)
 }
 
 
-/* Increments the size of the table strTab by deltaProcLines and copies all
- * the strings to the new table.        */
-static void incTableSize (strTable *strTab)
-{
-    strTab->resize(strTab->size()+deltaProcLines);
-}
-
-
-/* Appends the new line (in printf style) to the string table strTab.   */
-void appendStrTab (strTable *strTab, const char *format, ...)
-{
-    va_list args;
-    char buf[lineSize];
-    va_start (args, format);
-    vsprintf (buf, format, args);
-    strTab->push_back(buf);
-    va_end (args);
-}
-
-
 /* Returns the next available index into the table */
 Int nextBundleIdx (strTable *strTab)
 {
@@ -87,7 +67,7 @@ static void freeStrTab (strTable &strTab)
 
 void freeBundle (bundle *procCode)
 /* Deallocates the space taken by the bundle procCode */
-{ 
+{
     freeStrTab (procCode->decl);
     freeStrTab (procCode->code);
 }

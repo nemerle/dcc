@@ -128,7 +128,7 @@ void derSeq_Entry::findIntervals (Function *c)
         while ((h = pI->firstOfInt()) != NULL)
         {
             /* Check all immediate successors of h */
-            for (i = 0; i < h->numOutEdges; i++)
+            for (i = 0; i < h->edges.size(); i++)
             {
                 succ = h->edges[i].BBptr;
                 succ->inEdgeCount--;
@@ -273,12 +273,12 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
 
         /* Find out edges */
 
-        if (BBnode->numOutEdges > 0)
+        if (BBnode->edges.size() > 0)
         {
             for(auto iter=listIi.begin();iter!=listIi.end(); ++iter)
             {
                 curr = *iter;
-                for (j = 0; j < curr->numOutEdges; j++)
+                for (j = 0; j < curr->edges.size(); j++)
                 {
                     succ = curr->edges[j].BBptr;
                     if (succ->inInterval != curr->inInterval)

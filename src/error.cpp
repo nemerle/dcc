@@ -5,7 +5,7 @@
 
 #include "dcc.h"
 
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
 //#ifndef __UNIX__
 #if 1
@@ -17,10 +17,8 @@
 static const char *errorMessage[] = {
   "Invalid option -%c\n",                                   /* INVALID_ARG    */
   "Invalid instruction %02X at location %06lX\n",           /* INVALID_OPCODE */
-  "Don't understand 80386 instruction %02X at location %06lX\n",
-															/* INVALID_386OP  */
-  "Segment override with no memory operand at location %06lX\n",
-															/* FUNNY_SEGOVR   */
+  "Don't understand 80386 instruction %02X at location %06lX\n", /* INVALID_386OP  */
+  "Segment override with no memory operand at location %06lX\n", /* FUNNY_SEGOVR   */
   "REP prefix without a string instruction at location %06lX\n",/* FUNNY_REP */
   "Cannot open %s\n",                                       /* CANNOT_OPEN    */
   "Error while reading %s\n",                               /* CANNOT_READ    */
@@ -29,10 +27,9 @@ static const char *errorMessage[] = {
   "Failed to find a BB for jump to %ld in proc %s\n",    	/* NO_BB		  */
   "Basic Block is a synthetic jump\n",                /* INVALID_SYNTHETIC_BB */
   "Failed to find a BB for interval\n",                     /* INVALID_INT_BB */
-  "Instruction at location %06lX goes beyond loaded image\n",   
-															/* IP_OUT_OF_RANGE*/
+  "Instruction at location %06lX goes beyond loaded image\n", /* IP_OUT_OF_RANGE*/
   "Definition not found for condition code usage at opcode %d\n",
-															/* DEF_NOT_FOUND */
+                                                            /* DEF_NOT_FOUND */
   "JX use, definition not supported at opcode #%d\n",		/* JX_NOT_DEF */
   "Def - use not supported.  Def op = %d, use op = %d.\n",  /* NOT_DEF_USE */
   "Failed to construct repeat..until() condition.\n",		/* REPEAT_FAIL */

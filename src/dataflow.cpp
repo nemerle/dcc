@@ -171,8 +171,10 @@ void Function::elimCondCodes ()
                 }
                 /* Error - definition not found for use of a cond code */
                 else if (defAt == pBB->start)
-                    fatalError (DEF_NOT_FOUND,
-                                Icode.GetLlOpcode(useAt-1));
+                {
+                    reportError(DEF_NOT_FOUND,Icode.GetLlOpcode(useAt-1));
+                    //fatalError (DEF_NOT_FOUND, Icode.GetLlOpcode(useAt-1));
+                }
             }
     }
 }
@@ -591,7 +593,7 @@ static boolT xClear (COND_EXPR *rhs, Int f, Int t, Int lastBBinst, Function * pp
                 return true;
             /* else if (rhs->expr.ident.idType == LONG_VAR)
                         {
-missing all other identifiers ****
+                            missing all other identifiers ****
                         } */
 
         case BOOLEAN_OP:

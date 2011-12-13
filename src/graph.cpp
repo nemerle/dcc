@@ -67,7 +67,6 @@ CondJumps:
                     /* This is for jumps off into nowhere */
                     if (pIcode->ic.ll.flg & NO_LABEL)
                     {
-                        pBB->numOutEdges--;
                         pBB->edges.pop_back();
                     }
                     else
@@ -138,7 +137,7 @@ CondJumps:
     for (; iter!=heldBBs.end(); ++iter)
     {
         pBB = *iter;
-        for (i = 0; i < pBB->numOutEdges; i++)
+        for (i = 0; i < pBB->edges.size(); i++)
         {
             ip = pBB->edges[i].ip;
             if (ip >= SYNTHESIZED_MIN)
@@ -210,12 +209,12 @@ void Function::compressCFG()
         pBB = *iter;
         if(pBB->inEdges.empty() || (pBB->nodeType != ONE_BRANCH && pBB->nodeType != TWO_BRANCH))
             continue;
-        for (i = 0; i < pBB->numOutEdges; i++)
+        for (i = 0; i < pBB->edges.size(); i++)
         {
             ip   = pBB->rbegin();
             pNxt = rmJMP(this, ip, pBB->edges[i].BBptr);
 
-            if (pBB->numOutEdges)   /* Might have been clobbered */
+            if (not pBB->edges.empty())   /* Might have been clobbered */
             {
                 pBB->edges[i].BBptr = pNxt;
                 Icode.SetImmediateOp(ip, (dword)pNxt->begin());
@@ -241,8 +240,7 @@ void Function::compressCFG()
                 pBB->index = UN_INIT;
             else
             {
-                if (pBB->numOutEdges)
-                    pBB->edges.clear();
+                pBB->edges.clear();
                 delete pBB;
                 stats.numBBaft--;
             }
@@ -305,7 +303,6 @@ static BB * rmJMP(Function * pProc, Int marker, BB * pBB)
             } while (pBB->nodeType != NOWHERE_NODE);
 
             pBB->edges.clear();
-            pBB->numOutEdges = 0;
         }
     }
     return pBB;
@@ -350,14 +347,13 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
         numOutEdges = pChild->numOutEdges;
         edges.swap(pChild->edges);
 
-        pChild->numOutEdges = 0;
         pChild->inEdges.clear();
         pChild->edges.clear();
     }
     traversed = DFS_MERGE;
 
     /* Process all out edges recursively */
-    for (i = 0; i < numOutEdges; i++)
+    for (i = 0; i < edges.size(); i++)
         if (edges[i].BBptr->traversed != DFS_MERGE)
             edges[i].BBptr->mergeFallThrough(Icode);
 }
@@ -376,7 +372,7 @@ void BB::dfsNumbering(std::vector<BB *> &dfsLast, Int *first, Int *last)
     dfsFirstNum = (*first)++;
 
     /* index is being used as an index to inEdges[]. */
-    for (i = 0; i < numOutEdges; i++)
+    for (i = 0; i < edges.size(); i++)
     {
         pChild = edges[i].BBptr;
         pChild->inEdges[pChild->index++] = this;

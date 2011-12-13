@@ -346,7 +346,7 @@ static boolT successor (Int s, Int h, Function * pProc)
     BB * header;
 
     header = pProc->dfsLast[h];
-    for (i = 0; i < header->numOutEdges; i++)
+    for (i = 0; i < header->edges.size(); i++)
         if (header->edges[i].BBptr->dfsLastNum == s)
             return true;
     return false;
@@ -366,7 +366,7 @@ static void tagNodesInCase (BB * pBB, nodeList &l, Int head, Int tail)
     {
         insertList (l, current);
         pBB->caseHead = head;
-        for (i = 0; i < pBB->numOutEdges; i++)
+        for (i = 0; i < pBB->edges.size(); i++)
             if (pBB->edges[i].BBptr->traversed != DFS_CASE)
                 tagNodesInCase (pBB->edges[i].BBptr, l, head, tail);
     }
@@ -406,8 +406,11 @@ void Function::structCases()
                          * header field with caseHeader.           */
             insertList (caseNodes, i);
             dfsLast[i]->caseHead = i;
-            for (j = 0; j < caseHeader->numOutEdges; j++)
-                tagNodesInCase (caseHeader->edges[j].BBptr, caseNodes, i, exitNode);
+            std::for_each(caseHeader->edges.begin(),caseHeader->edges.end(),
+                         [&caseNodes, i, exitNode](TYPEADR_TYPE &pb)
+                         {tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);});
+//            for (j = 0; j < caseHeader->edges[j]; j++)
+//                tagNodesInCase (caseHeader->edges[j].BBptr, caseNodes, i, exitNode);
             if (exitNode != NO_NODE)
                 dfsLast[exitNode]->caseHead = i;
         }

@@ -14,7 +14,7 @@ def perform_test(exepath,filepath,outname)
 	filepath=path_local(filepath)
 	printf("calling:" + "#{exepath} -a1 -o#{output_path}.a1 #{filepath}\n")
 	result = `#{exepath} -a1 -o#{output_path}.a1 #{filepath}`
-	result = `#{exepath} -a2msc -o#{output_path}.a2 #{filepath}`
+	result = `#{exepath} -a2msc -V -o#{output_path}.a2 #{filepath}`
 	puts result
 	p $?
 end

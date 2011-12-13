@@ -15,7 +15,7 @@ static  word    *T1, *T2;   /* Pointers to T1[i], T2[i] */
 static  short   *g;         /* g[] */
 
 static  int     numEdges;   /* An edge counter */
-static  bool    *visited;   /* Array of bools: whether visited */
+//static  bool    *visited;   /* Array of bools: whether visited */
 
 /* Private prototypes */
 static void initGraph(void);
@@ -23,7 +23,7 @@ static void addToGraph(int e, int v1, int v2);
 static bool isCycle(void);
 static void duplicateKeys(int v1, int v2);
 PatternHasher g_pattern_hasher;
-                     
+
 void
 PatternHasher::init(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin,
                     int _NumVert)
@@ -39,36 +39,13 @@ PatternHasher::init(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin,
     NumVert  = _NumVert;
 
     /* Allocate the variable sized tables etc */
-    if ((T1base = (word *)malloc(EntryLen * SetSize * sizeof(word))) == 0)
-    {
-        goto BadAlloc;
-    }
-    if ((T2base = (word *)malloc(EntryLen * SetSize * sizeof(word))) == 0)
-    {
-        goto BadAlloc;
-    }
-
-    if ((graphNode = (int *)malloc((NumEntry*2 + 1) * sizeof(int))) == 0)
-    {
-        goto BadAlloc;
-    }
-    if ((graphNext = (int *)malloc((NumEntry*2 + 1) * sizeof(int))) == 0)
-    {
-        goto BadAlloc;
-    }
-    if ((graphFirst = (int *)malloc((NumVert + 1) * sizeof(int))) == 0)
-    {
-        goto BadAlloc;
-    }
-
-    if ((g = (short *)malloc((NumVert+1) * sizeof(short))) == 0)
-    {
-        goto BadAlloc;
-    }
-    if ((visited = (bool *)malloc((NumVert+1) * sizeof(bool))) == 0)
-    {
-        goto BadAlloc;
-    }
+    T1base = new word [EntryLen * SetSize];
+    T2base = new word [EntryLen * SetSize];
+    graphNode = new int [NumEntry*2 + 1];
+    graphNext = new int [NumEntry*2 + 1];
+    graphFirst = new int [NumVert + 1];
+    g = new short [NumVert + 1];
+//    visited = new bool [NumVert + 1];
     return;
 
 BadAlloc:
@@ -80,12 +57,13 @@ BadAlloc:
 void PatternHasher::cleanup(void)
 {
     /* Free the storage for variable sized tables etc */
-    if (T1base) free(T1base);
-    if (T2base) free(T2base);
-    if (graphNode) free(graphNode);
-    if (graphNext) free(graphNext);
-    if (graphFirst) free(graphFirst);
-    if (g) free(g);
+    delete [] T1base;
+    delete [] T2base;
+    delete [] graphNode;
+    delete [] graphNext;
+    delete [] graphFirst;
+    delete [] g;
+//    delete [] visited;
 }
 
 int PatternHasher::hash(byte *string)
