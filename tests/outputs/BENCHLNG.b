@@ -14,87 +14,87 @@ long LMOD@ (long arg0, int arg2, int arg3)
  * Pascal calling convention.
  */
 {
-        MOV            cx, 2
-        PUSH           bp
-        PUSH           si
-        PUSH           di
-        MOV            bp, sp
-        MOV            di, cx
-        MOV            ax, [bp+0Ah]
-        MOV            dx, [bp+0Ch]
-        MOV            bx, [bp+0Eh]
-        MOV            cx, [bp+10h]
-        CMP            cx, 0
-        JNE            L1
-        OR             dx, dx
-        JE             L2
-        OR             bx, bx
-        JE             L2
+                    MOV            cx, 2              
+                    PUSH           bp                 
+                    PUSH           si                 
+                    PUSH           di                 
+                    MOV            bp, sp             
+                    MOV            di, cx             
+                    MOV            ax, [bp+0Ah]       
+                    MOV            dx, [bp+0Ch]       
+                    MOV            bx, [bp+0Eh]       
+                    MOV            cx, [bp+10h]       
+                    CMP            cx, 0              
+                    JNE            L1                 
+                    OR             dx, dx             
+                    JE             L2                 
+                    OR             bx, bx             
+                    JE             L2                 
 
-L1:     TEST           di, 1
-        JNE            L3
-        OR             dx, dx
-        JNS            L4
-        NEG            dx
-        NEG            ax
-        SBB            dx, 0
-        OR             di, 0Ch
+               L1:  TEST           di, 1              
+                    JNE            L3                 
+                    OR             dx, dx             
+                    JNS            L4                 
+                    NEG            dx                 
+                    NEG            ax                 
+                    SBB            dx, 0              
+                    OR             di, 0Ch            
 
-L4:     OR             cx, cx
-        JNS            L3
-        NEG            cx
-        NEG            bx
-        SBB            cx, 0
-        XOR            di, 4
+               L4:  OR             cx, cx             
+                    JNS            L3                 
+                    NEG            cx                 
+                    NEG            bx                 
+                    SBB            cx, 0              
+                    XOR            di, 4              
 
-L3:     MOV            bp, cx
-        MOV            cx, 20h
-        PUSH           di
-        XOR            di, 0
-        XOR            si, 0
+               L3:  MOV            bp, cx             
+                    MOV            cx, 20h            
+                    PUSH           di                 
+                    XOR            di, 0              
+                    XOR            si, 0              
 
-L5:     SHL            ax, 1
-        RCL            dx, 1
-        RCL            si, 1
-        RCL            di, 1
-        CMP            di, bp
-        JB             L6
-        JA             L7
-        CMP            si, bx
-        JB             L6
+               L5:  SHL            ax, 1              
+                    RCL            dx, 1              
+                    RCL            si, 1              
+                    RCL            di, 1              
+                    CMP            di, bp             
+                    JB             L6                 
+                    JA             L7                 
+                    CMP            si, bx             
+                    JB             L6                 
 
-L7:     SUB            si, bx
-        SBB            di, bp
-        INC            ax
+               L7:  SUB            si, bx             
+                    SBB            di, bp             
+                    INC            ax                 
 
-L6:     LOOP           L5
-        POP            bx
-        TEST           bx, 2
-        JE             L8
-        MOV            ax, si
-        MOV            dx, di
-        SHR            bx, 1
+               L6:  LOOP           L5                 
+                    POP            bx                 
+                    TEST           bx, 2              
+                    JE             L8                 
+                    MOV            ax, si             
+                    MOV            dx, di             
+                    SHR            bx, 1              
 
-L8:     TEST           bx, 4
-        JE             L9
-        NEG            dx
-        NEG            ax
-        SBB            dx, 0
+               L8:  TEST           bx, 4              
+                    JE             L9                 
+                    NEG            dx                 
+                    NEG            ax                 
+                    SBB            dx, 0              
 
-L9:     POP            di
-        POP            si
-        POP            bp
-        RETF           8
+               L9:  POP            di                 
+                    POP            si                 
+                    POP            bp                 
+                    RETF           8                  
 
-L2:     MOV            tmp, dx:ax                     ;Synthetic inst
-        DIV            bx
-        MOD            bx                             ;Synthetic inst
-        TEST           di, 2
-        JE             L10
-        MOV            ax, dx
+               L2:  MOV            tmp, dx:ax         ;Synthetic inst
+                    DIV            bx                 
+                    MOD            bx                 ;Synthetic inst
+                    TEST           di, 2              
+                    JE             L10                
+                    MOV            ax, dx             
 
-L10:    XOR            dx, dx
-        JMP            L9
+               L10: XOR            dx, dx             
+                    JMP            L9                 
 }
 
 

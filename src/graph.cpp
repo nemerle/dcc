@@ -164,7 +164,7 @@ void Function::markImpure()
     {
         if (Icode.GetLlFlag(i) & (SYM_USE | SYM_DEF))
         {
-            psym = &symtab.sym[Icode.GetIcode(i)->ic.ll.caseTbl.numEntries];
+            psym = &symtab[Icode.GetIcode(i)->ic.ll.caseTbl.numEntries];
             for (int c = (Int)psym->label; c < (Int)psym->label+psym->size; c++)
             {
                 if (BITMAP(c, BM_CODE))

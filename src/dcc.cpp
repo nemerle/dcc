@@ -56,14 +56,14 @@ int main(int argc, char *argv[])
      * analysis, data flow etc. and outputs it to output file ready for
      * re-compilation.
     */
-        BackEnd(option.filename, callGraph);
+    BackEnd(option.filename, callGraph);
 
-        callGraph->write();
+    callGraph->write();
 
-        if (option.Stats)
-                displayTotalStats();
+    if (option.Stats)
+        displayTotalStats();
 
-/*
+    /*
     freeDataStructures(pProcList);
 */
     return 0;
@@ -77,62 +77,64 @@ static char *initargs(int argc, char *argv[])
     char *pc;
     progname = *argv;   /* Save invocation name for error messages */
 
-    while (--argc > 0 && (*++argv)[0] == '-') {
+    while (--argc > 0 && (*++argv)[0] == '-')
+    {
         for (pc = argv[0]+1; *pc; pc++)
-            switch (*pc) {
-            case 'a':       /* Print assembler listing */
-                if (*(pc+1) == '2')
-                    option.asm2 = TRUE;
-                else
-                    option.asm1 = TRUE;
-                if (*(pc+1) == '1' || *(pc+1) == '2')
-                    pc++;
-                break;
-                        case 'c':
-                                option.Calls = TRUE;
-                                break;
-            case 'i':
-                option.Interact = TRUE;
-                break;
-            case 'm':       /* Print memory map */
-                option.Map = TRUE;
-                break;
-            case 's':       /* Print Stats */
-                option.Stats = TRUE;
-                break;
-            case 'V':       /* Very verbose => verbose */
-                option.VeryVerbose = TRUE;
-            case 'v':       /* Make everything verbose */
-                option.verbose = TRUE;
-                break;
-            case 'o':       /* assembler output file */
-                if (*(pc+1)) {
-                    asm1_name = asm2_name = pc+1;
-                    goto NextArg;
-                }
-                else if (--argc > 0) {
-                    asm1_name = asm2_name = *++argv;
-                    goto NextArg;
-                }
-            default:
-                fatalError(INVALID_ARG, *pc);
-                return *argv;
+            switch (*pc)
+            {
+                case 'a':       /* Print assembler listing */
+                    if (*(pc+1) == '2')
+                        option.asm2 = TRUE;
+                    else
+                        option.asm1 = TRUE;
+                    if (*(pc+1) == '1' || *(pc+1) == '2')
+                        pc++;
+                    break;
+                case 'c':
+                    option.Calls = TRUE;
+                    break;
+                case 'i':
+                    option.Interact = TRUE;
+                    break;
+                case 'm':       /* Print memory map */
+                    option.Map = TRUE;
+                    break;
+                case 's':       /* Print Stats */
+                    option.Stats = TRUE;
+                    break;
+                case 'V':       /* Very verbose => verbose */
+                    option.VeryVerbose = TRUE;
+                case 'v':       /* Make everything verbose */
+                    option.verbose = TRUE;
+                    break;
+                case 'o':       /* assembler output file */
+                    if (*(pc+1)) {
+                        asm1_name = asm2_name = pc+1;
+                        goto NextArg;
+                    }
+                    else if (--argc > 0) {
+                        asm1_name = asm2_name = *++argv;
+                        goto NextArg;
+                    }
+                default:
+                    fatalError(INVALID_ARG, *pc);
+                    return *argv;
             }
-    NextArg:;
+NextArg:;
     }
 
     if (argc == 1)
-        {
+    {
         if (option.asm1 || option.asm2)
-                {
+        {
             if (! asm1_name)
-                        {
+            {
                 asm1_name = strcpy((char*)allocMem(strlen(*argv)+4), *argv);
                 pc = strrchr(asm1_name, '.');
                 if (pc > strrchr(asm1_name, '/'))
-                                {
+                {
                     *pc = '\0';
-                                }
+                }
                 asm2_name = (char*)allocMem(strlen(asm1_name)+4) ;
                 strcat(strcpy(asm2_name, asm1_name), ".a2");
                 unlink(asm2_name);
@@ -141,7 +143,7 @@ static char *initargs(int argc, char *argv[])
             unlink(asm1_name);  /* Remove asm output files */
         }
         return *argv;       /* filename of the program to decompile */
-   }
+    }
 
     fatalError(USAGE);
     return *argv;
@@ -151,11 +153,11 @@ static void
 displayTotalStats ()
 /* Displays final statistics for the complete program */
 {
-        printf ("\nFinal Program Statistics\n");
-        printf ("  Total number of low-level Icodes : %ld\n", stats.totalLL);
-        printf ("  Total number of high-level Icodes: %ld\n", stats.totalHL);
-        printf ("  Total reduction of instructions  : %2.2f%%\n", 100.0 -
-                        (stats.totalHL * 100.0) / stats.totalLL);
+    printf ("\nFinal Program Statistics\n");
+    printf ("  Total number of low-level Icodes : %ld\n", stats.totalLL);
+    printf ("  Total number of high-level Icodes: %ld\n", stats.totalHL);
+    printf ("  Total reduction of instructions  : %2.2f%%\n", 100.0 -
+            (stats.totalHL * 100.0) / stats.totalLL);
 }
 
 

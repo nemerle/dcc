@@ -28,7 +28,7 @@
 #include "symtab.h"
 
 #define TABLESIZE 16                /* Number of entries added each expansion */
-                                    /* Probably has to be a power of 2 */
+/* Probably has to be a power of 2 */
 #define STRTABSIZE 256              /* Size string table is inc'd by */
 #define NIL ((word)-1)
 using namespace std;
@@ -51,6 +51,10 @@ struct hash<SYMTABLE> : public unary_function<const SYMTABLE &,size_t>
 static  tableType curTableType; /* Which table is current */
 struct TABLEINFO_TYPE
 {
+    TABLEINFO_TYPE()
+    {
+        symTab=valTab=0;
+    }
     void    deleteVal(dword symOff, Function *symProc, boolT bSymToo);
     void create(tableType type);
     void destroy();
@@ -75,21 +79,16 @@ void TABLEINFO_TYPE::create(tableType type)
         case Comment:
             numEntry  = 0;
             tableSize = TABLESIZE;
-            valTab = (SYMTABLE*)allocMem(sizeof(SYMTABLE) * TABLESIZE);
+            valTab = new SYMTABLE [TABLESIZE];
             symTab = 0;
-            memset(valTab, 0, sizeof(SYMTABLE) * TABLESIZE);
             break;
         case Label:
             currentTabInfo.numEntry  = 0;
             currentTabInfo.tableSize = TABLESIZE;
-            currentTabInfo.symTab = (SYMTABLE*)allocMem(sizeof(SYMTABLE) * TABLESIZE);
-            memset(currentTabInfo.symTab, 0, sizeof(SYMTABLE) * TABLESIZE);
-
-            currentTabInfo.valTab = (SYMTABLE*)allocMem(sizeof(SYMTABLE) * TABLESIZE);
-            memset(currentTabInfo.valTab, 0, sizeof(SYMTABLE) * TABLESIZE);
+            currentTabInfo.symTab = new SYMTABLE [TABLESIZE];
+            currentTabInfo.valTab = new SYMTABLE [TABLESIZE];
             break;
     }
-
 }
 
 void createSymTables(void)
@@ -109,10 +108,6 @@ void createSymTables(void)
     strTabNext = 0;
     pStrTab = (char *)allocMem(STRTABSIZE);
 
-//    tableInfo[Label].symTab = currentTabInfo.symTab;
-//    tableInfo[Label].valTab = currentTabInfo.valTab;
-//    tableInfo[Label].numEntry = currentTabInfo.numEntry;
-//    tableInfo[Label].tableSize = currentTabInfo.tableSize;
     curTableType = Label;
 
 }
@@ -126,11 +121,8 @@ void selectTable(tableType tt)
 }
 void TABLEINFO_TYPE::destroy()
 {
-    if(symTab)
-        free(symTab);  // The symbol hashed label table
-    if(valTab)
-        free(valTab);  // And the value hashed label table
-
+    delete [] symTab; // The symbol hashed label table
+    delete [] valTab; // And the value hashed label table
 }
 void destroySymTables(void)
 {
@@ -141,7 +133,7 @@ void destroySymTables(void)
 }
 
 /* Using the value, read the symbolic name */
-boolT readVal(char *symName, dword symOff, Function * symProc)
+boolT readVal(std::ostringstream &symName, dword symOff, Function * symProc)
 {
     return false; // no symbolic names for now
 }

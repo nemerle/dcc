@@ -332,7 +332,7 @@ struct DU1
     bool isLlFlag(dword flg) {return (ic.ll.flg&flg)==flg;}
     llIcode GetLlOpcode() const { return ic.ll.opcode; }
 
-    void writeIntComment(char *s);
+    void writeIntComment(std::ostringstream &s);
     void setRegDU(byte regi, operDu du_in);
     void invalidate();
     void newCallHl();
@@ -343,7 +343,7 @@ struct DU1
     void setUnary(hlIcode op, COND_EXPR *exp);
     void setJCond(COND_EXPR *cexp);
     void emitGotoLabel(Int indLevel);
-	void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
+    void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
 public:
     boolT removeDefRegi(byte regi, Int thisDefIdx, LOCAL_ID *locId);
 };

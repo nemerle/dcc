@@ -146,14 +146,14 @@ static void writeGlobSymTable()
     char type[10];
     SYM * pSym;
 
-    if (symtab.csym)
+    if (not symtab.empty())
     {
         cCode.appendDecl( "/* Global variables */\n");
-        for (idx = 0; idx < symtab.csym; idx++)
+        for (idx = 0; idx < symtab.size(); idx++)
         {
-            pSym = &symtab.sym[idx];
-            if (symtab.sym[idx].duVal.isUSE_VAL())	/* first used */
-                printGlobVar (&(symtab.sym[idx]));
+            pSym = &symtab[idx];
+            if (symtab[idx].duVal.isUSE_VAL())	/* first used */
+                printGlobVar (&symtab[idx]);
             else {					/* first defined */
                 switch (pSym->size) {
                     case 1:  strcpy (type, "byte\t"); break;

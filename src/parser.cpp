@@ -90,12 +90,12 @@ void parse (CALL_GRAPH * *pcallGraph)
 static void updateSymType (dword symbol, hlType symType, Int size)
 { Int i;
 
-    for (i = 0; i < symtab.csym; i++)
-        if (symtab.sym[i].label == symbol)
+    for (i = 0; i < symtab.size(); i++)
+        if (symtab[i].label == symbol)
         {
-            symtab.sym[i].type = symType;
+            symtab[i].type = symType;
             if (size != 0)
-                symtab.sym[i].size = size;
+                symtab[i].size = size;
             break;
         }
 }
@@ -691,35 +691,34 @@ static SYM * updateGlobSym (dword operand, Int size, word duFlag)
 		Int i;
 
         /* Check for symbol in symbol table */
-        for (i = 0; i < symtab.csym; i++)
-            if (symtab.sym[i].label == operand) {
-                if (symtab.sym[i].size < size)
-                    symtab.sym[i].size = size;
+    for (i = 0; i < symtab.size(); i++)
+        if (symtab[i].label == operand)
+        {
+            if (symtab[i].size < size)
+                symtab[i].size = size;
                 break;
             }
 
         /* New symbol, not in symbol table */
-        if (i == symtab.csym) {
-            if (++symtab.csym > symtab.alloc) {
-                symtab.alloc += 5;
-                symtab.sym = (SYM *)reallocVar(symtab.sym, symtab.alloc * sizeof(SYM));
-                memset (&symtab.sym[i], 0, 5 * sizeof(SYM));
-            }
-            sprintf (symtab.sym[i].name, "var%05lX", operand);
-            symtab.sym[i].label = operand;
-            symtab.sym[i].size  = size;
-            symtab.sym[i].type = cbType[size];
+    if (i == symtab.size())
+    {
+        SYM v;
+        sprintf (v.name, "var%05lX", operand);
+        v.label = operand;
+        v.size  = size;
+        v.type = cbType[size];
             if (duFlag == eDuVal::USE)  /* must already have init value */
             {
-                symtab.sym[i].duVal.use =1; // USEVAL;
-                symtab.sym[i].duVal.val =1;
+            v.duVal.use =1; // USEVAL;
+            v.duVal.val =1;
             }
             else
             {
-                symtab.sym[i].duVal.setFlags(duFlag);
+            v.duVal.setFlags(duFlag);
             }
+        symtab.push_back(v);
         }
-        return (&symtab.sym[i]);
+    return (&symtab[i]);
 }
 
 
@@ -792,11 +791,12 @@ static SYM * lookupAddr (ICODEMEM *pm, STATE *pstate, Int size, word duFlag)
         else if (pstate->f[pm->seg]) {      /* new value */
             pm->segValue = pstate->r[pm->seg];
             operand = opAdr(pm->segValue, pm->off);
-            i = symtab.csym;
+            i = symtab.size();
             psym = updateGlobSym (operand, size, duFlag);
 
             /* Flag new memory locations that are segment values */
-            if (symtab.csym > i) {
+            if (symtab.size() > i)
+            {
                 if (size == 4)
                     operand += 2;   /* High word */
                 for (i = 0; i < prog.cReloc; i++)
@@ -939,7 +939,7 @@ static void use (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int 
         {
             setBits (BM_DATA, psym->label, (dword)size);
             pIcode->ic.ll.flg |= SYM_USE;
-            pIcode->ic.ll.caseTbl.numEntries = psym - symtab.sym;
+            pIcode->ic.ll.caseTbl.numEntries = psym - &symtab[0];
         }
     }
 
@@ -988,7 +988,7 @@ static void def (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int 
         {
             setBits(BM_DATA, psym->label, (dword)size);
             pIcode->ic.ll.flg |= SYM_DEF;
-            pIcode->ic.ll.caseTbl.numEntries = psym - symtab.sym;
+            pIcode->ic.ll.caseTbl.numEntries = psym - &symtab[0];
         }
     }
 

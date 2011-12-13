@@ -9,6 +9,8 @@
 #include <string.h>
 #include <malloc.h>		/* For free() */
 #include <vector>
+#include <sstream>
+#include <iomanip>
 #ifdef _CONSOLE
 #include <windows.h>	/* For console mode routines */
 #endif
@@ -122,24 +124,24 @@ static const char *szIndex[8] = {"bx+si", "bx+di", "bp+si", "bp+di", "si", "di",
 static const char *szBreg[8]  = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
 static const char *szWreg[12] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di",
                                   "es", "cs", "ss", "ds" };
-static const char *szPtr[2]   = { " word ptr ", " byte ptr " };
+static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 
 static void  dis1Line  (Int i, Int pass);
 void  dis1LineOp(Int i, boolT fWin, char attr, word *len, Function * pProc);
-static void  formatRM(char *p, flags32 flg, ICODEMEM* pm);
-static char *strDst(flags32 flg, ICODEMEM *pm);
-static char *strSrc(ICODE * pc);
+static void  formatRM(ostringstream &p, flags32 flg, ICODEMEM* pm);
+static ostringstream &strDst(ostringstream &os, flags32 flg, ICODEMEM *pm);
+static ostringstream &strSrc(ostringstream &os, ICODE *pc, bool skip_comma=false);
 static char *strHex(dword d);
 static Int   checkScanned(dword pcCur);
 static void  setProc(Function * proc);
 static void  dispData(word dataSeg);
-static void  flops(ICODE * pi);
+void flops(ICODE *pIcode,std::ostringstream &out);
 boolT callArg(word off, char *temp);  /* Check for procedure name */
 
 static  FILE   *fp;
 static  CIcodeRec pc;
-static  char    buf[200], *p;
+static std::ostringstream buf;
 static  Int     cb, j, numIcode, allocIcode, eop;
 static  vector<int> pl;
 static  dword   nextInst;
@@ -192,7 +194,7 @@ void disassem(Int pass, Function * ppProc)
     /* Open the output file (.a1 or .a2 only) */
     if (pass != 3)
     {
-        p = (pass == 1)? asm1_name: asm2_name;
+        auto p = (pass == 1)? asm1_name: asm2_name;
         fp = fopen(p, "a+");
         if (!fp)
         {
@@ -260,8 +262,12 @@ void disassem(Int pass, Function * ppProc)
  ****************************************************************************/
 static void dis1Line(Int i, Int pass)
 {
+    ostringstream oper_stream;
+    ostringstream hex_bytes;
+    ostringstream result_stream;
     ICODE * pIcode = &pc[i];
-
+    oper_stream << uppercase;
+    hex_bytes << uppercase;
     /* Disassembly stage 1 --
          * Do not try to display NO_CODE entries or synthetic instructions,
          * other than JMPs, that have been introduced for def/use analysis. */
@@ -275,10 +281,6 @@ static void dis1Line(Int i, Int pass)
     {
         return;
     }
-
-    /* p points to the current position in buf[] */
-    p = (char*)memset(buf, ' ', sizeof(buf));
-
     if (pIcode->ic.ll.flg & (TARGET | CASE))
     {
         if (pass == 3)
@@ -298,97 +300,91 @@ static void dis1Line(Int i, Int pass)
         /* Output hexa code in program image */
         if (pass != 3)
         {
-            for (j = 0; j < cb; j++, p += 2)
-                sprintf(p, "%02X", prog.Image[pIcode->ic.ll.label + j]);
-            *p = ' ';
+            for (j = 0; j < cb; j++)
+            {
+                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[pIcode->ic.ll.label + j]);
+            }
+            hex_bytes << ' ';
         }
     }
-
+    oper_stream << setw(POS_LAB) <<  left<< hex_bytes.str();
     /* Check if there is a symbol here */
     selectTable(Label);
-    if (readVal(&buf[POS_LAB], pIcode->ic.ll.label, 0))
+    oper_stream << setw(5)<<left; // align for the labels
     {
-        buf[strlen(buf)] = ':';             /* Also removes the null */
-    }
-
-    else if (pIcode->ic.ll.flg & TARGET)    /* Symbols override Lnn labels */
-    {   /* Print label */
-        if (! pl[i])
+        ostringstream lab_contents;
+        if (readVal(lab_contents, pIcode->ic.ll.label, 0))
         {
-            pl[i] = ++lab;
+            lab_contents << ':';             /* Also removes the null */
         }
-        if (pass == 3)
-            sprintf(buf, "L%ld", pl[i]);
-        else
-            sprintf(&buf[15], "L%ld", pl[i]);
-        buf[strlen(buf)] = ':';             /* Also removes the null */
+        else if (pIcode->ic.ll.flg & TARGET)    /* Symbols override Lnn labels */
+        {
+            /* Print label */
+            if (! pl[i])
+            {
+                pl[i] = ++lab;
+            }
+            lab_contents<< "L"<<pl[i]<<':';
+        }
+        oper_stream<< lab_contents.str();
     }
-
     if (pIcode->ic.ll.opcode == iSIGNEX && (pIcode->ic.ll.flg & B))
     {
         pIcode->ic.ll.opcode = iCBW;
     }
-
-    if (pass == 3)
-    {
-        strcpy (&buf[8], szOps[pIcode->ic.ll.opcode]);
-        buf[eop = strlen(buf)] = ' ';
-        p = buf + 8 + (POS_OPR - POS_OPC);
-    }
-    else
-    {
-        strcpy(&buf[POS_OPC], szOps[pIcode->ic.ll.opcode]);
-        buf[eop = strlen(buf)] = ' ';
-        p = buf + POS_OPR;
-    }
+    oper_stream << setw(15) << left <<szOps[pIcode->ic.ll.opcode];
 
     switch (pIcode->ic.ll.opcode)
     {
         case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
         case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-            strcpy(p, strDst(pIcode->ic.ll.flg, &pIcode->ic.ll.dst));
-            strcat(p, strSrc(pIcode));
+            strDst(oper_stream,pIcode->ic.ll.flg, &pIcode->ic.ll.dst);
+            strSrc(oper_stream,pIcode);
             break;
 
         case iESC:
-            flops(pIcode);
+            flops(pIcode,oper_stream);
             break;
 
         case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
         case iROR:
-            strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst));
-            strcat(p, (pIcode->ic.ll.flg & I)? strSrc(pIcode): ", cl");
+            strDst(oper_stream,pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst);
+            if(pIcode->ic.ll.flg & I)
+                strSrc(oper_stream,pIcode);
+            else
+                oper_stream<<", cl";
             break;
 
         case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-            strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst));
+            strDst(oper_stream,pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst);
             break;
 
         case iPUSH:
             if (pIcode->ic.ll.flg & I)
             {
-                strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+                oper_stream<<strHex(pIcode->ic.ll.immed.op);
+//                strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
             }
             else
             {
-                strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst));
+                strDst(oper_stream,pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst);
             }
             break;
 
         case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
             if (pIcode->ic.ll.flg & I)
             {
-                strcat(strcpy(p, strDst(pIcode->ic.ll.flg, &pIcode->ic.ll.dst)),", ");
-                formatRM(p + strlen(p), pIcode->ic.ll.flg, &pIcode->ic.ll.src);
-                strcat(p, strSrc(pIcode));
+                strDst(oper_stream,pIcode->ic.ll.flg, &pIcode->ic.ll.dst) <<", ";
+                formatRM(oper_stream, pIcode->ic.ll.flg, &pIcode->ic.ll.src);
+                strSrc(oper_stream,pIcode);
             }
             else
-                strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.src));
+                strDst(oper_stream,pIcode->ic.ll.flg | I, &pIcode->ic.ll.src);
             break;
 
         case iLDS:  case iLES:  case iBOUND:
-            strcpy(p, strDst(pIcode->ic.ll.flg, &pIcode->ic.ll.dst));
-            strcat(strcat(p, ", dword ptr"), strSrc(pIcode)+1);
+            strDst(oper_stream,pIcode->ic.ll.flg, &pIcode->ic.ll.dst)<<", dword ptr";
+            strSrc(oper_stream,pIcode,true);
             break;
 
         case iJB:  case iJBE:  case iJAE:  case iJA:
@@ -401,14 +397,15 @@ static void dis1Line(Int i, Int pass)
             /* Check if there is a symbol here */
             selectTable(Label);
             if ((pIcode->ic.ll.immed.op < (dword)numIcode) &&  /* Ensure in range */
-                    readVal(p+WID_PTR, pc[pIcode->ic.ll.immed.op].ic.ll.label, 0))
+                    readVal(oper_stream, pc[pIcode->ic.ll.immed.op].ic.ll.label, 0))
             {
                 break;                          /* Symbolic label. Done */
             }
 
             if (pIcode->ic.ll.flg & NO_LABEL)
             {
-                strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+                //strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+                oper_stream<<strHex(pIcode->ic.ll.immed.op);
             }
             else if (pIcode->ic.ll.flg & I)
             {
@@ -419,51 +416,48 @@ static void dis1Line(Int i, Int pass)
                 }
                 if (pIcode->ic.ll.opcode == iJMPF)
                 {
-                    sprintf(p, " far ptr L%ld", pl[j]);
+                    oper_stream<<" far ptr ";
                 }
-                else
-                {
-                    sprintf(p + WID_PTR, "L%ld", pl[j]);
-                }
+                oper_stream<<"L"<<pl[j];
             }
             else if (pIcode->ic.ll.opcode == iJMPF)
             {
-                strcat(strcpy(p-1, "dword ptr"), strSrc(pIcode)+1);
+                oper_stream<<"dword ptr";
+                strSrc(oper_stream,pIcode,true);
             }
             else
             {
-                strcpy(p, strDst(I, &pIcode->ic.ll.src));
+                strDst(oper_stream,I, &pIcode->ic.ll.src);
             }
             break;
 
         case iCALL: case iCALLF:
             if (pIcode->ic.ll.flg & I)
             {
-                sprintf(p, "%s ptr %s",(pIcode->ic.ll.opcode == iCALL) ?" near":"  far",(pIcode->ic.ll.immed.proc.proc)->name);
+                if((pIcode->ic.ll.opcode == iCALL))
+                    oper_stream<< "near";
+                else
+                    oper_stream<< " far";
+                oper_stream<<" ptr "<<(pIcode->ic.ll.immed.proc.proc)->name;
             }
             else if (pIcode->ic.ll.opcode == iCALLF)
             {
-                strcat(strcpy(p, "dword ptr"),strSrc(pIcode)+1);
+                oper_stream<<"dword ptr ";
+                strSrc(oper_stream,pIcode,true);
             }
             else
-            {
-                strcpy(p, strDst(I, &pIcode->ic.ll.src));
-            }
+                strDst(oper_stream,I, &pIcode->ic.ll.src);
             break;
 
         case iENTER:
-            strcat(strcpy(p + WID_PTR, strHex(pIcode->ic.ll.dst.off)), ", ");
-            strcat(p, strHex(pIcode->ic.ll.immed.op));
+            oper_stream<<strHex(pIcode->ic.ll.dst.off)<<", ";
+            oper_stream<<strHex(pIcode->ic.ll.immed.op);
             break;
 
         case iRET:  case iRETF:  case iINT:
             if (pIcode->ic.ll.flg & I)
             {
-                strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
-            }
-            else
-            {
-                buf[eop] = '\0';
+                oper_stream<<strHex(pIcode->ic.ll.immed.op);
             }
             break;
 
@@ -476,46 +470,47 @@ static void dis1Line(Int i, Int pass)
         case iOUTS:  case iREP_OUTS:
             if (pIcode->ic.ll.src.segOver)
             {
-                (pIcode->ic.ll.opcode == iOUTS || pIcode->ic.ll.opcode == iREP_OUTS)
-                        ? strcat(strcpy(p+WID_PTR,"dx, "), szPtr[pIcode->ic.ll.flg & B])
-                        : strcpy(&buf[eop+1], szPtr[pIcode->ic.ll.flg & B]);
+                bool is_dx_src=(pIcode->ic.ll.opcode == iOUTS || pIcode->ic.ll.opcode == iREP_OUTS);
+                if(is_dx_src)
+                    oper_stream<<"dx, "<<szPtr[pIcode->ic.ll.flg & B];
+                else
+                    oper_stream<<szPtr[pIcode->ic.ll.flg & B];
                 if (pIcode->ic.ll.opcode == iLODS ||
                         pIcode->ic.ll.opcode == iREP_LODS ||
                         pIcode->ic.ll.opcode == iOUTS ||
                         pIcode->ic.ll.opcode == iREP_OUTS)
                 {
-                    strcat(p, szWreg[pIcode->ic.ll.src.segOver-rAX]);
+                    oper_stream<<szWreg[pIcode->ic.ll.src.segOver-rAX];
                 }
                 else
                 {
-                    strcat(strcat(p, "es:[di], "),szWreg[pIcode->ic.ll.src.segOver - rAX]);
+                    oper_stream<<"es:[di], "<<szWreg[pIcode->ic.ll.src.segOver - rAX];
                 }
-                strcat(p, ":[si]");
+                oper_stream<<":[si]";
             }
-            else    strcpy(&buf[eop], (pIcode->ic.ll.flg & B)? "B": "W");
+            else
+                oper_stream<<(pIcode->ic.ll.flg & B)? "B": "W";
             break;
 
         case iXLAT:
             if (pIcode->ic.ll.src.segOver)
             {
-                strcpy(&buf[eop+1], szPtr[1]);
-                strcat(strcat(p, szWreg[pIcode->ic.ll.src.segOver-rAX]), ":[bx]");
+                oper_stream<<" "<<szPtr[1];
+                oper_stream<<szWreg[pIcode->ic.ll.src.segOver-rAX]<<":[bx]";
             }
-            else    buf[eop] = '\0';
             break;
 
         case iIN:
-            strcpy(p+WID_PTR, (pIcode->ic.ll.flg & B)?"al, ": "ax, ");
-            strcat(p+WID_PTR, (pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx");
+            oper_stream<<(pIcode->ic.ll.flg & B)?"al, ": "ax, ";
+            oper_stream<<(pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx";
             break;
 
         case iOUT:
-            strcpy(p+WID_PTR, (pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx");
-            strcat(p+WID_PTR, (pIcode->ic.ll.flg & B)?", al": ", ax");
+            oper_stream<<(pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx";
+            oper_stream<<(pIcode->ic.ll.flg & B)?", al": ", ax";
             break;
 
         default:
-            buf[eop] = '\0';
             break;
     }
 
@@ -526,76 +521,73 @@ static void dis1Line(Int i, Int pass)
     }
     else
     {
-        for (j = pIcode->ic.ll.label, fImpure = 0; j > 0 && j < (Int)nextInst;
-             j++)
+        for (j = pIcode->ic.ll.label, fImpure = 0; j > 0 && j < (Int)nextInst; j++)
         {
             fImpure |= BITMAP(j, BM_DATA);
         }
     }
 
-
+    result_stream << setw(54) << left << oper_stream.str();
     /* Check for user supplied comment */
     selectTable(Comment);
+    ostringstream cbuf;
     if (readVal(cbuf, pIcode->ic.ll.label, 0))
     {
-        buf[strlen(buf)] = ' ';             /* Removes the null */
-        buf[POS_CMT] = ';';
-        strcpy(buf+POS_CMT+1, cbuf);
+        result_stream <<"; "<<cbuf.str();
     }
-
-    else if (fImpure || (pIcode->ic.ll.flg & (SWITCH | CASE | SEG_IMMED |
-                                              IMPURE | SYNTHETIC | TERMINATES)))
+    else if (fImpure || (pIcode->ic.ll.flg & (SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
     {
-        buf[strlen(buf)] = ' ';
-        buf[POS_CMT] = '\0';
         if (pIcode->ic.ll.flg & CASE)
         {
-            sprintf(buf+POS_CMT, ";Case l%ld", pIcode->ic.ll.caseTbl.numEntries);
+            result_stream << ";Case l"<< pIcode->ic.ll.caseTbl.numEntries;
         }
         if (pIcode->ic.ll.flg & SWITCH)
         {
-            strcat(buf, ";Switch ");
+            result_stream << ";Switch ";
         }
         if (fImpure)
         {
-            strcat(buf, ";Accessed as data ");
+            result_stream << ";Accessed as data ";
         }
         if (pIcode->ic.ll.flg & IMPURE)
         {
-            strcat(buf, ";Impure operand ");
+            result_stream << ";Impure operand ";
         }
         if (pIcode->ic.ll.flg & SEG_IMMED)
         {
-            strcat(buf, ";Segment constant");
+            result_stream << ";Segment constant";
         }
         if (pIcode->ic.ll.flg & TERMINATES)
         {
-            strcat(buf, ";Exit to DOS");
+            result_stream << ";Exit to DOS";
         }
     }
 
     /* Comment on iINT icodes */
     if (pIcode->ic.ll.opcode == iINT)
-        pIcode->writeIntComment (buf);
+        pIcode->writeIntComment (result_stream);
 
     /* Display output line */
-    if (! (pIcode->ic.ll.flg & SYNTHETIC))
+    if(pass==3)
     {
+        /* output to .b code buffer */
+        if (pIcode->isLlFlag(SYNTHETIC))
+            result_stream<<";Synthetic inst";
         if (pass == 3)		/* output to .b code buffer */
-            cCode.appendCode("%s\n", buf);
-        else					/* output to .a1 or .a2 file */
-            fprintf (fp, "%03ld %06lX %s\n", i, pIcode->ic.ll.label, buf);
+            cCode.appendCode("%s\n", result_stream.str().c_str());
+
     }
-    else		/* SYNTHETIC instruction */
+    else
     {
-        strcat (buf, ";Synthetic inst");
-        if (pass == 3)		/* output to .b code buffer */
+        if (! (pIcode->ic.ll.flg & SYNTHETIC))
         {
-            cCode.appendCode("%s\n", buf);
+            /* output to .a1 or .a2 file */
+            fprintf (fp, "%03ld %06lX %s\n", i, pIcode->ic.ll.label, result_stream.str().c_str());
         }
-        else					/* output to .a1 or .a2 file */
+        else		/* SYNTHETIC instruction */
         {
-            fprintf (fp, "%03ld        %s\n", i, buf);
+            result_stream<<";Synthetic inst";
+            fprintf (fp, "%03ld        %s\n", i, result_stream.str().c_str());
         }
     }
 }
@@ -605,7 +597,7 @@ static void dis1Line(Int i, Int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(char *p, flags32 flg, ICODEMEM *pm)
+static void formatRM(std::ostringstream &p, flags32 flg, ICODEMEM *pm)
 {
     char    seg[4];
 
@@ -617,71 +609,68 @@ static void formatRM(char *p, flags32 flg, ICODEMEM *pm)
 
     if (pm->regi == 0)
     {
-        sprintf(p,"%s[%s]", seg, strHex((dword)pm->off));
+        p<<seg<<"["<<strHex((dword)pm->off)<<"]";
     }
 
     else if (pm->regi == (INDEXBASE - 1))
     {
-        strcpy (p, "tmp");
+        p<<"tmp";
     }
 
     else if (pm->regi < INDEXBASE)
     {
-        strcpy(p, (flg & B)? szBreg[pm->regi - rAL]: szWreg[pm->regi - rAX]);
+        if(flg & B)
+            p << szBreg[pm->regi - rAL];
+        else
+            p << szWreg[pm->regi - rAX];
     }
 
     else if (pm->off)
     {
         if (pm->off < 0)
         {
-            sprintf(p,"%s[%s-%s]", seg, szIndex[pm->regi - INDEXBASE],strHex((dword)(- pm->off)));
+            p <<seg<<"["<<szIndex[pm->regi - INDEXBASE]<<"-"<<strHex((dword)(- pm->off))<<"]";
         }
         else
         {
-            sprintf(p,"%s[%s+%s]", seg, szIndex[pm->regi - INDEXBASE],strHex((dword)pm->off));
+            p <<seg<<"["<<szIndex[pm->regi - INDEXBASE]<<"+"<<strHex((dword)(pm->off))<<"]";
         }
     }
-    else    sprintf(p,"%s[%s]", seg, szIndex[pm->regi - INDEXBASE]);
+    else
+        p <<seg<<"["<<szIndex[pm->regi - INDEXBASE]<<"]";
 }
 
 
 /*****************************************************************************
  * strDst
  ****************************************************************************/
-static char *strDst(flags32 flg, ICODEMEM *pm)
+static ostringstream & strDst(ostringstream &os,flags32 flg, ICODEMEM *pm)
 {
-    static char buf[30];
-
     /* Immediates to memory require size descriptor */
+    //os << setw(WID_PTR);
     if ((flg & I) && (pm->regi == 0 || pm->regi >= INDEXBASE))
-    {
-        memcpy(buf, szPtr[flg & B], WID_PTR);
-    }
-    else
-    {
-        memset(buf, ' ', WID_PTR);
-    }
-
-    formatRM(buf + WID_PTR, flg, pm);
-    return buf;
+        os << szPtr[flg & B];
+    formatRM(os, flg, pm);
+    return os;
 }
 
 
 /****************************************************************************
  * strSrc                                                                   *
  ****************************************************************************/
-static char *strSrc(ICODE *pc)
+static ostringstream &strSrc(ostringstream &os,ICODE *pc,bool skip_comma)
 {
     static char buf[30] = {", "};
-
+    if(false==skip_comma)
+        os<<", ";
     if (pc->ic.ll.flg & I)
-        strcpy(buf + 2, strHex(pc->ic.ll.immed.op));
+        os<<strHex(pc->ic.ll.immed.op);
     else if (pc->ic.ll.flg & IM_SRC)		/* level 2 */
-        strcpy (buf + 2, "dx:ax");
+        os<<"dx:ax";
     else
-        formatRM(buf + 2, pc->ic.ll.flg, &pc->ic.ll.src);
+        formatRM(os, pc->ic.ll.flg, &pc->ic.ll.src);
 
-    return buf;
+    return os;
 }
 
 
@@ -707,7 +696,7 @@ void interactDis(Function * initProc, Int initIC)
 }
 
 /* Handle the floating point opcodes (icode iESC) */
-static void flops(ICODE *pIcode)
+void flops(ICODE *pIcode,std::ostringstream &out)
 {
     char bf[30];
     byte op = (byte)pIcode->ic.ll.immed.op;
@@ -717,11 +706,9 @@ static void flops(ICODE *pIcode)
 
     if ((pIcode->ic.ll.dst.regi == 0) || (pIcode->ic.ll.dst.regi >= INDEXBASE))
     {
-        /* The mod/rm mod bits are not set to 11 (i.e. register).
-           This is the normal floating point opcode */
-        strcpy(&buf[POS_OPC], szFlops1[op]);
-        buf[strlen(buf)] = ' ';
-
+        /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
+        out<<szFlops1[op]<<' ';
+        out <<setw(10);
         if ((op == 0x29) || (op == 0x1F))
         {
             strcpy(bf, "tbyte ptr ");
@@ -753,8 +740,7 @@ static void flops(ICODE *pIcode)
                 }
         }
 
-        formatRM(bf + 10, pIcode->ic.ll.flg, &pIcode->ic.ll.dst);
-        strcpy(p, bf);
+        formatRM(out, pIcode->ic.ll.flg, &pIcode->ic.ll.dst);
     }
     else
     {
@@ -763,44 +749,44 @@ static void flops(ICODE *pIcode)
                    normal opcodes. Because the opcodes are slightly different for
                    this case (e.g. op=04 means FSUB if reg != 3, but FSUBR for
                    reg == 3), a separate table is used (szFlops2). */
+
         switch (op)
         {
             case 0x0C:
-                strcpy(&buf[POS_OPC], szFlops0C[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops0C[pIcode->ic.ll.dst.regi - rAX];
                 break;
             case 0x0D:
-                strcpy(&buf[POS_OPC], szFlops0D[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops0D[pIcode->ic.ll.dst.regi - rAX];
                 break;
             case 0x0E:
-                strcpy(&buf[POS_OPC], szFlops0E[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops0E[pIcode->ic.ll.dst.regi - rAX];
                 break;
             case 0x0F:
-                strcpy(&buf[POS_OPC], szFlops0F[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops0F[pIcode->ic.ll.dst.regi - rAX];
                 break;
             case 0x15:
-                strcpy(&buf[POS_OPC], szFlops15[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops15[pIcode->ic.ll.dst.regi - rAX];
                 break;
             case 0x1C:
-                strcpy(&buf[POS_OPC], szFlops1C[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops1C[pIcode->ic.ll.dst.regi - rAX];
                 break;
             case 0x33:
-                strcpy(&buf[POS_OPC], szFlops33[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops33[pIcode->ic.ll.dst.regi - rAX];
                 break;
             case 0x3C:
-                strcpy(&buf[POS_OPC], szFlops3C[pIcode->ic.ll.dst.regi - rAX]);
+                out << szFlops3C[pIcode->ic.ll.dst.regi - rAX];
                 break;
             default:
-                strcpy(&buf[POS_OPC], szFlops2[op]);
-                buf[strlen(buf)] = ' ';
+                out << szFlops2[op];
                 if ((op >= 0x20) && (op <= 0x27))
                 {
                     /* This is the ST(i), ST form. */
-                    sprintf(&buf[POS_OPR2], "ST(%d),ST", pIcode->ic.ll.dst.regi - rAX);
+                    out << "ST("<<pIcode->ic.ll.dst.regi - rAX<<"),ST";
                 }
                 else
                 {
                     /* ST, ST(i) */
-                    sprintf(&buf[POS_OPR2], "ST,ST(%d)", pIcode->ic.ll.dst.regi - rAX);
+                    out << "ST,ST("<<pIcode->ic.ll.dst.regi - rAX;
                 }
 
                 break;

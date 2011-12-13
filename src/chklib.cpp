@@ -694,7 +694,7 @@ void STATE::checkStartup()
         but decides the model required. Note: must do the far data models
         (large and compact) before the others, since they are the same pattern
         as near data, just more pushes at the start. */
-    if(prog.cbImage>0x180+sizeof(pattMainLarge))
+    if(prog.cbImage>startOff+0x180+sizeof(pattMainLarge))
     {
         if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainLarge,sizeof(pattMainLarge), &i))
         {

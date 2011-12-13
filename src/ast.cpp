@@ -151,10 +151,10 @@ COND_EXPR *COND_EXPR::idGlob (int16 segValue, int16 off)
     newExp = newCondExp (IDENTIFIER);
     newExp->expr.ident.idType = GLOB_VAR;
     adr = opAdr(segValue, off);
-    for (i = 0; i < symtab.csym; i++)
-        if (symtab.sym[i].label == adr)
+    for (i = 0; i < symtab.size(); i++)
+        if (symtab[i].label == adr)
             break;
-    if (i == symtab.csym)
+    if (i == symtab.size())
         printf ("Error, glob var not found in symtab\n");
     newExp->expr.ident.idNode.globIdx = i;
     return (newExp);
@@ -511,7 +511,7 @@ Int hlTypeSize (const COND_EXPR *expr, Function * pproc)
             switch (expr->expr.ident.idType)
             {
                 case GLOB_VAR:
-                    return (symtab.sym[expr->expr.ident.idNode.globIdx].size);
+                    return (symtab[expr->expr.ident.idNode.globIdx].size);
                 case REGISTER:
                     if (expr->expr.ident.regiType == BYTE_REG)
                         return (1);
@@ -574,7 +574,7 @@ hlType expType (const COND_EXPR *expr, Function * pproc)
             switch (expr->expr.ident.idType)
             {
                 case GLOB_VAR:
-                    return (symtab.sym[expr->expr.ident.idNode.globIdx].type);
+                    return (symtab[expr->expr.ident.idNode.globIdx].type);
                 case REGISTER:
                     if (expr->expr.ident.regiType == BYTE_REG)
                         return (TYPE_BYTE_SIGN);
@@ -734,7 +734,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, Int* numLoc)
             switch (expr->expr.ident.idType)
             {
                 case GLOB_VAR:
-                    o << symtab.sym[expr->expr.ident.idNode.globIdx].name;
+                    o << symtab[expr->expr.ident.idNode.globIdx].name;
                     break;
                 case REGISTER:
                     id = &pProc->localId.id_arr[expr->expr.ident.idNode.regiIdx];

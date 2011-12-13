@@ -12,10 +12,6 @@ struct SYMTABLE
     std::string pSymName;              /* Ptr to symbolic name or comment */
     dword   symOff;                 /* Symbol image offset */
     Function *symProc;             /* Procedure pointer */
-    word    preHash;                /* Hash value before the modulo */
-    word    postHash;               /* Hash value after the modulo */
-    word    nextOvf;                /* Next entry this hash bucket, or -1 */
-    word    prevOvf;                /* Back link in Ovf chain */
     SYMTABLE() : symOff(0),symProc(0) {}
     SYMTABLE(dword _sym,Function *_proc) : symOff(_sym),symProc(_proc)
     {}
@@ -36,6 +32,6 @@ enum tableType                     /* The table types */
 
 void    createSymTables(void);
 void    destroySymTables(void);
-boolT   readVal (char *symName, dword   symOff, Function *symProc);
+boolT   readVal (std::ostringstream &symName, dword   symOff, Function *symProc);
 void    selectTable(tableType);     /* Select a particular table */
 

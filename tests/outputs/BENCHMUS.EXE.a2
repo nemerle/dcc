@@ -1,88 +1,88 @@
 		main  PROC  NEAR
-000 0002FA 55                  PUSH           bp
-001 0002FB 8BEC                MOV            bp, sp
-002 0002FD 83EC0A              SUB            sp, 0Ah
-003 000300 56                  PUSH           si
-004 000301 57                  PUSH           di
-005 000302 B8A801              MOV            ax, 1A8h
-006 000305 50                  PUSH           ax
-007 000306 E8240C              CALL  near ptr printf
-008 000309 59                  POP            cx
-009 00030A 8D46FC              LEA            ax, [bp-4]
-010 00030D 50                  PUSH           ax
-011 00030E B8C401              MOV            ax, 1C4h
-012 000311 50                  PUSH           ax
-013 000312 E8A114              CALL  near ptr scanf
-014 000315 59                  POP            cx
-015 000316 59                  POP            cx
-016 000317 FF76FE              PUSH  word ptr [bp-2]
-017 00031A FF76FC              PUSH  word ptr [bp-4]
-018 00031D B8C801              MOV            ax, 1C8h
-019 000320 50                  PUSH           ax
-020 000321 E8090C              CALL  near ptr printf
-021 000324 83C406              ADD            sp, 6
-022 000327 BE1400              MOV            si, 14h
-023 00032A 8976F6              MOV            [bp-0Ah], si
-024 00032D C746FA0000          MOV   word ptr [bp-6], 0
-025 000332 C746F80100          MOV   word ptr [bp-8], 1
+000 0002FA 55                  PUSH           bp                 
+001 0002FB 8BEC                MOV            bp, sp             
+002 0002FD 83EC0A              SUB            sp, 0Ah            
+003 000300 56                  PUSH           si                 
+004 000301 57                  PUSH           di                 
+005 000302 B8A801              MOV            ax, 1A8h           
+006 000305 50                  PUSH           ax                 
+007 000306 E8240C              CALL           near ptr printf    
+008 000309 59                  POP            cx                 
+009 00030A 8D46FC              LEA            ax, [bp-4]         
+010 00030D 50                  PUSH           ax                 
+011 00030E B8C401              MOV            ax, 1C4h           
+012 000311 50                  PUSH           ax                 
+013 000312 E8A114              CALL           near ptr scanf     
+014 000315 59                  POP            cx                 
+015 000316 59                  POP            cx                 
+016 000317 FF76FE              PUSH           word ptr [bp-2]    
+017 00031A FF76FC              PUSH           word ptr [bp-4]    
+018 00031D B8C801              MOV            ax, 1C8h           
+019 000320 50                  PUSH           ax                 
+020 000321 E8090C              CALL           near ptr printf    
+021 000324 83C406              ADD            sp, 6              
+022 000327 BE1400              MOV            si, 14h            
+023 00032A 8976F6              MOV            [bp-0Ah], si       
+024 00032D C746FA0000          MOV            word ptr [bp-6], 0 
+025 000332 C746F80100          MOV            word ptr [bp-8], 1 
 
-027 000385 8B56FA         L1:  MOV            dx, [bp-6]
-028 000388 8B46F8              MOV            ax, [bp-8]
-029 00038B 3B56FE              CMP            dx, [bp-2]
-030 00038E 7CA9                JL             L2
-031 000390 7F05                JG             L3
-032 000392 3B46FC              CMP            ax, [bp-4]
-033 000395 76A2                JBE            L2
+027 000385 8B56FA         L1:  MOV            dx, [bp-6]         
+028 000388 8B46F8              MOV            ax, [bp-8]         
+029 00038B 3B56FE              CMP            dx, [bp-2]         
+030 00038E 7CA9                JL             L2                 
+031 000390 7F05                JG             L3                 
+032 000392 3B46FC              CMP            ax, [bp-4]         
+033 000395 76A2                JBE            L2                 
 
-034 000397 56             L3:  PUSH           si
-035 000398 B8E201              MOV            ax, 1E2h
-036 00039B 50                  PUSH           ax
-037 00039C E88E0B              CALL  near ptr printf
-038 00039F 59                  POP            cx
-039 0003A0 59                  POP            cx
-040 0003A1 5F                  POP            di
-041 0003A2 5E                  POP            si
-042 0003A3 8BE5                MOV            sp, bp
-043 0003A5 5D                  POP            bp
-044 0003A6 C3                  RET
+034 000397 56             L3:  PUSH           si                 
+035 000398 B8E201              MOV            ax, 1E2h           
+036 00039B 50                  PUSH           ax                 
+037 00039C E88E0B              CALL           near ptr printf    
+038 00039F 59                  POP            cx                 
+039 0003A0 59                  POP            cx                 
+040 0003A1 5F                  POP            di                 
+041 0003A2 5E                  POP            si                 
+042 0003A3 8BE5                MOV            sp, bp             
+043 0003A5 5D                  POP            bp                 
+044 0003A6 C3                  RET                               
 
-045 000339 BF0100         L2:  MOV            di, 1
+045 000339 BF0100         L2:  MOV            di, 1              
 
-047 000378 83FF28         L4:  CMP            di, 28h
-048 00037B 7EC1                JLE            L5
-049 00037D 8346F801            ADD   word ptr [bp-8], 1
-050 000381 8356FA00            ADC   word ptr [bp-6], 0
+047 000378 83FF28         L4:  CMP            di, 28h            
+048 00037B 7EC1                JLE            L5                 
+049 00037D 8346F801            ADD            word ptr [bp-8], 1 
+050 000381 8356FA00            ADC            word ptr [bp-6], 0 
 051                            JMP            L1                 ;Synthetic inst
 
-052 00033E 8BC6           L5:  MOV            ax, si
-053 000340 F7E6                MUL            si
-054 000342 F7E6                MUL            si
-055 000344 F7E6                MUL            si
-056 000346 F7E6                MUL            si
-057 000348 F7E6                MUL            si
-058 00034A F7E6                MUL            si
-059 00034C F7E6                MUL            si
-060 00034E F7E6                MUL            si
-061 000350 F7E6                MUL            si
-062 000352 F7E6                MUL            si
-063 000354 F7E6                MUL            si
-064 000356 F7E6                MUL            si
-065 000358 F7E6                MUL            si
-066 00035A F7E6                MUL            si
-067 00035C F7E6                MUL            si
-068 00035E F7E6                MUL            si
-069 000360 F7E6                MUL            si
-070 000362 F7E6                MUL            si
-071 000364 F7E6                MUL            si
-072 000366 F7E6                MUL            si
-073 000368 F7E6                MUL            si
-074 00036A F7E6                MUL            si
-075 00036C F7E6                MUL            si
-076 00036E F7E6                MUL            si
-077 000370 BA0300              MOV            dx, 3
-078 000373 F7E2                MUL            dx
-079 000375 8BF0                MOV            si, ax
-080 000377 47                  INC            di
+052 00033E 8BC6           L5:  MOV            ax, si             
+053 000340 F7E6                MUL            si                 
+054 000342 F7E6                MUL            si                 
+055 000344 F7E6                MUL            si                 
+056 000346 F7E6                MUL            si                 
+057 000348 F7E6                MUL            si                 
+058 00034A F7E6                MUL            si                 
+059 00034C F7E6                MUL            si                 
+060 00034E F7E6                MUL            si                 
+061 000350 F7E6                MUL            si                 
+062 000352 F7E6                MUL            si                 
+063 000354 F7E6                MUL            si                 
+064 000356 F7E6                MUL            si                 
+065 000358 F7E6                MUL            si                 
+066 00035A F7E6                MUL            si                 
+067 00035C F7E6                MUL            si                 
+068 00035E F7E6                MUL            si                 
+069 000360 F7E6                MUL            si                 
+070 000362 F7E6                MUL            si                 
+071 000364 F7E6                MUL            si                 
+072 000366 F7E6                MUL            si                 
+073 000368 F7E6                MUL            si                 
+074 00036A F7E6                MUL            si                 
+075 00036C F7E6                MUL            si                 
+076 00036E F7E6                MUL            si                 
+077 000370 BA0300              MOV            dx, 3              
+078 000373 F7E2                MUL            dx                 
+079 000375 8BF0                MOV            si, ax             
+080 000377 47                  INC            di                 
 081                            JMP            L4                 ;Synthetic inst
 
 		main  ENDP

@@ -8,118 +8,121 @@
 
 #include "dcc.h"
 #include <string.h>
+#include <sstream>
+using namespace std;
 #define intSize		40
 
 static const char *int21h[] =
-{"Terminate process",
- "Character input with echo",
- "Character output",
- "Auxiliary input",
- "Auxiliary output",
- "Printer output",
- "Direct console i/o",
- "Unfiltered char i w/o echo",
- "Character input without echo",
- "Display string",
- "Buffered keyboard input",
- "Check input status",
- "Flush input buffer and then input",
- "Disk reset",
- "Select disk",
- "Open file",
- "Close file",
- "Find first file",
- "Find next file",
- "Delete file",
- "Sequential read",
- "Sequential write",
- "Create file",
- "Rename file",
- "Reserved",
- "Get current disk",
- "Set DTA address",
- "Get default drive data",
- "Get drive data",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
- "Random read",
- "Random write",
- "Get file size",
- "Set relative record number",
- "Set interrupt vector",
- "Create new PSP",
- "Random block read",
- "Random block write",
- "Parse filename",
- "Get date",
- "Set date",
- "Get time",
- "Set time",
- "Set verify flag",
- "Get DTA address",
- "Get MSDOS version number",
- "Terminate and stay resident",
- "Reserved",
- "Get or set break flag",
- "Reserved",
- "Get interrupt vector",
- "Get drive allocation info",
- "Reserved",
- "Get or set country info",
- "Create directory",
- "Delete directory",
- "Set current directory",
- "Create file",
- "Open file",
- "Close file",
- "Read file or device",
- "Write file or device",
- "Delete file",
- "Set file pointer",
- "Get or set file attributes",
- "IOCTL (i/o control)",
- "Duplicate handle",
- "Redirect handle",
- "Get current directory",
- "Alloate memory block",
- "Release memory block",
- "Resize memory block",
- "Execute program (exec)",
- "Terminate process with return code",
- "Get return code",
- "Find first file",
- "Find next file",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
- "Get verify flag",
- "Reserved",
- "Rename file",
- "Get or set file date & time",
- "Get or set allocation strategy",
- "Get extended error information",
- "Create temporary file",
- "Create new file",
- "Lock or unlock file region",
- "Reserved",
- "Get machine name",
- "Device redirection",
- "Reserved",
- "Reserved",
- "Get PSP address",
- "Get DBCS lead byte table",
- "Reserved",
- "Get extended country information",
- "Get or set code page",
- "Set handle count",
- "Commit file",
- "Reserved",
- "Reserved",
- "Reserved",
- "Extended open file"
+{
+    "Terminate process",
+    "Character input with echo",
+    "Character output",
+    "Auxiliary input",
+    "Auxiliary output",
+    "Printer output",
+    "Direct console i/o",
+    "Unfiltered char i w/o echo",
+    "Character input without echo",
+    "Display string",
+    "Buffered keyboard input",
+    "Check input status",
+    "Flush input buffer and then input",
+    "Disk reset",
+    "Select disk",
+    "Open file",
+    "Close file",
+    "Find first file",
+    "Find next file",
+    "Delete file",
+    "Sequential read",
+    "Sequential write",
+    "Create file",
+    "Rename file",
+    "Reserved",
+    "Get current disk",
+    "Set DTA address",
+    "Get default drive data",
+    "Get drive data",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Random read",
+    "Random write",
+    "Get file size",
+    "Set relative record number",
+    "Set interrupt vector",
+    "Create new PSP",
+    "Random block read",
+    "Random block write",
+    "Parse filename",
+    "Get date",
+    "Set date",
+    "Get time",
+    "Set time",
+    "Set verify flag",
+    "Get DTA address",
+    "Get MSDOS version number",
+    "Terminate and stay resident",
+    "Reserved",
+    "Get or set break flag",
+    "Reserved",
+    "Get interrupt vector",
+    "Get drive allocation info",
+    "Reserved",
+    "Get or set country info",
+    "Create directory",
+    "Delete directory",
+    "Set current directory",
+    "Create file",
+    "Open file",
+    "Close file",
+    "Read file or device",
+    "Write file or device",
+    "Delete file",
+    "Set file pointer",
+    "Get or set file attributes",
+    "IOCTL (i/o control)",
+    "Duplicate handle",
+    "Redirect handle",
+    "Get current directory",
+    "Alloate memory block",
+    "Release memory block",
+    "Resize memory block",
+    "Execute program (exec)",
+    "Terminate process with return code",
+    "Get return code",
+    "Find first file",
+    "Find next file",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Get verify flag",
+    "Reserved",
+    "Rename file",
+    "Get or set file date & time",
+    "Get or set allocation strategy",
+    "Get extended error information",
+    "Create temporary file",
+    "Create new file",
+    "Lock or unlock file region",
+    "Reserved",
+    "Get machine name",
+    "Device redirection",
+    "Reserved",
+    "Reserved",
+    "Get PSP address",
+    "Get DBCS lead byte table",
+    "Reserved",
+    "Get extended country information",
+    "Get or set code page",
+    "Set handle count",
+    "Commit file",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Extended open file"
 };
 
 
@@ -144,33 +147,37 @@ static const char *intOthers[] = {
 
 /* Writes the description of the current interrupt. Appends it to the
  * string s.	*/
-void ICODE::writeIntComment (char *s)
+void ICODE::writeIntComment (std::ostringstream &s)
 {
-    char *t;
-
-    t = (char *)allocMem(intSize * sizeof(char));
+    s<<"\t/* ";
     if (ic.ll.immed.op == 0x21)
-    {  sprintf (t, "\t/* %s */\n", int21h[ic.ll.dst.off]);
-        strcat (s, t);
+    {
+        s <<int21h[ic.ll.dst.off];
     }
     else if (ic.ll.immed.op > 0x1F && ic.ll.immed.op < 0x2F)
     {
-        sprintf (t, "\t/* %s */\n", intOthers[ic.ll.immed.op - 0x20]);
-        strcat (s, t);
+        s <<intOthers[ic.ll.immed.op - 0x20];
     }
     else if (ic.ll.immed.op == 0x2F)
+    {
         switch (ic.ll.dst.off)
         {
-            case 0x01 : strcat (s, "\t/* Print spooler */\n");
+            case 0x01 :
+                s << "Print spooler";
                 break;
-            case 0x02:  strcat (s, "\t/* Assign */\n");
+            case 0x02:
+                s << "Assign";
                 break;
-            case 0x10:  strcat (s, "\t/* Share */\n");
+            case 0x10:
+                s << "Share";
                 break;
-            case 0xB7:  strcat (s, "\t/* Append */\n");
+            case 0xB7:
+                s << "Append";
         }
+    }
     else
-        strcat (s, "\n");
+        s<<"Unknown int";
+    s<<" */\n";
 }
 
 
@@ -247,7 +254,7 @@ void Function::writeProcComments()
     if (this->flg & (PROC_BADINST | PROC_IJMP))
         cCode.appendDecl(" * Incomplete due to an %s.\n",
                          (this->flg & PROC_BADINST)? "untranslated opcode":
-                                                  "indirect JMP");
+                                                     "indirect JMP");
     if (this->flg & PROC_ICALL)
         cCode.appendDecl(" * Indirect call procedure.\n");
     if (this->flg & IMPURE)

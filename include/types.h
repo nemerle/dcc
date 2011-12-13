@@ -58,6 +58,10 @@ typedef unsigned char boolT; /* 8 bits   */
 /* duVal FLAGS */
 struct eDuVal
 {
+    eDuVal()
+    {
+        def=use=val=0;
+    }
     enum flgs
     {
         DEF=1,

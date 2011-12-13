@@ -20,7 +20,12 @@ typedef lFunction::iterator ilFunction;
 
 
 /* SYMBOL TABLE */
-struct SYM {
+struct SYM
+{
+    SYM() : label(0),size(0),flg(0),type(TYPE_UNKNOWN)
+    {
+
+    }
     char        name[10];   /* New name for this variable   */
     dword       label;      /* physical address (20 bit)    */
     Int         size;       /* maximum size                 */
@@ -29,13 +34,7 @@ struct SYM {
     eDuVal      duVal;      /* DEF, USE, VAL                */
 };
 
-struct SYMTAB
-{
-    Int         csym;       /* No. of symbols in table  */
-    Int         alloc;      /* Allocation               */
-    SYM *        sym;        /* Symbols                  */
-};
-
+typedef std::vector<SYM> SYMTAB;
 /* CALL GRAPH NODE */
 struct CALL_GRAPH
 {
