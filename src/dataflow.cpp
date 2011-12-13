@@ -159,13 +159,12 @@ void Function::elimCondCodes ()
                     (Icode.GetLlOpcode(useAt-1) >= iJB) &&
                     (Icode.GetLlOpcode(useAt-1) <= iJNS))
                 {
-                    prev = Icode.GetIcode(pBB->inEdges[0]->start +
-                                                 pBB->inEdges[0]->length - 1);
-                    if (prev->ic.hl.opcode == HLI_JCOND)
+                    ICODE & prev(pBB->back());
+                    if (prev.ic.hl.opcode == HLI_JCOND)
                     {
-                        exp = prev->ic.hl.oper.exp->clone();
+                        exp = prev.ic.hl.oper.exp->clone();
                         exp->changeBoolOp (condOpJCond[Icode.GetLlOpcode(useAt-1)-iJB]);
-                        Icode[useAt-1].copyDU(*prev, eUSE, eUSE);
+                        Icode[useAt-1].copyDU(prev, eUSE, eUSE);
                         Icode[useAt-1].setJCond(exp);
                     }
                 }
@@ -187,9 +186,9 @@ void Function::elimCondCodes ()
  *       analysis (eg: push si, would include si in LiveUse; although it
  *       is not really meant to be a register that is used before defined). */
 void Function::genLiveKtes ()
-{ Int i, j;
+{
+    Int i;
     BB * pbb;
-    ICODE * picode;
     dword liveUse, def;
 
     for (i = 0; i < numBBs; i++)
@@ -198,13 +197,12 @@ void Function::genLiveKtes ()
         pbb = dfsLast[i];
         if (pbb->flg & INVALID_BB)
             continue;	/* skip invalid BBs */
-        for (j = pbb->start; j < (pbb->start + pbb->length); j++)
+        for (auto j = pbb->begin2(); j != pbb->end2(); j++)
         {
-            picode = Icode.GetIcode(j);
-            if ((picode->type == HIGH_LEVEL) && (picode->invalid == FALSE))
+            if ((j->type == HIGH_LEVEL) && (j->invalid == FALSE))
             {
-                liveUse |= (picode->du.use & ~def);
-                def |= picode->du.def;
+                liveUse |= (j->du.use & ~def);
+                def |= j->du.def;
             }
         }
         pbb->liveUse = liveUse;
@@ -257,8 +255,8 @@ void Function::liveRegAnalysis (dword in_liveOut)
                     picode = Icode.GetIcode(pbb->start + pbb->length - 1);
                     if (picode->ic.hl.opcode == HLI_RET)
                     {
-                        picode->ic.hl.oper.exp = COND_EXPR::idID (&retVal,
-                                                              &localId, pbb->start + pbb->length - 1);
+                        assert(pbb->back().loc_ip == pbb->start+pbb->length-1);
+                        picode->ic.hl.oper.exp = COND_EXPR::idID (&retVal, &localId, pbb->back().loc_ip);
                         picode->du.use = in_liveOut;
                     }
                 }

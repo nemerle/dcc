@@ -354,6 +354,16 @@ int BB::begin()
 {
     return start;
 }
+
+iICODE BB::begin2()
+{
+    return Parent->Icode.begin()+start;
+}
+
+iICODE BB::end2()
+{
+    return Parent->Icode.begin()+start+length;
+}
 int BB::rbegin()
 {
     return start+length-1;

@@ -244,8 +244,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iJO:   case iJNO:      case iJP:   case iJNP:
             case iJCXZ:
             {   STATE   StCopy;
-                int     ip      = Icode.GetNumIcodes()-1;	/* Index of this jump */
-                ICODE *  prev   = Icode.GetIcode(ip-1); /* Previous icode */
+                int     ip      = Icode.size()-1;	/* Index of this jump */
+                ICODE  &prev(Icode.back()); /* Previous icode */
                 boolT   fBranch = FALSE;
 
                 pstate->JCond.regi = 0;
@@ -253,13 +253,13 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 /* This sets up range check for indexed JMPs hopefully
              * Handles JA/JAE for fall through and JB/JBE on branch
             */
-                if (ip > 0 && prev->ic.ll.opcode == iCMP && (prev->ic.ll.flg & I))
+                if (ip > 0 && prev.ic.ll.opcode == iCMP && (prev.ic.ll.flg & I))
                 {
-                    pstate->JCond.immed = (int16)prev->ic.ll.immed.op;
+                    pstate->JCond.immed = (int16)prev.ic.ll.immed.op;
                     if (_Icode.ic.ll.opcode == iJA || _Icode.ic.ll.opcode == iJBE)
                         pstate->JCond.immed++;
                     if (_Icode.ic.ll.opcode == iJAE || _Icode.ic.ll.opcode == iJA)
-                        pstate->JCond.regi = prev->ic.ll.dst.regi;
+                        pstate->JCond.regi = prev.ic.ll.dst.regi;
                     fBranch = (boolT)
                             (_Icode.ic.ll.opcode == iJB || _Icode.ic.ll.opcode == iJBE);
                 }
@@ -271,7 +271,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
                 if (fBranch)                /* Do branching code */
                 {
-                    pstate->JCond.regi = prev->ic.ll.dst.regi;
+                    pstate->JCond.regi = prev.ic.ll.dst.regi;
                 }
                 /* Next icode. Note: not the same as GetLastIcode() because of the call
                                 to FollowCtrl() */
@@ -687,8 +687,8 @@ static hlType cbType[] = {TYPE_UNKNOWN, TYPE_BYTE_UNSIGN, TYPE_WORD_SIGN,
  * is checked and updated if the old size was less than the new size (ie.
  * the maximum size is always saved).   */
 static SYM * updateGlobSym (dword operand, Int size, word duFlag)
-{	
-		Int i;
+{
+        Int i;
 
         /* Check for symbol in symbol table */
     for (i = 0; i < symtab.size(); i++)

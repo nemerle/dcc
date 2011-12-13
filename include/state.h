@@ -4,6 +4,7 @@
  ****************************************************************************/
 
 /* STATE TABLE */
+#include <cstring>
 struct STATE
 {
     dword       IP;             /* Offset into Image                    */

@@ -22,7 +22,7 @@ static boolT isJCond (llIcode opcode)
 
 
 /* Returns whether the conditions for a 2-3 long variable are satisfied */
-static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
+static boolT isLong23 (Int i, BB * pbb, Int *off, Int *arc)
 {
  BB * t, * e, * obb2;
 
@@ -36,7 +36,7 @@ static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
     {
         obb2 = t->edges[THEN].BBptr;
         if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&
-                (icode[obb2->start].ic.ll.opcode == iCMP))
+                (obb2->front().ic.ll.opcode == iCMP))
         {
             *off = obb2->start - i;
             *arc = THEN;
@@ -50,7 +50,7 @@ static boolT isLong23 (Int i, BB * pbb, ICODE * icode, Int *off, Int *arc)
     {
         obb2 = e->edges[THEN].BBptr;
         if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&
-                (icode[obb2->start].ic.ll.opcode == iCMP))
+                (obb2->front().ic.ll.opcode == iCMP))
         {
             *off = obb2->start - i;
             *arc = ELSE;
@@ -156,17 +156,16 @@ static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
     stats.numBBaft -= 2;
 
     pIcode->invalidate();
-    pProc->Icode.GetIcode(obb1->start)->invalidate();
-    pProc->Icode.GetIcode(obb2->start)->invalidate();
-    pProc->Icode.GetIcode(obb2->start+1)->invalidate();
+    obb1->front().invalidate();
+    obb2->front().invalidate();
+    (obb2->begin2()+1)->invalidate();
 }
 
 
 /* Creates a long conditional equality or inequality at (pIcode+1).
  * Removes excess nodes from the graph by flagging them, and updates
  * the new edges for the remaining nodes.	*/
-static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
-                         Int *idx)
+static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode, Int *idx)
 {
     Int j;
     BB * pbb, * obb1, * tbb;
@@ -283,7 +282,7 @@ void Function::propLongStk (Int i, ID *pLocId)
         }
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, this->Icode.GetFirstIcode(),&off, &arc)))
+        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, &off, &arc)))
         {
             if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, this, &rhs, &lhs, off) == TRUE)
                 longJCond23 (rhs, lhs, pIcode, &idx, this, arc, off);
@@ -448,8 +447,7 @@ void Function::propLongReg (Int i, ID *pLocId)
 
                 /* Check long conditional (i.e. 2 CMPs and 3 branches */
                 else if ((pIcode->ic.ll.opcode == iCMP) &&
-                         (isLong23 (idx, pIcode->inBB, this->Icode.GetFirstIcode(),
-                                    &off, &arc)))
+                         (isLong23 (idx, pIcode->inBB, &off, &arc)))
                 {
                     if (checkLongRegEq (pLocId->id.longId, pIcode, i, idx, this,
                                         &rhs, &lhs, off) == TRUE)

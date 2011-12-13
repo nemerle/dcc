@@ -12,7 +12,7 @@
 #endif
 #include "graph.h"
 
-static BB *  rmJMP(Function * pProc, Int marker, BB * pBB);
+//static BB *  rmJMP(Function * pProc, Int marker, BB * pBB);
 static void mergeFallThrough(Function * pProc, BB * pBB);
 static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, Int *first, Int *last);
 
@@ -163,12 +163,12 @@ void Function::markImpure()
     {
         if (Icode.GetLlFlag(i) & (SYM_USE | SYM_DEF))
         {
-            psym = &symtab[Icode.GetIcode(i)->ic.ll.caseTbl.numEntries];
+            psym = &symtab[Icode[i].ic.ll.caseTbl.numEntries];
             for (int c = (Int)psym->label; c < (Int)psym->label+psym->size; c++)
             {
                 if (BITMAP(c, BM_CODE))
                 {
-                    Icode.SetLlFlag(i, IMPURE);
+                    Icode[i].SetLlFlag(IMPURE);
                     flg |= IMPURE;
                     break;
                 }
@@ -212,7 +212,7 @@ void Function::compressCFG()
         for (i = 0; i < pBB->edges.size(); i++)
         {
             ip   = pBB->rbegin();
-            pNxt = rmJMP(this, ip, pBB->edges[i].BBptr);
+            pNxt = pBB->edges[i].BBptr->rmJMP(ip, pBB->edges[i].BBptr);
 
             if (not pBB->edges.empty())   /* Might have been clobbered */
             {
@@ -240,7 +240,6 @@ void Function::compressCFG()
                 pBB->index = UN_INIT;
             else
             {
-                pBB->edges.clear();
                 delete pBB;
                 stats.numBBaft--;
             }
@@ -264,7 +263,7 @@ void Function::compressCFG()
 /****************************************************************************
  * rmJMP - If BB addressed is just a JMP it is replaced with its target
  ***************************************************************************/
-static BB * rmJMP(Function * pProc, Int marker, BB * pBB)
+BB *BB::rmJMP(Int marker, BB * pBB)
 {
     marker += DFS_JMP;
 
@@ -290,15 +289,16 @@ static BB * rmJMP(Function * pProc, Int marker, BB * pBB)
         {
             /* We are going around in circles */
             pBB->nodeType = NOWHERE_NODE;
-            pProc->Icode.GetIcode(pBB->start)->ic.ll.immed.op = (dword)pBB->start;
-            pProc->Icode.SetImmediateOp(pBB->start, (dword)pBB->start);
+            pBB->front().ic.ll.immed.op = (dword)pBB->start;
             do {
                 pBB = pBB->edges[0].BBptr;
                 pBB->inEdges.pop_back(); // was --numInedges
                 if (! pBB->inEdges.empty())
                 {
-                    pProc->Icode.SetLlFlag(pBB->start, NO_CODE);
-                    pProc->Icode.SetLlInvalid(pBB->start, TRUE);
+                    pBB->front().SetLlFlag(NO_CODE);
+                    pBB->front().invalidate();
+//                    pProc->Icode.SetLlFlag(pBB->start, NO_CODE);
+//                    pProc->Icode.SetLlInvalid(pBB->start, TRUE);
                 }
             } while (pBB->nodeType != NOWHERE_NODE);
 

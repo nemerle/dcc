@@ -372,3 +372,4 @@ public:
     boolT	labelSrch(dword target, Int *pIndex);
     ICODE *	GetIcode(int ip);
 };
+typedef CIcodeRec::iterator iICODE;

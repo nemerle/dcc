@@ -6,12 +6,14 @@
 #include <llvm/ADT/ilist_node.h>
 #include "types.h"
 #include "graph.h"
+#include "icode.h"
 /* Basic block (BB) node definition */
 struct Function;
 class CIcodeRec;
 struct BB;
 struct interval;
 struct ICODE;
+
 typedef union
 {
     dword         ip;             /* Out edge icode address       */
@@ -38,6 +40,8 @@ private:
 
 public:
     Int    begin();
+    iICODE begin2();
+    iICODE end2();
     Int	   end();
     Int    rbegin();
     Int    rend();
@@ -103,6 +107,7 @@ public:
     const Function *getParent() const { return Parent; }
     Function *getParent()       { return Parent; }
     void writeBB(ICODE *hli, Int lev, Function *pProc, Int *numLoc);
+    BB *rmJMP(Int marker, BB *pBB);
 private:
     Function *Parent;
 
