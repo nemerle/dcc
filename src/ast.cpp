@@ -279,7 +279,7 @@ COND_EXPR *COND_EXPR::idLongIdx (Int idx)
 
 
 /* Returns an identifier conditional expression node of type LONG_VAR */
-COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, ICODE *pIcode, hlFirst f, Int ix, operDu du, Int off)
+COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, Int ix, operDu du, Int off)
 {
     COND_EXPR *newExp;
     Int idx;
@@ -301,7 +301,7 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, ICODE *pIcode, hlFirst
     /* Save it as a long expression (reg, stack or glob) */
     else
     {
-        idx = localId->newLong(sd, pIcode, f, ix, du, off);
+        idx = localId->newLong(sd, &(*pIcode), f, ix, du, off);
         newExp->expr.ident.idType = LONG_VAR;
         newExp->expr.ident.idNode.longIdx = idx;
     }
@@ -367,41 +367,41 @@ COND_EXPR *COND_EXPR::idID (const ID *retVal, LOCAL_ID *locsym, Int ix)
  * Arguments: i : index into the icode array, used for newLongRegId only.
  *            duIcode: icode instruction that needs the du set.
  *            du: operand is defined or used in current instruction.    */
-COND_EXPR *COND_EXPR::id(ICODE *pIcode, opLoc sd, Function * pProc, Int i,ICODE *duIcode, operDu du)
+COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,ICODE &duIcode, operDu du)
 {
     COND_EXPR *newExp;
-    ICODEMEM * pm;
+
     Int idx;          /* idx into pIcode->localId table */
 
-    pm = (sd == SRC) ? &pIcode->ic.ll.src : &pIcode->ic.ll.dst;
+    const ICODEMEM * pm = (sd == SRC) ? &pIcode.ic.ll.src : &pIcode.ic.ll.dst;
 
-    if (((sd == DST) && (pIcode->ic.ll.flg & IM_DST) == IM_DST) ||
-        ((sd == SRC) && (pIcode->ic.ll.flg & IM_SRC)) ||
+    if (((sd == DST) && (pIcode.ic.ll.flg & IM_DST) == IM_DST) ||
+        ((sd == SRC) && (pIcode.ic.ll.flg & IM_SRC)) ||
         (sd == LHS_OP))             /* for MUL lhs */
     {                                                   /* implicit dx:ax */
         idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, rDX, rAX, i);
         newExp = COND_EXPR::idLongIdx (idx);
-        duIcode->setRegDU (rDX, du);
-        duIcode->setRegDU (rAX, du);
+        duIcode.setRegDU (rDX, du);
+        duIcode.setRegDU (rAX, du);
     }
 
-    else if ((sd == DST) && (pIcode->ic.ll.flg & IM_TMP_DST) == IM_TMP_DST)
+    else if ((sd == DST) && (pIcode.ic.ll.flg & IM_TMP_DST) == IM_TMP_DST)
     {                                                   /* implicit tmp */
         newExp = COND_EXPR::idReg (rTMP, 0, &pProc->localId);
-        duIcode->setRegDU(rTMP, (operDu)eUSE);
+        duIcode.setRegDU(rTMP, (operDu)eUSE);
     }
 
-    else if ((sd == SRC) && ((pIcode->ic.ll.flg & I) == I)) /* constant */
-        newExp = COND_EXPR::idKte (pIcode->ic.ll.immed.op, 2);
+    else if ((sd == SRC) && ((pIcode.ic.ll.flg & I) == I)) /* constant */
+        newExp = COND_EXPR::idKte (pIcode.ic.ll.immed.op, 2);
 
     else if (pm->regi == 0)                             /* global variable */
         newExp = COND_EXPR::idGlob(pm->segValue, pm->off);
 
     else if (pm->regi < INDEXBASE)                      /* register */
     {
-        newExp = COND_EXPR::idReg (pm->regi, (sd == SRC) ? pIcode->ic.ll.flg :
-                                                           pIcode->ic.ll.flg & NO_SRC_B, &pProc->localId);
-        duIcode->setRegDU( pm->regi, du);
+        newExp = COND_EXPR::idReg (pm->regi, (sd == SRC) ? pIcode.ic.ll.flg :
+                                                           pIcode.ic.ll.flg & NO_SRC_B, &pProc->localId);
+        duIcode.setRegDU( pm->regi, du);
     }
 
     else if (pm->off)                                   /* offset */
@@ -419,7 +419,7 @@ COND_EXPR *COND_EXPR::id(ICODE *pIcode, opLoc sd, Function * pProc, Int i,ICODE 
                 newExp = idCondExpIdxGlob (pm->segValue, pm->off, rBX,&pProc->localId);
             else
                 newExp = COND_EXPR::idOther (pm->seg, pm->regi, pm->off);
-            duIcode->setRegDU( rBX, eUSE);
+            duIcode.setRegDU( rBX, eUSE);
         }
         else                                            /* idx <> bp, bx */
             newExp = COND_EXPR::idOther (pm->seg, pm->regi, pm->off);
@@ -432,15 +432,15 @@ COND_EXPR *COND_EXPR::id(ICODE *pIcode, opLoc sd, Function * pProc, Int i,ICODE 
         {
             switch (pm->regi) {
                 case INDEXBASE + 4:   newExp = COND_EXPR::idReg(rSI, 0, &pProc->localId);
-                    duIcode->setRegDU( rSI, du);
+                    duIcode.setRegDU( rSI, du);
                     break;
                 case INDEXBASE + 5:   newExp = COND_EXPR::idReg(rDI, 0, &pProc->localId);
-                    duIcode->setRegDU( rDI, du);
+                    duIcode.setRegDU( rDI, du);
                     break;
                 case INDEXBASE + 6:   newExp = COND_EXPR::idReg(rBP, 0, &pProc->localId);
                     break;
                 case INDEXBASE + 7:   newExp = COND_EXPR::idReg(rBX, 0, &pProc->localId);
-                    duIcode->setRegDU( rBX, du);
+                    duIcode.setRegDU( rBX, du);
                     break;
                 default:
                     newExp = 0;

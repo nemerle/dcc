@@ -296,8 +296,6 @@ Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, Int ix,operDu du, Int 
 }
 
 
-boolT checkLongEq (LONG_STKID_TYPE longId, ICODE *pIcode, Int i, Int idx,
-                  Function * pProc, COND_EXPR **rhs, COND_EXPR **lhs, Int off)
 /* Checks whether the long stack identifier is equivalent to the source or
  * destination operands of pIcode and pIcode+1 (ie. these are LOW_LEVEL
  * icodes at present).  If so, returns the rhs and lhs of this instruction.
@@ -307,6 +305,8 @@ boolT checkLongEq (LONG_STKID_TYPE longId, ICODE *pIcode, Int i, Int idx,
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
+boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i, Int idx,
+                  Function * pProc, COND_EXPR **rhs, COND_EXPR **lhs, Int off)
 {
     ICODEMEM *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
 
@@ -343,7 +343,7 @@ boolT checkLongEq (LONG_STKID_TYPE longId, ICODE *pIcode, Int i, Int idx,
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongRegEq (LONGID_TYPE longId, ICODE *pIcode, Int i, Int idx,
+boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i, Int idx,
                   Function * pProc, COND_EXPR **rhs, COND_EXPR **lhs, Int off)
 {
     ICODEMEM *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */

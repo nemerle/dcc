@@ -143,8 +143,8 @@ void Function::highLevelGen()
                 if ((flg & NO_OPS) != NO_OPS)       /* if there are opers */
                 {
                     if ((flg & NO_SRC) != NO_SRC)   /* if there is src op */
-                        rhs = COND_EXPR::id (pIcode, SRC, this, i, pIcode, NONE);
-                    lhs = COND_EXPR::id (pIcode, DST, this, i, pIcode, NONE);
+                        rhs = COND_EXPR::id (*pIcode, SRC, this, i, *pIcode, NONE);
+                    lhs = COND_EXPR::id (*pIcode, DST, this, i, *pIcode, NONE);
                 }
 
             switch (pIcode->ic.ll.opcode) {
@@ -183,7 +183,7 @@ void Function::highLevelGen()
                     break;
 
                 case iIMUL:   rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
-                    lhs = COND_EXPR::id (pIcode, LHS_OP, this, i, pIcode, NONE);
+                    lhs = COND_EXPR::id (*pIcode, LHS_OP, this, i, *pIcode, NONE);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
@@ -214,7 +214,7 @@ void Function::highLevelGen()
                     break;
 
                 case iMUL:    rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
-                    lhs = COND_EXPR::id (pIcode, LHS_OP, this, i, pIcode, NONE);
+                    lhs = COND_EXPR::id (*pIcode, LHS_OP, this, i, *pIcode, NONE);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 

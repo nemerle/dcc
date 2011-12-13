@@ -282,7 +282,7 @@ struct HLTYPE
     }                    oper;      /* operand                  */
 } ;
 
-typedef struct
+struct LLTYPE
 {
     llIcode     opcode;         /* llIcode instruction          */
     byte        numBytes;       /* Number of bytes this instr   */
@@ -303,7 +303,11 @@ typedef struct
         dword  *entries;        /*   array of offsets           */
     }           caseTbl;
     Int         hllLabNum;      /* label # for hll codegen      */
-} LLTYPE;
+    bool conditionalJump()
+    {
+        return (opcode >= iJB) && (opcode < iJCXZ);
+    }
+};
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
 struct ICODE

@@ -11,9 +11,9 @@
 
 #include "dcc.h"
 
-static boolT isJCond (llIcode opcode)
 /* Returns whether the given icode opcode is within the range of valid
  * high-level conditional jump icodes (iJB..iJG) */
+static boolT isJCond (llIcode opcode)
 {
     if ((opcode >= iJB) && (opcode <= iJG))
         return true;
@@ -59,7 +59,7 @@ static boolT isLong23 (Int i, BB * pbb, Int *off, Int *arc)
 
 
 /* Returns whether the conditions for a 2-2 long variable are satisfied */
-static boolT isLong22 (ICODE * pIcode, ICODE * pEnd, Int *off)
+static boolT isLong22 (iICODE pIcode, iICODE pEnd, Int *off)
 {
     if (((pIcode+2) < pEnd) && ((pIcode+2)->ic.ll.opcode == iCMP) &&
             (isJCond ((pIcode+1)->ic.ll.opcode)) &&
@@ -75,7 +75,7 @@ static boolT isLong22 (ICODE * pIcode, ICODE * pEnd, Int *off)
 /* Creates a long conditional <=, >=, <, or > at (pIcode+1).
  * Removes excess nodes from the graph by flagging them, and updates
  * the new edges for the remaining nodes.	*/
-static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
+static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,
                          Int *idx, Function * pProc, Int arc, Int off)
 { Int j;
     BB * pbb, * obb1, * obb2, * tbb;
@@ -162,7 +162,7 @@ static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode,
 /* Creates a long conditional equality or inequality at (pIcode+1).
  * Removes excess nodes from the graph by flagging them, and updates
  * the new edges for the remaining nodes.	*/
-static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, ICODE * pIcode, Int *idx)
+static void longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, Int *idx)
 {
     Int j;
     BB * pbb, * obb1, * tbb;
@@ -225,13 +225,13 @@ void Function::propLongStk (Int i, ID *pLocId)
 {
     Int idx, off, arc;
     COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
-    ICODE * pIcode, * pEnd;
+    iICODE pIcode, pEnd;
 
     /* Check all icodes for offHi:offLo */
-    pEnd = this->Icode.GetIcode(this->Icode.GetNumIcodes() -1);
+    pEnd = Icode.end();
     for (idx = 0; idx < (this->Icode.GetNumIcodes() - 1); idx++)
     {
-        pIcode = this->Icode.GetIcode(idx);
+        pIcode = Icode.begin()+idx;
         if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
             continue;
 
@@ -307,17 +307,17 @@ void Function::propLongReg (Int i, ID *pLocId)
 {
     COND_EXPR *lhs, *rhs;
     Int idx, j, off, arc;
-    ICODE * pIcode, * pEnd;
+    iICODE pIcode, pEnd;
     ICODEMEM * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
 
     /* Process all definitions/uses of long registers at an icode position */
-    pEnd = this->Icode.GetIcode(this->Icode.GetNumIcodes() -1);
+    pEnd = this->Icode.end();
     for (j = 0; j < pLocId->idx.size(); j++)
     {
         /* Check backwards for a definition of this long register */
         for (idx = pLocId->idx[j] - 1; idx > 0 ; idx--)
         {
-            pIcode = this->Icode.GetIcode(idx-1);
+            pIcode = Icode.begin()+(idx-1);
             if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
                 continue;
 
@@ -383,7 +383,7 @@ void Function::propLongReg (Int i, ID *pLocId)
         if (idx <= 0)
             for (idx = pLocId->idx[j] + 1; idx < this->Icode.GetNumIcodes() - 1; idx++)
             {
-                pIcode = this->Icode.GetIcode(idx);
+                pIcode = Icode.begin()+(idx);
                 if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
                     continue;
 

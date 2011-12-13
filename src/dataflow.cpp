@@ -23,16 +23,16 @@ Int STKFRAME::getLocVar(Int off)
 
 
 /* Returns a string with the source operand of Icode */
-static COND_EXPR *srcIdent (ICODE * Icode, Function * pProc, Int i, ICODE * duIcode, operDu du)
+static COND_EXPR *srcIdent (const ICODE &Icode, Function * pProc, Int i, ICODE & duIcode, operDu du)
 {
     COND_EXPR *n;
 
-     if (Icode->ic.ll.flg & I)   /* immediate operand */
+     if (Icode.ic.ll.flg & I)   /* immediate operand */
      {
-         if (Icode->ic.ll.flg & B)
-             n = COND_EXPR::idKte (Icode->ic.ll.immed.op, 1);
+         if (Icode.ic.ll.flg & B)
+             n = COND_EXPR::idKte (Icode.ic.ll.immed.op, 1);
          else
-             n = COND_EXPR::idKte (Icode->ic.ll.immed.op, 2);
+             n = COND_EXPR::idKte (Icode.ic.ll.immed.op, 2);
      }
      else
          n = COND_EXPR::id (Icode, SRC, pProc, i, duIcode, du);
@@ -41,11 +41,10 @@ static COND_EXPR *srcIdent (ICODE * Icode, Function * pProc, Int i, ICODE * duIc
 
 
 /* Returns the destination operand */
-static COND_EXPR *dstIdent (ICODE * pIcode, Function * pProc, Int i, ICODE * duIcode,
-                            operDu du)
-{ COND_EXPR *n;
-
-    n = COND_EXPR::id (pIcode, DST, pProc, i, duIcode, du);
+static COND_EXPR *dstIdent (const ICODE & Icode, Function * pProc, Int i, ICODE & duIcode, operDu du)
+{
+    COND_EXPR *n;
+    n = COND_EXPR::id (Icode, DST, pProc, i, duIcode, du);
     /** Is it needed? (pIcode->ic.ll.flg) & NO_SRC_B **/
     return (n);
 }
@@ -90,8 +89,8 @@ void Function::elimCondCodes ()
                             switch (defAt->GetLlOpcode())
                             {
                                 case iCMP:
-                                    rhs = srcIdent (&(*defAt), this, defAt->loc_ip,&(*useAt), eUSE);
-                                    lhs = dstIdent (&(*defAt), this, defAt->loc_ip,&(*useAt), eUSE);
+                                    rhs = srcIdent (*defAt, this, defAt->loc_ip,*useAt, eUSE);
+                                    lhs = dstIdent (*defAt, this, defAt->loc_ip,*useAt, eUSE);
                                     break;
 
                                 case iOR:
@@ -104,8 +103,8 @@ void Function::elimCondCodes ()
                                     break;
 
                                 case iTEST:
-                                    rhs = srcIdent (&(*defAt),this, defAt->loc_ip,&(*useAt), eUSE);
-                                    lhs = dstIdent (&(*defAt),this, defAt->loc_ip,&(*useAt), eUSE);
+                                    rhs = srcIdent (*defAt,this, defAt->loc_ip,*useAt, eUSE);
+                                    lhs = dstIdent (*defAt,this, defAt->loc_ip,*useAt, eUSE);
                                     lhs = COND_EXPR::boolOp (lhs, rhs, AND);
                                     if (defAt->isLlFlag(B))
                                         rhs = COND_EXPR::idKte (0, 1);
@@ -637,8 +636,8 @@ void Function::findExps()
 {
     Int i, k, numHlIcodes;
     iICODE lastInst,
-            picode; /* Current icode                            */
-    ICODE * ticode;        /* Target icode                             */
+            picode, /* Current icode                            */
+            ticode;        /* Target icode                             */
     BB * pbb;         /* Current and next basic block             */
     boolT res;
     COND_EXPR *exp,       /* expression pointer - for HLI_POP and HLI_CALL    */
@@ -681,7 +680,7 @@ void Function::findExps()
                             case HLI_ASSIGN:
                                 /* Replace rhs of current icode into target
                              * icode expression */
-                                ticode = &Icode[picode->du1.idx[0][0]];
+                                ticode = Icode.begin()+picode->du1.idx[0][0];
                                 if ((picode->du.lastDefRegi & duReg[regi]) &&
                                     ((ticode->ic.hl.opcode != HLI_CALL) &&
                                      (ticode->ic.hl.opcode != HLI_RET)))
@@ -694,7 +693,7 @@ void Function::findExps()
                                         case HLI_ASSIGN:
                                             forwardSubs (picode->ic.hl.oper.asgn.lhs,
                                                          picode->ic.hl.oper.asgn.rhs,
-                                                         &(*picode), ticode, &localId,
+                                                         &(*picode), &(*ticode), &localId,
                                                          &numHlIcodes);
                                             break;
 
@@ -712,7 +711,7 @@ void Function::findExps()
                                             break;
 
                                         case HLI_CALL:    /* register arguments */
-                                            newRegArg (&(*picode), ticode);
+                                            newRegArg (&(*picode), &(*ticode));
                                             picode->invalidate();
                                             numHlIcodes--;
                                             break;
@@ -721,7 +720,7 @@ void Function::findExps()
                                 break;
 
                             case HLI_POP:
-                                ticode = Icode.GetIcode(picode->du1.idx[0][0]);
+                                ticode = Icode.begin()+(picode->du1.idx[0][0]);
                                 if ((picode->du.lastDefRegi & duReg[regi]) &&
                                     ((ticode->ic.hl.opcode != HLI_CALL) &&
                                      (ticode->ic.hl.opcode != HLI_RET)))
@@ -731,7 +730,7 @@ void Function::findExps()
                                 switch (ticode->ic.hl.opcode) {
                                     case HLI_ASSIGN:
                                         forwardSubs (picode->ic.hl.oper.exp, exp,
-                                                     &(*picode), ticode, &localId,
+                                                     &(*picode), &(*ticode), &localId,
                                                      &numHlIcodes);
                                         break;
 
@@ -756,7 +755,7 @@ void Function::findExps()
                                 break;
 
                             case HLI_CALL:
-                                ticode = Icode.GetIcode(picode->du1.idx[0][0]);
+                                ticode = Icode.begin()+(picode->du1.idx[0][0]);
                                 switch (ticode->ic.hl.opcode) {
                                     case HLI_ASSIGN:
                                         exp = COND_EXPR::idFunc (
@@ -824,7 +823,7 @@ void Function::findExps()
                              * icode expression */
                                 if (picode->du1.idx[0][0] == picode->du1.idx[1][0])
                                 {
-                                    ticode = Icode.GetIcode(picode->du1.idx[0][0]);
+                                    ticode = Icode.begin()+(picode->du1.idx[0][0]);
                                     if ((picode->du.lastDefRegi & duReg[regi]) &&
                                         ((ticode->ic.hl.opcode != HLI_CALL) &&
                                          (ticode->ic.hl.opcode != HLI_RET)))
@@ -834,7 +833,7 @@ void Function::findExps()
                                         case HLI_ASSIGN:
                                             forwardSubsLong (picode->ic.hl.oper.asgn.lhs->expr.ident.idNode.longIdx,
                                                              picode->ic.hl.oper.asgn.rhs, &(*picode),
-                                                             ticode, &numHlIcodes);
+                                                             &(*ticode), &numHlIcodes);
                                             break;
 
                                         case HLI_JCOND:  case HLI_PUSH:  case HLI_RET:
@@ -850,7 +849,7 @@ void Function::findExps()
                                             break;
 
                                         case HLI_CALL:    /* register arguments */
-                                            newRegArg ( &(*picode), ticode);
+                                            newRegArg ( &(*picode), &(*ticode));
                                             picode->invalidate();
                                             numHlIcodes--;
                                             break;
@@ -861,7 +860,7 @@ void Function::findExps()
                             case HLI_POP:
                                 if (picode->du1.idx[0][0] == picode->du1.idx[1][0])
                                 {
-                                    ticode = Icode.GetIcode(picode->du1.idx[0][0]);
+                                    ticode = Icode.begin()+(picode->du1.idx[0][0]);
                                     if ((picode->du.lastDefRegi & duReg[regi]) &&
                                         ((ticode->ic.hl.opcode != HLI_CALL) &&
                                          (ticode->ic.hl.opcode != HLI_RET)))
@@ -871,7 +870,7 @@ void Function::findExps()
                                     switch (ticode->ic.hl.opcode) {
                                         case HLI_ASSIGN:
                                             forwardSubsLong (picode->ic.hl.oper.exp->expr.ident.idNode.longIdx,
-                                                             exp, &(*picode), ticode, &numHlIcodes);
+                                                             exp, &(*picode), &(*ticode), &numHlIcodes);
                                             break;
                                         case HLI_JCOND: case HLI_PUSH:
                                             res = insertSubTreeLongReg (exp,
@@ -890,7 +889,7 @@ void Function::findExps()
                                 break;
 
                             case HLI_CALL:    /* check for function return */
-                                ticode = Icode.GetIcode(picode->du1.idx[0][0]);
+                                ticode = Icode.begin()+(picode->du1.idx[0][0]);
                                 switch (ticode->ic.hl.opcode)
                                 {
                                     case HLI_ASSIGN:
