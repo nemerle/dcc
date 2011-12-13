@@ -37,6 +37,8 @@ private:
     }
     //friend class SymbolTableListTraits<BB, Function>;
     //Int             numInEdges;     /* Number of in edges           */
+    Int             start;          /* First instruction offset     */
+    Int             length;         /* No. of instructions this BB  */
 
 public:
     Int    begin();
@@ -52,8 +54,6 @@ public:
     size_t size();
     byte            nodeType;       /* Type of node                 */
     int             traversed;      /* Boolean: traversed yet?      */
-    Int             start;          /* First instruction offset     */
-    Int             length;         /* No. of instructions this BB  */
     Int             numHlIcodes;	/* No. of high-level icodes		*/
     flags32         flg;			/* BB flags						*/
 

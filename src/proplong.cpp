@@ -32,10 +32,10 @@ static boolT isLong23 (Int i, BB * pbb, Int *off, Int *arc)
     e = pbb->edges[ELSE].BBptr;
 
     /* Check along the THEN path */
-    if ((t->length == 1) && (t->nodeType == TWO_BRANCH) && (t->inEdges.size() == 1))
+    if ((t->size() == 1) && (t->nodeType == TWO_BRANCH) && (t->inEdges.size() == 1))
     {
         obb2 = t->edges[THEN].BBptr;
-        if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ic.ll.opcode == iCMP))
+        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ic.ll.opcode == iCMP))
         {
             *off = obb2->front().loc_ip - i;
             *arc = THEN;
@@ -44,10 +44,10 @@ static boolT isLong23 (Int i, BB * pbb, Int *off, Int *arc)
     }
 
     /* Check along the ELSE path  */
-    else if ((e->length == 1) && (e->nodeType == TWO_BRANCH) && (e->inEdges.size() == 1))
+    else if ((e->size() == 1) && (e->nodeType == TWO_BRANCH) && (e->inEdges.size() == 1))
     {
         obb2 = e->edges[THEN].BBptr;
-        if ((obb2->length == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ic.ll.opcode == iCMP))
+        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ic.ll.opcode == iCMP))
         {
             *off = obb2->front().loc_ip - i;
             *arc = ELSE;
