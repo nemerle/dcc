@@ -189,7 +189,8 @@ void Function::markImpure()
  ****************************************************************************/
 void Function::freeCFG()
 {
-    std::for_each(heldBBs.begin(),heldBBs.end(),[](BB *p)->void {delete p;});
+    for(BB *p : heldBBs)
+        delete p;
 }
 
 
@@ -369,15 +370,14 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
 void BB::dfsNumbering(std::vector<BB *> &dfsLast, Int *first, Int *last)
 {
     BB *		pChild;
-    byte	i;
-
     traversed = DFS_NUM;
     dfsFirstNum = (*first)++;
 
     /* index is being used as an index to inEdges[]. */
-    for (i = 0; i < edges.size(); i++)
+//    for (i = 0; i < edges.size(); i++)
+    for (auto edge : edges)
     {
-        pChild = edges[i].BBptr;
+        pChild = edge.BBptr;
         pChild->inEdges[pChild->index++] = this;
 
         /* Is this the last visit? */

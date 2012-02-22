@@ -55,7 +55,7 @@ static  word    *T1base, *T2base;       /* Pointers to start of T1, T2 */
 static  word    *g;                     /* g[] */
 static  HT      *ht;                    /* The hash table */
 static  PH_FUNC_STRUCT *pFunc;          /* Points to the array of func names */
-static  hlType  *pArg;                  /* Points to the array of param types */
+static  hlType  *pArg=0;                /* Points to the array of param types */
 static  int     numFunc;                /* Number of func names actually stored */
 static  int     numArg;                 /* Number of param names actually stored */
 #define DCCLIBS "dcclibs.dat"           /* Name of the prototypes data file */
@@ -390,7 +390,8 @@ void SetupLibCheck(void)
 
     /* This is now the hash table */
     /* First allocate space for the table */
-    if ((ht = (HT *)allocMem(numKeys * sizeof(HT))) == 0)
+    ht = new HT[numKeys];
+    if ( 0 == ht)
     {
         printf("Could not allocate hash table\n");
         exit(1);
@@ -422,19 +423,18 @@ void SetupLibCheck(void)
 }
 
 
-void
-CleanupLibCheck(void)
+void CleanupLibCheck(void)
 {
     /* Deallocate all the stuff allocated in SetupLibCheck() */
-    if (ht)     free(ht);
-    if (pFunc)free(pFunc);
+    delete [] ht;
+    delete [] pFunc;
 }
 
 
 /* Check this function to see if it is a library function. Return TRUE if
     it is, and copy its name to pProc->name
 */
-boolT LibCheck(Function & pProc)
+bool LibCheck(Function & pProc)
 {
     long fileOffset;
     int h, i, j, arg;
@@ -904,7 +904,7 @@ readProtoFile(void)
     numFunc = readFileShort(fProto);     /* Num of entries to allocate */
 
     /* Allocate exactly correct # entries */
-    pFunc = (PH_FUNC_STRUCT*) allocMem(numFunc * sizeof(PH_FUNC_STRUCT));
+    pFunc = new PH_FUNC_STRUCT[numFunc];
 
     for (i=0; i < numFunc; i++)
     {
@@ -925,7 +925,8 @@ readProtoFile(void)
     numArg = readFileShort(fProto);     /* Num of entries to allocate */
 
     /* Allocate exactly correct # entries */
-    pArg = (hlType*) allocMem(numArg * sizeof(hlType));
+    delete [] pArg;
+    pArg = new hlType[numArg];
 
     for (i=0; i < numArg; i++)
     {

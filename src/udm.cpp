@@ -90,15 +90,10 @@ void udm(void)
  ***************************************************************************/
 void Function::displayCFG()
 {
-    Int i;
-    BB * pBB;
-
     printf("\nBasic Block List - Proc %s", name);
-
-    for (auto iter = cfg.begin(); iter!=cfg.end(); ++iter)
+    for (BB *pBB : cfg)
     {
-        pBB = *iter;
-        (*iter)->display();
+        pBB->display();
     }
 }
 

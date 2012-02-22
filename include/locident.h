@@ -34,7 +34,7 @@ typedef enum {
     TYPE_DOUBLE		/* double precision float	*/
 } hlType;
 
-static const char *hlTypes[13] = {"", "char", "unsigned char", "int", "unsigned int",
+static constexpr const char *hlTypes[13] = {"", "char", "unsigned char", "int", "unsigned int",
                                   "long", "unsigned long", "record", "int *", "char *",
                                   "", "float", "double"};
 
@@ -68,33 +68,33 @@ typedef struct
 /* ID, LOCAL_ID */
 struct ID
 {
-    hlType			type;	/* Probable type							 */
-    boolT			illegal;/* Boolean: not a valid field any more		 */
-    IDX_ARRAY		idx;	/* Index into icode array (REG_FRAME only)	 */
-    frameType		loc;	/* Frame location							 */
-    boolT			hasMacro;/* Identifier requires a macro				 */
-    char			macro[10];/* Macro for this identifier				 */
-    char			name[20];/* Identifier's name						 */
-    union {					/* Different types of identifiers 			 */
-        byte		regi;	/* For TYPE_BYTE(WORD)_(UN)SIGN registers    */
-        struct {			/* For TYPE_BYTE(WORD)_(UN)SIGN on the stack */
-            byte	regOff; /*    register offset (if any)				 */
-            Int		off;	/*    offset from BP						 */
-        }			bwId;
+    hlType              type;       /* Probable type                            */
+    boolT               illegal;    /* Boolean: not a valid field any more      */
+    IDX_ARRAY           idx;        /* Index into icode array (REG_FRAME only)  */
+    frameType           loc;        /* Frame location                           */
+    boolT               hasMacro;   /* Identifier requires a macro              */
+    char                macro[10];  /* Macro for this identifier                */
+    char                name[20];   /* Identifier's name                        */
+    union {                         /* Different types of identifiers           */
+        byte		regi;       /* For TYPE_BYTE(WORD)_(UN)SIGN registers   */
+        struct {                    /* For TYPE_BYTE(WORD)_(UN)SIGN on the stack */
+            byte	regOff;     /*    register offset (if any)              */
+            Int		off;        /*    offset from BP            		*/
+        }               bwId;
         BWGLB_TYPE	bwGlb;	/* For TYPE_BYTE(WORD)_(UN)SIGN globals		 */
-        LONGID_TYPE longId; /* For TYPE_LONG_(UN)SIGN registers			 */
-        LONG_STKID_TYPE	longStkId;/* For TYPE_LONG_(UN)SIGN on the stack */
+        LONGID_TYPE     longId; /* For TYPE_LONG_(UN)SIGN registers			 */
+        LONG_STKID_TYPE	longStkId;  /* For TYPE_LONG_(UN)SIGN on the stack */
         struct {			/* For TYPE_LONG_(UN)SIGN globals			 */
-            int16	seg;	/*   segment value							 */
-            int16	offH;	/*   offset high							 */
-            int16	offL;	/*   offset low								 */
-            byte	regi;	/*   optional indexed register				 */
+            int16	seg;	/*   segment value                                              */
+            int16	offH;	/*   offset high                                                */
+            int16	offL;	/*   offset low                                                 */
+            byte	regi;	/*   optional indexed register                                  */
         }			longGlb;
-        struct {			/* For TYPE_LONG_(UN)SIGN constants			 */
+        struct {			/* For TYPE_LONG_(UN)SIGN constants                     */
             dword	h;		/*	 high word								 */
             dword 	l;		/*	 low word								 */
-        }			longKte;
-    }				id;
+        } longKte;
+    } id;
     ID()
     {
         memset(this,0,sizeof(ID));

@@ -129,13 +129,13 @@ NextArg:;
         {
             if (! asm1_name)
             {
-                asm1_name = strcpy((char*)allocMem(strlen(*argv)+4), *argv);
+                asm1_name = strcpy((char*)malloc(strlen(*argv)+4), *argv);
                 pc = strrchr(asm1_name, '.');
                 if (pc > strrchr(asm1_name, '/'))
                 {
                     *pc = '\0';
                 }
-                asm2_name = (char*)allocMem(strlen(asm1_name)+4) ;
+                asm2_name = (char*)malloc(strlen(asm1_name)+4) ;
                 strcat(strcpy(asm2_name, asm1_name), ".a2");
                 unlink(asm2_name);
                 strcat(asm1_name, ".a1");

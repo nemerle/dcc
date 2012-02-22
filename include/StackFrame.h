@@ -35,11 +35,10 @@ struct STKFRAME
     int16       maxOff;     /* Maximum offset in stack frame*/
     Int         cb;         /* Number of bytes in arguments */
     Int         numArgs;    /* No. of arguments in the table*/
-    void adjustForArgType(Int numArg_, hlType actType_);
+    void        adjustForArgType(Int numArg_, hlType actType_);
     STKFRAME() : sym(0),minOff(0),maxOff(0),cb(0),numArgs(0)
     {
 
     }
-public:
     Int getLocVar(Int off);
 };

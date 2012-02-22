@@ -30,10 +30,9 @@ void CALL_GRAPH::insertArc (ilFunction newProc)
     Int i;
 
     /* Check if procedure already exists */
-    for (i = 0;  i < outEdges.size(); i++)
-        if (outEdges[i]->proc == newProc)
-            return;
-
+    auto res=std::find_if(outEdges.begin(),outEdges.end(),[newProc](CALL_GRAPH *e) {return e->proc==newProc;});
+    if(res!=outEdges.end())
+        return;
     /* Include new arc */
     pcg = new CALL_GRAPH;
     pcg->proc = newProc;
@@ -231,7 +230,7 @@ void allocStkArgs (ICODE *picode, Int num)
  *			FALSE elsewhere	*/
 boolT newStkArg (ICODE *picode, COND_EXPR *exp, llIcode opcode, Function * pproc)
 {
-	STKFRAME * ps;
+    STKFRAME * ps;
     byte regi;
 
     /* Check for far procedure call, in which case, references to segment
@@ -275,52 +274,53 @@ void placeStkArg (ICODE *picode, COND_EXPR *exp, Int pos)
  * same type as the given type (from the procedure's formal list).  If not,
  * the actual argument gets modified */
 void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
-{ hlType actType;
+{
+    hlType actType;
     Int offset, offL;
 
     if (exp == NULL)
         return;
 
     actType = expType (exp, pproc);
-    if ((actType != forType) && (exp->type == IDENTIFIER))
+    if (((actType == forType) || (exp->type != IDENTIFIER)))
+        return;
+    switch (forType)
     {
-        switch (forType) {
-            case TYPE_UNKNOWN: case TYPE_BYTE_SIGN:
-            case TYPE_BYTE_UNSIGN: case TYPE_WORD_SIGN:
-            case TYPE_WORD_UNSIGN: case TYPE_LONG_SIGN:
-            case TYPE_LONG_UNSIGN: case TYPE_RECORD:
-                break;
+        case TYPE_UNKNOWN: case TYPE_BYTE_SIGN:
+        case TYPE_BYTE_UNSIGN: case TYPE_WORD_SIGN:
+        case TYPE_WORD_UNSIGN: case TYPE_LONG_SIGN:
+        case TYPE_LONG_UNSIGN: case TYPE_RECORD:
+            break;
 
-            case TYPE_PTR:
-            case TYPE_CONST:
-                break;
+        case TYPE_PTR:
+        case TYPE_CONST:
+            break;
 
-            case TYPE_STR:
-                switch (actType) {
-                    case TYPE_CONST:
-                        /* It's an offset into image where a string is
+        case TYPE_STR:
+            switch (actType) {
+                case TYPE_CONST:
+                    /* It's an offset into image where a string is
                                          * found.  Point to the string.	*/
-                        offL = exp->expr.ident.idNode.kte.kte;
-                        if (prog.fCOM)
-                            offset = (pproc->state.r[rDS]<<4) + offL + 0x100;
-                        else
-                            offset = (pproc->state.r[rDS]<<4) + offL;
-                        exp->expr.ident.idNode.strIdx = offset;
-                        exp->expr.ident.idType = STRING;
-                        break;
+                    offL = exp->expr.ident.idNode.kte.kte;
+                    if (prog.fCOM)
+                        offset = (pproc->state.r[rDS]<<4) + offL + 0x100;
+                    else
+                        offset = (pproc->state.r[rDS]<<4) + offL;
+                    exp->expr.ident.idNode.strIdx = offset;
+                    exp->expr.ident.idType = STRING;
+                    break;
 
-                    case TYPE_PTR:
-                        /* It's a pointer to a char rather than a pointer to
+                case TYPE_PTR:
+                    /* It's a pointer to a char rather than a pointer to
                                          * an integer */
-                        /***HERE - modify the type ****/
-                        break;
+                    /***HERE - modify the type ****/
+                    break;
 
-                    case TYPE_WORD_SIGN:
+                case TYPE_WORD_SIGN:
 
-                        break;
-                } /* eos */
-                break;
-        }
+                    break;
+            } /* eos */
+            break;
     }
 }
 

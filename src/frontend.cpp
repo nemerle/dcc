@@ -1,8 +1,8 @@
 /*****************************************************************************
- *			dcc project Front End module
- * Loads a program into simulated main memory and builds the procedure list.
- * (C) Cristina Cifuentes
- ****************************************************************************/
+*			dcc project Front End module
+* Loads a program into simulated main memory and builds the procedure list.
+* (C) Cristina Cifuentes
+****************************************************************************/
 
 #include "dcc.h"
 #include <stdio.h>
@@ -58,9 +58,9 @@ static void displayLoadInfo(void);
 static void displayMemMap(void);
 
 /*****************************************************************************
- * FrontEnd - invokes the loader, parser, disassembler (if asm1), icode
- * rewritter, and displays any useful information.
- ****************************************************************************/
+* FrontEnd - invokes the loader, parser, disassembler (if asm1), icode
+* rewritter, and displays any useful information.
+****************************************************************************/
 void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
 {
     /* Load program into memory */
@@ -70,7 +70,7 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
         displayLoadInfo();
 
     /* Do depth first flow analysis building call graph and procedure list,
-         * and attaching the I-code to each procedure          */
+* and attaching the I-code to each procedure          */
     parse (pcallGraph);
 
     if (option.asm1)
@@ -79,29 +79,30 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
     }
 
     /* Search through code looking for impure references and flag them */
-    std::for_each(pProcList.begin(),pProcList.end(),
-                  [](Function &f)->void {
-                  f.markImpure();
-            if (option.asm1)
-            disassem(1, &f); });
-if (option.Interact)
-{
-    interactDis(&pProcList.front(), 0);			/* Interactive disassembler */
-}
+    for(Function &f : pProcList)
+    {
+        f.markImpure();
+        if (option.asm1)
+            disassem(1, &f);
+    }
+    if (option.Interact)
+    {
+        interactDis(&pProcList.front(), 0);     /* Interactive disassembler */
+    }
 
-/* Converts jump target addresses to icode offsets */
-std::for_each(pProcList.begin(),pProcList.end(),
-              [](Function &f)->void { f.bindIcodeOff(); });
+    /* Converts jump target addresses to icode offsets */
+    for(Function &f : pProcList)
+        f.bindIcodeOff();
 
-/* Print memory bitmap */
-if (option.Map)
-displayMemMap();
+    /* Print memory bitmap */
+    if (option.Map)
+        displayMemMap();
 }
 
 
 /****************************************************************************
- * displayLoadInfo - Displays low level loader type info.
- ***************************************************************************/
+* displayLoadInfo - Displays low level loader type info.
+***************************************************************************/
 static void displayLoadInfo(void)
 {
     Int	i;
@@ -133,8 +134,8 @@ static void displayLoadInfo(void)
 
 
 /*****************************************************************************
- * fill - Fills line for displayMemMap()
- ****************************************************************************/
+* fill - Fills line for displayMemMap()
+****************************************************************************/
 static void fill(Int ip, char *bf)
 {
     static byte type[4] = {'.', 'd', 'c', 'x'};
@@ -151,8 +152,8 @@ static void fill(Int ip, char *bf)
 
 
 /*****************************************************************************
- * displayMemMap - Displays the memory bitmap
- ****************************************************************************/
+* displayMemMap - Displays the memory bitmap
+****************************************************************************/
 static void displayMemMap(void)
 {
     char	c, b1[33], b2[33], b3[33];
@@ -187,8 +188,8 @@ static void displayMemMap(void)
 
 
 /*****************************************************************************
- * LoadImage
- ****************************************************************************/
+* LoadImage
+****************************************************************************/
 static void LoadImage(char *filename)
 {
     FILE   *fp;
@@ -222,10 +223,10 @@ static void LoadImage(char *filename)
         }
 
         /* Calculate the load module size.
-                 * This is the number of pages in the file
-                 * less the length of the header and reloc table
-                 * less the number of bytes unused on last page
-                */
+* This is the number of pages in the file
+* less the length of the header and reloc table
+* less the number of bytes unused on last page
+*/
         cb = (dword)LH(&header.numPages) * 512 - (dword)LH(&header.numParaHeader) * 16;
         if (header.lastPageSize)
         {
@@ -233,13 +234,13 @@ static void LoadImage(char *filename)
         }
 
         /* We quietly ignore minAlloc and maxAlloc since for our
-                 * purposes it doesn't really matter where in real memory
-                 * the program would end up.  EXE programs can't really rely on
-                 * their load location so setting the PSP segment to 0 is fine.
-                 * Certainly programs that prod around in DOS or BIOS are going
-                 * to have to load DS from a constant so it'll be pretty
-                 * obvious.
-                */
+* purposes it doesn't really matter where in real memory
+* the program would end up.  EXE programs can't really rely on
+* their load location so setting the PSP segment to 0 is fine.
+* Certainly programs that prod around in DOS or BIOS are going
+* to have to load DS from a constant so it'll be pretty
+* obvious.
+*/
         prog.initCS = (int16)LH(&header.initCS) + EXE_RELOCATION;
         prog.initIP = (int16)LH(&header.initIP);
         prog.initSS = (int16)LH(&header.initSS) + EXE_RELOCATION;
@@ -249,7 +250,7 @@ static void LoadImage(char *filename)
         /* Allocate the relocation table */
         if (prog.cReloc)
         {
-            prog.relocTable = (dword*)allocMem(prog.cReloc * sizeof(Int));
+            prog.relocTable = new dword [prog.cReloc];
             fseek(fp, LH(&header.relocTabOffset), SEEK_SET);
 
             /* Read in seg:offset pairs and convert to Image ptrs */
@@ -265,15 +266,15 @@ static void LoadImage(char *filename)
     }
     else
     {	/* COM file
-                 * In this case the load module size is just the file length
-                */
+         * In this case the load module size is just the file length
+         */
         fseek(fp, 0, SEEK_END);
         cb = ftell(fp);
 
         /* COM programs start off with an ORG 100H (to leave room for a PSP)
-                 * This is also the implied start address so if we load the image
-                 * at offset 100H addresses should all line up properly again.
-                */
+         * This is also the implied start address so if we load the image
+         * at offset 100H addresses should all line up properly again.
+         */
         prog.initCS = 0;
         prog.initIP = 0x100;
         prog.initSS = 0;
@@ -285,7 +286,7 @@ static void LoadImage(char *filename)
 
     /* Allocate a block of memory for the program. */
     prog.cbImage  = cb + sizeof(PSP);
-    prog.Image    = (byte*)allocMem(prog.cbImage);
+    prog.Image    = new byte [prog.cbImage];
     prog.Image[0] = 0xCD;		/* Fill in PSP Int 20h location */
     prog.Image[1] = 0x20;		/* for termination checking     */
 
@@ -304,7 +305,8 @@ static void LoadImage(char *filename)
 
     /* Set up memory map */
     cb = (prog.cbImage + 3) / 4;
-    prog.map = (byte *)memset(allocMem(cb), BM_UNKNOWN, (size_t)cb);
+    prog.map = (byte *)malloc(cb);
+    memset(prog.map, BM_UNKNOWN, (size_t)cb);
 
     /* Relocate segment constants */
     if (prog.cReloc)
@@ -323,8 +325,8 @@ static void LoadImage(char *filename)
 
 
 /*****************************************************************************
- * allocMem - malloc with failure test
- ****************************************************************************/
+* allocMem - malloc with failure test
+****************************************************************************/
 void *allocMem(Int cb)
 {
     byte *p;
@@ -336,37 +338,6 @@ void *allocMem(Int cb)
     {
         fatalError(MALLOC_FAILED, cb);
     }
-    /*printf("allocMem: %p\n", p);/**/
+    // printf("allocMem: %p\n", p);
     return p;
 }
-
-
-/*****************************************************************************
- * reallocVar - reallocs extra variable space
- ****************************************************************************/
-void *reallocVar(void *p, Int newsize)
-{
-    /*printf("Attempt to reallocVar %5d bytes\n", newsize);/**/
-    if (! (p = realloc((byte *)p, (size_t)newsize)))
-    {
-        fatalError(MALLOC_FAILED, newsize);
-    }
-
-    /*printf("reallocVar: %p\n", p);/**/
-    return p;
-}
-
-#if 0
-void free(void *p)
-{
-    _ffree(p);
-    switch (_heapset('Z'))
-    {
-        case _HEAPBADBEGIN: printf("f: Bad heap begin\n"); getchar(); break;
-        case _HEAPBADNODE:	printf("f: Bad heap node\n");  getchar(); break;
-        case _HEAPEMPTY:	printf("f: Heap empty\n");		getchar(); break;
-        case _HEAPOK:putchar('!');break;
-    }/**/
-}
-#endif
-

@@ -6,7 +6,7 @@
 
 #define TRUE 1
 #define FALSE 0
-#define bool unsigned char
+//#define bool unsigned char
 #define byte unsigned char
 #define word unsigned short
 

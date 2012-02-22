@@ -40,7 +40,7 @@ static const char *errorMessage[] = {
 /****************************************************************************
  fatalError: displays error message and exits the program.
  ****************************************************************************/
-void fatalError(Int errId, ...)
+void fatalError(eErrorId errId, ...)
 {  va_list args;
 //#ifdef __UNIX__   /* ultrix */
 #if 0
@@ -66,7 +66,7 @@ void fatalError(Int errId, ...)
 /****************************************************************************
  reportError: reports the warning/error and continues with the program.
  ****************************************************************************/
-void reportError(Int errId, ...)
+void reportError(eErrorId errId, ...)
 {  va_list args;
 //#ifdef __UNIX__   /* ultrix */
 #if 0

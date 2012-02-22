@@ -74,9 +74,8 @@ public:
         type=other.type;
         expr=other.expr;
     }
-    COND_EXPR()
+    COND_EXPR(condNodeType t=UNKNOWN_OP) : type(t)
     {
-        type=UNKNOWN_OP;
         memset(&expr,0,sizeof(_exprNode));
     }
 public:

@@ -15,6 +15,7 @@
 
 CIcodeRec::CIcodeRec()
 {
+    //reserve(512);
 }
 
 CIcodeRec::~CIcodeRec()
@@ -100,7 +101,7 @@ llIcode CIcodeRec::GetLlOpcode(int ip)
 
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and
     replaces *pIndex with an icode index */
-boolT CIcodeRec::labelSrch(dword target, Int *pIndex)
+bool CIcodeRec::labelSrch(dword target, dword &pIndex)
 {
     Int  i;
 
@@ -108,7 +109,7 @@ boolT CIcodeRec::labelSrch(dword target, Int *pIndex)
     {
         if (at(i).ic.ll.label == target)
         {
-            *pIndex = i;
+            pIndex = i;
             return TRUE;
         }
     }

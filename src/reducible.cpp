@@ -42,12 +42,11 @@ static BB *firstOfQueue (queue &Q)
 queue::iterator appendQueue (queue &Q, BB *node)
 {
     auto iter=std::find(Q.begin(),Q.end(),node);
-    if(iter==Q.end())
-    {
-        Q.push_back(node);
-        iter=Q.end();
-        --iter;
-    }
+    if(iter!=Q.end())
+        return iter;
+    Q.push_back(node);
+    iter=Q.end();
+    --iter;
     return iter;
 }
 
@@ -243,14 +242,14 @@ derSeq_Entry::~derSeq_Entry()
  * (derivedGi->Ii), and places it in derivedGi->next->Gi.       */
 bool Function::nextOrderGraph (derSeq *derivedGi)
 {
-    interval *Ii;     /* Interval being processed         */
-    BB *BBnode,       /* New basic block of intervals         */
-            *curr,     /* BB being checked for out edges       */
-            *succ     /* Successor node               */
+    interval *Ii;   /* Interval being processed         */
+    BB *BBnode,     /* New basic block of intervals         */
+        *curr,      /* BB being checked for out edges       */
+        *succ       /* Successor node               */
             ;
-    queue *listIi;    /* List of intervals                */
+    //queue *listIi;    /* List of intervals                */
     Int i,        /* Index to outEdges array          */
-            j;        /* Index to successors              */
+        j;        /* Index to successors              */
     boolT   sameGraph; /* Boolean, isomorphic graphs           */
 
     /* Process Gi's intervals */
@@ -277,9 +276,8 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
 
         if (BBnode->edges.size() > 0)
         {
-            for(auto iter=listIi.begin();iter!=listIi.end(); ++iter)
+            for(BB *curr :  listIi)
             {
-                curr = *iter;
                 for (j = 0; j < curr->edges.size(); j++)
                 {
                     succ = curr->edges[j].BBptr;
@@ -297,12 +295,11 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
      * Determines the number of in edges to each new BB, and places it
      * in numInEdges and inEdgeCount for later interval processing. */
     curr = new_entry.Gi = bbs.front();
-    for(auto curr=bbs.begin(); curr!=bbs.end(); ++curr)
+    for(BB *curr : bbs)
     {
-        for (i = 0; i < (*curr)->edges.size(); i++)
+        for(TYPEADR_TYPE &edge : curr->edges)
         {
             BBnode = new_entry.Gi;    /* BB of an interval */
-            TYPEADR_TYPE &edge=(*curr)->edges[i];
             auto iter= std::find_if(bbs.begin(),bbs.end(),
                                     [&edge](BB *node)->bool { return edge.intPtr==node->correspInt;});
             if(iter==bbs.end())

@@ -215,7 +215,7 @@ void disassem(Int pass, Function * ppProc)
                     JmpInst(pc[i].ic.ll.opcode))
             {
                 /* Replace the immediate operand with an icode index */
-                if (labelSrch(pc,numIcode, pc[i].ic.ll.immed.op,(Int *)&pc[i].ic.ll.immed.op))
+                if (pc.labelSrch(pc[i].ic.ll.immed.op,pc[i].ic.ll.immed.op))
                 {
                     /* This icode is the target of a jump */
                     pc[pc[i].ic.ll.immed.op].ic.ll.flg |= TARGET;

@@ -13,7 +13,7 @@
 /*****************************************************************************
  * JmpInst - Returns TRUE if opcode is a conditional or unconditional jump
  ****************************************************************************/
-boolT JmpInst(llIcode opcode)
+bool JmpInst(llIcode opcode)
 {
     switch (opcode) {
         case iJMP:  case iJMPF: case iJCXZ:
@@ -22,9 +22,9 @@ boolT JmpInst(llIcode opcode)
         case iJL:   case iJLE:  case iJGE:  case iJG:
         case iJE:   case iJNE:  case iJS:   case iJNS:
         case iJO:   case iJNO:  case iJP:   case iJNP:
-            return TRUE;
+            return true;
     }
-    return FALSE;
+    return false;
 }
 
 
@@ -1418,9 +1418,9 @@ void Function::findIdioms()
  * binds jump target addresses to icode offsets.    */
 void Function::bindIcodeOff()
 {
-    Int i, j;                 /* idx into icode array */
+    Int i;                 /* idx into icode array */
     iICODE pIcode;            /* ptr icode array      */
-    dword *p;                 /* for case table       */
+    dword *p,j;                 /* for case table       */
 
     if (! Icode.GetNumIcodes())        /* No Icode */
         return;
@@ -1430,7 +1430,7 @@ void Function::bindIcodeOff()
     for (i = 0; i < Icode.GetNumIcodes(); i++)
         if ((pIcode[i].ic.ll.flg & I) && JmpInst(pIcode[i].ic.ll.opcode))
         {
-            if (Icode.labelSrch(pIcode[i].ic.ll.immed.op, &j))
+            if (Icode.labelSrch(pIcode[i].ic.ll.immed.op, j))
             {
                 pIcode[j].ic.ll.flg |= TARGET;
             }
@@ -1445,14 +1445,14 @@ void Function::bindIcodeOff()
         {
             if (pIcode->ic.ll.flg & I)
             {
-                if (! Icode.labelSrch(pIcode->ic.ll.immed.op, (Int *)&pIcode->ic.ll.immed.op))
+                if (! Icode.labelSrch(pIcode->ic.ll.immed.op, pIcode->ic.ll.immed.op))
                     pIcode->ic.ll.flg |= NO_LABEL;
             }
             else if (pIcode->ic.ll.flg & SWITCH)
             {
                 p = pIcode->ic.ll.caseTbl.entries;
                 for (j = 0; j < pIcode->ic.ll.caseTbl.numEntries; j++, p++)
-                    Icode.labelSrch(*p, (Int *)p);
+                    Icode.labelSrch(*p, *p);
             }
         }
 }

@@ -60,31 +60,28 @@ extern bundle cCode;			/* Output C procedure's declaration and code */
 /* Procedure FLAGS */
 enum PROC_FLAGS
 {
-    PROC_BADINST=0x000100,/* Proc contains invalid or 386 instruction */
-    PROC_IJMP   =0x000200,/* Proc incomplete due to indirect jmp	 	*/
-    PROC_ICALL  =0x000400, /* Proc incomplete due to indirect call		*/
-    PROC_HLL=0x001000, /* Proc is likely to be from a HLL			*/
-    CALL_PASCAL=0x002000, /* Proc uses Pascal calling convention		*/
-    CALL_C=0x004000, /* Proc uses C calling convention			*/
-    CALL_UNKNOWN=0x008000, /* Proc uses unknown calling convention		*/
-    PROC_NEAR=0x010000, /* Proc exits with near return				*/
-    PROC_FAR=0x020000, /* Proc exits with far return				*/
-    GRAPH_IRRED=0x100000, /* Proc generates an irreducible graph		*/
-    SI_REGVAR=0x200000, /* SI is used as a stack variable 			*/
-    DI_REGVAR=0x400000, /* DI is used as a stack variable 			*/
-    PROC_IS_FUNC=0x800000,	/* Proc is a function 						*/
-    REG_ARGS=0x1000000, /* Proc has registers as arguments			*/
-    PROC_VARARG=0x2000000,	/* Proc has variable arguments				*/
-    PROC_OUTPUT=0x4000000, /* C for this proc has been output 			*/
-    PROC_RUNTIME=0x8000000, /* Proc is part of the runtime support		*/
-    PROC_ISLIB=0x10000000, /* Proc is a library function				*/
-    PROC_ASM=0x20000000, /* Proc is an intrinsic assembler routine   */
-    PROC_IS_HLL=0x40000000 /* Proc has HLL prolog code					*/
+    PROC_BADINST=0x00000100,/* Proc contains invalid or 386 instruction */
+    PROC_IJMP   =0x00000200,/* Proc incomplete due to indirect jmp	 	*/
+    PROC_ICALL  =0x00000400, /* Proc incomplete due to indirect call		*/
+    PROC_HLL    =0x00001000, /* Proc is likely to be from a HLL			*/
+    CALL_PASCAL =0x00002000, /* Proc uses Pascal calling convention		*/
+    CALL_C      =0x00004000, /* Proc uses C calling convention			*/
+    CALL_UNKNOWN=0x00008000, /* Proc uses unknown calling convention		*/
+    PROC_NEAR   =0x00010000, /* Proc exits with near return				*/
+    PROC_FAR    =0x00020000, /* Proc exits with far return				*/
+    GRAPH_IRRED =0x00100000, /* Proc generates an irreducible graph		*/
+    SI_REGVAR   =0x00200000, /* SI is used as a stack variable 			*/
+    DI_REGVAR   =0x00400000, /* DI is used as a stack variable 			*/
+    PROC_IS_FUNC=0x00800000,	/* Proc is a function 						*/
+    REG_ARGS    =0x01000000, /* Proc has registers as arguments			*/
+    PROC_VARARG =0x02000000,	/* Proc has variable arguments				*/
+    PROC_OUTPUT =0x04000000, /* C for this proc has been output 			*/
+    PROC_RUNTIME=0x08000000, /* Proc is part of the runtime support		*/
+    PROC_ISLIB  =0x10000000, /* Proc is a library function				*/
+    PROC_ASM    =0x20000000, /* Proc is an intrinsic assembler routine   */
+    PROC_IS_HLL =0x40000000 /* Proc has HLL prolog code					*/
 };
 #define CALL_MASK    0xFFFF9FFF /* Masks off CALL_C and CALL_PASCAL		 	*/
-
-
-
 
 /**** Global variables ****/
 
@@ -125,13 +122,11 @@ struct PROG /* Loaded program image parameters  */
 };
 
 extern PROG prog;   		/* Loaded program image parameters  */
-extern char condExp[200];	/* Conditional expression buffer 	*/
-extern char callBuf[100];	/* Function call buffer				*/
 extern dword duReg[30];		/* def/use bits for registers		*/
 extern dword maskDuReg[30];	/* masks off du bits for regs		*/
 
 /* Registers used by icode instructions */
-static const char *allRegs[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
+static constexpr const char *allRegs[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
                                     "si", "di", "es", "cs", "ss", "ds",
                                     "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh",
                                     "tmp"};
@@ -161,24 +156,24 @@ extern STATS stats; /* Icode statistics */
 
 void    FrontEnd(char *filename, CALL_GRAPH * *);            /* frontend.c   */
 void   *allocMem(Int cb);                                   /* frontend.c   */
-void   *reallocVar(void *p, Int newsize);                   /* frontend.c   */
+
 void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
 BB *    newBB(BB *, Int, Int, byte, Int, Function *);      /* graph.c      */
 void    BackEnd(char *filename, CALL_GRAPH *);              /* backend.c    */
 char   *cChar(byte c);                                      /* backend.c    */
-Int     scan(dword ip, ICODE * p);                          /* scanner.c    */
+eErrorId scan(dword ip, ICODE * p);                          /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */
-boolT   labelSrch(CIcodeRec &pIc, Int n, dword tg, Int *pIdx); /* parser.c     */
+
 Int     strSize (byte *, char);                             /* parser.c     */
 void    disassem(Int pass, Function * pProc);              /* disassem.c   */
 void    interactDis(Function * initProc, Int initIC);      /* disassem.c   */
-boolT   JmpInst(llIcode opcode);                            /* idioms.c     */
+bool   JmpInst(llIcode opcode);                            /* idioms.c     */
 queue::iterator  appendQueue(queue &Q, BB *node);                  /* reducible.c  */
 
 void    SetupLibCheck(void);                                /* chklib.c     */
 void    CleanupLibCheck(void);                              /* chklib.c     */
-boolT   LibCheck(Function &p);                            /* chklib.c     */
+bool    LibCheck(Function &p);                            /* chklib.c     */
 
 /* Exported functions from procs.c */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
@@ -192,8 +187,8 @@ void	  removeRegFromLong (byte, LOCAL_ID *, COND_EXPR *);
 std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, Int *);
 Int       hlTypeSize (const COND_EXPR *, Function *);
 hlType	  expType (const COND_EXPR *, Function *);
-boolT	  insertSubTreeReg (COND_EXPR *, COND_EXPR **, byte, LOCAL_ID *);
-boolT	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, Int);
+bool      insertSubTreeReg(COND_EXPR *, COND_EXPR **, byte, LOCAL_ID *);
+bool	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, Int);
 
 
 /* Exported functions from hlicode.c */

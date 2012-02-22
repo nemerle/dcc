@@ -157,7 +157,8 @@ void Function::highLevelGen()
                     lhs = COND_EXPR::id (*pIcode, DST, this, i, *pIcode, NONE);
                 }
 
-            switch (pIcode->ic.ll.opcode) {
+            switch (pIcode->ic.ll.opcode)
+            {
                 case iADD:
                     rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
                     pIcode->setAsgn(lhs, rhs);
@@ -196,12 +197,14 @@ void Function::highLevelGen()
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iIMUL:   rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
+                case iIMUL:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
                     lhs = COND_EXPR::id (*pIcode, LHS_OP, this, i, *pIcode, NONE);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iINC:	rhs = COND_EXPR::idKte (1, 2);
+                case iINC:
+                    rhs = COND_EXPR::idKte (1, 2);
                     rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
                     pIcode->setAsgn(lhs, rhs);
                     break;
@@ -227,7 +230,8 @@ void Function::highLevelGen()
                 case iMOV:    pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iMUL:    rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
+                case iMUL:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
                     lhs = COND_EXPR::id (*pIcode, LHS_OP, this, i, *pIcode, NONE);
                     pIcode->setAsgn(lhs, rhs);
                     break;
@@ -236,11 +240,13 @@ void Function::highLevelGen()
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iNOT:	rhs = COND_EXPR::boolOp (NULL, rhs, NOT);
+                case iNOT:
+                    rhs = COND_EXPR::boolOp (NULL, rhs, NOT);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iOR:     rhs = COND_EXPR::boolOp (lhs, rhs, OR);
+                case iOR:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, OR);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
@@ -259,7 +265,8 @@ void Function::highLevelGen()
                     break;
 
                 case iSAR:    /* signed */
-                case iSHR:    rhs = COND_EXPR::boolOp (lhs, rhs, SHR); /* unsigned*/
+                case iSHR:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, SHR); /* unsigned*/
                     pIcode->setAsgn(lhs, rhs);
                     break;
 

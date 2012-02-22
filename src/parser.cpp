@@ -121,9 +121,9 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     ICODE   eIcode;             /* extra icodes for iDIV, iIDIV, iXCHG */
     SYM *    psym;
     dword   offset;
-    Int     err;
+    eErrorId err;
     boolT   done = FALSE;
-    Int     lab;
+    dword     lab;
 
     if (strstr(name, "chkstk") != NULL)
     {
@@ -151,7 +151,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         flg |= (_Icode.ic.ll.flg & (NOT_HLL | FLOAT_OP));
 
         /* Check if this instruction has already been parsed */
-        if (Icode.labelSrch(_Icode.ic.ll.label, &lab))
+        if (Icode.labelSrch(_Icode.ic.ll.label, lab))
         {   /* Synthetic jump */
             _Icode.type = LOW_LEVEL;
             _Icode.ic.ll.opcode = iJMP;
@@ -397,7 +397,7 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
     ICODE       _Icode;
     dword       cs, offTable, endTable;
     dword       i, k, seg, target;
-    Int         tmp;
+    dword         tmp;
 
     if (pIcode->ic.ll.flg & I)
     {
@@ -410,7 +410,7 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
         }
 
         /* Return TRUE if jump target is already parsed */
-        return Icode.labelSrch(i, &tmp);
+        return Icode.labelSrch(i, tmp);
     }
 
     /* We've got an indirect JMP - look for switch() stmt. idiom of the form
@@ -854,7 +854,7 @@ void STATE::setState(word reg, int16 value)
 
 /* labelSrchRepl - Searches Icode for instruction with label = target, and
     replaces *pIndex with an icode index */
-boolT labelSrch(CIcodeRec &pIcode, Int numIp, dword target, Int *pIndex)
+bool labelSrch(CIcodeRec &pIcode, Int numIp, dword target, Int *pIndex)
 {
     Int  i;
 
@@ -863,10 +863,10 @@ boolT labelSrch(CIcodeRec &pIcode, Int numIp, dword target, Int *pIndex)
         if (pIcode[i].ic.ll.label == target)
         {
             *pIndex = i;
-            return TRUE;
+            return true;
         }
     }
-    return FALSE;
+    return false;
 }
 
 

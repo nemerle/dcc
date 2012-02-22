@@ -101,12 +101,11 @@ void BB::displayDfs()
     printf("----\n");
 
     /* Recursive call on successors of current node */
-    std::for_each(edges.begin(), edges.end(),
-    [](TYPEADR_TYPE &pb)
+    for(TYPEADR_TYPE &pb : edges)
     {
         if (pb.BBptr->traversed != DFS_DISP)
             pb.BBptr->displayDfs();
-    });
+    }
 }
 /* Recursive procedure that writes the code for the given procedure, pointed
  * to by pBB.
@@ -155,7 +154,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
                 {
                     /* Write the code for this basic block */
                     writeBB(&pProc->Icode.front(), indLevel, pProc, numLoc);
-                    repCond = TRUE;
+                    repCond = true;
                 }
 
                 /* Condition needs to be inverted if the loop body is along
@@ -271,7 +270,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
                         l = writeJcondInv ( back().ic.hl, pProc, numLoc);
                         cCode.appendCode( "\n%s%s", indent(indLevel-1), l);
                         edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, follow);
-                        emptyThen = TRUE;
+                        emptyThen = true;
                     }
                 }
                 else	/* already visited => emit label */

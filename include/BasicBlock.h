@@ -25,7 +25,7 @@ struct BB : public llvm::ilist_node<BB>
 {
 private:
     BB(const BB&);
-    BB() : nodeType(0),traversed(0),start(0),length(0),
+    BB() : start(0),length(0),nodeType(0),traversed(0),
         numHlIcodes(0),flg(0),
         inEdges(0),
         edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
@@ -97,8 +97,8 @@ public:
     Int             caseTail;       /* tail node for the case       */
 
     Int             index;          /* Index, used in several ways  */
-    static BB *Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
-    static BB *Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function * parent);
+static BB *Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
+static BB *Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function * parent);
     void    writeCode(Int indLevel, Function *pProc, Int *numLoc, Int latchNode, Int ifFollow);
     void    mergeFallThrough(CIcodeRec &Icode);
     void    dfsNumbering(std::vector<BB *> &dfsLast, Int *first, Int *last);

@@ -76,10 +76,8 @@ void Function::findImmedDom ()
         currNode = dfsLast[currIdx];
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
-
-        for (j = 0; j < currNode->inEdges.size(); j++)
+        for (BB * inedge : currNode->inEdges)
         {
-            BB* inedge=currNode->inEdges[j];
             predIdx = inedge->dfsLastNum;
             if (predIdx < currIdx)
                 currNode->immedDom = commonDom (currNode->immedDom, predIdx, this);
@@ -257,14 +255,12 @@ static void findNodesInInt (queue &intNodes, Int level, interval *Ii)
 {
     if (level == 1)
     {
-        std::for_each(Ii->nodes.begin(),Ii->nodes.end(),[&intNodes](BB *en)->void {
-                      appendQueue(intNodes,en);
-        });
+        for(BB *en : Ii->nodes)
+            appendQueue(intNodes,en);
     }
     else
-        std::for_each(Ii->nodes.begin(),Ii->nodes.end(),[&intNodes,level](BB *en)->void {
-                      findNodesInInt(intNodes,level-1,en->correspInt);
-        });
+        for(BB *en : Ii->nodes)
+            findNodesInInt(intNodes,level-1,en->correspInt);
 }
 
 
@@ -339,10 +335,11 @@ void Function::structLoops(derSeq *derivedG)
 }
 
 
-static boolT successor (Int s, Int h, Function * pProc)
 /* Returns whether the BB indexed by s is a successor of the BB indexed by
  * h.  Note that h is a case node.                  */
-{ Int i;
+static boolT successor (Int s, Int h, Function * pProc)
+{
+    Int i;
     BB * header;
 
     header = pProc->dfsLast[h];
@@ -406,11 +403,12 @@ void Function::structCases()
                          * header field with caseHeader.           */
             insertList (caseNodes, i);
             dfsLast[i]->caseHead = i;
-            std::for_each(caseHeader->edges.begin(),caseHeader->edges.end(),
-                         [&caseNodes, i, exitNode](TYPEADR_TYPE &pb)
-                         {tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);});
-//            for (j = 0; j < caseHeader->edges[j]; j++)
-//                tagNodesInCase (caseHeader->edges[j].BBptr, caseNodes, i, exitNode);
+            for(TYPEADR_TYPE &pb : caseHeader->edges)
+            {
+                tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);
+            }
+            //for (j = 0; j < caseHeader->edges[j]; j++)
+            //    tagNodesInCase (caseHeader->edges[j].BBptr, caseNodes, i, exitNode);
             if (exitNode != NO_NODE)
                 dfsLast[exitNode]->caseHead = i;
         }

@@ -1,13 +1,14 @@
 PROJECT(dcc_original)
 cmake_minimum_required(VERSION 2.8)
 
-ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS)
+ADD_DEFINITIONS(-D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS)
 if(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE)
     add_definitions(/W4)
 else()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall --std=c++0x")
-    SET(CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_DEBUG --coverage ${CMAKE_CXX_FLAGS_DEBUG}"  )
+    #-D_GLIBCXX_DEBUG
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra --std=c++0x")
+    SET(CMAKE_CXX_FLAGS_DEBUG "--coverage ${CMAKE_CXX_FLAGS_DEBUG}"  )
 endif()
 
 FIND_PACKAGE(LLVM)
@@ -63,9 +64,11 @@ set(dcc_HEADERS
     include/state.h
     include/symtab.h
     include/types.h
+    include/BasicBlock.h
+    include/Enums.h
+    include/IdentType.h
     include/Procedure.h
     include/StackFrame.h
-    include/BasicBlock.h
 )
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 TARGET_LINK_LIBRARIES(dcc_original ${REQ_LLVM_LIBRARIES})

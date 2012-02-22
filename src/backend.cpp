@@ -127,12 +127,14 @@ static void printGlobVar (SYM * psym)
                             prog.Image[relocOp+1], prog.Image[relocOp+2],
                             prog.Image[relocOp+3]);
             break;
-        default:strContents = (char *)allocMem((psym->size*2+1) *sizeof(char));
+        default:
+            strContents = (char *)malloc((psym->size*2+1) *sizeof(char));
             strContents[0] = '\0';
             for (j=0; j < psym->size; j++)
                 strcat (strContents, cChar(prog.Image[relocOp + j]));
             cCode.appendDecl( "char\t*%s = \"%s\";\n",
                               psym->name, strContents);
+            free(strContents);
     }
 }
 
@@ -362,20 +364,17 @@ static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &
 /* Invokes the necessary routines to produce code one procedure at a time. */
 void BackEnd (char *fileName, CALL_GRAPH * pcallGraph)
 {
-    char*	outName, *ext;
     std::ofstream fs; /* Output C file 	*/
 
     /* Get output file name */
-    outName = strcpy ((char*)allocMem(strlen(fileName)+1), fileName);
-    if ((ext = strrchr (outName, '.')) != NULL)
-        *ext = '\0';
-    strcat (outName, ".b");		/* b for beta */
+    std::string outNam(fileName);
+    outNam = outNam.substr(0,outNam.rfind("."))+".b"; /* b for beta */
 
     /* Open output file */
-    fs.open(outName);
+    fs.open(outNam);
     if(!fs.is_open())
-        fatalError (CANNOT_OPEN, outName);
-    printf ("dcc: Writing C beta file %s\n", outName);
+        fatalError (CANNOT_OPEN, outNam.c_str());
+    printf ("dcc: Writing C beta file %s\n", outNam.c_str());
 
     /* Header information */
     writeHeader (fs, fileName);

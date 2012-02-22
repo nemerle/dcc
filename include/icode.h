@@ -294,13 +294,14 @@ struct LLTYPE
         dword   op;             /*   idx of immed src op        */
         struct {				/* Call & # actual arg bytes	*/
             Function *proc;     /*   pointer to target proc (for CALL(F))*/
-            int		   cb;		/*   # actual arg bytes			*/
+            int     cb;		/*   # actual arg bytes			*/
         }		proc;
     }           immed;
     DU          flagDU;         /* def/use of flags				*/
     struct {                    /* Case table if op==JMP && !I  */
         Int     numEntries;     /*   # entries in case table    */
         dword  *entries;        /*   array of offsets           */
+
     }           caseTbl;
     Int         hllLabNum;      /* label # for hll codegen      */
     bool conditionalJump()
@@ -375,7 +376,7 @@ public:
     void	SetLlInvalid(int ip, boolT fInv);
     dword	GetLlLabel(int ip);
     llIcode	GetLlOpcode(int ip);
-    boolT	labelSrch(dword target, Int *pIndex);
+    bool	labelSrch(dword target, dword &pIndex);
     ICODE *	GetIcode(int ip);
 };
 typedef CIcodeRec::iterator iICODE;
