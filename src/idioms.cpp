@@ -1422,12 +1422,12 @@ void Function::bindIcodeOff()
     iICODE pIcode;            /* ptr icode array      */
     dword *p,j;                 /* for case table       */
 
-    if (! Icode.GetNumIcodes())        /* No Icode */
+    if (Icode.empty())        /* No Icode */
         return;
     pIcode = Icode.begin();
 
     /* Flag all jump targets for BB construction and disassembly stage 2 */
-    for (i = 0; i < Icode.GetNumIcodes(); i++)
+    for (i = 0; i < Icode.size(); i++)
         if ((pIcode[i].ic.ll.flg & I) && JmpInst(pIcode[i].ic.ll.opcode))
         {
             if (Icode.labelSrch(pIcode[i].ic.ll.immed.op, j))

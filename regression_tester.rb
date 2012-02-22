@@ -28,4 +28,4 @@ Dir.open(TESTS_DIR+"/inputs").each() {|f|
 	next if f=="." or f==".."
 	FileUtils.mv(TESTS_DIR+"/inputs/"+f,TESTS_DIR+"/outputs/"+f) if f.end_with?(".b")
 }
-"diff -rqbwB"
+puts "**************************************\n"

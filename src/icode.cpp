@@ -32,31 +32,6 @@ ICODE * CIcodeRec::addIcode(ICODE *pIcode)
     return &back();
 }
 
-ICODE * CIcodeRec::GetFirstIcode()
-{
-    return &front();
-}
-
-/* Don't need this; just pIcode++ since array is guaranteed to be contiguous
-ICODE * CIcodeRec::GetNextIcode(ICODE * pCurIcode)
-{
-        int idx = pCurIcode - icode;		// Current index
-        ASSERT(idx+1 < numIcode);
-        return &icode[idx+1];
-}
-*/
-
-boolT CIcodeRec::IsValid(ICODE *pCurIcode)
-{
-    ptrdiff_t idx = pCurIcode - &this->front();		// Current index
-    return (idx>=0) && (idx < size());
-}
-
-int CIcodeRec::GetNumIcodes()
-{
-    return size();
-}
-
 void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
 {
     for (int i = start; i <= end; i++)
@@ -66,26 +41,6 @@ void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
 void CIcodeRec::SetImmediateOp(int ip, dword dw)
 {
     at(ip).ic.ll.immed.op = dw;
-}
-
-void CIcodeRec::SetLlFlag(int ip, dword flag)
-{
-    at(ip).ic.ll.flg |= flag;
-}
-
-dword CIcodeRec::GetLlFlag(int ip)
-{
-    return at(ip).ic.ll.flg;
-}
-
-void CIcodeRec::ClearLlFlag(int ip, dword flag)
-{
-    at(ip).ic.ll.flg &= (~flag);
-}
-
-void CIcodeRec::SetLlInvalid(int ip, boolT fInv)
-{
-    at(ip).invalid = fInv;
 }
 
 dword CIcodeRec::GetLlLabel(int ip)

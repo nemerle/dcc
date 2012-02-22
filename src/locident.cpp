@@ -344,7 +344,7 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i, Int idx,
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
 boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i, Int idx,
-                  Function * pProc, COND_EXPR **rhs, COND_EXPR **lhs, Int off)
+                  Function * pProc, COND_EXPR *&rhs, COND_EXPR *&lhs, Int off)
 {
     ICODEMEM *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
 
@@ -355,15 +355,15 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i, Int idx,
 
     if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
     {
-        *lhs = COND_EXPR::idLongIdx (i);
+        lhs = COND_EXPR::idLongIdx (i);
         if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
-            *rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  idx, eUSE, off);
+            rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  idx, eUSE, off);
         return true;
     }
     else if ((longId.h == pmHsrc->regi) && (longId.l == pmLsrc->regi))
     {
-        *lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx, eDEF, off);
-        *rhs = COND_EXPR::idLongIdx (i);
+        lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx, eDEF, off);
+        rhs = COND_EXPR::idLongIdx (i);
         return true;
     }
     return false;

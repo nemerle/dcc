@@ -485,7 +485,7 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
             {
                 memcpy(&StCopy, pstate, sizeof(STATE));
                 StCopy.IP = cs + LH(&prog.Image[i]);
-                ip = Icode.GetNumIcodes();
+                ip = Icode.size();
 
                 FollowCtrl (pcallGraph, &StCopy);
 
@@ -501,7 +501,7 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
 
     flg |= PROC_IJMP;
     flg &= ~TERMINATES;
-    interactDis(this, this->Icode.GetNumIcodes()-1);
+    interactDis(this, this->Icode.size()-1);
     return TRUE;
 }
 
@@ -517,7 +517,7 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
 
 boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
-    Int   ip = Icode.GetNumIcodes() - 1;
+    Int   ip = Icode.size() - 1;
     STATE localState;     /* Local copy of the machine state */
     dword off;
     boolT indirect;
@@ -1026,7 +1026,7 @@ static void use_def(opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, I
  * bitmap       */
 void Function::process_operands(ICODE * pIcode,  STATE * pstate)
 {
-    Int ix=Icode.GetNumIcodes();
+    Int ix=Icode.size();
     Int   i;
     Int   sseg = (pIcode->ic.ll.src.seg)? pIcode->ic.ll.src.seg: rDS;
     Int   cb   = (pIcode->ic.ll.flg & B) ? 1: 2;

@@ -76,7 +76,7 @@ static boolT isLong22 (iICODE pIcode, iICODE pEnd, Int *off)
  * Removes excess nodes from the graph by flagging them, and updates
  * the new edges for the remaining nodes.	*/
 static void longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,
-                         Int *idx, Function * pProc, Int arc, Int off)
+                         Int *idx, Int arc, Int off)
 { Int j;
     BB * pbb, * obb1, * obb2, * tbb;
 
@@ -229,7 +229,7 @@ void Function::propLongStk (Int i, ID *pLocId)
 
     /* Check all icodes for offHi:offLo */
     pEnd = Icode.end();
-    for (idx = 0; idx < (this->Icode.GetNumIcodes() - 1); idx++)
+    for (idx = 0; idx < (this->Icode.size() - 1); idx++)
     {
         pIcode = Icode.begin()+idx;
         if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
@@ -284,7 +284,7 @@ void Function::propLongStk (Int i, ID *pLocId)
         else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, &off, &arc)))
         {
             if (checkLongEq (pLocId->id.longStkId, pIcode, i, idx, this, &rhs, &lhs, off) == TRUE)
-                longJCond23 (rhs, lhs, pIcode, &idx, this, arc, off);
+                longJCond23 (rhs, lhs, pIcode, &idx, arc, off);
         }
 
         /* Check for long conditional equality or inequality.  This requires
@@ -299,74 +299,77 @@ void Function::propLongStk (Int i, ID *pLocId)
     }
 }
 void checkBack();
-//int     Function::checkBackwarLongDefs(int loc_ident_idx, ID *pLocId, int pLocId_idx)
-//{
-//    int idx;
-//    for (idx = pLocId_idx - 1; idx > 0 ; idx--)
-//    {
-//        pIcode = Icode.begin()+(idx-1);
-//        if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
-//            continue;
+int     Function::checkBackwarLongDefs(int loc_ident_idx, ID *pLocId, int pLocId_idx,Assignment &asgn)
+{
+    int idx;
+    ICODEMEM * pmH,* pmL;
+    iICODE pIcode;
+    for (idx = pLocId_idx - 1; idx > 0 ; idx--)
+    {
+        pIcode = Icode.begin()+(idx-1);
+        if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
+            continue;
 
-//        if (pIcode->ic.ll.opcode != (pIcode+1)->ic.ll.opcode)
-//            continue;
-//        switch (pIcode->ic.ll.opcode)
-//        {
-//            case iMOV:
-//                pmH = &pIcode->ic.ll.dst;
-//                pmL = &(pIcode+1)->ic.ll.dst;
-//                if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
-//                {
-//                    lhs = COND_EXPR::idLongIdx (i);
-//                    this->localId.id_arr[i].idx.push_back(idx-1);
-//                    pIcode->setRegDU( pmL->regi, eDEF);
-//                    rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, idx, eUSE, 1);
-//                    pIcode->setAsgn(lhs, rhs);
-//                    (pIcode+1)->invalidate();
-//                    idx = 0;    /* to exit the loop */
-//                }
-//                break;
+        if (pIcode->ic.ll.opcode != (pIcode+1)->ic.ll.opcode)
+            continue;
+        switch (pIcode->ic.ll.opcode)
+        {
+            case iMOV:
+                pmH = &pIcode->ic.ll.dst;
+                pmL = &(pIcode+1)->ic.ll.dst;
+                if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
+                {
+                    asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                    this->localId.id_arr[loc_ident_idx].idx.push_back(idx-1);
+                    pIcode->setRegDU( pmL->regi, eDEF);
+                    asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, idx, eUSE, 1);
+                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
+                    (pIcode+1)->invalidate();
+                    idx = 0;    /* to exit the loop */
+                }
+                break;
 
-//            case iPOP:
-//                pmH = &(pIcode+1)->ic.ll.dst;
-//                pmL = &pIcode->ic.ll.dst;
-//                if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
-//                {
-//                    lhs = COND_EXPR::idLongIdx (i);
-//                    pIcode->setRegDU( pmH->regi, eDEF);
-//                    pIcode->setUnary(HLI_POP, lhs);
-//                    (pIcode+1)->invalidate();
-//                    idx = 0;        /* to exit the loop */
-//                }
-//                break;
+            case iPOP:
+                pmH = &(pIcode+1)->ic.ll.dst;
+                pmL = &pIcode->ic.ll.dst;
+                if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
+                {
+                    asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                    pIcode->setRegDU( pmH->regi, eDEF);
+                    pIcode->setUnary(HLI_POP, asgn.lhs);
+                    (pIcode+1)->invalidate();
+                    idx = 0;        /* to exit the loop */
+                }
+                break;
 
 //                /**** others missing ***/
 
-//            case iAND: case iOR: case iXOR:
-//                pmL = &pIcode->ic.ll.dst;
-//                pmH = &(pIcode+1)->ic.ll.dst;
-//                if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
-//                {
-//                    lhs = COND_EXPR::idLongIdx (i);
-//                    pIcode->setRegDU( pmH->regi, USE_DEF);
-//                    rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, idx, eUSE, 1);
-//                    switch (pIcode->ic.ll.opcode) {
-//                        case iAND: rhs = COND_EXPR::boolOp (lhs, rhs, AND);
-//                            break;
-//                        case iOR:
-//                            rhs = COND_EXPR::boolOp (lhs, rhs, OR);
-//                            break;
-//                        case iXOR: rhs = COND_EXPR::boolOp (lhs, rhs, XOR);
-//                            break;
-//                    } /* eos */
-//                    pIcode->setAsgn(lhs, rhs);
-//                    (pIcode+1)->invalidate();
-//                    idx = 0;
-//                }
-//                break;
-//        } /* eos */
-//    }
-//}
+            case iAND: case iOR: case iXOR:
+                pmL = &pIcode->ic.ll.dst;
+                pmH = &(pIcode+1)->ic.ll.dst;
+                if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
+                {
+                    asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                    pIcode->setRegDU( pmH->regi, USE_DEF);
+                    asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, idx, eUSE, 1);
+                    switch (pIcode->ic.ll.opcode) {
+                        case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
+                            break;
+                        case iOR:
+                            asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR);
+                            break;
+                        case iXOR: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR);
+                            break;
+                    } /* eos */
+                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
+                    (pIcode+1)->invalidate();
+                    idx = 0;
+                }
+                break;
+        } /* eos */
+    }
+    return idx;
+}
 
 /* Finds the definition of the long register pointed to by pLocId, and
  * transforms that instruction into a HIGH_LEVEL icode instruction.
@@ -385,77 +388,9 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
     for (int j = 0; j < pLocId->idx.size(); j++)
     {
         int pLocId_idx=pLocId->idx[j];
+        Assignment asgn;
         /* Check backwards for a definition of this long register */
-
-        COND_EXPR *lhs, *rhs;
-
-        for (idx = pLocId_idx - 1; idx > 0 ; idx--)
-        {
-            iICODE pIcode;
-            ICODEMEM * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
-            pIcode = Icode.begin()+(idx-1);
-            if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
-                continue;
-
-            if (pIcode->ic.ll.opcode != (pIcode+1)->ic.ll.opcode)
-                continue;
-            switch (pIcode->ic.ll.opcode)
-            {
-                case iMOV:
-                    pmH = &pIcode->ic.ll.dst;
-                    pmL = &(pIcode+1)->ic.ll.dst;
-                    if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
-                    {
-                        lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                        this->localId.id_arr[loc_ident_idx].idx.push_back(idx-1);
-                        pIcode->setRegDU( pmL->regi, eDEF);
-                        rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, idx, eUSE, 1);
-                        pIcode->setAsgn(lhs, rhs);
-                        (pIcode+1)->invalidate();
-                        idx = 0;    /* to exit the loop */
-                    }
-                    break;
-
-                case iPOP:
-                    pmH = &(pIcode+1)->ic.ll.dst;
-                    pmL = &pIcode->ic.ll.dst;
-                    if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
-                    {
-                        lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                        pIcode->setRegDU( pmH->regi, eDEF);
-                        pIcode->setUnary(HLI_POP, lhs);
-                        (pIcode+1)->invalidate();
-                        idx = 0;        /* to exit the loop */
-                    }
-                    break;
-
-                    /**** others missing ***/
-
-                case iAND: case iOR: case iXOR:
-                    pmL = &pIcode->ic.ll.dst;
-                    pmH = &(pIcode+1)->ic.ll.dst;
-                    if ((pLocId->id.longId.h == pmH->regi) && (pLocId->id.longId.l == pmL->regi))
-                    {
-                        lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                        pIcode->setRegDU( pmH->regi, USE_DEF);
-                        rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, idx, eUSE, 1);
-                        switch (pIcode->ic.ll.opcode) {
-                            case iAND: rhs = COND_EXPR::boolOp (lhs, rhs, AND);
-                                break;
-                            case iOR:
-                                rhs = COND_EXPR::boolOp (lhs, rhs, OR);
-                                break;
-                            case iXOR:
-                                rhs = COND_EXPR::boolOp (lhs, rhs, XOR);
-                                break;
-                        } /* eos */
-                        pIcode->setAsgn(lhs, rhs);
-                        (pIcode+1)->invalidate();
-                        idx = 0;
-                    }
-                    break;
-            } /* eos */
-        }
+        idx = checkBackwarLongDefs(loc_ident_idx,pLocId,pLocId_idx,asgn);
         /* If no definition backwards, check forward for a use of this long reg */
         if (idx > 0)
             continue;
@@ -474,13 +409,12 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
                         if ((pLocId->id.longId.h == pIcode->ic.ll.src.regi) &&
                                 (pLocId->id.longId.l == (pIcode+1)->ic.ll.src.regi))
                         {
-                            rhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                            asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
                             pIcode->setRegDU( (pIcode+1)->ic.ll.src.regi, eUSE);
-                            lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,
-                                                     HIGH_FIRST, idx, eDEF, 1);
-                            pIcode->setAsgn(lhs, rhs);
+                            asgn.lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,HIGH_FIRST, idx, eDEF, 1);
+                            pIcode->setAsgn(asgn.lhs, asgn.rhs);
                             (pIcode+1)->invalidate();
-                            idx = this->Icode.GetNumIcodes();    /* to exit the loop */
+                            idx = this->Icode.size();    /* to exit the loop */
                         }
                         break;
 
@@ -488,12 +422,12 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
                         if ((pLocId->id.longId.h == pIcode->ic.ll.src.regi) &&
                                 (pLocId->id.longId.l == (pIcode+1)->ic.ll.src.regi))
                         {
-                            rhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                            asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
                             pIcode->setRegDU( (pIcode+1)->ic.ll.src.regi, eUSE);
-                            pIcode->setUnary(HLI_PUSH, lhs);
+                            pIcode->setUnary(HLI_PUSH, asgn.lhs);
                             (pIcode+1)->invalidate();
                         }
-                        idx = this->Icode.GetNumIcodes();    /* to exit the loop  */
+                        idx = this->Icode.size();    /* to exit the loop  */
                         break;
 
                         /*** others missing ****/
@@ -504,19 +438,19 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
                         if ((pLocId->id.longId.h == pmH->regi) &&
                                 (pLocId->id.longId.l == pmL->regi))
                         {
-                            lhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                            asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
                             pIcode->setRegDU( pmH->regi, USE_DEF);
-                            rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode,
+                            asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode,
                                                      LOW_FIRST, idx, eUSE, 1);
                             switch (pIcode->ic.ll.opcode) {
-                                case iAND: rhs = COND_EXPR::boolOp (lhs, rhs, AND);
+                                case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
                                     break;
-                                case iOR:  rhs = COND_EXPR::boolOp (lhs, rhs, OR);
+                                case iOR:  asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR);
                                     break;
-                                case iXOR: rhs = COND_EXPR::boolOp (lhs, rhs, XOR);
+                                case iXOR: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR);
                                     break;
                             }
-                            pIcode->setAsgn(lhs, rhs);
+                            pIcode->setAsgn(asgn.lhs, asgn.rhs);
                             (pIcode+1)->invalidate();
                             idx = 0;
                         }
@@ -524,12 +458,11 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
                 } /* eos */
 
             /* Check long conditional (i.e. 2 CMPs and 3 branches */
-            else if ((pIcode->ic.ll.opcode == iCMP) &&
-                     (isLong23 (idx, pIcode->inBB, &off, &arc)))
+            else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, &off, &arc)))
             {
                 if (checkLongRegEq (pLocId->id.longId, pIcode, loc_ident_idx, idx, this,
-                                    &rhs, &lhs, off) == TRUE)
-                    longJCond23 (rhs, lhs, pIcode, &idx, this, arc, off);
+                                    asgn.rhs, asgn.lhs, off) == TRUE)
+                    longJCond23 (asgn.rhs, asgn.lhs, pIcode, &idx, arc, off);
             }
 
             /* Check for long conditional equality or inequality.  This requires
@@ -538,8 +471,8 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
                      (isLong22 (pIcode, pEnd, &off)))
             {
                 if (checkLongRegEq (pLocId->id.longId, pIcode, loc_ident_idx, idx, this,
-                                    &rhs, &lhs, off) == TRUE)
-                    longJCond22 (rhs, lhs, pIcode, &idx);
+                                    asgn.rhs, asgn.lhs, off) == TRUE)
+                    longJCond22 (asgn.rhs, asgn.lhs, pIcode, &idx);
             }
 
             /* Check for OR regH, regL
@@ -552,12 +485,11 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
                 if ((pIcode->ic.ll.dst.regi == pLocId->id.longId.h) &&
                         (pIcode->ic.ll.src.regi == pLocId->id.longId.l))
                 {
-                    lhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                    asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
 
-                    rhs = COND_EXPR::idKte (0, 4);	/* long 0 */
-                    lhs = COND_EXPR::boolOp (lhs, rhs,
-                                             condOpJCond[(pIcode+1)->ic.ll.opcode - iJB]);
-                    (pIcode+1)->setJCond(lhs);
+                    asgn.rhs = COND_EXPR::idKte (0, 4);	/* long 0 */
+                    asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[(pIcode+1)->ic.ll.opcode - iJB]);
+                    (pIcode+1)->setJCond(asgn.lhs);
                     (pIcode+1)->copyDU(*pIcode, eUSE, eUSE);
                     pIcode->invalidate();
                 }

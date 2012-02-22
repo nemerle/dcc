@@ -140,7 +140,7 @@ void Function::highLevelGen()
     COND_EXPR *lhs, *rhs; /* left- and right-hand side of expression */
     flags32 flg;          /* icode flags */
 
-    numIcode = Icode.GetNumIcodes();
+    numIcode = Icode.size();
     for (i = 0; i < numIcode; i++)
     {
         pIcode = Icode.GetIcode(i);

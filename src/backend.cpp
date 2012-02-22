@@ -346,7 +346,7 @@ static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &
     }
 
     /* Generate code for this procedure */
-    stats.numLLIcode = pcallGraph->proc->Icode.GetNumIcodes();
+    stats.numLLIcode = pcallGraph->proc->Icode.size();
     stats.numHLIcode = 0;
     pcallGraph->proc->codeGen (ios);
 

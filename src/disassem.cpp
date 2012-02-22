@@ -184,7 +184,7 @@ void disassem(Int pass, Function * ppProc)
         lab = 0; 	/* Restart label numbers */
     }
     createSymTables();
-    allocIcode = numIcode = pProc->Icode.GetNumIcodes();
+    allocIcode = numIcode = pProc->Icode.size();
     cb = allocIcode * sizeof(ICODE);
     if (numIcode == 0)
     {

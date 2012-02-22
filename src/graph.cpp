@@ -36,14 +36,14 @@ void Function::createCFG()
     Int		ip, start;
     BB *        psBB;
     BB *        pBB;
-    ICODE *	pIcode = Icode.GetFirstIcode();
+    iICODE 	pIcode = Icode.begin();
 
     stats.numBBbef = stats.numBBaft = 0;
-    for (ip = start = 0; Icode.IsValid(pIcode); ip++, pIcode++)
+    for (ip = start = 0; pIcode!=Icode.end(); ip++, pIcode++)
     {
         /* Stick a NOWHERE_NODE on the end if we terminate
                  * with anything other than a ret, jump or terminate */
-        if (ip + 1 == Icode.GetNumIcodes() &&
+        if (ip + 1 == Icode.size() &&
                 ! (pIcode->ic.ll.flg & TERMINATES) &&
                 pIcode->ic.ll.opcode != iJMP && pIcode->ic.ll.opcode != iJMPF &&
                 pIcode->ic.ll.opcode != iRET && pIcode->ic.ll.opcode != iRETF)
@@ -122,7 +122,7 @@ CondJumps:
                         start = ip + 1;
                     }
                     /* Check for a fall through */
-                    else if (Icode.GetFirstIcode()[ip + 1].ic.ll.flg & (TARGET | CASE))
+                    else if (Icode[ip + 1].ic.ll.flg & (TARGET | CASE))
                     {
                         pBB = BB::Create(start, ip, FALL_NODE, 1, this);
                         start = ip + 1;
@@ -159,19 +159,18 @@ CondJumps:
 void Function::markImpure()
 {
     SYM * psym;
-    for (int i = 0; i < Icode.GetNumIcodes(); i++)
+    for(ICODE &icod : Icode)
     {
-        if (Icode.GetLlFlag(i) & (SYM_USE | SYM_DEF))
+        if ( not icod.isLlFlag(SYM_USE | SYM_DEF))
+            continue;
+        psym = &symtab[icod.ic.ll.caseTbl.numEntries];
+        for (int c = (Int)psym->label; c < (Int)psym->label+psym->size; c++)
         {
-            psym = &symtab[Icode[i].ic.ll.caseTbl.numEntries];
-            for (int c = (Int)psym->label; c < (Int)psym->label+psym->size; c++)
+            if (BITMAP(c, BM_CODE))
             {
-                if (BITMAP(c, BM_CODE))
-                {
-                    Icode[i].SetLlFlag(IMPURE);
-                    flg |= IMPURE;
-                    break;
-                }
+                icod.SetLlFlag(IMPURE);
+                flg |= IMPURE;
+                break;
             }
         }
     }

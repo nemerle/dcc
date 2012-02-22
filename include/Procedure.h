@@ -40,6 +40,12 @@ struct FunctionType
     bool m_vararg;
     bool isVarArg() const {return m_vararg;}
 };
+struct Assignment
+{
+    COND_EXPR *lhs;
+    COND_EXPR *rhs;
+};
+
 struct Function : public llvm::ilist_node<Function>
 {
     typedef llvm::iplist<BB> BasicBlockListType;
@@ -113,13 +119,13 @@ public:
     void buildCFG();
     void controlFlowAnalysis();
     void newRegArg(ICODE *picode, ICODE *ticode);
-    protected:
+protected:
     // TODO: replace those with friend visitor ?
     void propLongReg(Int loc_ident_idx, ID *pLocId);
     void propLongStk(Int i, ID *pLocId);
     void propLongGlb(Int i, ID *pLocId);
 
-    int     checkBackwarLongDefs(int loc_ident_idx, ID *pLocId, int pLocId_idx);
+    int     checkBackwarLongDefs(int loc_ident_idx, ID *pLocId, int pLocId_idx, Assignment &assign);
     void    structCases();
     void    findExps();
     void    genDU1();

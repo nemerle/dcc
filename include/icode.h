@@ -335,7 +335,7 @@ struct ICODE
     void  ClrLlFlag(dword flag) {ic.ll.flg &= ~flag;}
     void  SetLlFlag(dword flag) {ic.ll.flg |= flag;}
     dword GetLlFlag() {return ic.ll.flg;}
-    bool isLlFlag(dword flg) {return (ic.ll.flg&flg)==flg;}
+    bool isLlFlag(dword flg) {return (ic.ll.flg&flg)!=0;}
     llIcode GetLlOpcode() const { return ic.ll.opcode; }
 
     void writeIntComment(std::ostringstream &s);
@@ -364,16 +364,9 @@ public:
     ~CIcodeRec();	// Destructor
 
     ICODE *	addIcode(ICODE *pIcode);
-    ICODE *	GetFirstIcode();
     //	ICODE *	GetNextIcode(ICODE * pCurIcode);
-    boolT	IsValid(ICODE * pCurIcode);
-    int		GetNumIcodes();
     void	SetInBB(int start, int end, BB* pnewBB);
     void	SetImmediateOp(int ip, dword dw);
-    void	SetLlFlag(int ip, dword flag);
-    void	ClearLlFlag(int ip, dword flag);
-    dword	GetLlFlag(int ip);
-    void	SetLlInvalid(int ip, boolT fInv);
     dword	GetLlLabel(int ip);
     llIcode	GetLlOpcode(int ip);
     bool	labelSrch(dword target, dword &pIndex);
