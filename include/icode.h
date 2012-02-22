@@ -293,8 +293,8 @@ struct LLTYPE
     union {                     /* Source operand if (flg & I)  */
         dword   op;             /*   idx of immed src op        */
         struct {				/* Call & # actual arg bytes	*/
-            Function *proc;   /*   ^ target proc (for CALL(F))*/
-            Int		   cb;		/*   # actual arg bytes			*/
+            Function *proc;     /*   pointer to target proc (for CALL(F))*/
+            int		   cb;		/*   # actual arg bytes			*/
         }		proc;
     }           immed;
     DU          flagDU;         /* def/use of flags				*/
@@ -312,12 +312,12 @@ struct LLTYPE
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
 struct ICODE
 {
-struct DU1
-{
-    Int		numRegsDef;			/* # registers defined by this inst		*/
-    byte	regi[MAX_REGS_DEF];	/* registers defined by this inst		*/
-    Int		idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
-};
+    struct DU1
+    {
+        Int		numRegsDef;			/* # registers defined by this inst		*/
+        byte	regi[MAX_REGS_DEF];	/* registers defined by this inst		*/
+        Int		idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
+    };
     icodeType           type;           /* Icode type                   */
     boolT               invalid;        /* Has no HIGH_LEVEL equivalent */
     BB			*inBB;      	/* BB to which this icode belongs */
@@ -351,6 +351,7 @@ struct DU1
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
 public:
     boolT removeDefRegi(byte regi, Int thisDefIdx, LOCAL_ID *locId);
+    void checkHlCall();
 };
 
 // This is the icode array object.

@@ -426,9 +426,6 @@ void
 CleanupLibCheck(void)
 {
     /* Deallocate all the stuff allocated in SetupLibCheck() */
-    if (T1base) free(T1base);
-    if (T1base) free(T2base);
-    if (g)      free(g);
     if (ht)     free(ht);
     if (pFunc)free(pFunc);
 }
@@ -456,7 +453,7 @@ boolT LibCheck(Function & pProc)
     {
         /* Easy - this function is called main! */
         strcpy(pProc.name, "main");
-        return FALSE;
+        return false;
     }
 
     memmove(pat, &prog.Image[fileOffset], PATLEN);

@@ -6,7 +6,7 @@
 #include "dcc.h"
 
 
-void  ()
+void start ()
 /* Takes no parameters.
  * High-level language prologue code.
  */

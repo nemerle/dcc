@@ -64,6 +64,7 @@ void parse (CALL_GRAPH * *pcallGraph)
     else
     {
         /* Create initial procedure at program start address */
+        strcpy(pProcList.front().name, "start");
         pProcList.front().procEntry = (dword)state.IP;
     }
     /* The state info is for the first procedure */
@@ -109,7 +110,7 @@ Int strSize (byte *sym, char delim)
     for (i = 0; *sym++ != delim; i++)  ;
     return (i+1);
 }
-
+Function *fakeproc=Function::Create(0,0,"fake");
 
 /* FollowCtrl - Given an initial procedure, state information and symbol table
  *      builds a list of procedures reachable from the initial procedure
@@ -513,6 +514,7 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
  *       be assumed that if an assembler program contains a CALL that the
  *       programmer expected it to come back - otherwise surely a JMP would
  *       have been used.  */
+
 boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
     Int   ip = Icode.GetNumIcodes() - 1;
@@ -522,16 +524,17 @@ boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *ps
 
     /* For Indirect Calls, find the function address */
     indirect = FALSE;
-    if (! (pIcode->ic.ll.flg & I))
+    //pIcode->ic.ll.immed.proc.proc=fakeproc;
+    if ( not pIcode->isLlFlag(I) )
     {
         /* Not immediate, i.e. indirect call */
 
         if (pIcode->ic.ll.dst.regi && (!option.Calls))
         {
             /* We have not set the brave option to attempt to follow
-                                the execution path through register indirect calls.
-                                So we just exit this function, and ignore the call.
-                                We probably should not have parsed this deep, anyway.
+                the execution path through register indirect calls.
+                So we just exit this function, and ignore the call.
+                We probably should not have parsed this deep, anyway.
                         */
             return FALSE;
         }
@@ -616,7 +619,8 @@ boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *ps
         else
             pcallGraph->insertCallGraph (this, iter);
 
-        Icode.GetIcode(ip)->ic.ll.immed.proc.proc = &(*iter); // ^ target proc
+        Icode[ip].ic.ll.immed.proc.proc = &(*iter); // ^ target proc
+
         /* return ((p->flg & TERMINATES) != 0); */
         return FALSE;
     }
@@ -905,8 +909,7 @@ dword duReg[] = { 0x00,
  *            pstate: ptr to current procedure state
  *            size  : size of the operand
  *            ix    : current index into icode array    */
-static void use (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int size,
-                 Int ix)
+static void use (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int size, Int ix)
 {
     ICODEMEM * pm   = (d == SRC)? &pIcode->ic.ll.src: &pIcode->ic.ll.dst;
     SYM *  psym;

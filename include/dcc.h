@@ -194,13 +194,7 @@ Int       hlTypeSize (const COND_EXPR *, Function *);
 hlType	  expType (const COND_EXPR *, Function *);
 boolT	  insertSubTreeReg (COND_EXPR *, COND_EXPR **, byte, LOCAL_ID *);
 boolT	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, Int);
-//COND_EXPR *concatExps (SEQ_COND_EXPR *, COND_EXPR *, condNodeType);
 
-void	  initExpStk();
-void	  pushExpStk (COND_EXPR *);
-COND_EXPR *popExpStk();
-Int       numElemExpStk();
-boolT	  emptyExpStk();
 
 /* Exported functions from hlicode.c */
 std::string writeCall (Function *, STKFRAME *, Function *, Int *);

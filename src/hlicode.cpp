@@ -37,6 +37,10 @@ void ICODE::setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
     ic.hl.oper.asgn.lhs = lhs;
     ic.hl.oper.asgn.rhs = rhs;
 }
+void ICODE::checkHlCall()
+{
+    //assert((ic.ll.immed.proc.cb != 0)||ic.ll.immed.proc.proc!=0);
+}
 /* Places the new HLI_CALL high-level operand in the high-level icode array */
 void ICODE::newCallHl()
 {
@@ -44,10 +48,16 @@ void ICODE::newCallHl()
     ic.hl.opcode = HLI_CALL;
     ic.hl.oper.call.proc = ic.ll.immed.proc.proc;
     ic.hl.oper.call.args = new STKFRAME;
+
     if (ic.ll.immed.proc.cb != 0)
         ic.hl.oper.call.args->cb = ic.ll.immed.proc.cb;
-    else
+    else if(ic.hl.oper.call.proc)
         ic.hl.oper.call.args->cb =ic.hl.oper.call.proc->cbParam;
+    else
+    {
+        printf("Function with no cb set, and no valid oper.call.proc , probaby indirect call\n");
+        ic.hl.oper.call.args->cb = 0;
+    }
 }
 
 
@@ -148,16 +158,20 @@ void Function::highLevelGen()
                 }
 
             switch (pIcode->ic.ll.opcode) {
-                case iADD:    rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
+                case iADD:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iAND:    rhs = COND_EXPR::boolOp (lhs, rhs, AND);
+                case iAND:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, AND);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
                 case iCALL:
-                case iCALLF:  pIcode->newCallHl();
+                case iCALLF:
+                    pIcode->checkHlCall();
+                    pIcode->newCallHl();
                     break;
 
                 case iDEC:
@@ -259,7 +273,8 @@ void Function::highLevelGen()
                 case iXCHG:
                     break;
 
-                case iXOR:    rhs = COND_EXPR::boolOp (lhs, rhs, XOR);
+                case iXOR:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, XOR);
                     pIcode->setAsgn(lhs, rhs);
                     break;
             }

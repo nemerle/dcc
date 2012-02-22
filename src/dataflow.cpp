@@ -7,8 +7,65 @@
 
 #include "dcc.h"
 #include <string.h>
+#include <iostream>
+#include <iomanip>
 #include <stdio.h>
+struct ExpStack
+{
+    typedef std::list<COND_EXPR *> EXP_STK;
+    EXP_STK expStk;      /* local expression stack */
 
+    void	  init();
+    void	  push(COND_EXPR *);
+    COND_EXPR *pop();
+    Int       numElem();
+    boolT	  empty();
+};
+/***************************************************************************
+ * Expression stack functions
+ **************************************************************************/
+
+/* Reinitalizes the expression stack (expStk) to NULL, by freeing all the
+ * space allocated (if any).        */
+void ExpStack::init()
+{
+    expStk.clear();
+}
+
+
+/* Pushes the given expression onto the local stack (expStk). */
+void ExpStack::push(COND_EXPR *expr)
+{
+    expStk.push_back(expr);
+}
+
+
+/* Returns the element on the top of the local expression stack (expStk),
+ * and deallocates the space allocated by this node.
+ * If there are no elements on the stack, returns NULL. */
+COND_EXPR *ExpStack::pop()
+{
+    if(expStk.empty())
+        return 0;
+    COND_EXPR *topExp = expStk.back();
+    expStk.pop_back();
+    return topExp;
+}
+
+/* Returns the number of elements available in the expression stack */
+Int ExpStack::numElem()
+{
+    return expStk.size();
+}
+
+/* Returns whether the expression stack is empty or not */
+boolT ExpStack::empty()
+{
+    return expStk.empty();
+}
+
+using namespace std;
+ExpStack g_exp_stk;
 
 /* Returns the index of the local variable or parameter at offset off, if it
  * is in the stack frame provided.  */
@@ -114,13 +171,13 @@ void Function::elimCondCodes ()
 
                                 default:
                                     notSup = TRUE;
+                                    std::cout << hex<<defAt->loc_ip;
                                     reportError (JX_NOT_DEF, defAt->GetLlOpcode());
                                     flg |= PROC_ASM;		/* generate asm */
                             }
                             if (! notSup)
                             {
-                                exp = COND_EXPR::boolOp (lhs, rhs,
-                                                         condOpJCond[useAt->GetLlOpcode()-iJB]);
+                                exp = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAt->GetLlOpcode()-iJB]);
                                 useAt->setJCond(exp);
                             }
                         }
@@ -602,7 +659,7 @@ static void processCArg (Function * pp, Function * pProc, ICODE * picode, Int nu
     /* if (numArgs == 0)
                 return; */
 
-    exp = popExpStk();
+    exp = g_exp_stk.pop();
     if (pp->flg & PROC_ISLIB) /* library function */
     {
         if (pp->args.numArgs > 0)
@@ -628,7 +685,6 @@ static void processCArg (Function * pp, Function * pProc, ICODE * picode, Int nu
         *k += hlTypeSize (exp, pProc);
 }
 
-
 /* Eliminates extraneous intermediate icode instructions when finding
  * expressions.  Generates new hlIcodes in the form of expression trees.
  * For HLI_CALL hlIcodes, places the arguments in the argument list.    */
@@ -647,7 +703,7 @@ void Function::findExps()
     ID *retVal;			/* function return value 					*/
 
     /* Initialize expression stack */
-    initExpStk();
+    g_exp_stk.init();
 
     /* Traverse tree in dfsLast order */
     for (i = 0; i < numBBs; i++)
@@ -726,7 +782,7 @@ void Function::findExps()
                                      (ticode->ic.hl.opcode != HLI_RET)))
                                     continue;
 
-                                exp = popExpStk();  /* pop last exp pushed */
+                                exp = g_exp_stk.pop();  /* pop last exp pushed */
                                 switch (ticode->ic.hl.opcode) {
                                     case HLI_ASSIGN:
                                         forwardSubs (picode->ic.hl.oper.exp, exp,
@@ -866,7 +922,7 @@ void Function::findExps()
                                          (ticode->ic.hl.opcode != HLI_RET)))
                                         continue;
 
-                                    exp = popExpStk(); /* pop last exp pushed */
+                                    exp = g_exp_stk.pop(); /* pop last exp pushed */
                                     switch (ticode->ic.hl.opcode) {
                                         case HLI_ASSIGN:
                                             forwardSubsLong (picode->ic.hl.oper.exp->expr.ident.idNode.longIdx,
@@ -945,7 +1001,7 @@ void Function::findExps()
                  * expression stack */
                 else if (picode->ic.hl.opcode == HLI_PUSH)
                 {
-                    pushExpStk (picode->ic.hl.oper.exp);
+                    g_exp_stk.push(picode->ic.hl.oper.exp);
                     picode->invalidate();
                     numHlIcodes--;
                 }
@@ -965,7 +1021,7 @@ void Function::findExps()
                         cb = pp->cbParam;	/* fixed # arguments */
                         for (k = 0, numArgs = 0; k < cb; numArgs++)
                         {
-                            exp = popExpStk();
+                            exp = g_exp_stk.pop();
                             if (pp->flg & PROC_ISLIB)	/* library function */
                             {
                                 if (pp->args.numArgs > 0)
@@ -990,7 +1046,7 @@ void Function::findExps()
                             for (k = 0; k < cb; numArgs++)
                                 processCArg (pp, this, &(*picode), numArgs, &k);
                         else if ((cb == 0) && (picode->ic.ll.flg & REST_STK))
-                            while (! emptyExpStk())
+                            while (! g_exp_stk.empty())
                             {
                                 processCArg (pp, this, &(*picode), numArgs, &k);
                                 numArgs++;

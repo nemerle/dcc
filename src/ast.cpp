@@ -29,9 +29,6 @@ static const char *condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
 //    COND_EXPR       *exp;
 //    struct _EXP_STK *next;
 //} EXP_STK;
-typedef std::list<COND_EXPR *> EXP_STK;
-static EXP_STK expStk;      /* local expression stack */
-
 
 /* Returns the integer i in C hexadecimal format */
 static char *hexStr (uint16_t i)
@@ -949,48 +946,4 @@ void COND_EXPR::release()
             break;
     }
     delete (this);
-}
-
-
-/***************************************************************************
- * Expression stack functions
- **************************************************************************/
-
-/* Reinitalizes the expression stack (expStk) to NULL, by freeing all the
- * space allocated (if any).        */
-void initExpStk()
-{
-    expStk.clear();
-}
-
-
-/* Pushes the given expression onto the local stack (expStk). */
-void pushExpStk (COND_EXPR *expr)
-{
-    expStk.push_back(expr);
-}
-
-
-/* Returns the element on the top of the local expression stack (expStk),
- * and deallocates the space allocated by this node.
- * If there are no elements on the stack, returns NULL. */
-COND_EXPR *popExpStk()
-{
-    if(expStk.empty())
-        return 0;
-    COND_EXPR *topExp = expStk.back();
-    expStk.pop_back();
-    return topExp;
-}
-
-/* Returns the number of elements available in the expression stack */
-Int numElemExpStk()
-{
-    return expStk.size();
-}
-
-/* Returns whether the expression stack is empty or not */
-boolT emptyExpStk()
-{
-    return expStk.empty();
 }

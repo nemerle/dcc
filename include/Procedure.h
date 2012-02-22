@@ -83,7 +83,9 @@ public:
 public:
     static Function *Create(void *ty=0,int Linkage=0,const std::string &nm="",void *module=0)
     {
-        return new Function(ty);
+        Function *r=new Function(ty);
+        strncpy(r->name,nm.c_str(),SYMLEN);
+        return r;
     }
     void compoundCond();
     void writeProcComments();

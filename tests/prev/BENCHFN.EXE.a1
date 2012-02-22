@@ -1,109 +1,109 @@
 		main  PROC  NEAR
-000 000365 55                  PUSH           bp
-001 000366 8BEC                MOV            bp, sp
-002 000368 83EC08              SUB            sp, 8
-003 00036B B89401              MOV            ax, 194h
-004 00036E 50                  PUSH           ax
-005 00036F E8D90B              CALL  near ptr printf
-006 000372 59                  POP            cx
-007 000373 8D46FC              LEA            ax, [bp-4]
-008 000376 50                  PUSH           ax
-009 000377 B8B001              MOV            ax, 1B0h
-010 00037A 50                  PUSH           ax
-011 00037B E85614              CALL  near ptr scanf
-012 00037E 59                  POP            cx
-013 00037F 59                  POP            cx
-014 000380 FF76FE              PUSH  word ptr [bp-2]
-015 000383 FF76FC              PUSH  word ptr [bp-4]
-016 000386 B8B401              MOV            ax, 1B4h
-017 000389 50                  PUSH           ax
-018 00038A E8BE0B              CALL  near ptr printf
-019 00038D 83C406              ADD            sp, 6
-020 000390 C746FA0000          MOV   word ptr [bp-6], 0
-021 000395 C746F80100          MOV   word ptr [bp-8], 1
-022 00039A EB0B                JMP            L1
+000 000365 55                  PUSH           bp                 
+001 000366 8BEC                MOV            bp, sp             
+002 000368 83EC08              SUB            sp, 8              
+003 00036B B89401              MOV            ax, 194h           
+004 00036E 50                  PUSH           ax                 
+005 00036F E8D90B              CALL           near ptr printf    
+006 000372 59                  POP            cx                 
+007 000373 8D46FC              LEA            ax, [bp-4]         
+008 000376 50                  PUSH           ax                 
+009 000377 B8B001              MOV            ax, 1B0h           
+010 00037A 50                  PUSH           ax                 
+011 00037B E85614              CALL           near ptr scanf     
+012 00037E 59                  POP            cx                 
+013 00037F 59                  POP            cx                 
+014 000380 FF76FE              PUSH           word ptr [bp-2]    
+015 000383 FF76FC              PUSH           word ptr [bp-4]    
+016 000386 B8B401              MOV            ax, 1B4h           
+017 000389 50                  PUSH           ax                 
+018 00038A E8BE0B              CALL           near ptr printf    
+019 00038D 83C406              ADD            sp, 6              
+020 000390 C746FA0000          MOV            word ptr [bp-6], 0 
+021 000395 C746F80100          MOV            word ptr [bp-8], 1 
+022 00039A EB0B                JMP            L1                 
 
-023 0003A7 8B56FA         L1:  MOV            dx, [bp-6]
-024 0003AA 8B46F8              MOV            ax, [bp-8]
-025 0003AD 3B56FE              CMP            dx, [bp-2]
-026 0003B0 7CEA                JL             L2
-027 0003B2 7F05                JG             L3
-028 0003B4 3B46FC              CMP            ax, [bp-4]
-029 0003B7 76E3                JBE            L2
+023 0003A7 8B56FA         L1:  MOV            dx, [bp-6]         
+024 0003AA 8B46F8              MOV            ax, [bp-8]         
+025 0003AD 3B56FE              CMP            dx, [bp-2]         
+026 0003B0 7CEA                JL             L2                 
+027 0003B2 7F05                JG             L3                 
+028 0003B4 3B46FC              CMP            ax, [bp-4]         
+029 0003B7 76E3                JBE            L2                 
 
-030 0003B9 B8CE01         L3:  MOV            ax, 1CEh
-031 0003BC 50                  PUSH           ax
-032 0003BD E88B0B              CALL  near ptr printf
-033 0003C0 59                  POP            cx
-034 0003C1 8BE5                MOV            sp, bp
-035 0003C3 5D                  POP            bp
-036 0003C4 C3                  RET
+030 0003B9 B8CE01         L3:  MOV            ax, 1CEh           
+031 0003BC 50                  PUSH           ax                 
+032 0003BD E88B0B              CALL           near ptr printf    
+033 0003C0 59                  POP            cx                 
+034 0003C1 8BE5                MOV            sp, bp             
+035 0003C3 5D                  POP            bp                 
+036 0003C4 C3                  RET                               
 
-037 00039C E8A6FF         L2:  CALL  near ptr proc_1
-038 00039F 8346F801            ADD   word ptr [bp-8], 1
-039 0003A3 8356FA00            ADC   word ptr [bp-6], 0
+037 00039C E8A6FF         L2:  CALL           near ptr proc_1    
+038 00039F 8346F801            ADD            word ptr [bp-8], 1 
+039 0003A3 8356FA00            ADC            word ptr [bp-6], 0 
 040                            JMP            L1                 ;Synthetic inst
 
 		main  ENDP
 
 		proc_1  PROC  NEAR
-000 000345 55                  PUSH           bp
-001 000346 8BEC                MOV            bp, sp
-002 000348 E8D7FF              CALL  near ptr proc_2
-003 00034B E8D4FF              CALL  near ptr proc_2
-004 00034E E8D1FF              CALL  near ptr proc_2
-005 000351 E8CEFF              CALL  near ptr proc_2
-006 000354 E8CBFF              CALL  near ptr proc_2
-007 000357 E8C8FF              CALL  near ptr proc_2
-008 00035A E8C5FF              CALL  near ptr proc_2
-009 00035D E8C2FF              CALL  near ptr proc_2
-010 000360 E8BFFF              CALL  near ptr proc_2
-011 000363 5D                  POP            bp
-012 000364 C3                  RET
+000 000345 55                  PUSH           bp                 
+001 000346 8BEC                MOV            bp, sp             
+002 000348 E8D7FF              CALL           near ptr proc_2    
+003 00034B E8D4FF              CALL           near ptr proc_2    
+004 00034E E8D1FF              CALL           near ptr proc_2    
+005 000351 E8CEFF              CALL           near ptr proc_2    
+006 000354 E8CBFF              CALL           near ptr proc_2    
+007 000357 E8C8FF              CALL           near ptr proc_2    
+008 00035A E8C5FF              CALL           near ptr proc_2    
+009 00035D E8C2FF              CALL           near ptr proc_2    
+010 000360 E8BFFF              CALL           near ptr proc_2    
+011 000363 5D                  POP            bp                 
+012 000364 C3                  RET                               
 
 		proc_1  ENDP
 
 		proc_2  PROC  NEAR
-000 000322 55                  PUSH           bp
-001 000323 8BEC                MOV            bp, sp
-002 000325 E8D7FF              CALL  near ptr proc_3
-003 000328 E8D4FF              CALL  near ptr proc_3
-004 00032B E8D1FF              CALL  near ptr proc_3
-005 00032E E8CEFF              CALL  near ptr proc_3
-006 000331 E8CBFF              CALL  near ptr proc_3
-007 000334 E8C8FF              CALL  near ptr proc_3
-008 000337 E8C5FF              CALL  near ptr proc_3
-009 00033A E8C2FF              CALL  near ptr proc_3
-010 00033D E8BFFF              CALL  near ptr proc_3
-011 000340 E8BCFF              CALL  near ptr proc_3
-012 000343 5D                  POP            bp
-013 000344 C3                  RET
+000 000322 55                  PUSH           bp                 
+001 000323 8BEC                MOV            bp, sp             
+002 000325 E8D7FF              CALL           near ptr proc_3    
+003 000328 E8D4FF              CALL           near ptr proc_3    
+004 00032B E8D1FF              CALL           near ptr proc_3    
+005 00032E E8CEFF              CALL           near ptr proc_3    
+006 000331 E8CBFF              CALL           near ptr proc_3    
+007 000334 E8C8FF              CALL           near ptr proc_3    
+008 000337 E8C5FF              CALL           near ptr proc_3    
+009 00033A E8C2FF              CALL           near ptr proc_3    
+010 00033D E8BFFF              CALL           near ptr proc_3    
+011 000340 E8BCFF              CALL           near ptr proc_3    
+012 000343 5D                  POP            bp                 
+013 000344 C3                  RET                               
 
 		proc_2  ENDP
 
 		proc_3  PROC  NEAR
-000 0002FF 55                  PUSH           bp
-001 000300 8BEC                MOV            bp, sp
-002 000302 E8F5FF              CALL  near ptr proc_4
-003 000305 E8F2FF              CALL  near ptr proc_4
-004 000308 E8EFFF              CALL  near ptr proc_4
-005 00030B E8ECFF              CALL  near ptr proc_4
-006 00030E E8E9FF              CALL  near ptr proc_4
-007 000311 E8E6FF              CALL  near ptr proc_4
-008 000314 E8E3FF              CALL  near ptr proc_4
-009 000317 E8E0FF              CALL  near ptr proc_4
-010 00031A E8DDFF              CALL  near ptr proc_4
-011 00031D E8DAFF              CALL  near ptr proc_4
-012 000320 5D                  POP            bp
-013 000321 C3                  RET
+000 0002FF 55                  PUSH           bp                 
+001 000300 8BEC                MOV            bp, sp             
+002 000302 E8F5FF              CALL           near ptr proc_4    
+003 000305 E8F2FF              CALL           near ptr proc_4    
+004 000308 E8EFFF              CALL           near ptr proc_4    
+005 00030B E8ECFF              CALL           near ptr proc_4    
+006 00030E E8E9FF              CALL           near ptr proc_4    
+007 000311 E8E6FF              CALL           near ptr proc_4    
+008 000314 E8E3FF              CALL           near ptr proc_4    
+009 000317 E8E0FF              CALL           near ptr proc_4    
+010 00031A E8DDFF              CALL           near ptr proc_4    
+011 00031D E8DAFF              CALL           near ptr proc_4    
+012 000320 5D                  POP            bp                 
+013 000321 C3                  RET                               
 
 		proc_3  ENDP
 
 		proc_4  PROC  NEAR
-000 0002FA 55                  PUSH           bp
-001 0002FB 8BEC                MOV            bp, sp
-002 0002FD 5D                  POP            bp
-003 0002FE C3                  RET
+000 0002FA 55                  PUSH           bp                 
+001 0002FB 8BEC                MOV            bp, sp             
+002 0002FD 5D                  POP            bp                 
+003 0002FE C3                  RET                               
 
 		proc_4  ENDP
 
