@@ -403,7 +403,7 @@ static Int signex(byte b)
  ***************************************************************************/
 static void setAddress(Int i, boolT fdst, word seg, int16 reg, word off)
 {
-    ICODEMEM *pm;
+    LLOpcode *pm;
 
     /* If not to register (i.e. to r/m), and talking about r/m,
                 then this is dest */
@@ -631,7 +631,7 @@ static void trans(Int i)
         pIcode->ic.ll.opcode = transTable[REG(*pInst)];   /* valid on bytes */
         pIcode->ic.ll.flagDU.d = df[REG(*pInst)];
         rm(i);
-        memcpy(&pIcode->ic.ll.src, &pIcode->ic.ll.dst, sizeof(ICODEMEM));
+        pIcode->ic.ll.src = pIcode->ic.ll.dst;
         if (pIcode->ic.ll.opcode == iJMP || pIcode->ic.ll.opcode == iCALL || pIcode->ic.ll.opcode == iCALLF)
             pIcode->ic.ll.flg |= NO_OPS;
         else if (pIcode->ic.ll.opcode == iINC || pIcode->ic.ll.opcode == iPUSH || pIcode->ic.ll.opcode == iDEC)
@@ -666,7 +666,7 @@ static void arith(Int i)
     }
     else if (!(opcode == iNOT || opcode == iNEG))
     {
-        memcpy(&pIcode->ic.ll.src, &pIcode->ic.ll.dst, sizeof(ICODEMEM));
+        pIcode->ic.ll.src = pIcode->ic.ll.dst;
         setAddress(i, TRUE, 0, rAX, 0);			/* dst = AX  */
     }
     else if (opcode == iNEG || opcode == iNOT)
@@ -685,8 +685,7 @@ static void arith(Int i)
  *****************************************************************************/
 static void data1(Int i)
 {
-    pIcode->ic.ll.immed.op = (stateTable[i].flg & S_EXT)? signex(*pInst++):
-                                                      *pInst++;
+    pIcode->ic.ll.src.SetImmediateOp( (stateTable[i].flg & S_EXT)? signex(*pInst++): *pInst++ );
     pIcode->ic.ll.flg |= I;
 }
 
@@ -710,7 +709,7 @@ static void data2(Int )
         pIcode->ic.ll.flg |= NO_OPS;
     }
     else
-        pIcode->ic.ll.immed.op = getWord();
+        pIcode->ic.ll.src.SetImmediateOp(getWord());
     pIcode->ic.ll.flg |= I;
 }
 
@@ -735,7 +734,7 @@ static void dispN(Int )
     /* Note: the result of the subtraction could be between 32k and 64k, and
         still be positive; it is an offset from prog.Image. So this must be
         treated as unsigned */
-    pIcode->ic.ll.immed.op = (dword)(off + (unsigned)(pInst - prog.Image));
+    pIcode->ic.ll.src.SetImmediateOp((dword)(off + (unsigned)(pInst - prog.Image)));
     pIcode->ic.ll.flg |= I;
 }
 
@@ -747,7 +746,7 @@ static void dispS(Int )
 {
     long off = signex(*pInst++); 	/* Signed displacement */
 
-    pIcode->ic.ll.immed.op = (dword)(off + (unsigned)(pInst - prog.Image));
+    pIcode->ic.ll.src.SetImmediateOp((dword)(off + (unsigned)(pInst - prog.Image)));
     pIcode->ic.ll.flg |= I;
 }
 
@@ -760,7 +759,7 @@ static void dispF(Int )
     dword off = (unsigned)getWord();
     dword seg = (unsigned)getWord();
 
-    pIcode->ic.ll.immed.op = off + ((dword)(unsigned)seg << 4);
+    pIcode->ic.ll.src.SetImmediateOp(off + ((dword)(unsigned)seg << 4));
     pIcode->ic.ll.flg |= I;
 }
 
@@ -808,7 +807,7 @@ static void strop(Int )
  ***************************************************************************/
 static void escop(Int i)
 {
-    pIcode->ic.ll.immed.op = REG(*pInst) + (dword)((i & 7) << 3);
+    pIcode->ic.ll.src.SetImmediateOp(REG(*pInst) + (dword)((i & 7) << 3));
     pIcode->ic.ll.flg |= I;
     rm(i);
 }
@@ -819,7 +818,7 @@ static void escop(Int i)
  ****************************************************************************/
 static void const1(Int )
 {
-    pIcode->ic.ll.immed.op = 1;
+    pIcode->ic.ll.src.SetImmediateOp(1);
     pIcode->ic.ll.flg |= I;
 }
 
@@ -829,7 +828,7 @@ static void const1(Int )
  ****************************************************************************/
 static void const3(Int )
 {
-    pIcode->ic.ll.immed.op = 3;
+    pIcode->ic.ll.src.SetImmediateOp(3);
     pIcode->ic.ll.flg |= I;
 }
 
@@ -856,12 +855,12 @@ static void none2(Int )
  ****************************************************************************/
 static void checkInt(Int )
 {
-    word wOp = (word) pIcode->ic.ll.immed.op;
+    word wOp = (word) pIcode->ic.ll.src.op();
     if ((wOp >= 0x34) && (wOp <= 0x3B))
     {
         /* This is a Borland/Microsoft floating point emulation instruction.
             Treat as if it is an ESC opcode */
-        pIcode->ic.ll.immed.op = wOp - 0x34;
+        pIcode->ic.ll.src.SetImmediateOp(wOp - 0x34);
         pIcode->ic.ll.opcode = iESC;
         pIcode->ic.ll.flg |= FLOAT_OP;
 

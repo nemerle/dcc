@@ -18,10 +18,6 @@ CIcodeRec::CIcodeRec()
     //reserve(512);
 }
 
-CIcodeRec::~CIcodeRec()
-{
-}
-
 /* Copies the icode that is pointed to by pIcode to the icode array.
  * If there is need to allocate extra memory, it is done so, and
  * the alloc variable is adjusted.        */
@@ -37,22 +33,6 @@ void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
     for (int i = start; i <= end; i++)
         at(i).inBB = pnewBB;
 }
-
-void CIcodeRec::SetImmediateOp(int ip, dword dw)
-{
-    at(ip).ic.ll.immed.op = dw;
-}
-
-dword CIcodeRec::GetLlLabel(int ip)
-{
-    return at(ip).ic.ll.label;
-}
-
-llIcode CIcodeRec::GetLlOpcode(int ip)
-{
-    return at(ip).ic.ll.opcode;
-}
-
 
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and
     replaces *pIndex with an icode index */

@@ -46,11 +46,11 @@ void ICODE::newCallHl()
 {
     type = HIGH_LEVEL;
     ic.hl.opcode = HLI_CALL;
-    ic.hl.oper.call.proc = ic.ll.immed.proc.proc;
+    ic.hl.oper.call.proc = ic.ll.src.proc.proc;
     ic.hl.oper.call.args = new STKFRAME;
 
-    if (ic.ll.immed.proc.cb != 0)
-        ic.hl.oper.call.args->cb = ic.ll.immed.proc.cb;
+    if (ic.ll.src.proc.cb != 0)
+        ic.hl.oper.call.args->cb = ic.ll.src.proc.cb;
     else if(ic.hl.oper.call.proc)
         ic.hl.oper.call.args->cb =ic.hl.oper.call.proc->cbParam;
     else

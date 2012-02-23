@@ -323,7 +323,7 @@ static Int idiom3(iICODE pIcode, iICODE pEnd)
     ++pIcode;
     if ((pIcode < pEnd) && (pIcode->ic.ll.flg & I) &&
         (pIcode->ic.ll.opcode == iADD) && (pIcode->ic.ll.dst.regi == rSP))
-        return (pIcode->ic.ll.immed.op);
+        return (pIcode->ic.ll.src.op());
     else if ((pIcode->ic.ll.opcode == iMOV) && (pIcode->ic.ll.dst.regi == rSP)
              && (pIcode->ic.ll.src.regi == rBP))
         (pIcode-1)->ic.ll.flg |= REST_STK;
@@ -404,7 +404,7 @@ static void idiom4 (iICODE pIcode, iICODE pEnd, Function * pProc)
     /* Check for RET(F) immed */
     if (pIcode->ic.ll.flg & I)
     {
-        pProc->cbParam = (int16)pIcode->ic.ll.immed.op;
+        pProc->cbParam = (int16)pIcode->ic.ll.src.op();
         pProc->flg |= CALL_PASCAL;
     }
 }
@@ -457,7 +457,7 @@ static boolT idiom6 (iICODE pIcode, iICODE pEnd)
  ****************************************************************************/
 static boolT idiom7 (iICODE pIcode)
 {
-    ICODEMEM *dst, *src;
+    LLOpcode *dst, *src;
 
     dst = &pIcode->ic.ll.dst;
     src = &pIcode->ic.ll.src;
@@ -496,7 +496,8 @@ static boolT idiom7 (iICODE pIcode)
  *		Found in Borland Turbo C code.
  ****************************************************************************/
 static boolT idiom21 (iICODE picode, iICODE pend)
-{ ICODEMEM *dst, *src;
+{
+    LLOpcode *dst, *src;
 
     dst = &picode->ic.ll.dst;
     src = &picode->ic.ll.src;
@@ -526,14 +527,14 @@ static boolT idiom21 (iICODE picode, iICODE pend)
  ****************************************************************************/
 static boolT idiom8 (iICODE pIcode, iICODE pEnd)
 {
-    if (pIcode < pEnd)
-    {
-        if (((pIcode->ic.ll.flg & I) == I) && (pIcode->ic.ll.immed.op == 1))
-            if (((pIcode+1)->ic.ll.opcode == iRCR) &&
-                (((pIcode+1)->ic.ll.flg & I) == I) &&
-                ((pIcode+1)->ic.ll.immed.op == 1))
-                return true;
-    }
+    iICODE next=pIcode+1;
+    if((pIcode>=pEnd) and (next>=pEnd))
+        return false;
+    if (pIcode->ic.ll.anyFlagSet(I) && (pIcode->ic.ll.src.op() == 1))
+        if ((next->ic.ll.opcode == iRCR) &&
+             next->ic.ll.anyFlagSet(I) &&
+            (next->ic.ll.src.op() == 1))
+            return true;
     return false;
 }
 
@@ -550,22 +551,22 @@ static boolT idiom8 (iICODE pIcode, iICODE pEnd)
  *      Found in Borland Turbo C code to index an array (array multiplication)
  ****************************************************************************/
 static Int idiom15 (iICODE picode, iICODE pend)
-{ Int n = 1;
+{
+    Int n = 1;
     byte regi;
 
     if (picode < pend)
     {
         /* Match SHL reg, 1 */
-        if ((picode->ic.ll.flg & I) && (picode->ic.ll.immed.op == 1))
+        if ((picode->ic.ll.flg & I) && (picode->ic.ll.src.op() == 1))
         {
             regi = picode->ic.ll.dst.regi;
-            while (1)
+            for(auto iter=picode+1;iter < pend;++iter)
             {
-                if (((picode+n) < pend) &&
-                    ((picode+n)->ic.ll.opcode == iSHL) &&
-                    ((picode+n)->ic.ll.flg & I) &&
-                    ((picode+n)->ic.ll.immed.op == 1) &&
-                    ((picode+n)->ic.ll.dst.regi == regi))
+                if ((iter->ic.ll.opcode == iSHL) &&
+                    (iter->ic.ll.flg & I) &&
+                    (iter->ic.ll.src.op() == 1) &&
+                    (iter->ic.ll.dst.regi == regi))
                     n++;
                 else
                     break;
@@ -590,12 +591,13 @@ static Int idiom15 (iICODE picode, iICODE pend)
  ****************************************************************************/
 static boolT idiom12 (iICODE pIcode, iICODE pEnd)
 {
+    iICODE next=pIcode+1;
     if (pIcode < pEnd)
     {
-        if (((pIcode->ic.ll.flg & I) == I) && (pIcode->ic.ll.immed.op == 1))
-            if (((pIcode+1)->ic.ll.opcode == iRCL) &&
-                (((pIcode+1)->ic.ll.flg & I) == I) &&
-                ((pIcode+1)->ic.ll.immed.op == 1))
+        if (pIcode->ic.ll.anyFlagSet(I) && (pIcode->ic.ll.src.op() == 1))
+            if ((next->ic.ll.opcode == iRCL) &&
+                (next->ic.ll.anyFlagSet(I)) &&
+                (next->ic.ll.src.op() == 1))
                 return true;
     }
     return false;
@@ -613,12 +615,13 @@ static boolT idiom12 (iICODE pIcode, iICODE pEnd)
  ****************************************************************************/
 static boolT idiom9 (iICODE pIcode, iICODE pEnd)
 {
+    iICODE next=pIcode+1;
     if (pIcode < pEnd)
     {
-        if (((pIcode->ic.ll.flg & I) == I) && (pIcode->ic.ll.immed.op == 1))
-            if (((pIcode+1)->ic.ll.opcode == iRCR) &&
-                (((pIcode+1)->ic.ll.flg & I) == I) &&
-                ((pIcode+1)->ic.ll.immed.op == 1))
+        if (((pIcode->ic.ll.flg & I) == I) && (pIcode->ic.ll.src.op() == 1))
+            if ((next->ic.ll.opcode == iRCR) &&
+                ((next->ic.ll.flg & I) == I) &&
+                (next->ic.ll.src.op() == 1))
                 return true;
     }
     return false;
@@ -678,22 +681,22 @@ static boolT idiom10old (iICODE pIcode, iICODE pEnd)
  ****************************************************************************/
 static void idiom10 (iICODE pIcode, iICODE pEnd)
 {
-    if (pIcode < pEnd)
-    {
-        /* Check OR reg, reg */
-        if (((pIcode->ic.ll.flg & I) != I) &&
-            (pIcode->ic.ll.src. regi > 0) &&
-            (pIcode->ic.ll.src.regi < INDEXBASE) &&
-            (pIcode->ic.ll.src.regi == pIcode->ic.ll.dst.regi))
-            if (((pIcode+1) < pEnd) && ((pIcode+1)->ic.ll.opcode == iJNE))
-            {
-                pIcode->ic.ll.opcode = iCMP;
-                pIcode->ic.ll.flg |= I;
-                pIcode->ic.ll.immed.op = 0;
-                pIcode->du.def = 0;
-                pIcode->du1.numRegsDef = 0;
-            }
-    }
+    iICODE next=pIcode+1;
+    if((pIcode>=pEnd) or (next>=pEnd))
+        return;
+    /* Check OR reg, reg */
+    if (((pIcode->ic.ll.flg & I) != I) &&
+        (pIcode->ic.ll.src.regi > 0) &&
+        (pIcode->ic.ll.src.regi < INDEXBASE) &&
+        (pIcode->ic.ll.src.regi == pIcode->ic.ll.dst.regi))
+        if (next->ic.ll.opcode == iJNE)
+        {
+            pIcode->ic.ll.opcode = iCMP;
+            pIcode->ic.ll.flg |= I;
+            pIcode->ic.ll.src.SetImmediateOp(0); // todo check if proc should be zeroed too
+            pIcode->du.def = 0;
+            pIcode->du1.numRegsDef = 0;
+        }
 }
 
 
@@ -707,23 +710,24 @@ static void idiom10 (iICODE pIcode, iICODE pEnd)
  *      Found in Borland Turbo C, used for multiplication and division of
  *      byte operands (ie. they need to be extended to words).
  ****************************************************************************/
-static byte idiom13 (iICODE picode, iICODE pend)
-{ byte regi;
+static byte idiom13 (iICODE pIcode, iICODE pEnd)
+{
+    byte regi;
+    iICODE next=pIcode+1;
+    if((pIcode>=pEnd) or (next>=pEnd))
+        return 0;
 
-    if (picode < pend)
+    /* Check for regL */
+    regi = pIcode->ic.ll.dst.regi;
+    if (((pIcode->ic.ll.flg & I) != I) && (regi >= rAL) && (regi <= rBH))
     {
-        /* Check for regL */
-        regi = picode->ic.ll.dst.regi;
-        if (((picode->ic.ll.flg & I) != I) && (regi >= rAL) && (regi <= rBH))
+        /* Check for MOV regH, 0 */
+        if ((next->ic.ll.opcode == iMOV) &&
+            (next->ic.ll.flg & I) &&
+            (next->ic.ll.src.op() == 0))
         {
-            /* Check for MOV regH, 0 */
-            if (((picode+1)->ic.ll.opcode == iMOV) &&
-                ((picode+1)->ic.ll.flg & I) &&
-                ((picode+1)->ic.ll.immed.op == 0))
-            {
-                if ((picode+1)->ic.ll.dst.regi == (regi + 4))
-                    return (regi - rAL + rAX);
-            }
+            if (next->ic.ll.dst.regi == (regi + 4))
+                return (regi - rAL + rAX);
         }
     }
     return (0);
@@ -1175,13 +1179,12 @@ void Function::findIdioms()
             case iCALL:  case iCALLF:
                 /* Check for library functions that return a long register.
                          * Propagate this result */
-                if (pIcode->ic.ll.immed.proc.proc != 0)
-                    if ((pIcode->ic.ll.immed.proc.proc->flg & PROC_ISLIB) &&
-                        (pIcode->ic.ll.immed.proc.proc->flg & PROC_IS_FUNC))
+                if (pIcode->ic.ll.src.proc.proc != 0)
+                    if ((pIcode->ic.ll.src.proc.proc->flg & PROC_ISLIB) &&
+                        (pIcode->ic.ll.src.proc.proc->flg & PROC_IS_FUNC))
                     {
-                        if ((pIcode->ic.ll.immed.proc.proc->retVal.type==TYPE_LONG_SIGN)
-                            || (pIcode->ic.ll.immed.proc.proc->retVal.type ==
-                                TYPE_LONG_UNSIGN))
+                        if ((pIcode->ic.ll.src.proc.proc->retVal.type==TYPE_LONG_SIGN)
+                            || (pIcode->ic.ll.src.proc.proc->retVal.type == TYPE_LONG_UNSIGN))
                             localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, ip);
                     }
 
@@ -1190,9 +1193,9 @@ void Function::findIdioms()
                 {
                     if (pIcode->ic.ll.flg & I)
                     {
-                        (pIcode->ic.ll.immed.proc.proc)->cbParam = (int16)idx;
-                        pIcode->ic.ll.immed.proc.cb = idx;
-                        (pIcode->ic.ll.immed.proc.proc)->flg |= CALL_C;
+                        (pIcode->ic.ll.src.proc.proc)->cbParam = (int16)idx;
+                        pIcode->ic.ll.src.proc.cb = idx;
+                        (pIcode->ic.ll.src.proc.proc)->flg |= CALL_C;
                         pIcode++;
                         (pIcode++)->invalidate();
                         ip++;
@@ -1207,9 +1210,9 @@ void Function::findIdioms()
                 {
                     if (pIcode->isLlFlag(I))
                     {
-                        (pIcode->ic.ll.immed.proc.proc)->cbParam = (int16)idx;
-                        pIcode->ic.ll.immed.proc.cb = idx;
-                        (pIcode->ic.ll.immed.proc.proc)->flg |= CALL_C;
+                        (pIcode->ic.ll.src.proc.proc)->cbParam = (int16)idx;
+                        pIcode->ic.ll.src.proc.cb = idx;
+                        (pIcode->ic.ll.src.proc.proc)->flg |= CALL_C;
                         ip += idx/2 - 1;
                         pIcode++;
                         for (idx /= 2; idx > 0; idx--)
@@ -1376,7 +1379,7 @@ void Function::findIdioms()
                 if (idiom21 (pIcode, pEnd))
                 {
                     lhs = COND_EXPR::idLong (&localId, DST, pIcode,HIGH_FIRST, ip, eDEF, 1);
-                    rhs = COND_EXPR::idKte ((pIcode+1)->ic.ll.immed.op , 4);
+                    rhs = COND_EXPR::idKte ((pIcode+1)->ic.ll.src.op() , 4);
                     pIcode->setAsgn(lhs, rhs);
                     pIcode->du.use = 0;		/* clear register used in iXOR */
                     (pIcode+1)->invalidate();
@@ -1430,7 +1433,7 @@ void Function::bindIcodeOff()
     for (i = 0; i < Icode.size(); i++)
         if ((pIcode[i].ic.ll.flg & I) && JmpInst(pIcode[i].ic.ll.opcode))
         {
-            if (Icode.labelSrch(pIcode[i].ic.ll.immed.op, j))
+            if (Icode.labelSrch(pIcode[i].ic.ll.src.op(), j))
             {
                 pIcode[j].ic.ll.flg |= TARGET;
             }
@@ -1445,8 +1448,14 @@ void Function::bindIcodeOff()
         {
             if (pIcode->ic.ll.flg & I)
             {
-                if (! Icode.labelSrch(pIcode->ic.ll.immed.op, pIcode->ic.ll.immed.op))
+                dword found;
+                if (! Icode.labelSrch(pIcode->ic.ll.src.op(), found))
+                {
                     pIcode->ic.ll.flg |= NO_LABEL;
+                }
+                else
+                    pIcode->ic.ll.src.SetImmediateOp(found);
+
             }
             else if (pIcode->ic.ll.flg & SWITCH)
             {

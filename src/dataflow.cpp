@@ -88,9 +88,9 @@ static COND_EXPR *srcIdent (const ICODE &Icode, Function * pProc, Int i, ICODE &
     if (Icode.ic.ll.flg & I)   /* immediate operand */
     {
         if (Icode.ic.ll.flg & B)
-            n = COND_EXPR::idKte (Icode.ic.ll.immed.op, 1);
+            n = COND_EXPR::idKte (Icode.ic.ll.src.op(), 1);
         else
-            n = COND_EXPR::idKte (Icode.ic.ll.immed.op, 2);
+            n = COND_EXPR::idKte (Icode.ic.ll.src.op(), 2);
     }
     else
         n = COND_EXPR::id (Icode, SRC, pProc, i, duIcode, du);

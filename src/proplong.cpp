@@ -302,7 +302,7 @@ void checkBack();
 int     Function::checkBackwarLongDefs(int loc_ident_idx, ID *pLocId, int pLocId_idx,Assignment &asgn)
 {
     int idx;
-    ICODEMEM * pmH,* pmL;
+    LLOpcode * pmH,* pmL;
     iICODE pIcode;
     for (idx = pLocId_idx - 1; idx > 0 ; idx--)
     {
@@ -397,7 +397,7 @@ void Function::propLongReg (Int loc_ident_idx, ID *pLocId)
         for (idx = pLocId_idx + 1; idx < Icode.size() - 1; idx++)
         {
             iICODE pIcode;
-            ICODEMEM * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
+            LLOpcode * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
             int off,arc;
             pIcode = Icode.begin()+(idx);
             if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))

@@ -4,6 +4,8 @@
  ****************************************************************************/
 #pragma once
 #include <vector>
+#include <llvm/MC/MCInst.h>
+#include <llvm/MC/MCAsmInfo.h>
 #include "Enums.h"
 //enum condId;
 struct LOCAL_ID;
@@ -254,17 +256,6 @@ struct DU_ICODE
 #define MAX_USES		5
 
 
-/* LOW_LEVEL icode operand record */
-struct ICODEMEM
-{
-    byte     seg;               /* CS, DS, ES, SS                       */
-    int16    segValue;          /* Value of segment seg during analysis */
-    byte     segOver;           /* CS, DS, ES, SS if segment override   */
-    byte     regi;              /* 0 < regs < INDEXBASE <= index modes  */
-    int16    off;               /* memory address offset                */
-} ;
-
-
 struct COND_EXPR;
 struct HLTYPE
 {
@@ -281,22 +272,34 @@ struct HLTYPE
         }				 call;
     }                    oper;      /* operand                  */
 } ;
+/* LOW_LEVEL icode operand record */
+struct LLOpcode : public llvm::MCOperand
+{
+    byte     seg;               /* CS, DS, ES, SS                       */
+    int16    segValue;          /* Value of segment seg during analysis */
+    byte     segOver;           /* CS, DS, ES, SS if segment override   */
+    byte     regi;              /* 0 < regs < INDEXBASE <= index modes  */
+    int16    off;               /* memory address offset                */
+    dword   opz;             /*   idx of immed src op        */
+    //union {/* Source operand if (flg & I)  */
+        //dword   opz;             /*   idx of immed src op        */
+    struct {				/* Call & # actual arg bytes	*/
+        Function *proc;     /*   pointer to target proc (for CALL(F))*/
+        int     cb;		/*   # actual arg bytes			*/
+    } proc;
+    //} immed;
+    dword op() const {return opz;}
+    void SetImmediateOp(dword dw) {opz=dw;}
 
-struct LLTYPE
+};
+struct LLInst : public llvm::MCInst
 {
     llIcode     opcode;         /* llIcode instruction          */
     byte        numBytes;       /* Number of bytes this instr   */
     flags32     flg;            /* icode flags                  */
     dword       label;          /* offset in image (20-bit adr) */
-    ICODEMEM    dst;            /* destination operand          */
-    ICODEMEM    src;            /* source operand               */
-    union {                     /* Source operand if (flg & I)  */
-        dword   op;             /*   idx of immed src op        */
-        struct {				/* Call & # actual arg bytes	*/
-            Function *proc;     /*   pointer to target proc (for CALL(F))*/
-            int     cb;		/*   # actual arg bytes			*/
-        }		proc;
-    }           immed;
+    LLOpcode    dst;            /* destination operand          */
+    LLOpcode    src;            /* source operand               */
     DU          flagDU;         /* def/use of flags				*/
     struct {                    /* Case table if op==JMP && !I  */
         Int     numEntries;     /*   # entries in case table    */
@@ -308,6 +311,7 @@ struct LLTYPE
     {
         return (opcode >= iJB) && (opcode < iJCXZ);
     }
+    bool anyFlagSet(uint32_t x) const { return (flg & x)!=0;}
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
@@ -326,7 +330,7 @@ struct ICODE
     DU1			du1;        	/* du chain 1					*/
     Int			codeIdx;    	/* Index into cCode.code		*/
     struct IC {         /* Different types of icodes    */
-        LLTYPE ll;
+        LLInst ll;
         HLTYPE hl;  	/* For HIGH_LEVEL icodes    */
     };
     IC ic;/* intermediate code        */
@@ -337,6 +341,8 @@ struct ICODE
     dword GetLlFlag() {return ic.ll.flg;}
     bool isLlFlag(dword flg) {return (ic.ll.flg&flg)!=0;}
     llIcode GetLlOpcode() const { return ic.ll.opcode; }
+    dword  GetLlLabel() const { return ic.ll.label;}
+    void SetImmediateOp(dword dw) {ic.ll.src.SetImmediateOp(dw);}
 
     void writeIntComment(std::ostringstream &s);
     void setRegDU(byte regi, operDu du_in);
@@ -356,19 +362,13 @@ public:
 };
 
 // This is the icode array object.
-// The bulk of this could well be done with a class library
 class CIcodeRec : public std::vector<ICODE>
 {
 public:
     CIcodeRec();	// Constructor
-    ~CIcodeRec();	// Destructor
 
     ICODE *	addIcode(ICODE *pIcode);
-    //	ICODE *	GetNextIcode(ICODE * pCurIcode);
     void	SetInBB(int start, int end, BB* pnewBB);
-    void	SetImmediateOp(int ip, dword dw);
-    dword	GetLlLabel(int ip);
-    llIcode	GetLlOpcode(int ip);
     bool	labelSrch(dword target, dword &pIndex);
     ICODE *	GetIcode(int ip);
 };

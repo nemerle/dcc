@@ -6,13 +6,6 @@
 
 #include "dcc.h"
 #include <string.h>
-#ifdef __UNIX__
-//#include <unistd.h>
-#else
-#include <stdio.h>
-#include <io.h>				/* For unlink() */
-#endif
-
 
 /* Global variables - extern to other modules */
 char    *progname;          /* argv[0] - for error msgs 			  */
@@ -28,15 +21,21 @@ CALL_GRAPH	*callGraph;		/* Call graph of the program			  */
 
 static char *initargs(int argc, char *argv[]);
 static void displayTotalStats();
-
+#include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Support/raw_ostream.h>
 
 /****************************************************************************
  * main
  ***************************************************************************/
-
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
+//     llvm::MCOperand op=llvm::MCOperand::CreateImm(11);
+//     llvm::MCAsmInfo info;
+//     llvm::raw_os_ostream wrap(std::cerr);
+//     op.print(wrap,&info);
+//     wrap.flush();
     /* Extract switches and filename */
     strcpy(option.filename, initargs(argc, argv));
 

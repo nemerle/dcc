@@ -129,8 +129,8 @@ static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 static void  dis1Line  (Int i, Int pass);
 void  dis1LineOp(Int i, boolT fWin, char attr, word *len, Function * pProc);
-static void  formatRM(ostringstream &p, flags32 flg, ICODEMEM* pm);
-static ostringstream &strDst(ostringstream &os, flags32 flg, ICODEMEM *pm);
+static void  formatRM(ostringstream &p, flags32 flg, LLOpcode *pm);
+static ostringstream &strDst(ostringstream &os, flags32 flg, LLOpcode *pm);
 static ostringstream &strSrc(ostringstream &os, ICODE *pc, bool skip_comma=false);
 static char *strHex(dword d);
 static Int   checkScanned(dword pcCur);
@@ -215,10 +215,12 @@ void disassem(Int pass, Function * ppProc)
                     JmpInst(pc[i].ic.ll.opcode))
             {
                 /* Replace the immediate operand with an icode index */
-                if (pc.labelSrch(pc[i].ic.ll.immed.op,pc[i].ic.ll.immed.op))
+                dword labTgt;
+                if (pc.labelSrch(pc[i].ic.ll.src.op(),labTgt))
                 {
+                    pc[i].ic.ll.src.SetImmediateOp(labTgt);
                     /* This icode is the target of a jump */
-                    pc[pc[i].ic.ll.immed.op].ic.ll.flg |= TARGET;
+                    pc[labTgt].ic.ll.flg |= TARGET;
                     pc[i].ic.ll.flg |= JMP_ICODE;   /* So its not done twice */
                 }
                 else
@@ -362,7 +364,7 @@ static void dis1Line(Int i, Int pass)
         case iPUSH:
             if (pIcode->ic.ll.flg & I)
             {
-                oper_stream<<strHex(pIcode->ic.ll.immed.op);
+                oper_stream<<strHex(pIcode->ic.ll.src.op());
 //                strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
             }
             else
@@ -396,8 +398,8 @@ static void dis1Line(Int i, Int pass)
 
             /* Check if there is a symbol here */
             selectTable(Label);
-            if ((pIcode->ic.ll.immed.op < (dword)numIcode) &&  /* Ensure in range */
-                    readVal(oper_stream, pc[pIcode->ic.ll.immed.op].ic.ll.label, 0))
+            if ((pIcode->ic.ll.src.op() < (dword)numIcode) &&  /* Ensure in range */
+                    readVal(oper_stream, pc[pIcode->ic.ll.src.op()].ic.ll.label, 0))
             {
                 break;                          /* Symbolic label. Done */
             }
@@ -405,11 +407,11 @@ static void dis1Line(Int i, Int pass)
             if (pIcode->ic.ll.flg & NO_LABEL)
             {
                 //strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
-                oper_stream<<strHex(pIcode->ic.ll.immed.op);
+                oper_stream<<strHex(pIcode->ic.ll.src.op());
             }
             else if (pIcode->ic.ll.flg & I)
             {
-                j = pIcode->ic.ll.immed.op;
+                j = pIcode->ic.ll.src.op();
                 if (! pl[j])       /* Forward jump */
                 {
                     pl[j] = ++lab;
@@ -438,7 +440,7 @@ static void dis1Line(Int i, Int pass)
                     oper_stream<< "near";
                 else
                     oper_stream<< " far";
-                oper_stream<<" ptr "<<(pIcode->ic.ll.immed.proc.proc)->name;
+                oper_stream<<" ptr "<<(pIcode->ic.ll.src.proc.proc)->name;
             }
             else if (pIcode->ic.ll.opcode == iCALLF)
             {
@@ -451,13 +453,13 @@ static void dis1Line(Int i, Int pass)
 
         case iENTER:
             oper_stream<<strHex(pIcode->ic.ll.dst.off)<<", ";
-            oper_stream<<strHex(pIcode->ic.ll.immed.op);
+            oper_stream<<strHex(pIcode->ic.ll.src.op());
             break;
 
         case iRET:  case iRETF:  case iINT:
             if (pIcode->ic.ll.flg & I)
             {
-                oper_stream<<strHex(pIcode->ic.ll.immed.op);
+                oper_stream<<strHex(pIcode->ic.ll.src.op());
             }
             break;
 
@@ -502,11 +504,11 @@ static void dis1Line(Int i, Int pass)
 
         case iIN:
             oper_stream<<(pIcode->ic.ll.flg & B)?"al, ": "ax, ";
-            oper_stream<<(pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx";
+            oper_stream<<(pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.src.op()): "dx";
             break;
 
         case iOUT:
-            oper_stream<<(pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx";
+            oper_stream<<(pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.src.op()): "dx";
             oper_stream<<(pIcode->ic.ll.flg & B)?", al": ", ax";
             break;
 
@@ -597,7 +599,7 @@ static void dis1Line(Int i, Int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(std::ostringstream &p, flags32 flg, ICODEMEM *pm)
+static void formatRM(std::ostringstream &p, flags32 flg, LLOpcode *pm)
 {
     char    seg[4];
 
@@ -644,7 +646,7 @@ static void formatRM(std::ostringstream &p, flags32 flg, ICODEMEM *pm)
 /*****************************************************************************
  * strDst
  ****************************************************************************/
-static ostringstream & strDst(ostringstream &os,flags32 flg, ICODEMEM *pm)
+static ostringstream & strDst(ostringstream &os,flags32 flg, LLOpcode *pm)
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);
@@ -664,7 +666,7 @@ static ostringstream &strSrc(ostringstream &os,ICODE *pc,bool skip_comma)
     if(false==skip_comma)
         os<<", ";
     if (pc->ic.ll.flg & I)
-        os<<strHex(pc->ic.ll.immed.op);
+        os<<strHex(pc->ic.ll.src.op());
     else if (pc->ic.ll.flg & IM_SRC)		/* level 2 */
         os<<"dx:ax";
     else
@@ -699,7 +701,7 @@ void interactDis(Function * initProc, Int initIC)
 void flops(ICODE *pIcode,std::ostringstream &out)
 {
     char bf[30];
-    byte op = (byte)pIcode->ic.ll.immed.op;
+    byte op = (byte)pIcode->ic.ll.src.op();
 
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */

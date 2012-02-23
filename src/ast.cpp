@@ -268,11 +268,11 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst
     {
         newExp->expr.ident.idType = CONSTANT;
         if (f == HIGH_FIRST)
-            newExp->expr.ident.idNode.kte.kte = (pIcode->ic.ll.immed.op << 16) +
-                    (pIcode+off)->ic.ll.immed.op;
+            newExp->expr.ident.idNode.kte.kte = (pIcode->ic.ll.src.op() << 16) +
+                    (pIcode+off)->ic.ll.src.op();
         else        /* LOW_FIRST */
             newExp->expr.ident.idNode.kte.kte =
-                    ((pIcode+off)->ic.ll.immed.op << 16)+ pIcode->ic.ll.immed.op;
+                    ((pIcode+off)->ic.ll.src.op() << 16)+ pIcode->ic.ll.src.op();
         newExp->expr.ident.idNode.kte.size = 4;
     }
     /* Save it as a long expression (reg, stack or glob) */
@@ -350,10 +350,10 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,
 
     Int idx;          /* idx into pIcode->localId table */
 
-    const ICODEMEM * pm = (sd == SRC) ? &pIcode.ic.ll.src : &pIcode.ic.ll.dst;
+    const LLOpcode &pm((sd == SRC) ? pIcode.ic.ll.src : pIcode.ic.ll.dst);
 
-    if (((sd == DST) && (pIcode.ic.ll.flg & IM_DST) == IM_DST) ||
-            ((sd == SRC) && (pIcode.ic.ll.flg & IM_SRC)) ||
+    if (    ((sd == DST) && pIcode.ic.ll.anyFlagSet(IM_DST)) or
+            ((sd == SRC) && pIcode.ic.ll.anyFlagSet(IM_SRC)) or
             (sd == LHS_OP))             /* for MUL lhs */
     {                                                   /* implicit dx:ax */
         idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, rDX, rAX, i);
@@ -362,52 +362,50 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,
         duIcode.setRegDU (rAX, du);
     }
 
-    else if ((sd == DST) && (pIcode.ic.ll.flg & IM_TMP_DST) == IM_TMP_DST)
+    else if ((sd == DST) && pIcode.ic.ll.anyFlagSet(IM_TMP_DST))
     {                                                   /* implicit tmp */
         newExp = COND_EXPR::idReg (rTMP, 0, &pProc->localId);
         duIcode.setRegDU(rTMP, (operDu)eUSE);
     }
 
-    else if ((sd == SRC) && ((pIcode.ic.ll.flg & I) == I)) /* constant */
-        newExp = COND_EXPR::idKte (pIcode.ic.ll.immed.op, 2);
-
-    else if (pm->regi == 0)                             /* global variable */
-        newExp = COND_EXPR::idGlob(pm->segValue, pm->off);
-
-    else if (pm->regi < INDEXBASE)                      /* register */
+    else if ((sd == SRC) && pIcode.ic.ll.anyFlagSet(I)) /* constant */
+        newExp = COND_EXPR::idKte (pIcode.ic.ll.src.op(), 2);
+    else if (pm.regi == 0)                             /* global variable */
+        newExp = COND_EXPR::idGlob(pm.segValue, pm.off);
+    else if (pm.regi < INDEXBASE)                      /* register */
     {
-        newExp = COND_EXPR::idReg (pm->regi, (sd == SRC) ? pIcode.ic.ll.flg :
+        newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? pIcode.ic.ll.flg :
                                                            pIcode.ic.ll.flg & NO_SRC_B, &pProc->localId);
-        duIcode.setRegDU( pm->regi, du);
+        duIcode.setRegDU( pm.regi, du);
     }
 
-    else if (pm->off)                                   /* offset */
+    else if (pm.off)                                   /* offset */
     {
-        if ((pm->seg == rSS) && (pm->regi == INDEXBASE + 6)) /* idx on bp */
+        if ((pm.seg == rSS) && (pm.regi == INDEXBASE + 6)) /* idx on bp */
         {
-            if (pm->off >= 0)                           /* argument */
-                newExp = COND_EXPR::idParam (pm->off, &pProc->args);
+            if (pm.off >= 0)                           /* argument */
+                newExp = COND_EXPR::idParam (pm.off, &pProc->args);
             else                                        /* local variable */
-                newExp = COND_EXPR::idLoc (pm->off, &pProc->localId);
+                newExp = COND_EXPR::idLoc (pm.off, &pProc->localId);
         }
-        else if ((pm->seg == rDS) && (pm->regi == INDEXBASE + 7)) /* bx */
+        else if ((pm.seg == rDS) && (pm.regi == INDEXBASE + 7)) /* bx */
         {
-            if (pm->off > 0)        /* global variable */
-                newExp = idCondExpIdxGlob (pm->segValue, pm->off, rBX,&pProc->localId);
+            if (pm.off > 0)        /* global variable */
+                newExp = idCondExpIdxGlob (pm.segValue, pm.off, rBX,&pProc->localId);
             else
-                newExp = COND_EXPR::idOther (pm->seg, pm->regi, pm->off);
+                newExp = COND_EXPR::idOther (pm.seg, pm.regi, pm.off);
             duIcode.setRegDU( rBX, eUSE);
         }
         else                                            /* idx <> bp, bx */
-            newExp = COND_EXPR::idOther (pm->seg, pm->regi, pm->off);
+            newExp = COND_EXPR::idOther (pm.seg, pm.regi, pm.off);
         /**** check long ops, indexed global var *****/
     }
 
     else  /* (pm->regi >= INDEXBASE && pm->off = 0) => indexed && no off */
     {
-        if ((pm->seg == rDS) && (pm->regi > INDEXBASE + 3)) /* dereference */
+        if ((pm.seg == rDS) && (pm.regi > INDEXBASE + 3)) /* dereference */
         {
-            switch (pm->regi) {
+            switch (pm.regi) {
             case INDEXBASE + 4:   newExp = COND_EXPR::idReg(rSI, 0, &pProc->localId);
                 duIcode.setRegDU( rSI, du);
                 break;
@@ -426,7 +424,7 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,
             newExp = COND_EXPR::unary (DEREFERENCE, newExp);
         }
         else
-            newExp = COND_EXPR::idOther (pm->seg, pm->regi, 0);
+            newExp = COND_EXPR::idOther (pm.seg, pm.regi, 0);
     }
 
     return (newExp);
@@ -436,19 +434,17 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,
 /* Returns the identifier type */
 condId ICODE::idType(opLoc sd)
 {
-    ICODEMEM *pm;
-
-    pm = (sd == SRC) ? &ic.ll.src : &ic.ll.dst;
+    LLOpcode &pm((sd == SRC) ? ic.ll.src : ic.ll.dst);
 
     if ((sd == SRC) && ((ic.ll.flg & I) == I))
         return (CONSTANT);
-    else if (pm->regi == 0)
+    else if (pm.regi == 0)
         return (GLOB_VAR);
-    else if (pm->regi < INDEXBASE)
+    else if (pm.regi < INDEXBASE)
         return (REGISTER);
-    else if ((pm->seg == rSS) && (pm->regi == INDEXBASE))
+    else if ((pm.seg == rSS) && (pm.regi == INDEXBASE))
     {
-        if (pm->off >= 0)
+        if (pm.off >= 0)
             return (PARAM);
         else
             return (LOCAL_VAR);
