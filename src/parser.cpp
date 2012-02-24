@@ -21,7 +21,7 @@ static void     process_operands(ICODE * pIcode, Function * pProc, STATE * pstat
 static void     setBits(int16 type, dword start, dword len);
 static SYM *     updateGlobSym(dword operand, Int size, word duFlag);
 static void     process_MOV(ICODE * pIcode, STATE * pstate);
-static SYM *     lookupAddr (LLOpcode *pm, STATE * pstate, Int size, word duFlag);
+static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, Int size, word duFlag);
 void    interactDis(Function * initProc, Int ic);
 static dword    SynthLab;
 
@@ -777,7 +777,7 @@ static void updateFrameOff (STKFRAME * ps, int16 off, Int size, word duFlag)
  *      if necessary.
  *      Returns a pointer to the symbol in the
  *      symbol table, or Null if it's not a direct memory offset.  */
-static SYM * lookupAddr (LLOpcode *pm, STATE *pstate, Int size, word duFlag)
+static SYM * lookupAddr (LLOperand *pm, STATE *pstate, Int size, word duFlag)
 {
     Int     i;
     SYM *    psym;
@@ -912,7 +912,7 @@ dword duReg[] = { 0x00,
  *            ix    : current index into icode array    */
 static void use (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int size, Int ix)
 {
-    LLOpcode * pm   = (d == SRC)? &pIcode->ic.ll.src: &pIcode->ic.ll.dst;
+    LLOperand * pm   = (d == SRC)? &pIcode->ic.ll.src: &pIcode->ic.ll.dst;
     SYM *  psym;
 
     if (pm->regi == 0 || pm->regi >= INDEXBASE)
@@ -959,7 +959,7 @@ static void use (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int 
 static void def (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int size,
                  Int ix)
 {
-    LLOpcode *pm   = (d == SRC)? &pIcode->ic.ll.src: &pIcode->ic.ll.dst;
+    LLOperand *pm   = (d == SRC)? &pIcode->ic.ll.src: &pIcode->ic.ll.dst;
     SYM *  psym;
 
     if (pm->regi == 0 || pm->regi >= INDEXBASE)
@@ -1011,7 +1011,7 @@ static void def (opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int 
 static void use_def(opLoc d, ICODE * pIcode, Function * pProc, STATE * pstate, Int cb,
                     Int ix)
 {
-    LLOpcode *  pm = (d == SRC)? &pIcode->ic.ll.src: &pIcode->ic.ll.dst;
+    LLOperand *  pm = (d == SRC)? &pIcode->ic.ll.src: &pIcode->ic.ll.dst;
 
     use (d, pIcode, pProc, pstate, cb, ix);
 

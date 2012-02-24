@@ -350,7 +350,7 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,
 
     Int idx;          /* idx into pIcode->localId table */
 
-    const LLOpcode &pm((sd == SRC) ? pIcode.ic.ll.src : pIcode.ic.ll.dst);
+    const LLOperand &pm((sd == SRC) ? pIcode.ic.ll.src : pIcode.ic.ll.dst);
 
     if (    ((sd == DST) && pIcode.ic.ll.anyFlagSet(IM_DST)) or
             ((sd == SRC) && pIcode.ic.ll.anyFlagSet(IM_SRC)) or
@@ -434,7 +434,7 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,
 /* Returns the identifier type */
 condId ICODE::idType(opLoc sd)
 {
-    LLOpcode &pm((sd == SRC) ? ic.ll.src : ic.ll.dst);
+    LLOperand &pm((sd == SRC) ? ic.ll.src : ic.ll.dst);
 
     if ((sd == SRC) && ((ic.ll.flg & I) == I))
         return (CONSTANT);

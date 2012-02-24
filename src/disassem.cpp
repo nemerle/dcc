@@ -129,8 +129,8 @@ static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 static void  dis1Line  (Int i, Int pass);
 void  dis1LineOp(Int i, boolT fWin, char attr, word *len, Function * pProc);
-static void  formatRM(ostringstream &p, flags32 flg, LLOpcode *pm);
-static ostringstream &strDst(ostringstream &os, flags32 flg, LLOpcode *pm);
+static void  formatRM(ostringstream &p, flags32 flg, LLOperand *pm);
+static ostringstream &strDst(ostringstream &os, flags32 flg, LLOperand *pm);
 static ostringstream &strSrc(ostringstream &os, ICODE *pc, bool skip_comma=false);
 static char *strHex(dword d);
 static Int   checkScanned(dword pcCur);
@@ -599,7 +599,7 @@ static void dis1Line(Int i, Int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(std::ostringstream &p, flags32 flg, LLOpcode *pm)
+static void formatRM(std::ostringstream &p, flags32 flg, LLOperand *pm)
 {
     char    seg[4];
 
@@ -646,7 +646,7 @@ static void formatRM(std::ostringstream &p, flags32 flg, LLOpcode *pm)
 /*****************************************************************************
  * strDst
  ****************************************************************************/
-static ostringstream & strDst(ostringstream &os,flags32 flg, LLOpcode *pm)
+static ostringstream & strDst(ostringstream &os,flags32 flg, LLOperand *pm)
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);

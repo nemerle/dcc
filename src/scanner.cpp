@@ -403,7 +403,7 @@ static Int signex(byte b)
  ***************************************************************************/
 static void setAddress(Int i, boolT fdst, word seg, int16 reg, word off)
 {
-    LLOpcode *pm;
+    LLOperand *pm;
 
     /* If not to register (i.e. to r/m), and talking about r/m,
                 then this is dest */

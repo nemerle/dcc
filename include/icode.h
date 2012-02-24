@@ -273,7 +273,7 @@ struct HLTYPE
     }                    oper;      /* operand                  */
 } ;
 /* LOW_LEVEL icode operand record */
-struct LLOpcode : public llvm::MCOperand
+struct LLOperand //: public llvm::MCOperand
 {
     byte     seg;               /* CS, DS, ES, SS                       */
     int16    segValue;          /* Value of segment seg during analysis */
@@ -282,12 +282,10 @@ struct LLOpcode : public llvm::MCOperand
     int16    off;               /* memory address offset                */
     dword   opz;             /*   idx of immed src op        */
     //union {/* Source operand if (flg & I)  */
-        //dword   opz;             /*   idx of immed src op        */
     struct {				/* Call & # actual arg bytes	*/
         Function *proc;     /*   pointer to target proc (for CALL(F))*/
         int     cb;		/*   # actual arg bytes			*/
     } proc;
-    //} immed;
     dword op() const {return opz;}
     void SetImmediateOp(dword dw) {opz=dw;}
 
@@ -298,8 +296,8 @@ struct LLInst : public llvm::MCInst
     byte        numBytes;       /* Number of bytes this instr   */
     flags32     flg;            /* icode flags                  */
     dword       label;          /* offset in image (20-bit adr) */
-    LLOpcode    dst;            /* destination operand          */
-    LLOpcode    src;            /* source operand               */
+    LLOperand    dst;            /* destination operand          */
+    LLOperand    src;            /* source operand               */
     DU          flagDU;         /* def/use of flags				*/
     struct {                    /* Case table if op==JMP && !I  */
         Int     numEntries;     /*   # entries in case table    */

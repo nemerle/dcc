@@ -252,7 +252,7 @@ Int LOCAL_ID::newLongStk(hlType t, Int offH, Int offL)
 Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, Int ix,operDu du, Int off)
 {
     Int idx;
-  LLOpcode *pmH, *pmL;
+  LLOperand *pmH, *pmL;
 
     if (f == LOW_FIRST)
     {
@@ -308,7 +308,7 @@ Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, Int ix,operDu du, Int 
 boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i, Int idx,
                   Function * pProc, COND_EXPR **rhs, COND_EXPR **lhs, Int off)
 {
-    LLOpcode *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
+    LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
 
     pmHdst = &pIcode->ic.ll.dst;
     pmLdst = &(pIcode+off)->ic.ll.dst;
@@ -346,7 +346,7 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i, Int idx,
 boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i, Int idx,
                   Function * pProc, COND_EXPR *&rhs, COND_EXPR *&lhs, Int off)
 {
-    LLOpcode *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
+    LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
 
     pmHdst = &pIcode->ic.ll.dst;
     pmLdst = &(pIcode+off)->ic.ll.dst;

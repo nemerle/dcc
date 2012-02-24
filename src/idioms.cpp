@@ -457,7 +457,7 @@ static boolT idiom6 (iICODE pIcode, iICODE pEnd)
  ****************************************************************************/
 static boolT idiom7 (iICODE pIcode)
 {
-    LLOpcode *dst, *src;
+    LLOperand *dst, *src;
 
     dst = &pIcode->ic.ll.dst;
     src = &pIcode->ic.ll.src;
@@ -497,7 +497,7 @@ static boolT idiom7 (iICODE pIcode)
  ****************************************************************************/
 static boolT idiom21 (iICODE picode, iICODE pend)
 {
-    LLOpcode *dst, *src;
+    LLOperand *dst, *src;
 
     dst = &picode->ic.ll.dst;
     src = &picode->ic.ll.src;
