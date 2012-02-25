@@ -1,0 +1,283 @@
+		proc_7  PROC  NEAR
+000 000289 51                  PUSH           cx                 
+001 00028A B100                MOV            cl, 0              
+
+002 00028C B500           L1:  MOV            ch, 0              
+
+003 00028E FECD           L2:  DEC            ch                 
+004 000290 75FC                JNE            L2                 
+005 000292 FEC9                DEC            cl                 
+006 000294 75F6                JNE            L1                 
+007 000296 59                  POP            cx                 
+008 000297 C3                  RET                               
+
+		proc_7  ENDP
+
+		proc_6  PROC  NEAR
+000 000298 B409                MOV            ah, 9              
+001 00029A CD21                INT            21h                	/* Display string */
+
+002 00029C C3                  RET                               
+
+		proc_6  ENDP
+
+		proc_5  PROC  NEAR
+000 000345 50                  PUSH           ax                 
+001 000346 52                  PUSH           dx                 
+002 000347 B402                MOV            ah, 2              
+003 000349 B20D                MOV            dl, 0Dh            
+004 00034B CD21                INT            21h                	/* Character output */
+
+005 00034D B20A                MOV            dl, 0Ah            
+006 00034F CD21                INT            21h                	/* Character output */
+
+007 000351 5A                  POP            dx                 
+008 000352 58                  POP            ax                 
+009 000353 C3                  RET                               
+
+		proc_5  ENDP
+
+		proc_4  PROC  NEAR
+000 00030F 50                  PUSH           ax                 
+001 000310 53                  PUSH           bx                 
+002 000311 51                  PUSH           cx                 
+003 000312 52                  PUSH           dx                 
+004 000313 B403                MOV            ah, 3              
+005 000315 B700                MOV            bh, 0              
+006 000317 CD10                INT            10h                	/* Unknown int */
+
+007 000319 B402                MOV            ah, 2              
+008 00031B FEC2                INC            dl                 
+009 00031D 80FA4F              CMP            dl, 4Fh            
+010 000320 7606                JBE            L3                 
+011 000322 E82000              CALL           near ptr proc_5    
+
+013 00032A 5A             L4:  POP            dx                 
+014 00032B 59                  POP            cx                 
+015 00032C 5B                  POP            bx                 
+016 00032D 58                  POP            ax                 
+017 00032E C3                  RET                               
+
+018 000328 CD10           L3:  INT            10h                	/* Unknown int */
+
+019                            JMP            L4                 ;Synthetic inst
+
+		proc_4  ENDP
+
+		proc_3  PROC  NEAR
+000 0002DD 50                  PUSH           ax                 
+001 0002DE 53                  PUSH           bx                 
+002 0002DF 51                  PUSH           cx                 
+003 0002E0 52                  PUSH           dx                 
+004 0002E1 B409                MOV            ah, 9              
+005 0002E3 B700                MOV            bh, 0              
+006 0002E5 B90100              MOV            cx, 1              
+007 0002E8 8AC2                MOV            al, dl             
+008 0002EA B307                MOV            bl, 7              
+009 0002EC CD10                INT            10h                	/* Unknown int */
+
+010 0002EE E81E00              CALL           near ptr proc_4    
+011 0002F1 5A                  POP            dx                 
+012 0002F2 59                  POP            cx                 
+013 0002F3 5B                  POP            bx                 
+014 0002F4 58                  POP            ax                 
+015 0002F5 C3                  RET                               
+
+		proc_3  ENDP
+
+		proc_2  PROC  NEAR
+000 0002D2 50                  PUSH           ax                 
+001 0002D3 53                  PUSH           bx                 
+002 0002D4 B700                MOV            bh, 0              
+003 0002D6 B402                MOV            ah, 2              
+004 0002D8 CD10                INT            10h                	/* Unknown int */
+
+005 0002DA 5B                  POP            bx                 
+006 0002DB 58                  POP            ax                 
+007 0002DC C3                  RET                               
+
+		proc_2  ENDP
+
+		proc_1  PROC  NEAR
+000 0002B9 50                  PUSH           ax                 
+001 0002BA 53                  PUSH           bx                 
+002 0002BB 51                  PUSH           cx                 
+003 0002BC 52                  PUSH           dx                 
+004 0002BD 32C0                XOR            al, al             
+005 0002BF B500                MOV            ch, 0              
+006 0002C1 B100                MOV            cl, 0              
+007 0002C3 B618                MOV            dh, 18h            
+008 0002C5 B24F                MOV            dl, 4Fh            
+009 0002C7 B707                MOV            bh, 7              
+010 0002C9 B406                MOV            ah, 6              
+011 0002CB CD10                INT            10h                	/* Unknown int */
+
+012 0002CD 5A                  POP            dx                 
+013 0002CE 59                  POP            cx                 
+014 0002CF 5B                  POP            bx                 
+015 0002D0 58                  POP            ax                 
+016 0002D1 C3                  RET                               
+
+		proc_1  ENDP
+
+		start  PROC  NEAR
+000 000110 B83500              MOV            ax, 35h            ;Segment constant
+001 000113 8ED8                MOV            ds, ax             
+002 000115 8EC0                MOV            es, ax             
+003 000117 E89F01              CALL           near ptr proc_1    
+004 00011A B403                MOV            ah, 3              
+005 00011C B700                MOV            bh, 0              
+006 00011E CD10                INT            10h                	/* Unknown int */
+
+007 000120 882E0600            MOV            [6], ch            
+008 000124 880E0700            MOV            [7], cl            
+009 000128 B401                MOV            ah, 1              
+010 00012A 80CD04              OR             ch, 4              
+011 00012D 80E50D              AND            ch, 0Dh            
+012 000130 CD10                INT            10h                	/* Unknown int */
+
+013 000132 B60A                MOV            dh, 0Ah            
+014 000134 B21E                MOV            dl, 1Eh            
+015 000136 E89901              CALL           near ptr proc_2    
+016 000139 B2C9                MOV            dl, 0C9h           
+017 00013B E89F01              CALL           near ptr proc_3    
+018 00013E B91100              MOV            cx, 11h            
+019 000141 B2CD                MOV            dl, 0CDh           
+
+020 000143 E89701         L5:  CALL           near ptr proc_3    
+021 000146 E2FB                LOOP           L5                 
+022 000148 B2BB                MOV            dl, 0BBh           
+023 00014A E89001              CALL           near ptr proc_3    
+024 00014D B60E                MOV            dh, 0Eh            
+025 00014F B21E                MOV            dl, 1Eh            
+026 000151 E87E01              CALL           near ptr proc_2    
+027 000154 B2C8                MOV            dl, 0C8h           
+028 000156 E88401              CALL           near ptr proc_3    
+029 000159 B91100              MOV            cx, 11h            
+030 00015C B2CD                MOV            dl, 0CDh           
+
+031 00015E E87C01         L6:  CALL           near ptr proc_3    
+032 000161 E2FB                LOOP           L6                 
+033 000163 B2BC                MOV            dl, 0BCh           
+034 000165 E87501              CALL           near ptr proc_3    
+035 000168 B60B                MOV            dh, 0Bh            
+036 00016A B21E                MOV            dl, 1Eh            
+037 00016C E86301              CALL           near ptr proc_2    
+038 00016F B90300              MOV            cx, 3              
+
+039 000172 52             L7:  PUSH           dx                 
+040 000173 B2BA                MOV            dl, 0BAh           
+041 000175 E86501              CALL           near ptr proc_3    
+042 000178 5A                  POP            dx                 
+043 000179 FEC6                INC            dh                 
+044 00017B E85401              CALL           near ptr proc_2    
+045 00017E E2F2                LOOP           L7                 
+046 000180 B60B                MOV            dh, 0Bh            
+047 000182 B230                MOV            dl, 30h            
+048 000184 E84B01              CALL           near ptr proc_2    
+049 000187 B90300              MOV            cx, 3              
+
+050 00018A 52             L8:  PUSH           dx                 
+051 00018B B2BA                MOV            dl, 0BAh           
+052 00018D E84D01              CALL           near ptr proc_3    
+053 000190 5A                  POP            dx                 
+054 000191 FEC6                INC            dh                 
+055 000193 E83C01              CALL           near ptr proc_2    
+056 000196 E2F2                LOOP           L8                 
+057 000198 B60C                MOV            dh, 0Ch            
+058 00019A B220                MOV            dl, 20h            
+059 00019C E83301              CALL           near ptr proc_2    
+060 00019F BA0800              MOV            dx, 8              
+061 0001A2 E8F300              CALL           near ptr proc_6    
+062 0001A5 B616                MOV            dh, 16h            
+063 0001A7 B220                MOV            dl, 20h            
+064 0001A9 E82601              CALL           near ptr proc_2    
+065 0001AC BA1800              MOV            dx, 18h            
+066 0001AF E8E600              CALL           near ptr proc_6    
+067 0001B2 B618                MOV            dh, 18h            
+068 0001B4 B21E                MOV            dl, 1Eh            
+069 0001B6 E81901              CALL           near ptr proc_2    
+070 0001B9 BA2800              MOV            dx, 28h            
+071 0001BC E8D900              CALL           near ptr proc_6    
+072 0001BF B91400              MOV            cx, 14h            
+
+073 0001C2 E8C400         L9:  CALL           near ptr proc_7    
+074 0001C5 E2FB                LOOP           L9                 
+075 0001C7 E8EF00              CALL           near ptr proc_1    
+076 0001CA B600                MOV            dh, 0              
+077 0001CC B200                MOV            dl, 0              
+078 0001CE E80101              CALL           near ptr proc_2    
+079 0001D1 BA3B00              MOV            dx, 3Bh            
+080 0001D4 E8C100              CALL           near ptr proc_6    
+081 0001D7 B601                MOV            dh, 1              
+082 0001D9 B200                MOV            dl, 0              
+083 0001DB E8F400              CALL           near ptr proc_2    
+084 0001DE BA8700              MOV            dx, 87h            
+085 0001E1 E8B400              CALL           near ptr proc_6    
+086 0001E4 B602                MOV            dh, 2              
+087 0001E6 B200                MOV            dl, 0              
+088 0001E8 E8E700              CALL           near ptr proc_2    
+089 0001EB BAD000              MOV            dx, 0D0h           
+090 0001EE E8A700              CALL           near ptr proc_6    
+091 0001F1 B603                MOV            dh, 3              
+092 0001F3 B200                MOV            dl, 0              
+093 0001F5 E8DA00              CALL           near ptr proc_2    
+094 0001F8 BA1F01              MOV            dx, 11Fh           
+095 0001FB E89A00              CALL           near ptr proc_6    
+096 0001FE B604                MOV            dh, 4              
+097 000200 B200                MOV            dl, 0              
+098 000202 E8CD00              CALL           near ptr proc_2    
+099 000205 BA6A01              MOV            dx, 16Ah           
+100 000208 E88D00              CALL           near ptr proc_6    
+101 00020B B607                MOV            dh, 7              
+102 00020D B200                MOV            dl, 0              
+103 00020F E8C000              CALL           near ptr proc_2    
+104 000212 BA8C01              MOV            dx, 18Ch           
+105 000215 E88000              CALL           near ptr proc_6    
+106 000218 B608                MOV            dh, 8              
+107 00021A B200                MOV            dl, 0              
+108 00021C E8B300              CALL           near ptr proc_2    
+109 00021F BAD501              MOV            dx, 1D5h           
+110 000222 E87300              CALL           near ptr proc_6    
+111 000225 B60B                MOV            dh, 0Bh            
+112 000227 B200                MOV            dl, 0              
+113 000229 E8A600              CALL           near ptr proc_2    
+114 00022C BAFD01              MOV            dx, 1FDh           
+115 00022F E86600              CALL           near ptr proc_6    
+116 000232 B60D                MOV            dh, 0Dh            
+117 000234 B200                MOV            dl, 0              
+118 000236 E89900              CALL           near ptr proc_2    
+119 000239 BA3602              MOV            dx, 236h           
+120 00023C E85900              CALL           near ptr proc_6    
+121 00023F B60F                MOV            dh, 0Fh            
+122 000241 B200                MOV            dl, 0              
+123 000243 E88C00              CALL           near ptr proc_2    
+124 000246 BA7C02              MOV            dx, 27Ch           
+125 000249 E84C00              CALL           near ptr proc_6    
+126 00024C B610                MOV            dh, 10h            
+127 00024E B200                MOV            dl, 0              
+128 000250 E87F00              CALL           near ptr proc_2    
+129 000253 BAC602              MOV            dx, 2C6h           
+130 000256 E83F00              CALL           near ptr proc_6    
+131 000259 B618                MOV            dh, 18h            
+132 00025B B200                MOV            dl, 0              
+133 00025D E87200              CALL           near ptr proc_2    
+134 000260 BAD802              MOV            dx, 2D8h           
+135 000263 E83200              CALL           near ptr proc_6    
+
+136 000266 B400           L10: MOV            ah, 0              
+137 000268 CD16                INT            16h                	/* Unknown int */
+
+138 00026A 80FC1C              CMP            ah, 1Ch            
+139 00026D 75F7                JNE            L10                
+140 00026F B401                MOV            ah, 1              
+141 000271 8A2E0600            MOV            ch, [6]            
+142 000275 8A0E0700            MOV            cl, [7]            
+143 000279 CD10                INT            10h                	/* Unknown int */
+
+144 00027B B8004C              MOV            ax, 4C00h          
+145 00027E CD21                INT            21h                ;Exit to DOS	/* Terminate process with return code */
+
+
+		start  ENDP
+

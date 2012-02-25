@@ -1,0 +1,39 @@
+		start  PROC  NEAR
+000 000100 55                  PUSH           bp                 
+001 000101 8BEC                MOV            bp, sp             
+002 000103 83EC02              SUB            sp, 2              
+003 000106 C746FE0000          MOV            word ptr [bp-2], 0 
+004 00010B 8B46FE              MOV            ax, [bp-2]         
+005 00010E 3D0600              CMP            ax, 6              
+006 000111 7735                JA             L1                 
+007 000113 8BD8                MOV            bx, ax             
+008 000115 D1E3                SHL            bx, 1              
+009 000117 2EFFA71C00          JMP            word ptr cs:[bx+1Ch];Switch 
+
+010 00012A B80200              MOV            ax, 2              ;Case l0
+011 00012D EB1E                JMP            L2                 
+
+012 00014D 8BE5           L2:  MOV            sp, bp             
+013 00014F 5D                  POP            bp                 
+014 000150 C3                  RET                               
+
+015 00012F B80300              MOV            ax, 3              ;Case l1
+016 000132 EB19                JMP            L2                 
+
+017 000134 B80700              MOV            ax, 7              ;Case l2
+018 000137 EB14                JMP            L2                 
+
+019 000139 B80D00              MOV            ax, 0Dh            ;Case l3
+020 00013C EB0F                JMP            L2                 
+
+021 000148 B82C00         L1:  MOV            ax, 2Ch            ;Case l4
+022 00014B EB00                JMP            L2                 
+
+023 00013E B81700              MOV            ax, 17h            ;Case l5
+024 000141 EB0A                JMP            L2                 
+
+025 000143 B80D00              MOV            ax, 0Dh            ;Case l6
+026 000146 EB05                JMP            L2                 
+
+		start  ENDP
+
