@@ -120,11 +120,12 @@ public:
     void newRegArg(ICODE *picode, ICODE *ticode);
 protected:
     // TODO: replace those with friend visitor ?
-    void propLongReg(Int loc_ident_idx, ID *pLocId);
+    void propLongReg(Int loc_ident_idx, const ID *pLocId);
     void propLongStk(Int i, ID *pLocId);
     void propLongGlb(Int i, ID *pLocId);
 
-    int     checkBackwarLongDefs(int loc_ident_idx, ID *pLocId, int pLocId_idx, Assignment &assign);
+    int     checkBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE iter, Assignment &assign);
+    int     checkForwardLongDefs(int loc_ident_idx, const ID &pLocId, iICODE beg, Assignment &asgn);
     void    structCases();
     void    findExps();
     void    genDU1();

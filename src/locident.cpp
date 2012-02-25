@@ -137,17 +137,19 @@ Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, iICODE ix_)
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
     {
+        ID &entry(id_arr[idx]);
         if (/*(locSym->id[idx].type == t) &&   Not checking type */
-            (id_arr[idx].id.longId.h == regH) &&
-            (id_arr[idx].id.longId.l == regL))
+            (entry.id.longId.h == regH) &&
+            (entry.id.longId.l == regL))
         {
             /* Check for occurrence in the list */
-            if (id_arr[idx].idx.inList(ix_))
+            if (entry.idx.inList(ix_)) //count(
                 return (idx);
             else
             {
                 /* Insert icode index in list */
-                id_arr[idx].idx.push_back(ix_);
+                entry.idx.push_back(ix_);
+                //entry.idx.insert(ix_);
                 return (idx);
             }
         }
@@ -155,7 +157,7 @@ Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, iICODE ix_)
 
     /* Not in the table, create new identifier */
     newIdent (t, REG_FRAME);
-    id_arr[id_arr.size()-1].idx.push_back(ix_);
+    id_arr[id_arr.size()-1].idx.push_back(ix_);//insert(ix_);
     idx = id_arr.size() - 1;
     id_arr[idx].id.longId.h = regH;
     id_arr[idx].id.longId.l = regL;
@@ -306,7 +308,7 @@ Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, iICODE ix,operDu du, I
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i, Int idx,
+boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i,
                   Function * pProc, COND_EXPR **rhs, COND_EXPR **lhs, Int off)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
@@ -347,8 +349,8 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i, Int idx,
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i, Int idx,
-                  Function * pProc, COND_EXPR *&rhs, COND_EXPR *&lhs, Int off)
+boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i,
+                      Function * pProc, COND_EXPR *&rhs, COND_EXPR *&lhs, Int off)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
 

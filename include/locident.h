@@ -7,9 +7,12 @@
 
 #pragma once
 #include <vector>
+#include <set>
 #include <algorithm>
 #include "icode.h"
 /* Type definition */
+// this array has to stay in-order of addition i.e. not std::set<iICODE,std::less<iICODE> >
+// TODO: why ?
 struct IDX_ARRAY : public std::vector<iICODE>
 {
     bool inList(iICODE idx)

@@ -204,8 +204,8 @@ Int     power2 (Int);
 void	inverseCondOp (COND_EXPR **);
 
 /* Exported funcions from locident.c */
-boolT checkLongEq (LONG_STKID_TYPE, iICODE, Int, Int, Function *, COND_EXPR **,COND_EXPR **, Int);
-boolT checkLongRegEq (LONGID_TYPE, iICODE, Int, Int, Function *, COND_EXPR *&, COND_EXPR *&, Int);
+boolT checkLongEq (LONG_STKID_TYPE, iICODE, Int, Function *, COND_EXPR **, COND_EXPR **, Int);
+boolT checkLongRegEq (LONGID_TYPE, iICODE, Int, Function *, COND_EXPR *&, COND_EXPR *&, Int);
 byte otherLongRegi (byte, Int, LOCAL_ID *);
 void insertIdx (IDX_ARRAY *, Int);
 

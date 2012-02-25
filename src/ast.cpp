@@ -48,17 +48,17 @@ void ICODE::setRegDU (byte regi, operDu du_in)
     case eDEF:
         du.def |= duReg[regi];
         du1.numRegsDef++;
-        printf("%s du.def |= %x\n",__FUNCTION__,duReg[regi]);
+//        printf("%s du.def |= %x\n",__FUNCTION__,duReg[regi]);
         break;
     case eUSE:
         du.use |= duReg[regi];
-        printf("%s du.use |= %x\n",__FUNCTION__,duReg[regi]);
+//        printf("%s du.use |= %x\n",__FUNCTION__,duReg[regi]);
         break;
     case USE_DEF:
         du.def |= duReg[regi];
         du1.numRegsDef++;
-        printf("%s du.def |= %x\n",__FUNCTION__,duReg[regi]);
-        printf("%s du.use |= %x\n",__FUNCTION__,duReg[regi]);
+//        printf("%s du.def |= %x\n",__FUNCTION__,duReg[regi]);
+//        printf("%s du.use |= %x\n",__FUNCTION__,duReg[regi]);
         du.use |= duReg[regi];
         break;
     case NONE:    /* do nothing */
@@ -259,7 +259,8 @@ COND_EXPR *COND_EXPR::idLongIdx (Int idx)
 /* Returns an identifier conditional expression node of type LONG_VAR */
 COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, Int off)
 {
-    printf("**************** is equal %s ***************** \n",pIcode==ix ? "yes":"no");
+    //assert(pIcode==ix);
+    //printf("**************** Not EQUAL ***************** \n");
     Int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
 

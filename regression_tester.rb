@@ -7,14 +7,15 @@ def path_local(from)
     from.gsub('/','\\\\')
 end
 TESTS_DIR="./tests"
-def perform_test(exepath,filepath,outname)
+def perform_test(exepath,filepath,outname,args)
 	output_path=path_local(TESTS_DIR+"/outputs/"+outname)
 	exepath=path_local(exepath)
 	output_path=path_local(output_path)
 	filepath=path_local(filepath)
-	printf("calling:" + "#{exepath} -a1 -o#{output_path}.a1 #{filepath}\n")
+	joined_args = args.join(' ')
+	printf("calling:" + "#{exepath} -a1 #{joined_args} -o#{output_path}.a1 #{filepath}\n")
 	result = `#{exepath} -a1 -o#{output_path}.a1 #{filepath}`
-	result = `#{exepath} -a2msc -V -o#{output_path}.a2 #{filepath}`
+	result = `#{exepath} -a2 #{joined_args} -o#{output_path}.a2 #{filepath}`
 	puts result
 	p $?
 end
@@ -22,7 +23,7 @@ end
 #exit(1)
 Dir.open(TESTS_DIR+"/inputs").each() {|f|
 	next if f=="." or f==".."
-	perform_test(".//"+ARGV[0],TESTS_DIR+"/inputs/"+f,f)
+	perform_test(".//"+ARGV[0],TESTS_DIR+"/inputs/"+f,f,ARGV[1..-1])
 }
 Dir.open(TESTS_DIR+"/inputs").each() {|f|
 	next if f=="." or f==".."
