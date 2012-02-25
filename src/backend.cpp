@@ -39,7 +39,7 @@ Int getNextLabel()
 /* displays statistics on the subroutine */
 void Function::displayStats ()
 {
-    printf("\nStatistics - Subroutine %s\n", name);
+    printf("\nStatistics - Subroutine %s\n", name.c_str());
     printf ("Number of Icode instructions:\n");
     printf ("  Low-level : %4d\n", stats.numLLIcode);
     if (! (flg & PROC_ASM))
@@ -240,9 +240,9 @@ void Function::codeGen (std::ostream &fs)
     /* Write procedure/function header */
     newBundle (&cCode);
     if (flg & PROC_IS_FUNC)      /* Function */
-        cCode.appendDecl( "\n%s %s (", hlTypes[retVal.type],name);
+        cCode.appendDecl( "\n%s %s (", hlTypes[retVal.type],name.c_str());
     else                                /* Procedure */
-        cCode.appendDecl( "\nvoid %s (", name);
+        cCode.appendDecl( "\nvoid %s (", name.c_str());
 
     /* Write arguments */
     memset (buf, 0, sizeof(buf));

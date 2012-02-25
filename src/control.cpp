@@ -350,10 +350,10 @@ static boolT successor (Int s, Int h, Function * pProc)
 }
 
 
-static void tagNodesInCase (BB * pBB, nodeList &l, Int head, Int tail)
 /* Recursive procedure to tag nodes that belong to the case described by
  * the list l, head and tail (dfsLast index to first and exit node of the
  * case).                               */
+static void tagNodesInCase (BB * pBB, nodeList &l, Int head, Int tail)
 { Int current,      /* index to current node */
             i;
 

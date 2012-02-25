@@ -4,6 +4,8 @@
  ****************************************************************************/
 #pragma once
 #include <llvm/ADT/ilist.h>
+#include <bitset>
+
 #include "types.h"
 #include "ast.h"
 #include "icode.h"
@@ -123,6 +125,8 @@ struct PROG /* Loaded program image parameters  */
 
 extern PROG prog;   		/* Loaded program image parameters  */
 extern dword duReg[30];		/* def/use bits for registers		*/
+
+//extern dword duReg[30];		/* def/use bits for registers		*/
 extern dword maskDuReg[30];	/* masks off du bits for regs		*/
 
 /* Registers used by icode instructions */

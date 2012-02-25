@@ -3,14 +3,14 @@
  * (C) Cristina Cifuentes, Mike van Emmerik, Jeff Ledermann
  ****************************************************************************/
 
-#include "dcc.h"
 #include <string.h>
 #include <stdlib.h>		/* For exit() */
-
-#ifdef __DOSWIN__
+#include <sstream>
 #include <stdio.h>
-#endif
+#include <algorithm>
 
+#include "dcc.h"
+using namespace std;
 static void     FollowCtrl (Function * pProc, CALL_GRAPH * pcallGraph, STATE * pstate);
 static boolT    process_JMP (ICODE * pIcode, STATE * pstate,
                              CALL_GRAPH * pcallGraph);
@@ -42,40 +42,38 @@ void parse (CALL_GRAPH * *pcallGraph)
     state.IP = ((dword)prog.initCS << 4) + prog.initIP;
     SynthLab = SYNTHESIZED_MIN;
 
-
+    // default-construct a Function object !
+    pProcList.push_back(Function::Create());
     /* Check for special settings of initial state, based on idioms of the
           startup code */
     state.checkStartup();
-
+    Function &start_proc(pProcList.front());
     /* Make a struct for the initial procedure */
-
-    // default-construct a Function object !
-    pProcList.push_back(Function::Create());
     if (prog.offMain != -1)
     {
         /* We know where main() is. Start the flow of control from there */
-        pProcList.front().procEntry = prog.offMain;
+        start_proc.procEntry = prog.offMain;
         /* In medium and large models, the segment of main may (will?) not be
                         the same as the initial CS segment (of the startup code) */
         state.setState(rCS, prog.segMain);
-        strcpy(pProcList.front().name, "main");
+        start_proc.name = "main";
         state.IP = prog.offMain;
     }
     else
     {
         /* Create initial procedure at program start address */
-        strcpy(pProcList.front().name, "start");
-        pProcList.front().procEntry = (dword)state.IP;
+        start_proc.name="start";
+        start_proc.procEntry = (dword)state.IP;
     }
     /* The state info is for the first procedure */
-    pProcList.front().state = state;
+    start_proc.state = state;
 
     /* Set up call graph initial node */
     *pcallGraph = new CALL_GRAPH;
     (*pcallGraph)->proc = pProcList.begin();
 
     /* This proc needs to be called to set things up for LibCheck(), which
-          checks a proc to see if it is a know C (etc) library */
+       checks a proc to see if it is a know C (etc) library */
     SetupLibCheck();
 
     /* Recursively build entire procedure list */
@@ -107,14 +105,15 @@ static void updateSymType (dword symbol, hlType symType, Int size)
 Int strSize (byte *sym, char delim)
 {
     Int i;
-    for (i = 0; *sym++ != delim; i++)  ;
+    for (i = 0; *sym++ != delim; i++)
+                ;
     return (i+1);
 }
 Function *fakeproc=Function::Create(0,0,"fake");
 
 /* FollowCtrl - Given an initial procedure, state information and symbol table
- *      builds a list of procedures reachable from the initial procedure
- *      using a depth first search.     */
+ * builds a list of procedures reachable from the initial procedure
+ * using a depth first search.     */
 void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 {
     ICODE   _Icode, *pIcode;     /* This gets copied to pProc->Icode[] later */
@@ -125,7 +124,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     boolT   done = FALSE;
     dword     lab;
 
-    if (strstr(name, "chkstk") != NULL)
+    if (name.find("chkstk") != string::npos)
     {
         // Danger! Dcc will likely fall over in this code.
         // So we act as though we have done with this proc
@@ -137,7 +136,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     }
     if (option.VeryVerbose)
     {
-        printf("Parsing proc %s at %lX\n", name, pstate->IP);
+        printf("Parsing proc %s at %lX\n", name.c_str(), pstate->IP);
     }
 
     while (! done && ! (err = scan(pstate->IP, &_Icode)))
@@ -589,9 +588,11 @@ boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *ps
             if (indirect)
                 x.flg |= PROC_ICALL;
 
-            if (x.name[0] == '\0')     /* Don't overwrite existing name */
+            if (x.name.empty())     /* Don't overwrite existing name */
             {
-                sprintf(x.name, "proc_%ld", ++prog.cProcs);
+                ostringstream os;
+                os<<"proc_"<< ++prog.cProcs;
+                x.name = os.str();
             }
             x.depth = x.depth + 1;
             x.flg |= TERMINATES;
@@ -888,7 +889,6 @@ static void setBits(int16 type, dword start, dword len)
         }
     }
 }
-
 
 /* DU bit definitions for each reg value - including index registers */
 dword duReg[] = { 0x00,

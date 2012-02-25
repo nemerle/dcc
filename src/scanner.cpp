@@ -115,56 +115,56 @@ static struct {
     {  data2,   axImp, 0                        , iCMP	, Sf | Zf | Cf  , 0 },	/* 3D */
     { prefix,   none2, 0                        , (IC)rDS,0             , 0 },	/* 3E */
     {  none1,   axImp, NOT_HLL | NO_SRC         , iAAS  , Sf | Zf | Cf  , 0 },	/* 3F */
-    {  regop,   none2, 0                        , iINC	, Sf | Zf, 0 },	/* 40 */
-    {  regop,   none2, 0                        , iINC	, Sf | Zf, 0 },	/* 41 */
-    {  regop,   none2, 0                        , iINC	, Sf | Zf, 0 },	/* 42 */
-    {  regop,   none2, 0                        , iINC	, Sf | Zf, 0 },	/* 43 */
-    {  regop,   none2, NOT_HLL			, iINC	, Sf | Zf, 0 },	/* 44 */
-    {  regop,   none2, 0                        , iINC	, Sf | Zf, 0 },	/* 45 */
-    {  regop,   none2, 0                        , iINC	, Sf | Zf, 0 },	/* 46 */
-    {  regop,   none2, 0                        , iINC	, Sf | Zf, 0 },	/* 47 */
-    {  regop,   none2, 0                        , iDEC	, Sf | Zf, 0 },	/* 48 */
-    {  regop,   none2, 0                        , iDEC	, Sf | Zf, 0 },	/* 49 */
-    {  regop,   none2, 0                        , iDEC	, Sf | Zf, 0 },	/* 4A */
-    {  regop,   none2, 0                        , iDEC	, Sf | Zf, 0 },	/* 4B */
-    {  regop,   none2, NOT_HLL			, iDEC	, Sf | Zf, 0 },	/* 4C */
-    {  regop,   none2, 0                        , iDEC	, Sf | Zf, 0 },	/* 4D */
-    {  regop,   none2, 0                        , iDEC	, Sf | Zf, 0 },	/* 4E */
-    {  regop,   none2, 0                        , iDEC	, Sf | Zf, 0 },	/* 4F */
-    {  regop,   none2, NO_SRC                   , iPUSH	, 0	, 0 },	/* 50 */
-    {  regop,   none2, NO_SRC                   , iPUSH	, 0	, 0 },	/* 51 */
-    {  regop,   none2, NO_SRC                   , iPUSH	, 0	, 0 },	/* 52 */
-    {  regop,   none2, NO_SRC                   , iPUSH	, 0	, 0 },	/* 53 */
-    {  regop,   none2, NOT_HLL | NO_SRC         , iPUSH	, 0	, 0 },	/* 54 */
-    {  regop,   none2, NO_SRC				, iPUSH	, 0	, 0 },	/* 55 */
-    {  regop,   none2, NO_SRC				, iPUSH	, 0	, 0 },	/* 56 */
-    {  regop,   none2, NO_SRC				, iPUSH	, 0	, 0 },	/* 57 */
-    {  regop,   none2, NO_SRC				, iPOP	, 0	, 0 },	/* 58 */
-    {  regop,   none2, NO_SRC				, iPOP	, 0	, 0 },	/* 59 */
-    {  regop,   none2, NO_SRC 			, iPOP	, 0	, 0 },	/* 5A */
-    {  regop,   none2, NO_SRC				, iPOP	, 0	, 0 },	/* 5B */
-    {  regop,   none2, NOT_HLL | NO_SRC	, iPOP	, 0	, 0 },	/* 5C */
-    {  regop,   none2, NO_SRC				, iPOP	, 0	, 0 },	/* 5D */
-    {  regop,   none2, NO_SRC				, iPOP	, 0	, 0 },	/* 5E */
-    {  regop,   none2, NO_SRC				, iPOP	, 0	, 0 },	/* 5F */
-    {  none1,   none2, NOT_HLL | NO_OPS	, iPUSHA, 0	, 0 },	/* 60 */
-    {  none1,   none2, NOT_HLL | NO_OPS	, iPOPA	, 0	, 0 },	/* 61 */
-    { memOnly,  modrm, TO_REG | NSP		, iBOUND, 0	, 0 },	/* 62 */
-    {  none1,   none2, OP386 				, iZERO	, 0	, 0 },	/* 63 */
-    {  none1,   none2, OP386 				, iZERO	, 0	, 0 },	/* 64 */
-    {  none1,   none2, OP386 				, iZERO	, 0	, 0 },	/* 65 */
-    {  none1,   none2, OP386 				, iZERO	, 0	, 0 },	/* 66 */
-    {  none1,   none2, OP386 				, iZERO	, 0	, 0 },	/* 67 */
-    {  data2,   none2, NO_SRC				, iPUSH	, 0		, 0 },	/* 68 */
-    {  modrm,   data2, TO_REG | NSP		, iIMUL	, Sf | Zf | Cf, 0 },	/* 69 */
-    {  data1,   none2, S_EXT | NO_SRC			, iPUSH	, 0	, 0 },	/* 6A */
-    {  modrm,   data1, TO_REG | NSP | S_EXT	, iIMUL	, Sf | Zf | Cf, 0 },	/* 6B */
-    {  strop,  memImp, NOT_HLL | B|IM_OPS , iINS	, 0	, Df			},	/* 6C */
-    {  strop,  memImp, NOT_HLL | IM_OPS	, iINS	, 0	, Df			},	/* 6D */
-    {  strop,  memImp, NOT_HLL | B|IM_OPS , iOUTS	, 0	, Df			},	/* 6E */
-    {  strop,  memImp, NOT_HLL | IM_OPS	, iOUTS	, 0	, Df			},	/* 6F */
-    {  dispS,   none2, NOT_HLL			, iJO	, 0	, 0 },	/* 70 */
-    {  dispS,   none2, NOT_HLL			, iJNO	, 0	, 0 },	/* 71 */
+    {  regop,   none2, 0                        , iINC	, Sf | Zf       , 0 },	/* 40 */
+    {  regop,   none2, 0                        , iINC	, Sf | Zf       , 0 },	/* 41 */
+    {  regop,   none2, 0                        , iINC	, Sf | Zf       , 0 },	/* 42 */
+    {  regop,   none2, 0                        , iINC	, Sf | Zf       , 0 },	/* 43 */
+    {  regop,   none2, NOT_HLL			, iINC	, Sf | Zf       , 0 },	/* 44 */
+    {  regop,   none2, 0                        , iINC	, Sf | Zf       , 0 },	/* 45 */
+    {  regop,   none2, 0                        , iINC	, Sf | Zf       , 0 },	/* 46 */
+    {  regop,   none2, 0                        , iINC	, Sf | Zf       , 0 },	/* 47 */
+    {  regop,   none2, 0                        , iDEC	, Sf | Zf       , 0 },	/* 48 */
+    {  regop,   none2, 0                        , iDEC	, Sf | Zf       , 0 },	/* 49 */
+    {  regop,   none2, 0                        , iDEC	, Sf | Zf       , 0 },	/* 4A */
+    {  regop,   none2, 0                        , iDEC	, Sf | Zf       , 0 },	/* 4B */
+    {  regop,   none2, NOT_HLL			, iDEC	, Sf | Zf       , 0 },	/* 4C */
+    {  regop,   none2, 0                        , iDEC	, Sf | Zf       , 0 },	/* 4D */
+    {  regop,   none2, 0                        , iDEC	, Sf | Zf       , 0 },	/* 4E */
+    {  regop,   none2, 0                        , iDEC	, Sf | Zf       , 0 },	/* 4F */
+    {  regop,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 50 */
+    {  regop,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 51 */
+    {  regop,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 52 */
+    {  regop,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 53 */
+    {  regop,   none2, NOT_HLL | NO_SRC         , iPUSH , 0             , 0 },	/* 54 */
+    {  regop,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 55 */
+    {  regop,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 56 */
+    {  regop,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 57 */
+    {  regop,   none2, NO_SRC                   , iPOP  , 0             , 0 },	/* 58 */
+    {  regop,   none2, NO_SRC                   , iPOP  , 0             , 0 },	/* 59 */
+    {  regop,   none2, NO_SRC 			, iPOP  , 0             , 0 },	/* 5A */
+    {  regop,   none2, NO_SRC                   , iPOP	, 0             , 0 },	/* 5B */
+    {  regop,   none2, NOT_HLL | NO_SRC         , iPOP  , 0             , 0 },	/* 5C */
+    {  regop,   none2, NO_SRC                   , iPOP  , 0             , 0 },	/* 5D */
+    {  regop,   none2, NO_SRC                   , iPOP  , 0             , 0 },	/* 5E */
+    {  regop,   none2, NO_SRC                   , iPOP  , 0             , 0 },	/* 5F */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHA, 0             , 0 },	/* 60 */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iPOPA , 0             , 0 },	/* 61 */
+    { memOnly,  modrm, TO_REG | NSP		, iBOUND, 0             , 0 },	/* 62 */
+    {  none1,   none2, OP386                    , iZERO , 0             , 0 },	/* 63 */
+    {  none1,   none2, OP386                    , iZERO , 0             , 0 },	/* 64 */
+    {  none1,   none2, OP386                    , iZERO , 0             , 0 },	/* 65 */
+    {  none1,   none2, OP386                    , iZERO , 0             , 0 },	/* 66 */
+    {  none1,   none2, OP386                    , iZERO , 0             , 0 },	/* 67 */
+    {  data2,   none2, NO_SRC                   , iPUSH , 0             , 0 },	/* 68 */
+    {  modrm,   data2, TO_REG | NSP             , iIMUL , Sf | Zf | Cf  , 0 },	/* 69 */
+    {  data1,   none2, S_EXT | NO_SRC           , iPUSH , 0             , 0 },	/* 6A */
+    {  modrm,   data1, TO_REG | NSP | S_EXT	, iIMUL , Sf | Zf | Cf  , 0 },	/* 6B */
+    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iINS  , 0             , Df},	/* 6C */
+    {  strop,  memImp, NOT_HLL | IM_OPS         , iINS  , 0             , Df},	/* 6D */
+    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iOUTS , 0             , Df},	/* 6E */
+    {  strop,  memImp, NOT_HLL | IM_OPS         , iOUTS , 0             , Df},	/* 6F */
+    {  dispS,   none2, NOT_HLL			, iJO	, 0             , 0 },	/* 70 */
+    {  dispS,   none2, NOT_HLL			, iJNO	, 0             , 0 },	/* 71 */
     {  dispS,   none2, 0					, iJB	, 0	, Cf			},	/* 72 */
     {  dispS,   none2, 0					, iJAE	, 0	, Cf			},	/* 73 */
     {  dispS,   none2, 0					, iJE	, 0	, Zf			},	/* 74 */

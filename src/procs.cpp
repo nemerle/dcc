@@ -74,7 +74,7 @@ void CALL_GRAPH::writeNodeCallGraph(Int indIdx)
 {
     Int i;
 
-    printf ("%s%s\n", indent(indIdx), proc->name);
+    printf ("%s%s\n", indent(indIdx), proc->name.c_str());
     for (i = 0; i < outEdges.size(); i++)
         outEdges[i]->writeNodeCallGraph (indIdx + 1);
 }
@@ -127,7 +127,7 @@ void Function::newRegArg(ICODE *picode, ICODE *ticode)
     {
         regL = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.l;
         regH = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.h;
-        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, 0);
+        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, Icode.begin() /*0*/);
     }
 
     /* Check if register argument already on the formal argument list */

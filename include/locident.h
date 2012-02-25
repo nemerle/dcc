@@ -10,9 +10,9 @@
 #include <algorithm>
 #include "icode.h"
 /* Type definition */
-struct IDX_ARRAY : public std::vector<int>
+struct IDX_ARRAY : public std::vector<iICODE>
 {
-    bool inList(int idx)
+    bool inList(iICODE idx)
     {
         return std::find(begin(),end(),idx)!=end();
     }
@@ -70,6 +70,7 @@ struct ID
 {
     hlType              type;       /* Probable type                            */
     boolT               illegal;    /* Boolean: not a valid field any more      */
+    //std::vector<iICODE> idx;
     IDX_ARRAY           idx;        /* Index into icode array (REG_FRAME only)  */
     frameType           loc;        /* Frame location                           */
     boolT               hasMacro;   /* Identifier requires a macro              */
@@ -118,15 +119,15 @@ public:
     Int newByteWordReg(hlType t, byte regi);
     Int newByteWordStk(hlType t, Int off, byte regOff);
     Int newIntIdx(int16 seg, int16 off, byte regi, Int ix, hlType t);
-    Int newLongReg(hlType t, byte regH, byte regL, Int ix);
-    Int newLong(opLoc sd, ICODE *pIcode, hlFirst f, Int ix, operDu du, Int off);
+    Int newLongReg(hlType t, byte regH, byte regL, iICODE ix_);
+    Int newLong(opLoc sd, ICODE *pIcode, hlFirst f, iICODE ix, operDu du, Int off);
     void newIdent(hlType t, frameType f);
     void flagByteWordId(Int off);
     void propLongId(byte regL, byte regH, const char *name);
     size_t csym() const {return id_arr.size();}
 protected:
-    Int newLongIdx(int16 seg, int16 offH, int16 offL, byte regi, Int ix, hlType t);
-    Int newLongGlb(int16 seg, int16 offH, int16 offL, Int ix, hlType t);
+    Int newLongIdx(int16 seg, int16 offH, int16 offL, byte regi, hlType t);
+    Int newLongGlb(int16 seg, int16 offH, int16 offL, hlType t);
     Int newLongStk(hlType t, Int offH, Int offL);
 };
 

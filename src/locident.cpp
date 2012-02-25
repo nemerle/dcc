@@ -130,10 +130,10 @@ Int LOCAL_ID::newIntIdx(int16 seg, int16 off, byte regi,Int ix, hlType t)
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new register identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, Int ix)
+Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, iICODE ix_)
 {
     Int idx;
-
+    //iICODE ix_;
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
     {
@@ -142,12 +142,12 @@ Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, Int ix)
             (id_arr[idx].id.longId.l == regL))
         {
             /* Check for occurrence in the list */
-            if (id_arr[idx].idx.inList(ix))
+            if (id_arr[idx].idx.inList(ix_))
                 return (idx);
             else
             {
                 /* Insert icode index in list */
-                id_arr[idx].idx.push_back(ix);
+                id_arr[idx].idx.push_back(ix_);
                 return (idx);
             }
         }
@@ -155,7 +155,7 @@ Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, Int ix)
 
     /* Not in the table, create new identifier */
     newIdent (t, REG_FRAME);
-    id_arr[id_arr.size()-1].idx.push_back(ix);
+    id_arr[id_arr.size()-1].idx.push_back(ix_);
     idx = id_arr.size() - 1;
     id_arr[idx].id.longId.h = regH;
     id_arr[idx].id.longId.l = regL;
@@ -166,7 +166,7 @@ Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, Int ix)
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new global identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-Int LOCAL_ID::newLongGlb(int16 seg, int16 offH, int16 offL,Int ix, hlType t)
+Int LOCAL_ID::newLongGlb(int16 seg, int16 offH, int16 offL,hlType t)
 {
     Int idx;
 
@@ -193,7 +193,7 @@ Int LOCAL_ID::newLongGlb(int16 seg, int16 offH, int16 offL,Int ix, hlType t)
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new global identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-Int LOCAL_ID::newLongIdx( int16 seg, int16 offH, int16 offL,byte regi, Int ix, hlType t)
+Int LOCAL_ID::newLongIdx( int16 seg, int16 offH, int16 offL,byte regi, hlType t)
 { Int idx;
 
     /* Check for entry in the table */
@@ -249,7 +249,7 @@ Int LOCAL_ID::newLongStk(hlType t, Int offH, Int offL)
 /* Returns the index to an appropriate long identifier.
  * Note: long constants should be checked first and stored as a long integer
  *       number in an expression record.    */
-Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, Int ix,operDu du, Int off)
+Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, iICODE ix,operDu du, Int off)
 {
     Int idx;
   LLOperand *pmH, *pmL;
@@ -266,7 +266,7 @@ Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, Int ix,operDu du, Int 
     }
 
     if (pmL->regi == 0)                                 /* global variable */
-        idx = newLongGlb(pmH->segValue, pmH->off, pmL->off, ix,TYPE_LONG_SIGN);
+        idx = newLongGlb(pmH->segValue, pmH->off, pmL->off, TYPE_LONG_SIGN);
 
     else if (pmL->regi < INDEXBASE)                     /* register */
     {
@@ -282,7 +282,8 @@ Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, Int ix,operDu du, Int 
             idx = newLongStk(TYPE_LONG_SIGN, pmH->off, pmL->off);
         else if ((pmL->seg == rDS) && (pmL->regi == INDEXBASE + 7))   /* bx */
         {                                       /* glb var indexed on bx */
-            idx = newLongIdx(pmH->segValue, pmH->off, pmL->off,rBX, ix, TYPE_LONG_SIGN);
+            printf("Bx indexed global, BX is an unused parameter to newLongIdx\n");
+            idx = newLongIdx(pmH->segValue, pmH->off, pmL->off,rBX,TYPE_LONG_SIGN);
             pIcode->setRegDU( rBX, eUSE);
         }
         else                                            /* idx <> bp, bx */
@@ -318,15 +319,18 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i, Int idx,
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
         *lhs = COND_EXPR::idLongIdx (i);
+
         if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
-            *rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,
-                                  idx, eUSE, off);
+        {
+            *rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, off);
+            //*rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, idx, eUSE, off);
+        }
         return true;
     }
     else if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
     {
-        *lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx,
-                              eDEF, off);
+        *lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, off);
+        //*lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx,eDEF, off);
         *rhs = COND_EXPR::idLongIdx (i);
         return true;
     }
@@ -357,12 +361,16 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i, Int idx,
     {
         lhs = COND_EXPR::idLongIdx (i);
         if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
-            rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  idx, eUSE, off);
+        {
+            //rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  idx, eUSE, off);
+            rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, off);
+        }
         return true;
     }
     else if ((longId.h == pmHsrc->regi) && (longId.l == pmLsrc->regi))
     {
-        lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx, eDEF, off);
+        lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, off);
+        //lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx, eDEF, off);
         rhs = COND_EXPR::idLongIdx (i);
         return true;
     }

@@ -57,7 +57,7 @@ private:
 
 public:
     dword        procEntry; /* label number                         	 */
-    char         name[SYMLEN]; /* Meaningful name for this proc     	 */
+    std::string  name;      /* Meaningful name for this proc     	 */
     STATE        state;     /* Entry state                          	 */
     Int          depth;     /* Depth at which we found it - for printing */
     flags32      flg;       /* Combination of Icode & Proc flags    	 */
@@ -84,13 +84,12 @@ public:
     Function(void *ty=0) : procEntry(0),depth(0),flg(0),cbParam(0),cfg(0),dfsLast(0),numBBs(0),
         hasCase(false),liveIn(0),liveOut(0),liveAnal(0)//,next(0),prev(0)
     {
-        memset(name,0,SYMLEN);
     }
 public:
     static Function *Create(void *ty=0,int Linkage=0,const std::string &nm="",void *module=0)
     {
         Function *r=new Function(ty);
-        strncpy(r->name,nm.c_str(),SYMLEN);
+        r->name = nm;
         return r;
     }
     void compoundCond();

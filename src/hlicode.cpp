@@ -136,14 +136,15 @@ boolT ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
 void Function::highLevelGen()
 {   Int i,                /* idx into icode array */
             numIcode;         /* number of icode instructions */
-    ICODE * pIcode;        /* ptr to current icode node */
+    iICODE pIcode;        /* ptr to current icode node */
     COND_EXPR *lhs, *rhs; /* left- and right-hand side of expression */
     flags32 flg;          /* icode flags */
 
     numIcode = Icode.size();
-    for (i = 0; i < numIcode; i++)
+    for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
     {
-        pIcode = Icode.GetIcode(i);
+        assert(numIcode==Icode.size());
+        pIcode = i; //Icode.GetIcode(i)
         if ((pIcode->ic.ll.flg & NOT_HLL) == NOT_HLL)
             pIcode->invalidate();
         if ((pIcode->type == LOW_LEVEL) && (pIcode->invalid == FALSE))

@@ -2,9 +2,10 @@
  *          dcc project header
  * (C) Cristina Cifuentes, Mike van Emmerik
  ****************************************************************************/
-
-/* STATE TABLE */
+#pragma once
 #include <cstring>
+#include "types.h"
+/* STATE TABLE */
 struct STATE
 {
     dword       IP;             /* Offset into Image                    */
@@ -16,7 +17,6 @@ struct STATE
         int16   immed;          /*   Contents of the previous register  */
     }           JCond;
     void setState(word reg, int16 value);
-public:
     void checkStartup();
     STATE() : IP(0)
     {

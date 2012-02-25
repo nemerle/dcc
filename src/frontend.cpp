@@ -70,7 +70,7 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
         displayLoadInfo();
 
     /* Do depth first flow analysis building call graph and procedure list,
-* and attaching the I-code to each procedure          */
+     * and attaching the I-code to each procedure          */
     parse (pcallGraph);
 
     if (option.asm1)
@@ -110,7 +110,7 @@ static void displayLoadInfo(void)
     printf("File type is %s\n", (prog.fCOM)?"COM":"EXE");
     if (! prog.fCOM) {
         printf("Signature            = %02X%02X\n", header.sigLo, header.sigHi);
-        printf("File size %% 512      = %04X\n", LH(&header.lastPageSize));
+        printf("File size %% 512     = %04X\n", LH(&header.lastPageSize));
         printf("File size / 512      = %04X pages\n", LH(&header.numPages));
         printf("# relocation items   = %04X\n", LH(&header.numReloc));
         printf("Offset to load image = %04X paras\n", LH(&header.numParaHeader));

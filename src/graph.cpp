@@ -148,7 +148,7 @@ CondJumps:
             auto iter2=std::find_if(heldBBs.begin(),heldBBs.end(),
                          [ip](BB *psBB)->bool {return psBB->begin()==ip;});
             if(iter2==heldBBs.end())
-                fatalError(NO_BB, ip, name);
+                fatalError(NO_BB, ip, name.c_str());
             psBB = *iter2;
             pBB->edges[i].BBptr = psBB;
             psBB->inEdges.push_back(0);

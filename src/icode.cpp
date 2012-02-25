@@ -15,7 +15,7 @@
 
 CIcodeRec::CIcodeRec()
 {
-    //reserve(512);
+    reserve(1024);
 }
 
 /* Copies the icode that is pointed to by pIcode to the icode array.
@@ -35,7 +35,7 @@ void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
 }
 
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and
-    replaces *pIndex with an icode index */
+   replaces *pIndex with an icode index */
 bool CIcodeRec::labelSrch(dword target, dword &pIndex)
 {
     Int  i;
@@ -45,10 +45,10 @@ bool CIcodeRec::labelSrch(dword target, dword &pIndex)
         if (at(i).ic.ll.label == target)
         {
             pIndex = i;
-            return TRUE;
+            return true;
         }
     }
-    return FALSE;
+    return false;
 }
 
 ICODE * CIcodeRec::GetIcode(int ip)

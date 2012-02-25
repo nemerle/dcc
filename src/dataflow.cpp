@@ -81,7 +81,7 @@ Int STKFRAME::getLocVar(Int off)
 
 
 /* Returns a string with the source operand of Icode */
-static COND_EXPR *srcIdent (const ICODE &Icode, Function * pProc, Int i, ICODE & duIcode, operDu du)
+static COND_EXPR *srcIdent (const ICODE &Icode, Function * pProc, iICODE i, ICODE & duIcode, operDu du)
 {
     COND_EXPR *n;
 
@@ -99,7 +99,7 @@ static COND_EXPR *srcIdent (const ICODE &Icode, Function * pProc, Int i, ICODE &
 
 
 /* Returns the destination operand */
-static COND_EXPR *dstIdent (const ICODE & Icode, Function * pProc, Int i, ICODE & duIcode, operDu du)
+static COND_EXPR *dstIdent (const ICODE & Icode, Function * pProc, iICODE i, ICODE & duIcode, operDu du)
 {
     COND_EXPR *n;
     n = COND_EXPR::id (Icode, DST, pProc, i, duIcode, du);
@@ -147,8 +147,8 @@ void Function::elimCondCodes ()
                             switch (defAt->GetLlOpcode())
                             {
                             case iCMP:
-                                rhs = srcIdent (*defAt, this, defAt->loc_ip,*useAt, eUSE);
-                                lhs = dstIdent (*defAt, this, defAt->loc_ip,*useAt, eUSE);
+                                rhs = srcIdent (*defAt, this, (defAt+1).base(),*useAt, eUSE);
+                                lhs = dstIdent (*defAt, this, (defAt+1).base(),*useAt, eUSE);
                                 break;
 
                             case iOR:
@@ -161,8 +161,8 @@ void Function::elimCondCodes ()
                                 break;
 
                             case iTEST:
-                                rhs = srcIdent (*defAt,this, defAt->loc_ip,*useAt, eUSE);
-                                lhs = dstIdent (*defAt,this, defAt->loc_ip,*useAt, eUSE);
+                                rhs = srcIdent (*defAt,this, (defAt+1).base(),*useAt, eUSE);
+                                lhs = dstIdent (*defAt,this, (defAt+1).base(),*useAt, eUSE);
                                 lhs = COND_EXPR::boolOp (lhs, rhs, AND);
                                 if (defAt->isLlFlag(B))
                                     rhs = COND_EXPR::idKte (0, 1);
@@ -301,7 +301,9 @@ void Function::liveRegAnalysis (dword in_liveOut)
                     auto picode = pbb->rbegin2(); /* icode of function return */
                     if (picode->ic.hl.opcode == HLI_RET)
                     {
-                        picode->ic.hl.oper.exp = COND_EXPR::idID (&retVal, &localId, pbb->back().loc_ip);
+                        //pbb->back().loc_ip
+                        picode->ic.hl.oper.exp = COND_EXPR::idID (&retVal, &localId,
+                                                                  (++pbb->rbegin2()).base());
                         picode->du.use = in_liveOut;
                     }
                 }
@@ -856,7 +858,8 @@ void Function::findExps()
                                 }
                                 else	/* cannot substitute function */
                                 {
-                                    lhs = COND_EXPR::idID(retVal,&localId,picode->loc_ip);
+                                    //picode->loc_ip
+                                    lhs = COND_EXPR::idID(retVal,&localId,picode);
                                     picode->setAsgn(lhs, exp);
                                 }
                                 break;
@@ -955,7 +958,7 @@ void Function::findExps()
                                             picode->ic.hl.oper.call.args);
                                 ticode->ic.hl.oper.asgn.lhs =
                                         COND_EXPR::idLong(&localId, DST, ticode,
-                                                          HIGH_FIRST, picode->loc_ip, eDEF, 1);
+                                                          HIGH_FIRST, picode, eDEF, 1);//picode->loc_ip
                                 ticode->ic.hl.oper.asgn.rhs = exp;
                                 picode->invalidate();
                                 numHlIcodes--;
@@ -980,7 +983,7 @@ void Function::findExps()
                                                             localId.newLongReg
                                                             (
                                                                 retVal->type, retVal->id.longId.h,
-                                                                retVal->id.longId.l, picode->loc_ip));
+                                                                retVal->id.longId.l, picode/*picode->loc_ip*/));
                                 if (res)	/* was substituted */
                                 {
                                     picode->invalidate();
@@ -988,7 +991,7 @@ void Function::findExps()
                                 }
                                 else	/* cannot substitute function */
                                 {
-                                    lhs = COND_EXPR::idID(retVal,&localId,picode->loc_ip);
+                                    lhs = COND_EXPR::idID(retVal,&localId,picode/*picode->loc_ip*/);
                                     picode->setAsgn(lhs, exp);
                                 }
                                 break;
@@ -1065,7 +1068,7 @@ void Function::findExps()
                     exp = COND_EXPR::idFunc (picode->ic.hl.oper.call.proc,
                                              picode->ic.hl.oper.call.args);
                     lhs = COND_EXPR::idID (&picode->ic.hl.oper.call.proc->retVal,
-                                           &localId, picode->loc_ip);
+                                           &localId, picode/*picode->loc_ip*/);
                     picode->setAsgn(lhs, exp);
                 }
             }
@@ -1106,7 +1109,7 @@ void Function::dataFlow(dword liveOut)
             retVal.loc = REG_FRAME;
             retVal.id.longId.h = rDX;
             retVal.id.longId.l = rAX;
-            idx = localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, 0);
+            idx = localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, Icode.begin()/*0*/);
             localId.propLongId (rAX, rDX, "\0");
         }
         else if (isAx || isBx || isCx || isDx)	/* word */

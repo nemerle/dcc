@@ -60,10 +60,10 @@ public:
     static COND_EXPR *idOther(byte seg, byte regi, int16 off);
     static COND_EXPR *idParam(Int off, const STKFRAME *argSymtab);
     static COND_EXPR *unary(condNodeType t, COND_EXPR *sub_expr);
-    static COND_EXPR *idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, Int ix, operDu du, Int off);
+    static COND_EXPR *idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, Int off);
     static COND_EXPR *idFunc(Function *pproc, STKFRAME *args);
-    static COND_EXPR *idID(const ID *retVal, LOCAL_ID *locsym, Int ix);
-    static COND_EXPR *id(const ICODE &pIcode, opLoc sd, Function *pProc, Int i, ICODE &duIcode, operDu du);
+    static COND_EXPR *idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
+    static COND_EXPR *id(const ICODE &pIcode, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
     static COND_EXPR *boolOp(COND_EXPR *lhs, COND_EXPR *rhs, condOp op);
 public:
     COND_EXPR *clone();

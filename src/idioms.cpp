@@ -267,12 +267,12 @@ static void popStkVars (iICODE pIcode, iICODE pEnd, Function * pProc)
  *          POP  BP
  *          RET(F)
  *****************************************************************************/
-static Int idiom2(iICODE pIcode, iICODE pEnd, Int ip, Function * pProc)
+static Int idiom2(iICODE pIcode, iICODE pEnd, Function * pProc)
 {
     iICODE nicode;
 
     /* Match MOV SP, BP */
-    if (ip != 0 && ((pIcode->ic.ll.flg & I) != I) &&
+    if (pIcode->loc_ip != 0 && ((pIcode->ic.ll.flg & I) != I) &&
         pIcode->ic.ll.dst.regi == rSP && pIcode->ic.ll.src.regi == rBP)
     {
         /* Get next icode, skip over holes in the icode array */
@@ -1056,7 +1056,7 @@ static boolT idiom20 (iICODE picode, iICODE pend, Function * pproc)
  ****************************************************************************/
 void Function::findIdioms()
 {
-    Int     ip;             /* Index to current icode                   */
+//    Int     ip;             /* Index to current icode                   */
     iICODE  pEnd, pIcode;   /* Pointers to end of BB and current icodes */
     int16   delta;
     COND_EXPR *rhs, *lhs;   /* Pointers to left and right hand side exps */
@@ -1066,7 +1066,6 @@ void Function::findIdioms()
 
     pIcode = Icode.begin();
     pEnd = Icode.end();
-    ip = 0;
 
     while (pIcode < pEnd)
     {
@@ -1075,25 +1074,23 @@ void Function::findIdioms()
             case iDEC: case iINC:
                 if (idiom18 (pIcode, pEnd, this))
                 {
-                    lhs = COND_EXPR::id (*(pIcode-1), SRC, this, ip, *pIcode, eUSE);
+                    lhs = COND_EXPR::id (*(pIcode-1), SRC, this, pIcode, *pIcode, eUSE);
                     if (pIcode->ic.ll.opcode == iDEC)
                         lhs = COND_EXPR::unary (POST_DEC, lhs);
                     else
                         lhs = COND_EXPR::unary (POST_INC, lhs);
-                    rhs = COND_EXPR::id (*(pIcode+1), SRC, this, ip, *(pIcode+2), eUSE);
-                    exp = COND_EXPR::boolOp (lhs, rhs,
-                                       condOpJCond[(pIcode+2)->ic.ll.opcode - iJB]);
+                    rhs = COND_EXPR::id (*(pIcode+1), SRC, this, pIcode, *(pIcode+2), eUSE);
+                    exp = COND_EXPR::boolOp (lhs, rhs, condOpJCond[(pIcode+2)->ic.ll.opcode - iJB]);
                     (pIcode+2)->setJCond(exp);
 
                     (pIcode-1)->invalidate();
                     pIcode->invalidate();
                     (pIcode+1)->invalidate();
                     pIcode += 3;
-                    ip += 2;
                 }
                 else if (idiom19 (pIcode, pEnd, this))
                 {
-                    lhs = COND_EXPR::id (*pIcode, DST, this, ip, *(pIcode+1), eUSE);
+                    lhs = COND_EXPR::id (*pIcode, DST, this, pIcode, *(pIcode+1), eUSE);
                     if (pIcode->ic.ll.opcode == iDEC)
                         lhs = COND_EXPR::unary (PRE_DEC, lhs);
                     else
@@ -1104,16 +1101,15 @@ void Function::findIdioms()
                     (pIcode+1)->setJCond(exp);
                     pIcode->invalidate();
                     pIcode += 2;
-                    ip++;
                 }
                 else if (idiom20 (pIcode, pEnd, this))
                 {
-                    lhs = COND_EXPR::id (*(pIcode+1), SRC, this, ip, *pIcode, eUSE);
+                    lhs = COND_EXPR::id (*(pIcode+1), SRC, this, pIcode, *pIcode, eUSE);
                     if (pIcode->ic.ll.opcode == iDEC)
                         lhs = COND_EXPR::unary (PRE_DEC, lhs);
                     else
                         lhs = COND_EXPR::unary (PRE_INC, lhs);
-                    rhs = COND_EXPR::id (*(pIcode+2), SRC, this, ip, *(pIcode+3), eUSE);
+                    rhs = COND_EXPR::id (*(pIcode+2), SRC, this, pIcode, *(pIcode+3), eUSE);
                     exp = COND_EXPR::boolOp (lhs, rhs,
                                        condOpJCond[(pIcode+3)->ic.ll.opcode - iJB]);
                     (pIcode+3)->setJCond(exp);
@@ -1121,7 +1117,6 @@ void Function::findIdioms()
                     (pIcode+1)->invalidate();
                     (pIcode+2)->invalidate();
                     pIcode += 3;
-                    ip += 2;
                 }
                 else
                     pIcode++;
@@ -1134,43 +1129,38 @@ void Function::findIdioms()
                     for ( ; idx > 0; idx--)
                     {
                         (pIcode++)->invalidate();
-                        ip++;
                     }
-                    ip--;
                 }
                 else
                     pIcode++;
                 break;
 
             case iMOV:              /* Idiom 2 */
-                if (idx = idiom2(pIcode, pEnd, ip, this))
+                if (idx = idiom2(pIcode, pEnd, this))
                 {
                     pIcode->invalidate();
                     (pIcode+1)->invalidate();
                     pIcode += 3;
-                    ip += 2;
                 }
                 else if (idiom14 (pIcode, pEnd, &regL, &regH))  /* Idiom 14 */
                 {
-                    idx = localId.newLongReg (TYPE_LONG_SIGN, regH, regL, ip);
+                    idx = localId.newLongReg (TYPE_LONG_SIGN, regH, regL, pIcode/*ip*/);
                     lhs = COND_EXPR::idLongIdx (idx);
                     pIcode->setRegDU( regH, eDEF);
-                    rhs = COND_EXPR::id (*pIcode, SRC, this, ip, *pIcode, NONE);
+                    rhs = COND_EXPR::id (*pIcode, SRC, this, pIcode, *pIcode, NONE);
                     pIcode->setAsgn(lhs, rhs);
                     (pIcode+1)->invalidate();
                     pIcode += 2;
-                    ip++;
                 }
                 else if (idx = idiom13 (pIcode, pEnd))      /* Idiom 13 */
                 {
                     lhs = COND_EXPR::idReg (idx, 0, &localId);
                     pIcode->setRegDU( idx, eDEF);
                     pIcode->du1.numRegsDef--;   	/* prev byte reg def */
-                    rhs = COND_EXPR::id (*pIcode, SRC, this, ip, *pIcode, NONE);
+                    rhs = COND_EXPR::id (*pIcode, SRC, this, pIcode, *pIcode, NONE);
                     pIcode->setAsgn(lhs, rhs);
                     (pIcode+1)->invalidate();
                     pIcode += 2;
-                    ip++;
                 }
                 else
                     pIcode++;
@@ -1185,7 +1175,7 @@ void Function::findIdioms()
                     {
                         if ((pIcode->ic.ll.src.proc.proc->retVal.type==TYPE_LONG_SIGN)
                             || (pIcode->ic.ll.src.proc.proc->retVal.type == TYPE_LONG_UNSIGN))
-                            localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, ip);
+                            localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, pIcode/*ip*/);
                     }
 
                 /* Check for idioms */
@@ -1198,7 +1188,6 @@ void Function::findIdioms()
                         (pIcode->ic.ll.src.proc.proc)->flg |= CALL_C;
                         pIcode++;
                         (pIcode++)->invalidate();
-                        ip++;
                     }
                     else
                     {
@@ -1213,10 +1202,12 @@ void Function::findIdioms()
                         (pIcode->ic.ll.src.proc.proc)->cbParam = (int16)idx;
                         pIcode->ic.ll.src.proc.cb = idx;
                         (pIcode->ic.ll.src.proc.proc)->flg |= CALL_C;
-                        ip += idx/2 - 1;
-                        pIcode++;
+                        //ip += 1; +1 is added out of switch
+                        pIcode++; // skip call(f)
                         for (idx /= 2; idx > 0; idx--)
+                        {
                             (pIcode++)->invalidate();
+                        }
                     }
                     // TODO : it's a calculated call
                     else
@@ -1238,15 +1229,15 @@ void Function::findIdioms()
             case iADD:          /* Idiom 5 */
                 if (idiom5 (pIcode, pEnd))
                 {
+
                     lhs = COND_EXPR::idLong (&localId, DST, pIcode, LOW_FIRST,
-                                         ip, USE_DEF, 1);
+                                         pIcode/*ip*/, USE_DEF, 1);
                     rhs = COND_EXPR::idLong (&localId, SRC, pIcode, LOW_FIRST,
-                                         ip, eUSE, 1);
+                                         pIcode/*ip*/, eUSE, 1);
                     exp = COND_EXPR::boolOp (lhs, rhs, ADD);
                     pIcode->setAsgn(lhs, exp);
                     (pIcode+1)->invalidate();
                     pIcode++;
-                    ip++;
                 }
                 pIcode++;
                 break;
@@ -1255,7 +1246,7 @@ void Function::findIdioms()
                 if (idiom8 (pIcode, pEnd))
                 {
                     idx = localId.newLongReg(TYPE_LONG_SIGN,
-                                        pIcode->ic.ll.dst.regi, (pIcode+1)->ic.ll.dst.regi,ip);
+                                        pIcode->ic.ll.dst.regi, (pIcode+1)->ic.ll.dst.regi,pIcode/*ip*/);
                     lhs = COND_EXPR::idLongIdx (idx);
                     pIcode->setRegDU( (pIcode+1)->ic.ll.dst.regi, USE_DEF);
                     rhs = COND_EXPR::idKte (1, 2);
@@ -1263,7 +1254,6 @@ void Function::findIdioms()
                     pIcode->setAsgn(lhs, exp);
                     (pIcode+1)->invalidate();
                     pIcode++;
-                    ip++;
                 }
                 pIcode++;
                 break;
@@ -1281,13 +1271,12 @@ void Function::findIdioms()
                     for (idx-- ; idx > 0; idx--)
                     {
                         (pIcode++)->invalidate();
-                        ip++;
                     }
                 }
                 else if (idiom12 (pIcode, pEnd))        /* idiom 12 */
                 {
                     idx = localId.newLongReg (TYPE_LONG_UNSIGN,
-                                        (pIcode+1)->ic.ll.dst.regi, pIcode->ic.ll.dst.regi,ip);
+                                        (pIcode+1)->ic.ll.dst.regi, pIcode->ic.ll.dst.regi,pIcode/*ip*/);
                     lhs = COND_EXPR::idLongIdx (idx);
                     pIcode->setRegDU( (pIcode+1)->ic.ll.dst.regi, USE_DEF);
                     rhs = COND_EXPR::idKte (1, 2);
@@ -1295,7 +1284,6 @@ void Function::findIdioms()
                     pIcode->setAsgn(lhs, exp);
                     (pIcode+1)->invalidate();
                     pIcode += 2;
-                    ip++;
                 }
                 else
                     pIcode++;
@@ -1305,7 +1293,7 @@ void Function::findIdioms()
                 if (idiom9 (pIcode, pEnd))
                 {
                     idx = localId.newLongReg (TYPE_LONG_UNSIGN,
-                                        pIcode->ic.ll.dst.regi, (pIcode+1)->ic.ll.dst.regi,ip);
+                                        pIcode->ic.ll.dst.regi, (pIcode+1)->ic.ll.dst.regi,pIcode/*ip*/);
                     lhs = COND_EXPR::idLongIdx (idx);
                     pIcode->setRegDU( (pIcode+1)->ic.ll.dst.regi, USE_DEF);
                     rhs = COND_EXPR::idKte (1, 2);
@@ -1313,7 +1301,6 @@ void Function::findIdioms()
                     pIcode->setAsgn(lhs, exp);
                     (pIcode+1)->invalidate();
                     pIcode++;
-                    ip++;
                 }
                 pIcode++;
                 break;
@@ -1321,13 +1308,12 @@ void Function::findIdioms()
             case iSUB:          /* Idiom 6 */
                 if (idiom6 (pIcode, pEnd))
                 {
-                    lhs = COND_EXPR::idLong (&localId, DST, pIcode, LOW_FIRST, ip, USE_DEF, 1);
-                    rhs = COND_EXPR::idLong (&localId, SRC, pIcode, LOW_FIRST, ip, eUSE, 1);
+                    lhs = COND_EXPR::idLong (&localId, DST, pIcode, LOW_FIRST, pIcode, USE_DEF, 1);
+                    rhs = COND_EXPR::idLong (&localId, SRC, pIcode, LOW_FIRST, pIcode, eUSE, 1);
                     exp = COND_EXPR::boolOp (lhs, rhs, SUB);
                     pIcode->setAsgn(lhs, exp);
                     (pIcode+1)->invalidate();
                     pIcode++;
-                    ip++;
                 }
                 pIcode++;
                 break;
@@ -1341,13 +1327,12 @@ void Function::findIdioms()
                 if (idiom11 (pIcode, pEnd))
                 {
                     lhs = COND_EXPR::idLong (&localId, DST, pIcode, HIGH_FIRST,
-                                         ip, USE_DEF, 1);
+                                         pIcode/*ip*/, USE_DEF, 1);
                     rhs = COND_EXPR::unary (NEGATION, lhs);
                     pIcode->setAsgn(lhs, rhs);
                     (pIcode+1)->invalidate();
                     (pIcode+2)->invalidate();
                     pIcode += 3;
-                    ip += 2;
                 }
                 else if (idiom16 (pIcode, pEnd))
                 {
@@ -1359,7 +1344,6 @@ void Function::findIdioms()
                     (pIcode+1)->invalidate();
                     (pIcode+2)->invalidate();
                     pIcode += 3;
-                    ip += 2;
                 }
                 else
                     pIcode++;
@@ -1370,25 +1354,26 @@ void Function::findIdioms()
                 break;
 
             case iENTER:		/* ENTER is equivalent to init PUSH bp */
-                if (ip == 0)
+                if (pIcode == Icode.begin()) //ip == 0
+                {
                     flg |= (PROC_HLL | PROC_IS_HLL);
+                }
                 pIcode++;
                 break;
 
             case iXOR:          /* Idiom 7 */
                 if (idiom21 (pIcode, pEnd))
                 {
-                    lhs = COND_EXPR::idLong (&localId, DST, pIcode,HIGH_FIRST, ip, eDEF, 1);
+                    lhs = COND_EXPR::idLong (&localId, DST, pIcode,HIGH_FIRST, pIcode/*ip*/, eDEF, 1);
                     rhs = COND_EXPR::idKte ((pIcode+1)->ic.ll.src.op() , 4);
                     pIcode->setAsgn(lhs, rhs);
                     pIcode->du.use = 0;		/* clear register used in iXOR */
                     (pIcode+1)->invalidate();
                     pIcode++;
-                    ip++;
                 }
                 else if (idiom7 (pIcode))
                 {
-                    lhs = COND_EXPR::id (*pIcode, DST, this, ip, *pIcode, NONE);
+                    lhs = COND_EXPR::id (*pIcode, DST, this, pIcode, *pIcode, NONE);
                     rhs = COND_EXPR::idKte (0, 2);
                     pIcode->setAsgn(lhs, rhs);
                     pIcode->du.use = 0;    /* clear register used in iXOR */
@@ -1400,7 +1385,6 @@ void Function::findIdioms()
             default:
                 pIcode++;
         }
-        ip++;
     }
 
     /* Check if number of parameter bytes match their calling convention */

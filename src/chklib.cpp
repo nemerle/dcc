@@ -452,7 +452,7 @@ bool LibCheck(Function & pProc)
     if (fileOffset == prog.offMain)
     {
         /* Easy - this function is called main! */
-        strcpy(pProc.name, "main");
+        pProc.name = "main";
         return false;
     }
 
@@ -464,10 +464,10 @@ bool LibCheck(Function & pProc)
     if (memcmp(ht[h].htPat, pat, PATLEN) == 0)
     {
         /* We have a match. Save the name, if not already set */
-        if (pProc.name[0] == '\0')     /* Don't overwrite existing name */
+        if (pProc.name.empty() )     /* Don't overwrite existing name */
         {
             /* Give proc the new name */
-            strcpy(pProc.name, ht[h].htSym);
+            pProc.name = ht[h].htSym;
         }
         /* But is it a real library function? */
         i = NIL;
@@ -518,7 +518,7 @@ bool LibCheck(Function & pProc)
                       pattMsChkstk, sizeof(pattMsChkstk), &Idx))
     {
         /* Found _chkstk */
-        strcpy(pProc.name, "chkstk");
+        pProc.name = "chkstk";
         pProc.flg |= PROC_ISLIB; 		/* We'll say its a lib function */
         pProc.args.numArgs = 0;		/* With no args */
     }

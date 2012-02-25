@@ -55,7 +55,7 @@ void Function::controlFlowAnalysis()
 
     if (option.verbose)
     {
-        printf("\nDepth first traversal - Proc %s\n", name);
+        printf("\nDepth first traversal - Proc %s\n", name.c_str());
         cfg.front()->displayDfs();
     }
 
@@ -90,7 +90,7 @@ void udm(void)
  ***************************************************************************/
 void Function::displayCFG()
 {
-    printf("\nBasic Block List - Proc %s", name);
+    printf("\nBasic Block List - Proc %s", name.c_str());
     for (BB *pBB : cfg)
     {
         pBB->display();

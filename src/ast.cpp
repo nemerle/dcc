@@ -28,13 +28,12 @@ static const char *condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
 //typedef struct _EXP_STK {
 //    COND_EXPR       *exp;
 //    struct _EXP_STK *next;
-//} EXP_STK;
+//} EXP_STK; - for local expression stack
 
 /* Returns the integer i in C hexadecimal format */
 static char *hexStr (uint16_t i)
 {
     static char buf[10];
-    //    i &= 0xFFFF;
     sprintf (buf, "%s%x", (i > 9) ? "0x" : "", i);
     return (buf);
 }
@@ -258,8 +257,9 @@ COND_EXPR *COND_EXPR::idLongIdx (Int idx)
 
 
 /* Returns an identifier conditional expression node of type LONG_VAR */
-COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, Int ix, operDu du, Int off)
+COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, Int off)
 {
+    printf("**************** is equal %s ***************** \n",pIcode==ix ? "yes":"no");
     Int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
 
@@ -317,7 +317,7 @@ COND_EXPR *COND_EXPR::idOther(byte seg, byte regi, int16 off)
 
 /* Returns an identifier conditional expression node of type TYPE_LONG or
  * TYPE_WORD_SIGN	*/
-COND_EXPR *COND_EXPR::idID (const ID *retVal, LOCAL_ID *locsym, Int ix)
+COND_EXPR *COND_EXPR::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
 {
     COND_EXPR *newExp;
     Int idx;
@@ -325,7 +325,7 @@ COND_EXPR *COND_EXPR::idID (const ID *retVal, LOCAL_ID *locsym, Int ix)
     newExp = new COND_EXPR(IDENTIFIER);
     if (retVal->type == TYPE_LONG_SIGN)
     {
-        idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->id.longId.h,retVal->id.longId.l, ix);
+        idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->id.longId.h,retVal->id.longId.l, ix_);
         newExp->expr.ident.idType = LONG_VAR;
         newExp->expr.ident.idNode.longIdx = idx;
     }
@@ -344,7 +344,7 @@ COND_EXPR *COND_EXPR::idID (const ID *retVal, LOCAL_ID *locsym, Int ix)
  * Arguments: i : index into the icode array, used for newLongRegId only.
  *            duIcode: icode instruction that needs the du set.
  *            du: operand is defined or used in current instruction.    */
-COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,ICODE &duIcode, operDu du)
+COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE ix_,ICODE &duIcode, operDu du)
 {
     COND_EXPR *newExp;
 
@@ -356,7 +356,7 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, Int i,
             ((sd == SRC) && pIcode.ic.ll.anyFlagSet(IM_SRC)) or
             (sd == LHS_OP))             /* for MUL lhs */
     {                                                   /* implicit dx:ax */
-        idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, rDX, rAX, i);
+        idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, rDX, rAX, ix_);
         newExp = COND_EXPR::idLongIdx (idx);
         duIcode.setRegDU (rDX, du);
         duIcode.setRegDU (rAX, du);

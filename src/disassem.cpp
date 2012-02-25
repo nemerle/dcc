@@ -238,7 +238,7 @@ void disassem(Int pass, Function * ppProc)
 
     /* Write procedure header */
     if (pass != 3)
-        fprintf(fp, "\t\t%s  PROC  %s\n", pProc->name, (pProc->flg & PROC_FAR)? "FAR": "NEAR");
+        fprintf(fp, "\t\t%s  PROC  %s\n", pProc->name.c_str(), (pProc->flg & PROC_FAR)? "FAR": "NEAR");
 
     /* Loop over array printing each record */
     for (i = nextInst = 0; i < numIcode; i++)
@@ -249,7 +249,7 @@ void disassem(Int pass, Function * ppProc)
     /* Write procedure epilogue */
     if (pass != 3)
     {
-        fprintf(fp, "\n\t\t%s  ENDP\n\n", pProc->name);
+        fprintf(fp, "\n\t\t%s  ENDP\n\n", pProc->name.c_str());
         fclose(fp);
     }
 
