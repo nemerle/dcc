@@ -36,6 +36,8 @@ src/graph.cpp
 src/hlicode.cpp
 src/icode.cpp
 src/idioms.cpp
+src/idiom1.cpp
+src/epilogue_idioms.cpp
 src/locident.cpp
 src/parser.cpp
 src/perfhlib.cpp
@@ -57,6 +59,9 @@ set(dcc_HEADERS
     include/graph.h
     include/hlicode.h
     include/icode.h
+    include/idiom.h
+    include/idiom1.h
+    include/epilogue_idioms.h
     include/locident.h
     include/perfhlib.h
     include/scanner.h

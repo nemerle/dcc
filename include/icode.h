@@ -63,32 +63,35 @@ enum eDuFlags
 };
 
 /* Machine registers */
-#define rAX          1  /* These are numbered relative to real 8086 */
-#define rCX          2
-#define rDX          3
-#define rBX          4
-#define rSP          5
-#define rBP          6
-#define rSI          7
-#define rDI          8
+enum eReg
+{
+rAX =        1,  /* These are numbered relative to real 8086 */
+rCX =        2,
+rDX =        3,
+rBX =        4,
+rSP =        5,
+rBP =        6,
+rSI =        7,
+rDI =        8,
 
-#define rES          9
-#define rCS         10
-#define rSS         11
-#define rDS         12
+rES =        9,
+rCS =       10,
+rSS =       11,
+rDS =       12,
 
-#define rAL         13
-#define rCL         14
-#define rDL         15
-#define rBL         16
-#define rAH         17
-#define rCH         18
-#define rDH         19
-#define rBH         20
+rAL =       13,
+rCL =       14,
+rDL =       15,
+rBL =       16,
+rAH =       17,
+rCH =       18,
+rDH =       19,
+rBH =       20,
 
-#define rTMP		21			/* temp register for DIV/IDIV/MOD	*/
+rTMP=       21			/* temp register for DIV/IDIV/MOD	*/
 #define INDEXBASE   22          /* Indexed modes go from INDEXBASE to
-    * INDEXBASE+7  */
+                                   * INDEXBASE+7  */
+};
 /* Byte and Word registers */
 static const char *const byteReg[9]  = {"al", "cl", "dl", "bl",
                                         "ah", "ch", "dh", "bh", "tmp" };
@@ -314,6 +317,26 @@ struct LLInst : public llvm::MCInst
         return (opcode >= iJB) && (opcode < iJCXZ);
     }
     bool anyFlagSet(uint32_t x) const { return (flg & x)!=0;}
+    bool match(llIcode op)
+    {
+        return (opcode==op);
+    }
+    bool match(llIcode op,eReg dest)
+    {
+        return (opcode==op)&&dst.regi==dest;
+    }
+    bool match(llIcode op,eReg dest,eReg src_reg)
+    {
+        return (opcode==op)&&(dst.regi==dest)&&(src.regi==src_reg);
+    }
+    bool match(eReg dest,eReg src_reg)
+    {
+        return (dst.regi==dest)&&(src.regi==src_reg);
+    }
+    bool match(eReg dest)
+    {
+        return (dst.regi==dest);
+    }
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
@@ -338,13 +361,13 @@ struct ICODE
     IC ic;/* intermediate code        */
     int loc_ip; // used by CICodeRec to number ICODEs
 
-    void  ClrLlFlag(dword flag) {ic.ll.flg &= ~flag;}
-    void  SetLlFlag(dword flag) {ic.ll.flg |= flag;}
-    dword GetLlFlag() {return ic.ll.flg;}
-    bool isLlFlag(dword flg) {return (ic.ll.flg&flg)!=0;}
+    void    ClrLlFlag(dword flag) {ic.ll.flg &= ~flag;}
+    void    SetLlFlag(dword flag) {ic.ll.flg |= flag;}
+    dword   GetLlFlag() {return ic.ll.flg;}
+    bool    isLlFlag(dword flg) {return (ic.ll.flg&flg)!=0;}
     llIcode GetLlOpcode() const { return ic.ll.opcode; }
-    dword  GetLlLabel() const { return ic.ll.label;}
-    void SetImmediateOp(dword dw) {ic.ll.src.SetImmediateOp(dw);}
+    dword   GetLlLabel() const { return ic.ll.label;}
+    void    SetImmediateOp(dword dw) {ic.ll.src.SetImmediateOp(dw);}
 
     void writeIntComment(std::ostringstream &s);
     void setRegDU(byte regi, operDu du_in);
@@ -372,6 +395,7 @@ public:
     ICODE *	addIcode(ICODE *pIcode);
     void	SetInBB(int start, int end, BB* pnewBB);
     bool	labelSrch(dword target, dword &pIndex);
+    iterator    labelSrch(dword target);
     ICODE *	GetIcode(int ip);
 };
 typedef CIcodeRec::iterator iICODE;

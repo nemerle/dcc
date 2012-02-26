@@ -50,7 +50,19 @@ bool CIcodeRec::labelSrch(dword target, dword &pIndex)
     }
     return false;
 }
+CIcodeRec::iterator CIcodeRec::labelSrch(dword target)
+{
+    Int  i;
 
+    for (i = 0; i < size(); i++)
+    {
+        if (at(i).ic.ll.label == target)
+        {
+            return begin()+i;
+        }
+    }
+    return end();
+}
 ICODE * CIcodeRec::GetIcode(int ip)
 {
     return &at(ip);

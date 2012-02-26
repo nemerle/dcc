@@ -18,16 +18,15 @@ static void displayDfs(BB * pBB);
 void Function::buildCFG()
 {
     if(flg & PROC_ISLIB)
-        return; /* Ignore library functions */
+        return; // Ignore library functions
     createCFG();
     if (option.VeryVerbose)
         displayCFG();
-    /* Remove redundancies and add in-edge information */
-    compressCFG();
 
-    /* Print 2nd pass assembler listing */
+    compressCFG(); // Remove redundancies and add in-edge information
+
     if (option.asm2)
-        disassem(2, this);
+        disassem(2, this); // Print 2nd pass assembler listing
 
     /* Idiom analysis and propagation of long type */
     lowLevelAnalysis();
