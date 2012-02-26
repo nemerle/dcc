@@ -15,8 +15,7 @@
 static char indentBuf[indSize] =
         "                                                            ";
 
-static char *indent (Int indLevel)
-/* Indentation according to the depth of the statement */
+static char *indent (Int indLevel) // Indentation according to the depth of the statement
 {
     return (&indentBuf[indSize-(indLevel*3)-1]);
 }
@@ -104,7 +103,7 @@ void Function::newRegArg(ICODE *picode, ICODE *ticode)
     boolT regExist;
     condId type;
     Function * tproc;
-    byte regL, regH;		/* Registers involved in arguments */
+    uint8_t regL, regH;		/* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
     tproc = ticode->ic.hl.oper.call.proc;
@@ -335,7 +334,7 @@ void STKFRAME::adjustForArgType(Int numArg_, hlType actType_)
     Int off, i;
 
     /* Find stack offset for this argument */
-    off = minOff;
+    off = m_minOff;
     for (i = 0; i < numArg_; i++)
         off += sym[i].size;
 

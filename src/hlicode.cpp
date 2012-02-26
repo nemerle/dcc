@@ -99,34 +99,34 @@ boolT ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
 
     numDefs = du1.numRegsDef;
     if (numDefs == thisDefIdx)
+    {
         for ( ; numDefs > 0; numDefs--)
         {
-            if ((du1.idx[numDefs-1][0] != 0)||(du.lastDefRegi))
+            if ((du1.idx[numDefs-1][0] != 0)||(du.lastDefRegi.any()))
                 break;
         }
+    }
 
     if (numDefs == 0)
     {
         invalidate();
         return true;
     }
-    else
+    switch (ic.hl.opcode)
     {
-        switch (ic.hl.opcode) {
-            case HLI_ASSIGN:
-                removeRegFromLong (regi, locId,ic.hl.oper.asgn.lhs);
-                du1.numRegsDef--;
-                du.def &= maskDuReg[regi];
-                break;
-            case HLI_POP:
-            case HLI_PUSH:
-                removeRegFromLong (regi, locId, ic.hl.oper.exp);
-                du1.numRegsDef--;
-                du.def &= maskDuReg[regi];
-                break;
-        }
-        return false;
+        case HLI_ASSIGN:
+            removeRegFromLong (regi, locId,ic.hl.oper.asgn.lhs);
+            du1.numRegsDef--;
+            du.def &= maskDuReg[regi];
+            break;
+        case HLI_POP:
+        case HLI_PUSH:
+            removeRegFromLong (regi, locId, ic.hl.oper.exp);
+            du1.numRegsDef--;
+            du.def &= maskDuReg[regi];
+            break;
     }
+    return false;
 }
 
 
@@ -452,7 +452,7 @@ void ICODE::writeDU(Int idx)
     buf[0] = '\0';
     for (i = 0; i < (INDEXBASE-1); i++)
     {
-        if ((du.def & power2(i)) != 0)
+        if (du.def[i])
         {
             strcat (buf, allRegs[i]);
             strcat (buf, " ");
@@ -465,7 +465,7 @@ void ICODE::writeDU(Int idx)
     buf[0] = '\0';
     for (i = 0; i < INDEXBASE; i++)
     {
-        if ((du.use & power2(i)) != 0)
+        if (du.use[i])
         {
             strcat (buf, allRegs[i]);
             strcat (buf, " ");

@@ -203,8 +203,8 @@ void Function::compressCFG()
 
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
-    std::vector<BB*>::iterator iter=cfg.begin();
-    for (;iter!=cfg.end(); ++iter)
+    auto iter=m_cfg.begin();
+    for (;iter!=m_cfg.end(); ++iter)
     {
         pBB = *iter;
         if(pBB->inEdges.empty() || (pBB->nodeType != ONE_BRANCH && pBB->nodeType != TWO_BRANCH))
@@ -225,18 +225,18 @@ void Function::compressCFG()
     /* Next is a depth-first traversal merging any FALL_NODE or
      * ONE_BRANCH that fall through to a node with that as their only
      * in-edge. */
-    this->cfg.front()->mergeFallThrough(Icode);
+    m_cfg.front()->mergeFallThrough(Icode);
 
     /* Remove redundant BBs created by the above compressions
      * and allocate in-edge arrays as required. */
     stats.numBBaft = stats.numBBbef;
 
-    for(auto iter=cfg.begin(); iter!=cfg.end(); ++iter)
+    for(auto iter=m_cfg.begin(); iter!=m_cfg.end(); ++iter)
     {
         pBB = *iter;
         if (pBB->inEdges.empty())
         {
-            if (iter == cfg.begin())	/* Init it misses out on */
+            if (iter == m_cfg.begin())	/* Init it misses out on */
                 pBB->index = UN_INIT;
             else
             {
@@ -252,11 +252,11 @@ void Function::compressCFG()
 
     /* Allocate storage for dfsLast[] array */
     numBBs = stats.numBBaft;
-    dfsLast.resize(numBBs,0); // = (BB **)allocMem(numBBs * sizeof(BB *))
+    m_dfsLast.resize(numBBs,0); // = (BB **)allocMem(numBBs * sizeof(BB *))
 
     /* Now do a dfs numbering traversal and fill in the inEdges[] array */
     last = numBBs - 1;
-    cfg.front()->dfsNumbering(dfsLast, &first, &last);
+    m_cfg.front()->dfsNumbering(m_dfsLast, &first, &last);
 }
 
 

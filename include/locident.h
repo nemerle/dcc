@@ -109,6 +109,16 @@ struct ID
         type=t;
         loc=f;
     }
+    bool isSigned() const { return (type==TYPE_BYTE_SIGN)||(type==TYPE_WORD_SIGN)||(type==TYPE_LONG_SIGN);}
+    uint16_t typeBitsize() const
+    {
+        switch(type)
+        {
+            case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
+            return 16;
+        }
+        return ~0;
+    }
 };
 
 struct LOCAL_ID

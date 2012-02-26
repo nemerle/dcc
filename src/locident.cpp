@@ -32,9 +32,7 @@ Int LOCAL_ID::newByteWordReg(hlType t, byte regi)
 
     /* Check for entry in the table */
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[t,regi](ID &el)->bool {
-            if ((el.type == t) && (el.id.regi == regi))
-                return true;
-            return false;
+            return ((el.type == t) && (el.id.regi == regi));
         });
     if(found!=id_arr.end())
         return found-id_arr.begin();
@@ -56,8 +54,8 @@ void LOCAL_ID::flagByteWordId (Int off)
 {
     Int idx;
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off](ID &en)->bool {
-
-     if (((en.type == TYPE_WORD_SIGN) || (en.type == TYPE_BYTE_SIGN)) &&
+     //if (((en.type == TYPE_WORD_SIGN) || (en.type == TYPE_BYTE_SIGN)) &&
+     if ((en.isSigned()) &&
          (en.id.bwId.off == off) && (en.id.bwId.regOff == 0))
         return true;
      return false;
@@ -309,7 +307,7 @@ Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, iICODE ix,operDu du, I
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
 boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i,
-                  Function * pProc, COND_EXPR **rhs, COND_EXPR **lhs, Int off)
+                  Function * pProc, Assignment &asgn, Int off)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
 
@@ -320,20 +318,18 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i,
 
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
-        *lhs = COND_EXPR::idLongIdx (i);
+        asgn.lhs = COND_EXPR::idLongIdx (i);
 
         if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
         {
-            *rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, off);
-            //*rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, idx, eUSE, off);
+            asgn.rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, off);
         }
         return true;
     }
     else if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
     {
-        *lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, off);
-        //*lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx,eDEF, off);
-        *rhs = COND_EXPR::idLongIdx (i);
+        asgn.lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, off);
+        asgn.rhs = COND_EXPR::idLongIdx (i);
         return true;
     }
     return false;
@@ -410,25 +406,25 @@ void LOCAL_ID::propLongId (byte regL, byte regH, const char *name)
     Int i;
     ID *_id;
 
-        for (i = 0; i < id_arr.size(); i++)
+    for (i = 0; i < id_arr.size(); i++)
+    {
+        _id = &id_arr[i];
+        if (_id->typeBitsize()==16)
         {
-                _id = &id_arr[i];
-                if ((_id->type == TYPE_WORD_SIGN) || (_id->type == TYPE_WORD_UNSIGN))
-                {
-                        if (_id->id.regi == regL)
-                        {
-                                strcpy (_id->name, name);
-                                strcpy (_id->macro, "LO");
-                                _id->hasMacro = TRUE;
-                                _id->illegal = TRUE;
-                        }
-                        else if (_id->id.regi == regH)
-                        {
-                                strcpy (_id->name, name);
-                                strcpy (_id->macro, "HI");
-                                _id->hasMacro = TRUE;
-                                _id->illegal = TRUE;
-                        }
-                }
+            if (_id->id.regi == regL)
+            {
+                strcpy (_id->name, name);
+                strcpy (_id->macro, "LO");
+                _id->hasMacro = TRUE;
+                _id->illegal = TRUE;
+            }
+            else if (_id->id.regi == regH)
+            {
+                strcpy (_id->name, name);
+                strcpy (_id->macro, "HI");
+                _id->hasMacro = TRUE;
+                _id->illegal = TRUE;
+            }
         }
+    }
 }

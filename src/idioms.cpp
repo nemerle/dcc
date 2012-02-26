@@ -137,7 +137,7 @@ static Int idiom1(iICODE pIcode, iICODE pEnd, Function * pProc)
             && pIcode->ic.ll.opcode == iMOV && pIcode->ic.ll.dst.regi == rBP
             && pIcode->ic.ll.src.regi == rSP)
         {
-            pProc->args.minOff = 2;
+            pProc->args.m_minOff = 2;
             pProc->flg |= PROC_IS_HLL;
 
             /* Look for SUB SP, immed */
@@ -167,7 +167,7 @@ static Int idiom1(iICODE pIcode, iICODE pEnd, Function * pProc)
                     pIcode->ic.ll.dst.regi == rBP &&
                     pIcode->ic.ll.src.regi == rSP)
                 {
-                    pProc->args.minOff = 2 + (n * 2);
+                    pProc->args.m_minOff = 2 + (n * 2);
                     return (2 + n);
                 }
                 else return 0;		// Cristina: check this please!
@@ -191,7 +191,7 @@ static Int idiom1x(cITER pIcode, cITER pEnd, Function * pProc)
             && pIcode->ic.ll.opcode == iMOV && pIcode->ic.ll.dst.regi == rBP
             && pIcode->ic.ll.src.regi == rSP)
         {
-            pProc->args.minOff = 2;
+            pProc->args.m_minOff = 2;
             pProc->flg |= PROC_IS_HLL;
 
             /* Look for SUB SP, immed */
@@ -222,7 +222,7 @@ static Int idiom1x(cITER pIcode, cITER pEnd, Function * pProc)
                     pIcode->ic.ll.dst.regi == rBP &&
                     pIcode->ic.ll.src.regi == rSP)
                 {
-                    pProc->args.minOff = 2 + (n * 2);
+                    pProc->args.m_minOff = 2 + (n * 2);
                     return (2 + n);
                 }
                 else return 0;		// Cristina: check this please!
@@ -1390,8 +1390,8 @@ void Function::findIdioms()
     /* Check if number of parameter bytes match their calling convention */
     if ((flg & PROC_HLL) && (!args.sym.empty()))
     {
-        args.minOff += (flg & PROC_FAR ? 4 : 2);
-        delta = args.maxOff - args.minOff;
+        args.m_minOff += (flg & PROC_FAR ? 4 : 2);
+        delta = args.maxOff - args.m_minOff;
         if (cbParam != delta)
         {
             cbParam = delta;

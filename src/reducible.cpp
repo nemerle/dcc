@@ -7,11 +7,7 @@
 #include <cassert>
 #include "dcc.h"
 #include <stdio.h>
-#ifdef __BORLAND__
-#include <alloc.h>
-#else
 #include <malloc.h>		/* For free() */
-#endif
 #include <string.h>
 
 static Int      numInt;     /* Number of intervals      */
@@ -31,7 +27,7 @@ bool trivialGraph(BB *G)
 static BB *firstOfQueue (queue &Q)
 {
     assert(!Q.empty());
-    BB *res=*Q.begin();
+    BB *res=Q.front();
     Q.pop_front();
     return res;
 }
@@ -58,7 +54,7 @@ BB *interval::firstOfInt ()
 {
     auto pq = currNode;
     if (pq == nodes.end())
-        return (NULL);
+        return 0;
     ++currNode;
     return *pq;
 }
@@ -169,7 +165,7 @@ void derSeq_Entry::findIntervals (Function *c)
             J = pI;
         }
         else     /* first interval */
-            first = FALSE;
+            first = false;
     }
 }
 
@@ -187,7 +183,7 @@ static void displayIntervals (interval *pI)
         {
             if ((*nodePtr)->correspInt == NULL)    /* real BBs */
                 printf ("    Node: %ld\n", (*nodePtr)->begin());
-            else              /* BBs represent intervals */
+            else             // BBs represent intervals
                 printf ("   Node (corresp int): %d\n", (*nodePtr)->correspInt->numInt);
             ++nodePtr;
         }
@@ -234,8 +230,8 @@ void freeDerivedSeq(derSeq &derivedG)
 derSeq_Entry::~derSeq_Entry()
 {
     freeInterval (&Ii);
-//    if(Gi && Gi->nodeType == INTERVAL_NODE)
-//        freeCFG (Gi);
+    //    if(Gi && Gi->nodeType == INTERVAL_NODE)
+    //        freeCFG (Gi);
 }
 
 /* Finds the next order graph of derivedGi->Gi according to its intervals
@@ -244,8 +240,8 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
 {
     interval *Ii;   /* Interval being processed         */
     BB *BBnode,     /* New basic block of intervals         */
-        *curr,      /* BB being checked for out edges       */
-        *succ       /* Successor node               */
+            *curr,      /* BB being checked for out edges       */
+            *succ       /* Successor node               */
             ;
     //queue *listIi;    /* List of intervals                */
     Int i,        /* Index to outEdges array          */
@@ -302,14 +298,14 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
             BBnode = new_entry.Gi;    /* BB of an interval */
             auto iter= std::find_if(bbs.begin(),bbs.end(),
                                     [&edge](BB *node)->bool { return edge.intPtr==node->correspInt;});
-            if(iter==bbs.end())
-                fatalError (INVALID_INT_BB);
-            edge.BBptr = *iter;
-            (*iter)->inEdges.push_back(0);
-            (*iter)->inEdgeCount++;
-        }
+        if(iter==bbs.end())
+            fatalError (INVALID_INT_BB);
+        edge.BBptr = *iter;
+        (*iter)->inEdges.push_back(0);
+        (*iter)->inEdgeCount++;
     }
-    return (boolT)(! sameGraph);
+}
+return (boolT)(! sameGraph);
 }
 
 
@@ -352,7 +348,7 @@ byte Function::findDerivedSeq (derSeq *derivedGi)
  * means of node splitting.  */
 static void nodeSplitting (std::vector<BB *> &G)
 {
-    printf("Attempt to perform node splitting: NOT IMPLEMENTED\n");
+    fprintf(stderr,"Attempt to perform node splitting: NOT IMPLEMENTED\n");
 }
 
 /* Displays the derived sequence and intervals of the graph G */
@@ -378,19 +374,19 @@ void derSeq::display()
 derSeq * Function::checkReducibility()
 {
     derSeq * der_seq;
-    byte    reducible;            /* Reducible graph flag     */
+    byte    reducible;  /* Reducible graph flag     */
 
     numInt = 1;         /* reinitialize no. of intervals*/
-    stats.nOrder = 1;       /* nOrder(cfg) = 1      */
+    stats.nOrder = 1;   /* nOrder(cfg) = 1      */
     der_seq = new derSeq;
     der_seq->resize(1);
-    der_seq->back().Gi = cfg.front();
+    der_seq->back().Gi = m_cfg.front();
     reducible = findDerivedSeq(der_seq);
 
     if (! reducible)
     {
         flg |= GRAPH_IRRED;
-        nodeSplitting (cfg);
+        nodeSplitting (m_cfg);
     }
     return der_seq;
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
+#include <bitset>
 #include "BasicBlock.h"
 #include "types.h"
 #include "ast.h"
@@ -68,8 +69,8 @@ public:
 
         /* Icodes and control flow graph */
     CIcodeRec	 Icode;     /* Object with ICODE records                 */
-    std::vector<BB*> cfg;      /* Ptr. to BB list/CFG                  	 */
-    std::vector<BB*> dfsLast;
+    std::vector<BB*> m_cfg;      /* Ptr. to BB list/CFG                  	 */
+    std::vector<BB*> m_dfsLast;
     std::vector<BB*> heldBBs;
     //BB *         *dfsLast;  /* Array of pointers to BBs in dfsLast
 //                           * (reverse postorder) order            	 */
@@ -77,11 +78,11 @@ public:
     boolT        hasCase;   /* Procedure has a case node            	 */
 
     /* For interprocedural live analysis */
-    dword		 liveIn;	/* Registers used before defined                 */
-    dword		 liveOut;	/* Registers that may be used in successors	 */
-    boolT		 liveAnal;	/* Procedure has been analysed already		 */
+    std::bitset<32>     liveIn;	/* Registers used before defined                 */
+    std::bitset<32>     liveOut;	/* Registers that may be used in successors	 */
+    bool                liveAnal;	/* Procedure has been analysed already		 */
 
-    Function(void *ty=0) : procEntry(0),depth(0),flg(0),cbParam(0),cfg(0),dfsLast(0),numBBs(0),
+    Function(void *ty=0) : procEntry(0),depth(0),flg(0),cbParam(0),m_cfg(0),m_dfsLast(0),numBBs(0),
         hasCase(false),liveIn(0),liveOut(0),liveAnal(0)//,next(0),prev(0)
     {
     }
@@ -96,7 +97,7 @@ public:
     void writeProcComments();
     void lowLevelAnalysis();
     void bindIcodeOff();
-    void dataFlow(dword liveOut);
+    void dataFlow(std::bitset<32> &liveOut);
     void compressCFG();
     void highLevelGen();
     void structure(derSeq *derivedG);
@@ -120,17 +121,17 @@ public:
     void newRegArg(ICODE *picode, ICODE *ticode);
 protected:
     // TODO: replace those with friend visitor ?
-    void propLongReg(Int loc_ident_idx, const ID *pLocId);
-    void propLongStk(Int i, ID *pLocId);
-    void propLongGlb(Int i, ID *pLocId);
+    void propLongReg(Int loc_ident_idx, const ID &pLocId);
+    void propLongStk(Int i, const ID &pLocId);
+    void propLongGlb(Int i, const ID &pLocId);
 
-    int     checkBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE iter, Assignment &assign);
-    int     checkForwardLongDefs(int loc_ident_idx, const ID &pLocId, iICODE beg, Assignment &asgn);
+    int     findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE iter);
+    int     findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE beg);
     void    structCases();
     void    findExps();
     void    genDU1();
     void    elimCondCodes();
-    void    liveRegAnalysis(dword in_liveOut);
+    void    liveRegAnalysis(std::bitset<32> &in_liveOut);
     void    findIdioms();
     void    propLong();
     void    genLiveKtes();

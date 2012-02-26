@@ -75,10 +75,10 @@ public:
 
     /* For live register analysis
          * LiveIn(b) = LiveUse(b) U (LiveOut(b) - Def(b))	*/
-    dword           liveUse;		/* LiveUse(b)					*/
-    dword           def;			/* Def(b)						*/
-    dword           liveIn;			/* LiveIn(b)					*/
-    dword           liveOut;		/* LiveOut(b)					*/
+    std::bitset<32> liveUse;		/* LiveUse(b)					*/
+    std::bitset<32> def;			/* Def(b)						*/
+    std::bitset<32> liveIn;			/* LiveIn(b)					*/
+    std::bitset<32> liveOut;		/* LiveOut(b)					*/
 
     /* For structuring analysis */
     Int             dfsFirstNum;    /* DFS #: first visit of node   */
@@ -97,8 +97,8 @@ public:
     Int             caseTail;       /* tail node for the case       */
 
     Int             index;          /* Index, used in several ways  */
-static BB *Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
-static BB *Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function * parent);
+static BB * Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
+static BB * Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function * parent);
     void    writeCode(Int indLevel, Function *pProc, Int *numLoc, Int latchNode, Int ifFollow);
     void    mergeFallThrough(CIcodeRec &Icode);
     void    dfsNumbering(std::vector<BB *> &dfsLast, Int *first, Int *last);

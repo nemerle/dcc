@@ -157,7 +157,7 @@ struct POSSTACK_ENTRY
 vector<POSSTACK_ENTRY> posStack; /* position stack */
 byte              iPS;          /* Index into the stack */
 
-static  char    cbuf[256];      /* Has to be 256 for wgetstr() to work */
+//static  char    cbuf[256];      /* Has to be 256 for wgetstr() to work */
 
 // These are "curses equivalent" functions. (Used to use curses for all this,
 // but it was too much of a distribution hassle

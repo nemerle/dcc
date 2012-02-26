@@ -31,12 +31,12 @@ struct STKFRAME
 {
     std::vector<STKSYM> sym;
     //STKSYM *    sym;        /* Symbols                      */
-    int16       minOff;     /* Initial offset in stack frame*/
+    int16       m_minOff;     /* Initial offset in stack frame*/
     int16       maxOff;     /* Maximum offset in stack frame*/
     Int         cb;         /* Number of bytes in arguments */
     Int         numArgs;    /* No. of arguments in the table*/
     void        adjustForArgType(Int numArg_, hlType actType_);
-    STKFRAME() : sym(0),minOff(0),maxOff(0),cb(0),numArgs(0)
+    STKFRAME() : sym(0),m_minOff(0),maxOff(0),cb(0),numArgs(0)
     {
 
     }

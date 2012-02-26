@@ -4,6 +4,7 @@
  ****************************************************************************/
 #pragma once
 #include <vector>
+#include <bitset>
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include "Enums.h"
@@ -245,9 +246,12 @@ struct DU
 /* Def/Use of registers and stack variables */
 struct DU_ICODE
 {
-    dword	def;		/* For Registers: position in dword is reg index*/
-    dword	lastDefRegi;/* Bit set if last def of this register in BB   */
-    dword	use;		/* For Registers: position in dword is reg index*/
+    std::bitset<32> def;        // For Registers: position in bitset is reg index
+    //dword	def;		// For Registers: position in dword is reg index
+    //dword	def;		// For Registers: position in dword is reg index
+    //dword	lastDefRegi;    // Bit set if last def of this register in BB
+    std::bitset<32>	use;	// For Registers: position in dword is reg index
+    std::bitset<32> lastDefRegi;
 };
 
 
@@ -322,7 +326,7 @@ struct ICODE
         Int		idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
     };
     icodeType           type;           /* Icode type                   */
-    boolT               invalid;        /* Has no HIGH_LEVEL equivalent */
+    bool                invalid;        /* Has no HIGH_LEVEL equivalent */
     BB			*inBB;      	/* BB to which this icode belongs */
     DU_ICODE		du;             /* Def/use regs/vars			*/
     DU1			du1;        	/* du chain 1					*/

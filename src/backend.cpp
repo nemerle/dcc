@@ -196,11 +196,21 @@ static void writeHeader (std::ostream &ios, char *fileName)
 
 /* Writes the registers that are set in the bitvector */
 static void writeBitVector (dword regi)
-{ Int j;
+{
+    Int j;
 
     for (j = 0; j < INDEXBASE; j++)
     {
         if ((regi & power2(j)) != 0)
+            printf ("%s ", allRegs[j]);
+    }
+}
+static void writeBitVector (const std::bitset<32> &regi)
+{ Int j;
+
+    for (j = 0; j < INDEXBASE; j++)
+    {
+        if (regi.test(j))
             printf ("%s ", allRegs[j]);
     }
 }
@@ -298,7 +308,7 @@ void Function::codeGen (std::ostream &fs)
     if (flg & PROC_ASM)		/* generate assembler */
         disassem (3, this);
     else							/* generate C */
-        cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);
+        m_cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);
 
     cCode.appendCode( "}\n\n");
     writeBundle (fs, cCode);
@@ -308,7 +318,7 @@ void Function::codeGen (std::ostream &fs)
     if (option.verbose)
         for (i = 0; i < numBBs; i++)
         {
-            pBB = dfsLast[i];
+            pBB = m_dfsLast[i];
             if (pBB->flg & INVALID_BB)	continue;	/* skip invalid BBs */
             printf ("BB %d\n", i);
             printf ("  Start = %d, end = %d\n", pBB->begin(), pBB->end());

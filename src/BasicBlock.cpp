@@ -15,7 +15,7 @@ BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
 
 BB *BB::Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function *parent)
 {
-    parent->cfg;
+    parent->m_cfg;
     BB* pnewBB;
 
     pnewBB = new BB;
@@ -36,7 +36,7 @@ BB *BB::Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function *pare
         if (start >= 0)
             parent->Icode.SetInBB(start, ip, pnewBB);
         parent->heldBBs.push_back(pnewBB);
-        parent->cfg.push_back(pnewBB);
+        parent->m_cfg.push_back(pnewBB);
         pnewBB->Parent = parent;
     }
     if (start != -1)		/* Only for code BB's */
@@ -126,7 +126,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
             repCond;					/* Repeat condition for while() */
 
     /* Check if this basic block should be analysed */
-    if ((_ifFollow != UN_INIT) && (this == pProc->dfsLast[_ifFollow]))
+    if ((_ifFollow != UN_INIT) && (this == pProc->m_dfsLast[_ifFollow]))
         return;
 
     if (traversed == DFS_ALPHA)
@@ -139,7 +139,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
     _loopType = loopType;
     if (_loopType)
     {
-        latch = pProc->dfsLast[this->latchNode];
+        latch = pProc->m_dfsLast[this->latchNode];
         switch (_loopType)
         {
             case WHILE_TYPE:
@@ -236,7 +236,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
         /* Recurse on the loop follow */
         if (loopFollow != MAX)
         {
-            succ = pProc->dfsLast[loopFollow];
+            succ = pProc->m_dfsLast[loopFollow];
             if (succ->traversed != DFS_ALPHA)
                 succ->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
             else		/* has been traversed so we need a goto */
@@ -297,7 +297,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
                 cCode.appendCode( "%s}\n", indent(--indLevel));
 
                 /* Continue with the follow */
-                succ = pProc->dfsLast[follow];
+                succ = pProc->m_dfsLast[follow];
                 if (succ->traversed != DFS_ALPHA)
                     succ->writeCode (indLevel, pProc, numLoc, latchNode,_ifFollow);
             }

@@ -256,10 +256,11 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode)
  * Arguments: i     : index into the local identifier table
  *            pLocId: ptr to the long local identifier
  *            pProc : ptr to current procedure's record.        */
-void Function::propLongStk (Int i, ID *pLocId)
+void Function::propLongStk (Int i, const ID &pLocId)
 {
     Int idx, off, arc;
-    COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
+    Assignment asgn;
+    //COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
     iICODE pIcode, pEnd;
 
     /* Check all icodes for offHi:offLo */
@@ -275,39 +276,33 @@ void Function::propLongStk (Int i, ID *pLocId)
             switch (pIcode->ic.ll.opcode)
             {
             case iMOV:
-                if (checkLongEq (pLocId->id.longStkId, pIcode, i, this,
-                                 &rhs, &lhs, 1) == TRUE)
+                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
                 {
-                    pIcode->setAsgn(lhs, rhs);
+                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
                     (pIcode+1)->invalidate();
                     idx++;
                 }
                 break;
 
             case iAND: case iOR: case iXOR:
-                if (checkLongEq (pLocId->id.longStkId, pIcode, i, this,
-                                 &rhs, &lhs, 1) == TRUE)
+                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
                 {
                     switch (pIcode->ic.ll.opcode)
                     {
-                    case iAND: 	rhs = COND_EXPR::boolOp (lhs, rhs, AND);
-                        break;
-                    case iOR: 	rhs = COND_EXPR::boolOp (lhs, rhs, OR);
-                        break;
-                    case iXOR: 	rhs = COND_EXPR::boolOp (lhs, rhs, XOR);
-                        break;
+                    case iAND: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND); break;
+                    case iOR: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR); break;
+                    case iXOR: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR); break;
                     }
-                    pIcode->setAsgn(lhs, rhs);
+                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
                     (pIcode+1)->invalidate();
                     idx++;
                 }
                 break;
 
             case iPUSH:
-                if (checkLongEq (pLocId->id.longStkId, pIcode, i, this,
-                                 &rhs, &lhs, 1) == TRUE)
+                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
                 {
-                    pIcode->setUnary( HLI_PUSH, lhs);
+                    pIcode->setUnary( HLI_PUSH, asgn.lhs);
                     (pIcode+1)->invalidate();
                     idx++;
                 }
@@ -318,9 +313,9 @@ void Function::propLongStk (Int i, ID *pLocId)
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
         else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, &off, &arc)))
         {
-            if ( checkLongEq (pLocId->id.longStkId, pIcode, i, this, &rhs, &lhs, off) )
+            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, off) )
             {
-                idx += longJCond23 (rhs, lhs, pIcode, arc, off); //
+                idx += longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off); //
             }
         }
 
@@ -328,53 +323,59 @@ void Function::propLongStk (Int i, ID *pLocId)
                  * 2 CMPs and 2 branches */
         else if ((pIcode->ic.ll.opcode == iCMP) && isLong22 (pIcode, pEnd, &off))
         {
-            if ( checkLongEq (pLocId->id.longStkId, pIcode, i, this,&rhs, &lhs, off) )
+            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this,asgn, off) )
             {
-                idx += longJCond22 (rhs, lhs, pIcode); // maybe this should have -1 to offset loop autoincrement?
+                idx += longJCond22 (asgn.rhs, asgn.lhs, pIcode); // maybe this should have -1 to offset loop autoincrement?
             }
         }
     }
 }
-int Function::checkBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE beg,Assignment &asgn)
+int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE beg)
 {
+    Assignment asgn;
     LLOperand * pmH,* pmL;
     iICODE pIcode;
     riICODE rev(beg);
     bool forced_finish=false;
     for (; not forced_finish and rev!=Icode.rend();rev++) //idx = pLocId_idx - 1; idx > 0 ; idx--
     {
+        ICODE &icode(*rev);
+        ICODE &next1(*(rev-1)); // prev reverse is actually next instruction
         pIcode = (rev+1).base();//Icode.begin()+(idx-1);
-        if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
+
+
+        if ((icode.type == HIGH_LEVEL) || (icode.invalid == TRUE))
+            continue;
+        if (icode.ic.ll.opcode != next1.ic.ll.opcode)
             continue;
 
-        if (pIcode->ic.ll.opcode != (pIcode+1)->ic.ll.opcode)
-            continue;
-        switch (pIcode->ic.ll.opcode)
+        switch (icode.ic.ll.opcode)
         {
         case iMOV:
-            pmH = &pIcode->ic.ll.dst;
-            pmL = &(pIcode+1)->ic.ll.dst;
+            pmH = &icode.ic.ll.dst;
+            pmL = &next1.ic.ll.dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
+                localId.id_arr[loc_ident_idx].idx.push_back(pIcode);//idx-1//insert
+                icode.setRegDU( pmL->regi, eDEF);
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                this->localId.id_arr[loc_ident_idx].idx.push_back(pIcode);//idx-1//insert
-                pIcode->setRegDU( pmL->regi, eDEF);
-                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode/*idx*/, eUSE, 1);
-                pIcode->setAsgn(asgn.lhs, asgn.rhs);
-                (pIcode+1)->invalidate();
+                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, 1);
+                icode.setAsgn(asgn.lhs, asgn.rhs);
+                next1.invalidate();
                 forced_finish=true; /* to exit the loop */
             }
             break;
 
         case iPOP:
-            pmH = &(pIcode+1)->ic.ll.dst;
-            pmL = &pIcode->ic.ll.dst;
+            pmH = &next1.ic.ll.dst;
+            pmL = &icode.ic.ll.dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                pIcode->setRegDU( pmH->regi, eDEF);
-                pIcode->setUnary(HLI_POP, asgn.lhs);
-                (pIcode+1)->invalidate();
+                icode.setRegDU( pmH->regi, eDEF);
+                icode.setUnary(HLI_POP, asgn.lhs);
+                next1.invalidate();
+                asgn.lhs=0;
                 forced_finish=true;        /* to exit the loop */
             }
             break;
@@ -382,14 +383,15 @@ int Function::checkBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE b
             //                /**** others missing ***/
 
         case iAND: case iOR: case iXOR:
-            pmL = &pIcode->ic.ll.dst;
-            pmH = &(pIcode+1)->ic.ll.dst;
+            pmL = &icode.ic.ll.dst;
+            pmH = &next1.ic.ll.dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                pIcode->setRegDU( pmH->regi, USE_DEF);
                 asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, pIcode/*idx*/, eUSE, 1);
-                switch (pIcode->ic.ll.opcode) {
+                icode.setRegDU( pmH->regi, USE_DEF);
+                switch (icode.ic.ll.opcode)
+                {
                 case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
                     break;
                 case iOR:
@@ -398,8 +400,8 @@ int Function::checkBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE b
                 case iXOR: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR);
                     break;
                 } /* eos */
-                pIcode->setAsgn(asgn.lhs, asgn.rhs);
-                (pIcode+1)->invalidate();
+                icode.setAsgn(asgn.lhs, asgn.rhs);
+                next1.invalidate();
                 forced_finish=true;        /* to exit the loop */
             }
             break;
@@ -407,10 +409,11 @@ int Function::checkBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE b
     }
     return rev!=Icode.rend();
 }
-int Function::checkForwardLongDefs(int loc_ident_idx, const ID &pLocId, iICODE beg,Assignment &asgn)
+int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE beg)
 {
     bool forced_finish=false;
     auto pEnd=Icode.end();
+    Assignment asgn;
     for (auto pIcode=beg; not forced_finish and ((pIcode+1)!=Icode.end()); ++pIcode)
     {
         iICODE next1(pIcode+1);
@@ -427,9 +430,11 @@ int Function::checkForwardLongDefs(int loc_ident_idx, const ID &pLocId, iICODE b
                 if ((pLocId.id.longId.h == pIcode->ic.ll.src.regi) &&
                         (pLocId.id.longId.l == next1->ic.ll.src.regi))
                 {
-                    asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
                     pIcode->setRegDU( next1->ic.ll.src.regi, eUSE);
+
+                    asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
                     asgn.lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, 1);
+
                     pIcode->setAsgn(asgn.lhs, asgn.rhs);
                     next1->invalidate();
                     forced_finish =true; /* to exit the loop */
@@ -442,7 +447,7 @@ int Function::checkForwardLongDefs(int loc_ident_idx, const ID &pLocId, iICODE b
                 {
                     asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
                     pIcode->setRegDU( next1->ic.ll.src.regi, eUSE);
-                    pIcode->setUnary(HLI_PUSH, asgn.lhs);
+                    pIcode->setUnary(HLI_PUSH, asgn.rhs);
                     next1->invalidate();
                 }
                 forced_finish =true; /* to exit the loop */
@@ -481,8 +486,7 @@ int Function::checkForwardLongDefs(int loc_ident_idx, const ID &pLocId, iICODE b
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
         else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
         {
-            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this,
-                                asgn.rhs, asgn.lhs, off) == TRUE)
+            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, off) == TRUE)
             {
                 pIcode += longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off);
             }
@@ -523,40 +527,37 @@ int Function::checkForwardLongDefs(int loc_ident_idx, const ID &pLocId, iICODE b
     } /* end for */
 }
 
-/* Finds the definition of the long register pointed to by pLocId, and
+/** Finds the definition of the long register pointed to by pLocId, and
  * transforms that instruction into a HIGH_LEVEL icode instruction.
- * Arguments: i     : index into the local identifier table
- *            pLocId: ptr to the long local identifier
- *            pProc : ptr to current procedure's record.        */
-void Function::propLongReg (Int loc_ident_idx, const ID *pLocId)
+ * @arg i     index into the local identifier table
+ * @arg pLocId ptr to the long local identifier
+ *
+ */
+void Function::propLongReg (Int loc_ident_idx, const ID &pLocId)
 {
-    Int idx;
-    iICODE pEnd;
-
     /* Process all definitions/uses of long registers at an icode position */
-    pEnd = this->Icode.end();
-    const IDX_ARRAY &lidx(pLocId->idx);
-    //    for (int pLocId_idx : pLocId->idx)
     // WARNING: this loop modifies the iterated-over container.
-    for (int j = 0; j < pLocId->idx.size(); j++)
+    size_t initial_size=pLocId.idx.size();
+    for (int j = 0; j < pLocId.idx.size(); j++)
     {
-        auto idx_iter=lidx.begin();
+        auto idx_iter=pLocId.idx.begin();
         std::advance(idx_iter,j);
-        //assert(*idx_iter==lidx.z[j]);
-        int pLocId_idx=std::distance(Icode.begin(),*idx_iter);
-        Assignment asgn;
         /* Check backwards for a definition of this long register */
-        if (checkBackwarLongDefs(loc_ident_idx,*pLocId,*idx_iter,asgn))
+        if (findBackwarLongDefs(loc_ident_idx,pLocId,*idx_iter))
+        {
+            //assert(initial_size==pLocId.idx.size());
             continue;
+        }
         /* If no definition backwards, check forward for a use of this long reg */
-        checkForwardLongDefs(loc_ident_idx,*pLocId,*idx_iter,asgn);
+        findForwardLongUses(loc_ident_idx,pLocId,*idx_iter);
+        //assert(initial_size==pLocId.idx.size());
     } /* end for */
 }
 
 
 /* Propagates the long global address across all LOW_LEVEL icodes.
  * Transforms some LOW_LEVEL icodes into HIGH_LEVEL     */
-void Function::propLongGlb (Int i, ID *pLocId)
+void Function::propLongGlb (Int i, const ID &pLocId)
 {
     printf("WARN: Function::propLongGlb not implemented");
 }
@@ -567,14 +568,14 @@ void Function::propLongGlb (Int i, ID *pLocId)
 void Function::propLong()
 {
     Int i;
-    ID *pLocId;           /* Pointer to current local identifier */
+    /* Pointer to current local identifier */
 
     for (i = 0; i < localId.csym(); i++)
     {
-        pLocId = &localId.id_arr[i];
-        if ((pLocId->type==TYPE_LONG_SIGN) || (pLocId->type==TYPE_LONG_UNSIGN))
+        const ID &pLocId(localId.id_arr[i]);
+        if ((pLocId.type==TYPE_LONG_SIGN) || (pLocId.type==TYPE_LONG_UNSIGN))
         {
-            switch (pLocId->loc)
+            switch (pLocId.loc)
             {
             case STK_FRAME:
                 propLongStk (i, pLocId);

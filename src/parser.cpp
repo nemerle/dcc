@@ -891,7 +891,7 @@ static void setBits(int16 type, dword start, dword len)
 }
 
 /* DU bit definitions for each reg value - including index registers */
-dword duReg[] = { 0x00,
+std::bitset<32> duReg[] = { 0x00,
                   0x11001, 0x22002, 0x44004, 0x88008, /* word regs    */
                   0x10, 0x20, 0x40, 0x80,
                   0x100, 0x200, 0x400, 0x800,         /* seg regs     */

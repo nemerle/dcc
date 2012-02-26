@@ -54,9 +54,9 @@ static Int commonDom (Int currImmDom, Int predImmDom, Function * pProc)
            (currImmDom != predImmDom))
     {
         if (currImmDom < predImmDom)
-            predImmDom = pProc->dfsLast[predImmDom]->immedDom;
+            predImmDom = pProc->m_dfsLast[predImmDom]->immedDom;
         else
-            currImmDom = pProc->dfsLast[currImmDom]->immedDom;
+            currImmDom = pProc->m_dfsLast[currImmDom]->immedDom;
     }
     return (currImmDom);
 }
@@ -73,7 +73,7 @@ void Function::findImmedDom ()
 
     for (currIdx = 0; currIdx < numBBs; currIdx++)
     {
-        currNode = dfsLast[currIdx];
+        currNode = m_dfsLast[currIdx];
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
         for (BB * inedge : currNode->inEdges)
@@ -125,9 +125,9 @@ static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
     nodeList::iterator p = loopNodes.begin();
     for( ;p != loopNodes.end();++p)
     {
-        for (j = 0; j < pProc->dfsLast[*p]->edges.size(); j++)
+        for (j = 0; j < pProc->m_dfsLast[*p]->edges.size(); j++)
         {
-            succ = pProc->dfsLast[*p]->edges[j].BBptr->dfsLastNum;
+            succ = pProc->m_dfsLast[*p]->edges[j].BBptr->dfsLastNum;
             if ((! inList(loopNodes, succ)) && (succ < head->loopFollow))
                 head->loopFollow = succ;
         }
@@ -152,15 +152,15 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
     insertList (loopNodes, headDfsNum);
     for (i = headDfsNum + 1; i < latchNode->dfsLastNum; i++)
     {
-        if (pProc->dfsLast[i]->flg & INVALID_BB)	/* skip invalid BBs */
+        if (pProc->m_dfsLast[i]->flg & INVALID_BB)	/* skip invalid BBs */
             continue;
 
-        immedDom = pProc->dfsLast[i]->immedDom;
-        if (inList (loopNodes, immedDom) && inInt(pProc->dfsLast[i], intNodes))
+        immedDom = pProc->m_dfsLast[i]->immedDom;
+        if (inList (loopNodes, immedDom) && inInt(pProc->m_dfsLast[i], intNodes))
         {
             insertList (loopNodes, i);
-            if (pProc->dfsLast[i]->loopHead == NO_NODE)/*not in other loop*/
-                pProc->dfsLast[i]->loopHead = headDfsNum;
+            if (pProc->m_dfsLast[i]->loopHead == NO_NODE)/*not in other loop*/
+                pProc->m_dfsLast[i]->loopHead = headDfsNum;
         }
     }
     latchNode->loopHead = headDfsNum;
@@ -233,10 +233,10 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                     findEndlessFollow (pProc, loopNodes, head);
                     break;
                 }
-                pbb = pProc->dfsLast[pbb->immedDom];
+                pbb = pProc->m_dfsLast[pbb->immedDom];
             }
             if (pbb->dfsLastNum > head->dfsLastNum)
-                pProc->dfsLast[head->loopFollow]->loopHead = NO_NODE;	/*****/
+                pProc->m_dfsLast[head->loopFollow]->loopHead = NO_NODE;	/*****/
             head->back().SetLlFlag(JX_LOOP);
         }
         else
@@ -342,7 +342,7 @@ static boolT successor (Int s, Int h, Function * pProc)
     Int i;
     BB * header;
 
-    header = pProc->dfsLast[h];
+    header = pProc->m_dfsLast[h];
     for (i = 0; i < header->edges.size(); i++)
         if (header->edges[i].BBptr->dfsLastNum == s)
             return true;
@@ -382,27 +382,27 @@ void Function::structCases()
     /* Linear scan of the nodes in reverse dfsLast order, searching for
      * case nodes                           */
     for (i = numBBs - 1; i >= 0; i--)
-        if (dfsLast[i]->nodeType == MULTI_BRANCH)
+        if (m_dfsLast[i]->nodeType == MULTI_BRANCH)
         {
-            caseHeader = dfsLast[i];
+            caseHeader = m_dfsLast[i];
 
             /* Find descendant node which has as immediate predecessor
                          * the current header node, and is not a successor.    */
             for (j = i + 2; j < numBBs; j++)
             {
                 if ((!successor(j, i, this)) &&
-                    (dfsLast[j]->immedDom == i))
+                    (m_dfsLast[j]->immedDom == i))
                     if (exitNode == NO_NODE)
                         exitNode = j;
-                    else if (dfsLast[exitNode]->inEdges.size() < dfsLast[j]->inEdges.size())
+                    else if (m_dfsLast[exitNode]->inEdges.size() < m_dfsLast[j]->inEdges.size())
                         exitNode = j;
             }
-            dfsLast[i]->caseTail = exitNode;
+            m_dfsLast[i]->caseTail = exitNode;
 
             /* Tag nodes that belong to the case by recording the
                          * header field with caseHeader.           */
             insertList (caseNodes, i);
-            dfsLast[i]->caseHead = i;
+            m_dfsLast[i]->caseHead = i;
             for(TYPEADR_TYPE &pb : caseHeader->edges)
             {
                 tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);
@@ -410,7 +410,7 @@ void Function::structCases()
             //for (j = 0; j < caseHeader->edges[j]; j++)
             //    tagNodesInCase (caseHeader->edges[j].BBptr, caseNodes, i, exitNode);
             if (exitNode != NO_NODE)
-                dfsLast[exitNode]->caseHead = i;
+                m_dfsLast[exitNode]->caseHead = i;
         }
 }
 
@@ -424,7 +424,7 @@ static void flagNodes (nodeList &l, Int f, Function * pProc)
     p = l.begin();
     while (p!=l.end())
     {
-        pProc->dfsLast[*p]->ifFollow = f;
+        pProc->m_dfsLast[*p]->ifFollow = f;
         p = l.erase(p);
     }
 }
@@ -446,7 +446,7 @@ void Function::structIfs ()
     /* Linear scan of nodes in reverse dfsLast order */
     for (curr = numBBs - 1; curr >= 0; curr--)
     {
-        currNode = dfsLast[curr];
+        currNode = m_dfsLast[curr];
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
 
@@ -458,10 +458,10 @@ void Function::structIfs ()
             /* Find all nodes that have this node as immediate dominator */
             for (desc = curr+1; desc < numBBs; desc++)
             {
-                if (dfsLast[desc]->immedDom == curr)
+                if (m_dfsLast[desc]->immedDom == curr)
                 {
                     insertList (domDesc, desc);
-                    pbb = dfsLast[desc];
+                    pbb = m_dfsLast[desc];
                     if ((pbb->inEdges.size() - pbb->numBackEdges) >= followInEdges)
                     {
                         follow = desc;
@@ -507,7 +507,7 @@ void Function::compoundCond()
          * compound condition is analysed first */
         for (i = 0; i < this->numBBs; i++)
         {
-            pbb = this->dfsLast[i];
+            pbb = this->m_dfsLast[i];
             if (pbb->flg & INVALID_BB)
                 continue;
 
@@ -547,11 +547,11 @@ void Function::compoundCond()
                 t->flg |= INVALID_BB;
 
                 if (pbb->flg & IS_LATCH_NODE)
-                    this->dfsLast[t->dfsLastNum] = pbb;
+                    this->m_dfsLast[t->dfsLastNum] = pbb;
                 else
                     i--;		/* to repeat this analysis */
 
-                change = TRUE;
+                change = true;
             }
 
             /* Check (!X && Y) case */
@@ -585,7 +585,7 @@ void Function::compoundCond()
                 t->flg |= INVALID_BB;
 
                 if (pbb->flg & IS_LATCH_NODE)
-                    this->dfsLast[t->dfsLastNum] = pbb;
+                    this->m_dfsLast[t->dfsLastNum] = pbb;
                 else
                     i--;		/* to repeat this analysis */
 
@@ -620,7 +620,7 @@ void Function::compoundCond()
                 e->flg |= INVALID_BB;
 
                 if (pbb->flg & IS_LATCH_NODE)
-                    this->dfsLast[e->dfsLastNum] = pbb;
+                    this->m_dfsLast[e->dfsLastNum] = pbb;
                 else
                     i--;		/* to repeat this analysis */
 
@@ -657,7 +657,7 @@ void Function::compoundCond()
                 e->flg |= INVALID_BB;
 
                 if (pbb->flg & IS_LATCH_NODE)
-                    this->dfsLast[e->dfsLastNum] = pbb;
+                    this->m_dfsLast[e->dfsLastNum] = pbb;
                 else
                     i--;		/* to repeat this analysis */
 
