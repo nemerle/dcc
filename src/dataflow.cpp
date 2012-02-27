@@ -344,7 +344,7 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                             ticode.du1.numRegsDef = 1;
                             break;
                         default:
-                            fprintf(stderr,"Function::liveRegAnalysis : Unknow return type\n");
+                            fprintf(stderr,"Function::liveRegAnalysis : Unknown return type %d\n",pcallee->retVal.type);
                         } /*eos*/
 
                         /* Propagate def/use results to calling icode */
@@ -959,8 +959,7 @@ void Function::findExps()
                                             picode->ic.hl.oper.call.proc,
                                             picode->ic.hl.oper.call.args);
                                 ticode->ic.hl.oper.asgn.lhs =
-                                        COND_EXPR::idLong(&localId, DST, ticode,
-                                                          HIGH_FIRST, picode, eDEF, 1);//picode->loc_ip
+                                        COND_EXPR::idLong(&localId, DST, ticode,HIGH_FIRST, picode, eDEF, 1);
                                 ticode->ic.hl.oper.asgn.rhs = exp;
                                 picode->invalidate();
                                 numHlIcodes--;

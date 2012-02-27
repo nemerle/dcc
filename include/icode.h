@@ -90,7 +90,7 @@ rBH =       20,
 
 rTMP=       21			/* temp register for DIV/IDIV/MOD	*/
 #define INDEXBASE   22          /* Indexed modes go from INDEXBASE to
-                                   * INDEXBASE+7  */
+    * INDEXBASE+7  */
 };
 /* Byte and Word registers */
 static const char *const byteReg[9]  = {"al", "cl", "dl", "bl",
@@ -361,13 +361,13 @@ struct ICODE
     IC ic;/* intermediate code        */
     int loc_ip; // used by CICodeRec to number ICODEs
 
-    void    ClrLlFlag(dword flag) {ic.ll.flg &= ~flag;}
-    void    SetLlFlag(dword flag) {ic.ll.flg |= flag;}
-    dword   GetLlFlag() {return ic.ll.flg;}
-    bool    isLlFlag(dword flg) {return (ic.ll.flg&flg)!=0;}
+    void  ClrLlFlag(dword flag) {ic.ll.flg &= ~flag;}
+    void  SetLlFlag(dword flag) {ic.ll.flg |= flag;}
+    dword GetLlFlag() {return ic.ll.flg;}
+    bool isLlFlag(dword flg) {return (ic.ll.flg&flg)!=0;}
     llIcode GetLlOpcode() const { return ic.ll.opcode; }
-    dword   GetLlLabel() const { return ic.ll.label;}
-    void    SetImmediateOp(dword dw) {ic.ll.src.SetImmediateOp(dw);}
+    dword  GetLlLabel() const { return ic.ll.label;}
+    void SetImmediateOp(dword dw) {ic.ll.src.SetImmediateOp(dw);}
 
     void writeIntComment(std::ostringstream &s);
     void setRegDU(byte regi, operDu du_in);

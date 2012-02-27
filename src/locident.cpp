@@ -141,7 +141,7 @@ Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, iICODE ix_)
             (entry.id.longId.l == regL))
         {
             /* Check for occurrence in the list */
-            if (entry.idx.inList(ix_)) //count(
+            if (entry.idx.inList(ix_))
                 return (idx);
             else
             {
