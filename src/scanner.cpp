@@ -318,13 +318,12 @@ static ICODE * pIcode;		/* Ptr to Icode record filled in by scan() */
  Scans one machine instruction at offset ip in prog.Image and returns error.
  At the same time, fill in low-level icode details for the scanned inst.
  ****************************************************************************/
-eErrorId scan(dword ip, ICODE *p)
+eErrorId scan(dword ip, ICODE &p)
 {
     Int  op;
-
-    memset(p, 0, sizeof(ICODE));
-    p->type = LOW_LEVEL;
-    p->ic.ll.label = ip;			/* ip is absolute offset into image*/
+    p = ICODE();
+    p.type = LOW_LEVEL;
+    p.ic.ll.label = ip;			/* ip is absolute offset into image*/
     if (ip >= (dword)prog.cbImage)
     {
         return (IP_OUT_OF_RANGE);
@@ -332,25 +331,25 @@ eErrorId scan(dword ip, ICODE *p)
 
     SegPrefix = RepPrefix = 0;
     pInst    = prog.Image + ip;
-    pIcode   = p;
+    pIcode   = &p;
 
     do
     {
         op = *pInst++;						/* First state - trivial   */
-        p->ic.ll.opcode = stateTable[op].opcode;  /* Convert to Icode.opcode */
-        p->ic.ll.flg    = stateTable[op].flg & ICODEMASK;
-        p->ic.ll.flagDU.d = stateTable[op].df;
-        p->ic.ll.flagDU.u = stateTable[op].uf;
+        p.ic.ll.opcode = stateTable[op].opcode;  /* Convert to Icode.opcode */
+        p.ic.ll.flg    = stateTable[op].flg & ICODEMASK;
+        p.ic.ll.flagDU.d = stateTable[op].df;
+        p.ic.ll.flagDU.u = stateTable[op].uf;
 
         (*stateTable[op].state1)(op);		/* Second state */
         (*stateTable[op].state2)(op);		/* Third state  */
 
     } while (stateTable[op].state1 == prefix);	/* Loop if prefix */
 
-    if (p->ic.ll.opcode)
+    if (p.ic.ll.opcode)
     {
         /* Save bytes of image used */
-        p->ic.ll.numBytes = (byte)((pInst - prog.Image) - ip);
+        p.ic.ll.numBytes = (byte)((pInst - prog.Image) - ip);
         return ((SegPrefix)? FUNNY_SEGOVR:  /* Seg. Override invalid */
                              (RepPrefix ? FUNNY_REP: NO_ERR));/* REP prefix invalid */
     }

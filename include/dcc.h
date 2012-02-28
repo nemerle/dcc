@@ -166,7 +166,7 @@ void    freeCFG(BB * cfg);                                  /* graph.c      */
 BB *    newBB(BB *, Int, Int, byte, Int, Function *);      /* graph.c      */
 void    BackEnd(char *filename, CALL_GRAPH *);              /* backend.c    */
 char   *cChar(byte c);                                      /* backend.c    */
-eErrorId scan(dword ip, ICODE * p);                          /* scanner.c    */
+eErrorId scan(dword ip, ICODE &p);                          /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */
 
 Int     strSize (byte *, char);                             /* parser.c     */
@@ -181,7 +181,6 @@ bool    LibCheck(Function &p);                            /* chklib.c     */
 
 /* Exported functions from procs.c */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
-boolT 	newStkArg (ICODE *, COND_EXPR *, llIcode, Function *);
 void	allocStkArgs (ICODE *, Int);
 void	placeStkArg (ICODE *, COND_EXPR *, Int);
 void	adjustActArgType (COND_EXPR *, hlType, Function *);
@@ -197,11 +196,9 @@ bool	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, Int);
 
 /* Exported functions from hlicode.c */
 std::string writeCall (Function *, STKFRAME *, Function *, Int *);
-char 	*write1HlIcode (HLTYPE, Function *, Int *);
 char 	*writeJcond (HLTYPE, Function *, Int *);
 char 	*writeJcondInv (HLTYPE, Function *, Int *);
 Int     power2 (Int);
-void	inverseCondOp (COND_EXPR **);
 
 /* Exported funcions from locident.c */
 boolT checkLongEq (LONG_STKID_TYPE, iICODE, Int, Function *, Assignment &asgn, Int);

@@ -31,11 +31,8 @@ static char buf[lineSize];     /* Line buffer for hl icode output */
 void ICODE::setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
 {
     type = HIGH_LEVEL;
-    ic.hl.opcode = HLI_ASSIGN;
-    assert(ic.hl.oper.asgn.lhs==0); //prevent memory leaks
-    assert(ic.hl.oper.asgn.rhs==0); //prevent memory leaks
-    ic.hl.oper.asgn.lhs = lhs;
-    ic.hl.oper.asgn.rhs = rhs;
+    ic.hl.set(lhs,rhs);
+
 }
 void ICODE::checkHlCall()
 {
@@ -46,17 +43,17 @@ void ICODE::newCallHl()
 {
     type = HIGH_LEVEL;
     ic.hl.opcode = HLI_CALL;
-    ic.hl.oper.call.proc = ic.ll.src.proc.proc;
-    ic.hl.oper.call.args = new STKFRAME;
+    ic.hl.call.proc = ic.ll.src.proc.proc;
+    ic.hl.call.args = new STKFRAME;
 
     if (ic.ll.src.proc.cb != 0)
-        ic.hl.oper.call.args->cb = ic.ll.src.proc.cb;
-    else if(ic.hl.oper.call.proc)
-        ic.hl.oper.call.args->cb =ic.hl.oper.call.proc->cbParam;
+        ic.hl.call.args->cb = ic.ll.src.proc.cb;
+    else if(ic.hl.call.proc)
+        ic.hl.call.args->cb =ic.hl.call.proc->cbParam;
     else
     {
         printf("Function with no cb set, and no valid oper.call.proc , probaby indirect call\n");
-        ic.hl.oper.call.args->cb = 0;
+        ic.hl.call.args->cb = 0;
     }
 }
 
@@ -65,20 +62,16 @@ void ICODE::newCallHl()
  * array */
 void ICODE::setUnary(hlIcode op, COND_EXPR *exp)
 {
-    assert(ic.hl.oper.exp==0);
     type = HIGH_LEVEL;
-    ic.hl.opcode = op;
-    ic.hl.oper.exp = exp;
+    ic.hl.set(op,exp);
 }
 
 
 /* Places the new HLI_JCOND high-level operand in the high-level icode array */
 void ICODE::setJCond(COND_EXPR *cexp)
 {
-    assert(ic.hl.oper.exp==0);
     type = HIGH_LEVEL;
-    ic.hl.opcode = HLI_JCOND;
-    ic.hl.oper.exp = cexp;
+    ic.hl.set(HLI_JCOND,cexp);
 }
 
 
@@ -123,19 +116,11 @@ bool ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
         invalidate();
         return true;
     }
-    switch (ic.hl.opcode)
+    HlTypeSupport *p=ic.hl.get();
+    if(p and p->removeRegFromLong(regi,locId))
     {
-        case HLI_ASSIGN:
-            removeRegFromLong (regi, locId,ic.hl.oper.asgn.lhs);
-            du1.numRegsDef--;
-            du.def &= maskDuReg[regi];
-            break;
-        case HLI_POP:
-        case HLI_PUSH:
-            removeRegFromLong (regi, locId, ic.hl.oper.exp);
-            du1.numRegsDef--;
-            du.def &= maskDuReg[regi];
-            break;
+        du1.numRegsDef--;
+        du.def &= maskDuReg[regi];
     }
     return false;
 }
@@ -307,43 +292,43 @@ void Function::highLevelGen()
 /* Modifies the given conditional operator to its inverse.  This is used
  * in if..then[..else] statements, to reflect the condition that takes the
  * then part. 	*/
-void inverseCondOp (COND_EXPR **exp)
+COND_EXPR *COND_EXPR::inverse ()
 {
     static condOp invCondOp[] = {GREATER, GREATER_EQUAL, NOT_EQUAL, EQUAL,
                                  LESS_EQUAL, LESS, DUMMY,DUMMY,DUMMY,DUMMY,
                                  DUMMY, DUMMY, DUMMY, DUMMY, DUMMY, DUMMY,
                                  DUMMY, DBL_OR, DBL_AND};
-    if (*exp == NULL)
-        return;
-
-    if ((*exp)->type == BOOLEAN_OP)
+    COND_EXPR *res=0;
+    if (type == BOOLEAN_OP)
     {
-        switch ((*exp)->expr.boolExpr.op)
+        switch (expr.boolExpr.op)
         {
             case LESS_EQUAL: case LESS: case EQUAL:
             case NOT_EQUAL: case GREATER: case GREATER_EQUAL:
-                (*exp)->expr.boolExpr.op = invCondOp[(*exp)->expr.boolExpr.op];
-                break;
+                res = this->clone();
+                res->expr.boolExpr.op = invCondOp[expr.boolExpr.op];
+                return res;
 
             case AND: case OR: case XOR: case NOT: case ADD:
             case SUB: case MUL: case DIV: case SHR: case SHL: case MOD:
-                *exp = COND_EXPR::unary (NEGATION, *exp);
-                break;
+                return COND_EXPR::unary (NEGATION, this->clone());
 
             case DBL_AND: case DBL_OR:
-                (*exp)->expr.boolExpr.op = invCondOp[(*exp)->expr.boolExpr.op];
-                inverseCondOp (&(*exp)->expr.boolExpr.lhs);
-                inverseCondOp (&(*exp)->expr.boolExpr.rhs);
-                break;
+                res = this->clone();
+                res->expr.boolExpr.op = invCondOp[expr.boolExpr.op];
+                res->expr.boolExpr.lhs=expr.boolExpr.lhs->inverse ();
+                res->expr.boolExpr.rhs=expr.boolExpr.rhs->inverse ();
+                return res;
         } /* eos */
 
     }
-    else if ((*exp)->type == NEGATION) //TODO: memleak here
-        *exp = (*exp)->expr.unaryExp;
-
+    else if (type == NEGATION) //TODO: memleak here
+    {
+        return expr.unaryExp->clone();
+    }
+    return this->clone();
     /* other types are left unmodified */
 }
-
 
 /* Returns the string that represents the procedure call of tproc (ie. with
  * actual parameters) */
@@ -370,8 +355,10 @@ char *writeJcond (HLTYPE h, Function * pProc, Int *numLoc)
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
     strcat (buf, "if ");
-    inverseCondOp (&h.oper.exp);
-    std::string e = walkCondExpr (h.oper.exp, pProc, numLoc);
+    COND_EXPR *inverted=h.expr()->inverse();
+    //inverseCondOp (&h.exp);
+    std::string e = walkCondExpr (inverted, pProc, numLoc);
+    delete inverted;
     strcat (buf, e.c_str());
     strcat (buf, " {\n");
     return (buf);
@@ -386,60 +373,65 @@ char *writeJcondInv (HLTYPE h, Function * pProc, Int *numLoc)
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
     strcat (buf, "if ");
-    std::string e = walkCondExpr (h.oper.exp, pProc, numLoc);
+    std::string e = walkCondExpr (h.expr(), pProc, numLoc);
     strcat (buf, e.c_str());
     strcat (buf, " {\n");
     return (buf);
 }
 
+string AssignType::writeOut(Function *pProc, Int *numLoc)
+{
+    ostringstream ostr;
+    ostr << walkCondExpr (lhs, pProc, numLoc);
+    ostr << " = ";
+    ostr << walkCondExpr (rhs, pProc, numLoc);
+    ostr << ";\n";
+    return ostr.str();
+}
+string CallType::writeOut(Function *pProc, Int *numLoc)
+{
+    ostringstream ostr;
+    ostr << writeCall (proc, args, pProc,numLoc);
+    ostr << ";\n";
+    return ostr.str();
+}
+string ExpType::writeOut(Function *pProc, Int *numLoc)
+{
+    return walkCondExpr (v, pProc, numLoc);
+}
 
 /* Returns a string with the contents of the current high-level icode.
  * Note: this routine does not output the contens of HLI_JCOND icodes.  This is
  * 		 done in a separate routine to be able to support the removal of
  *		 empty THEN clauses on an if..then..else.	*/
-char *write1HlIcode (HLTYPE h, Function * pProc, Int *numLoc)
+string HLTYPE::write1HlIcode (Function * pProc, Int *numLoc)
 {
-    std::string e;
-
-    memset (buf, ' ', sizeof(buf));
-    buf[0] = '\0';
-    switch (h.opcode) {
+    string e;
+    ostringstream ostr;
+    HlTypeSupport *p = get();
+    switch (opcode)
+    {
         case HLI_ASSIGN:
-            e = walkCondExpr (h.oper.asgn.lhs, pProc, numLoc);
-            strcat (buf, e.c_str());
-            strcat (buf, " = ");
-            e = walkCondExpr (h.oper.asgn.rhs, pProc, numLoc);
-            strcat (buf, e.c_str());
-            strcat (buf, ";\n");
-            break;
+            return p->writeOut(pProc,numLoc);
         case HLI_CALL:
-            e = writeCall (h.oper.call.proc, h.oper.call.args, pProc,
-                                         numLoc);
-            strcat (buf, e.c_str());
-            strcat (buf, ";\n");
-            break;
+            return p->writeOut(pProc,numLoc);
         case HLI_RET:
-            e = walkCondExpr (h.oper.exp, pProc, numLoc);
+            e = p->writeOut(pProc,numLoc);
             if (! e.empty())
-            {
-                strcat (buf, "return (");
-                strcat (buf, e.c_str());
-                strcat (buf, ");\n");
-            }
+                ostr << "return (" << e << ");\n";
             break;
         case HLI_POP:
-            strcat (buf, "HLI_POP ");
-            e = walkCondExpr (h.oper.exp, pProc, numLoc);
-            strcat (buf, e.c_str());
-            strcat (buf, "\n");
+            ostr << "HLI_POP ";
+            ostr << p->writeOut(pProc,numLoc);
+            ostr << "\n";
             break;
-        case HLI_PUSH:    strcat (buf, "HLI_PUSH ");
-            e = walkCondExpr (h.oper.exp, pProc, numLoc);
-            strcat (buf, e.c_str());
-            strcat (buf, "\n");
+        case HLI_PUSH:
+            ostr << "HLI_PUSH ";
+            ostr << p->writeOut(pProc,numLoc);
+            ostr << "\n";
             break;
     }
-    return (buf);
+    return ostr.str();
 }
 
 
@@ -502,32 +494,10 @@ void ICODE::writeDU(Int idx)
 
     /* For HLI_CALL, print # parameter bytes */
     if (ic.hl.opcode == HLI_CALL)
-        printf ("# param bytes = %d\n", ic.hl.oper.call.args->cb);
+        printf ("# param bytes = %d\n", ic.hl.call.args->cb);
     printf ("\n");
 }
 
 
-/* Frees the storage allocated to h->hlIcode */
-void freeHlIcode (ICODE * icode, Int numIcodes)
-{
-    Int i;
-    HLTYPE h;
 
-    for (i = 0; i < numIcodes; i++)
-    {
-        h = icode[i].ic.hl;
-        switch (h.opcode)
-        {
-            case HLI_ASSIGN:
-                h.oper.asgn.lhs->release();
-                h.oper.asgn.rhs->release();
-                break;
-            case HLI_POP:
-            case HLI_PUSH:
-            case HLI_JCOND:
-                h.oper.exp->release();
-                break;
-        }
-    }
-}
 

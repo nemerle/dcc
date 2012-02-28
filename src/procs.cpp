@@ -106,13 +106,13 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     uint8_t regL, regH;		/* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
-    tproc = ticode->ic.hl.oper.call.proc;
+    tproc = ticode->ic.hl.call.proc;
     tproc->flg |= REG_ARGS;
 
     /* Get registers and index into target procedure's local list */
-    ps = ticode->ic.hl.oper.call.args;
+    ps = ticode->ic.hl.call.args;
     ts = &tproc->args;
-    lhs = picode->ic.hl.oper.asgn.lhs;
+    lhs = picode->ic.hl.asgn.lhs;
     type = lhs->expr.ident.idType;
     if (type == REGISTER)
     {
@@ -187,7 +187,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     /* Do ps (actual arguments) */
     STKSYM newsym;
     sprintf (newsym.name, "arg%ld", ps->sym.size());
-    newsym.actual = picode->ic.hl.oper.asgn.rhs;
+    newsym.actual = picode->ic.hl.asgn.rhs;
     newsym.regs = lhs;
     /* Mask off high and low register(s) in picode */
     switch (type) {
@@ -211,27 +211,14 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
 }
 
 
-/* Allocates num arguments in the actual argument list of the current
- * icode picode.	*/
-/** NOTE: this function is not used ****/
-void allocStkArgs (ICODE *picode, Int num)
-{
-    STKFRAME * ps;
-    ps = picode->ic.hl.oper.call.args;
-    ps->numArgs = num;
-    ps->sym.resize(num);
-}
-
-
-/* Inserts the new expression (ie. the actual parameter) on the argument
+/** Inserts the new expression (ie. the actual parameter) on the argument
  * list.
- * Returns: TRUE if it was a near call that made use of a segment register.
- *			FALSE elsewhere	*/
-boolT newStkArg (ICODE *picode, COND_EXPR *exp, llIcode opcode, Function * pproc)
+ * @return TRUE if it was a near call that made use of a segment register.
+ *         FALSE elsewhere
+*/
+bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
 {
-    STKFRAME * ps;
     byte regi;
-
     /* Check for far procedure call, in which case, references to segment
          * registers are not be considered another parameter (i.e. they are
          * long references to another segment) */
@@ -249,23 +236,20 @@ boolT newStkArg (ICODE *picode, COND_EXPR *exp, llIcode opcode, Function * pproc
     }
 
     /* Place register argument on the argument list */
-    ps = picode->ic.hl.oper.call.args;
     STKSYM newsym;
     newsym.actual = exp;
-    ps->sym.push_back(newsym);
-    ps->numArgs++;
+    args->sym.push_back(newsym);
+    args->numArgs++;
     return false;
 }
 
 
 /* Places the actual argument exp in the position given by pos in the
  * argument list of picode.	*/
-void placeStkArg (ICODE *picode, COND_EXPR *exp, Int pos)
-{ STKFRAME * ps;
-
-    ps = picode->ic.hl.oper.call.args;
-    ps->sym[pos].actual = exp;
-    sprintf (ps->sym[pos].name, "arg%ld", pos);
+void CallType::placeStkArg (COND_EXPR *exp, Int pos)
+{
+    args->sym[pos].actual = exp;
+    sprintf (args->sym[pos].name, "arg%ld", pos);
 }
 
 

@@ -106,9 +106,9 @@ public:
     void markImpure();
     void findImmedDom();
     void FollowCtrl(CALL_GRAPH *pcallGraph, STATE *pstate);
-    void process_operands(ICODE *pIcode, STATE *pstate);
-    boolT process_JMP(ICODE *pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
-    boolT process_CALL(ICODE *pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
+    void process_operands(ICODE &pIcode, STATE *pstate);
+    boolT process_JMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
+    boolT process_CALL(ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
     void displayCFG();
     void freeCFG();
     void codeGen(std::ostream &fs);

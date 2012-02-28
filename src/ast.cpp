@@ -578,7 +578,7 @@ hlType expType (const COND_EXPR *expr, Function * pproc)
 /* Removes the register from the tree.  If the register was part of a long
  * register (eg. dx:ax), the node gets transformed into an integer register
  * node.        */
-void removeRegFromLong (byte regi, LOCAL_ID *locId, COND_EXPR *tree)
+void HlTypeSupport::performLongRemoval (byte regi, LOCAL_ID *locId, COND_EXPR *tree)
 {
     IDENTTYPE* ident;     	/* ptr to an identifier */
     byte otherRegi;         /* high or low part of long register */
@@ -621,7 +621,6 @@ static std::string getString (Int offset)
 
 
 /* Walks the conditional expression tree and returns the result on a string */
-// TODO: use string stream here
 string walkCondExpr (const COND_EXPR* expr, Function * pProc, Int* numLoc)
 {
     int16 off;              /* temporal - for OTHER */

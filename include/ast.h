@@ -23,10 +23,6 @@ static const condOp condOpJCond[12] = {LESS, LESS_EQUAL, GREATER_EQUAL, GREATER,
                                  EQUAL, NOT_EQUAL, LESS, GREATER_EQUAL,
                                  LESS_EQUAL, GREATER, GREATER_EQUAL, LESS};
 
-static const condOp invCondOpJCond[12] = {GREATER_EQUAL, GREATER, LESS, LESS_EQUAL,
-                                    NOT_EQUAL, EQUAL, GREATER_EQUAL, LESS,
-                                    GREATER, LESS_EQUAL, LESS, GREATER_EQUAL};
-
 struct Function;
 struct STKFRAME;
 struct LOCAL_ID;
@@ -79,6 +75,7 @@ public:
         memset(&expr,0,sizeof(_exprNode));
     }
 public:
+    COND_EXPR *inverse(); // return new COND_EXPR that is invarse of this
 };
 
 /* Sequence of conditional expression data type */

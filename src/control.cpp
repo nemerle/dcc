@@ -526,9 +526,7 @@ void Function::compoundCond()
                 /* Construct compound DBL_OR expression */
                 picode = &pbb->back();
                 ticode = &t->back();
-                exp = COND_EXPR::boolOp (picode->ic.hl.oper.exp,
-                                         ticode->ic.hl.oper.exp, DBL_OR);
-                picode->ic.hl.oper.exp = exp;
+                picode->ic.hl.expr(COND_EXPR::boolOp (picode->ic.hl.expr(), ticode->ic.hl.expr(), DBL_OR));
 
                 /* Replace in-edge to obb from t to pbb */
                 {
@@ -564,10 +562,11 @@ void Function::compoundCond()
                 picode = &pbb->back();
                 ticode = &t->back();
 
-                inverseCondOp (&picode->ic.hl.oper.exp);
-                exp = COND_EXPR::boolOp (picode->ic.hl.oper.exp,
-                                         ticode->ic.hl.oper.exp, DBL_AND);
-                picode->ic.hl.oper.exp = exp;
+                COND_EXPR *oldexpr=picode->ic.hl.expr();
+                picode->ic.hl.expr(picode->ic.hl.expr()->inverse());
+                delete oldexpr;
+
+                picode->ic.hl.expr(COND_EXPR::boolOp (picode->ic.hl.expr(), ticode->ic.hl.expr(), DBL_AND));
 
                 /* Replace in-edge to obb from t to pbb */
                 auto iter=std::find(obb->inEdges.begin(),obb->inEdges.end(),t);
@@ -601,10 +600,7 @@ void Function::compoundCond()
                 /* Construct compound DBL_AND expression */
                 picode = &pbb->back();
                 ticode = &t->back();
-
-                exp = COND_EXPR::boolOp (picode->ic.hl.oper.exp,
-                                         ticode->ic.hl.oper.exp, DBL_AND);
-                picode->ic.hl.oper.exp = exp;
+                picode->ic.hl.expr(COND_EXPR::boolOp (picode->ic.hl.expr(),ticode->ic.hl.expr(), DBL_AND));
 
                 /* Replace in-edge to obb from e to pbb */
                 auto iter = std::find(obb->inEdges.begin(),obb->inEdges.end(),e);
@@ -636,10 +632,11 @@ void Function::compoundCond()
                 /* Construct compound DBL_OR expression */
                 picode = &pbb->back();
                 ticode = &t->back();
-                inverseCondOp (&picode->ic.hl.oper.exp);
-                exp = COND_EXPR::boolOp (picode->ic.hl.oper.exp,
-                                         ticode->ic.hl.oper.exp, DBL_OR);
-                picode->ic.hl.oper.exp = exp;
+                COND_EXPR *oldexp=picode->ic.hl.expr();
+                picode->ic.hl.expr(picode->ic.hl.expr()->inverse());
+                delete oldexp;
+                picode->ic.hl.expr(COND_EXPR::boolOp (picode->ic.hl.expr(), ticode->ic.hl.expr(), DBL_OR));
+                //picode->ic.hl.expr() = exp;
 
                 /* Replace in-edge to obb from e to pbb */
                 auto iter = std::find(obb->inEdges.begin(),obb->inEdges.end(),e);

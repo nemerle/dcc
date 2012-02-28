@@ -160,9 +160,14 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
                 /* Condition needs to be inverted if the loop body is along
                  * the THEN path of the header node */
                 if (edges[ELSE].BBptr->dfsLastNum == loopFollow)
-                    inverseCondOp (&picode->ic.hl.oper.exp);
                 {
-                    string e=walkCondExpr (picode->ic.hl.oper.exp, pProc, numLoc);
+                    COND_EXPR *old_expr=picode->ic.hl.expr();
+                    string e=walkCondExpr (old_expr, pProc, numLoc);
+                    picode->ic.hl.expr(picode->ic.hl.expr()->inverse());
+                    delete old_expr;
+                }
+                {
+                    string e=walkCondExpr (picode->ic.hl.expr(), pProc, numLoc);
                     cCode.appendCode( "\n%swhile (%s) {\n", indent(indLevel),e.c_str());
                 }
                 picode->invalidate();
@@ -228,7 +233,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
             if (picode->ic.hl.opcode != HLI_JCOND)
                 reportError (REPEAT_FAIL);
             {
-                string e=walkCondExpr (picode->ic.hl.oper.exp, pProc, numLoc);
+                string e=walkCondExpr (picode->ic.hl.expr(), pProc, numLoc);
                 cCode.appendCode( "%s} while (%s);\n", indent(indLevel),e.c_str());
             }
         }
@@ -327,9 +332,6 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
  *		 lev: indentation level - used for formatting.	*/
 void BB::writeBB(Int lev, Function * pProc, Int *numLoc)
 {
-    Int	i, last;
-    char *line;           /* Pointer to the HIGH-LEVEL line   */
-
     /* Save the index into the code table in case there is a later goto
   * into this instruction (first instruction of the BB) */
     front().codeIdx = nextBundleIdx (&cCode.code);
@@ -342,10 +344,10 @@ void BB::writeBB(Int lev, Function * pProc, Int *numLoc)
     {
         if ((hli->type == HIGH_LEVEL) && (hli->invalid == FALSE))
         {
-            line = write1HlIcode (hli->ic.hl, pProc, numLoc);
-            if (line[0] != '\0')
+            std::string line = hli->ic.hl.write1HlIcode(pProc, numLoc);
+            if (!line.empty())
             {
-                cCode.appendCode( "%s%s", indent(lev), line);
+                cCode.appendCode( "%s%s", indent(lev), line.c_str());
                 stats.numHLIcode++;
             }
             if (option.verbose)

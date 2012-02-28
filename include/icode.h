@@ -253,20 +253,92 @@ struct DU
 
 
 struct COND_EXPR;
+struct HlTypeSupport
+{
+    //hlIcode              opcode;    /* hlIcode opcode           */
+    virtual bool        removeRegFromLong(byte regi, LOCAL_ID *locId)=0;
+    virtual std::string writeOut(Function *pProc, Int *numLoc)=0;
+protected:
+    void performLongRemoval (byte regi, LOCAL_ID *locId, COND_EXPR *tree);
+};
+
+struct CallType : public HlTypeSupport
+{
+    //for HLI_CALL
+    Function *      proc;
+    STKFRAME *      args;   // actual arguments
+    void allocStkArgs (Int num);
+    bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc);
+    void placeStkArg(COND_EXPR *exp, Int pos);
+public:
+    bool removeRegFromLong(byte regi, LOCAL_ID *locId)
+    {
+        printf("CallType : removeRegFromLong not supproted");
+        return false;
+    }
+    std::string writeOut(Function *pProc, Int *numLoc);
+};
+struct AssignType : public HlTypeSupport
+{
+    /* for HLI_ASSIGN */
+    COND_EXPR    *lhs;
+    COND_EXPR    *rhs;
+    bool removeRegFromLong(byte regi, LOCAL_ID *locId)
+    {
+        performLongRemoval(regi,locId,lhs);
+        return true;
+    }
+    std::string writeOut(Function *pProc, Int *numLoc);
+};
+struct ExpType : public HlTypeSupport
+{
+    /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
+    COND_EXPR    *v;
+    bool removeRegFromLong(byte regi, LOCAL_ID *locId)
+    {
+        performLongRemoval(regi,locId,v);
+        return true;
+    }
+    std::string writeOut(Function *pProc, Int *numLoc);
+};
+
 struct HLTYPE
 {
     hlIcode              opcode;    /* hlIcode opcode           */
-    union {                         /* different operands       */
-        struct {                    /* for HLI_ASSIGN			*/
-            COND_EXPR    *lhs;
-            COND_EXPR    *rhs;
-        }                asgn;
-        COND_EXPR        *exp;      /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
-        struct {					/* for HLI_CALL				*/
-            Function     *proc;
-            STKFRAME *args;	/* actual arguments			*/
-        } call;
-    } oper;      /* operand                  */
+    ExpType         exp;      /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
+    AssignType      asgn;
+    CallType        call;
+    HlTypeSupport *get()
+    {
+        switch(opcode)
+        {
+        case HLI_ASSIGN: return &asgn;
+        case HLI_RET:
+        case HLI_POP:
+        case HLI_PUSH:   return &exp;
+        case HLI_CALL:   return &call;
+        default:
+            return 0;
+        }
+    }
+
+    void expr(COND_EXPR *e) { exp.v=e;}
+        COND_EXPR * expr() { return exp.v;}
+    void set(hlIcode i,COND_EXPR *e)
+    {
+        assert(exp.v==0);
+        opcode=i;
+        exp.v=e;
+    }
+    void set(COND_EXPR *l,COND_EXPR *r)
+    {
+        opcode = HLI_ASSIGN;
+        assert((asgn.lhs==0) and (asgn.rhs==0)); //prevent memory leaks
+        asgn.lhs=l;
+        asgn.rhs=r;
+    }
+public:
+    std::string write1HlIcode(Function *pProc, Int *numLoc);
 } ;
 /* LOW_LEVEL icode operand record */
 struct LLOperand //: public llvm::MCOperand
@@ -430,6 +502,10 @@ struct ICODE
 public:
     bool removeDefRegi(byte regi, Int thisDefIdx, LOCAL_ID *locId);
     void checkHlCall();
+    bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc)
+    {
+        return ic.hl.call.newStkArg(exp,opcode,pproc);
+    }
 };
 
 // This is the icode array object.
