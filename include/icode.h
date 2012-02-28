@@ -247,17 +247,6 @@ struct DU
     byte   u;
 };
 
-/* Def/Use of registers and stack variables */
-struct DU_ICODE
-{
-    std::bitset<32> def;        // For Registers: position in bitset is reg index
-    //dword	def;		// For Registers: position in dword is reg index
-    //dword	def;		// For Registers: position in dword is reg index
-    std::bitset<32>	use;	// For Registers: position in dword is reg index
-    std::bitset<32> lastDefRegi;// Bit set if last def of this register in BB
-};
-
-
 /* Definition-use chain for level 1 (within a basic block) */
 #define MAX_REGS_DEF	2		/* 2 regs def'd for long-reg vars */
 #define MAX_USES		5
@@ -347,6 +336,13 @@ struct LLInst : public llvm::MCInst
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
 struct ICODE
 {
+    /* Def/Use of registers and stack variables */
+    struct DU_ICODE
+    {
+        std::bitset<32> def;        // For Registers: position in bitset is reg index
+        std::bitset<32> use;	// For Registers: position in dword is reg index
+        std::bitset<32> lastDefRegi;// Bit set if last def of this register in BB
+    };
     struct DU1
     {
         struct DefUse

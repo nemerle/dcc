@@ -533,8 +533,8 @@ void Function::genDU1 ()
 
 /* Substitutes the rhs (or lhs if rhs not possible) of ticode for the rhs
  * of picode. */
-static void forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, ICODE * picode,
-                         ICODE * ticode, LOCAL_ID *locsym, Int &numHlIcodes)
+static void forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode,
+                         iICODE ticode, LOCAL_ID *locsym, Int &numHlIcodes)
 {
     boolT res;
 
@@ -688,15 +688,15 @@ void Function::findExps()
 {
     Int i, k, numHlIcodes;
     iICODE lastInst,
-            picode, /* Current icode                            */
-            ticode;        /* Target icode                             */
-    BB * pbb;         /* Current and next basic block             */
+            picode,     // Current icode                            */
+            ticode;     // Target icode                             */
+    BB * pbb;           // Current and next basic block             */
     boolT res;
-    COND_EXPR *exp,       /* expression pointer - for HLI_POP and HLI_CALL    */
-            *lhs;		/* exp ptr for return value of a HLI_CALL		*/
-    //STKFRAME * args;       /* pointer to arguments - for HLI_CALL          */
-    byte regi, regi2;		/* register(s) to be forward substituted	*/
-    ID *retVal;			/* function return value 					*/
+    COND_EXPR *exp,     // expression pointer - for HLI_POP and HLI_CALL    */
+            *lhs;	// exp ptr for return value of a HLI_CALL		*/
+    //STKFRAME * args;  // pointer to arguments - for HLI_CALL          */
+    byte regi;		// register(s) to be forward substituted	*/
+    ID *retVal;         // function return value
 
     /* Initialize expression stack */
     g_exp_stk.init();
@@ -745,7 +745,7 @@ void Function::findExps()
                                 case HLI_ASSIGN:
                                     forwardSubs (picode->ic.hl.oper.asgn.lhs,
                                                  picode->ic.hl.oper.asgn.rhs,
-                                                 &(*picode), &(*ticode), &localId,
+                                                 picode, ticode, &localId,
                                                  numHlIcodes);
                                     break;
 
@@ -763,7 +763,7 @@ void Function::findExps()
                                     break;
 
                                 case HLI_CALL:    /* register arguments */
-                                    newRegArg (&(*picode), &(*ticode));
+                                    newRegArg (picode, ticode);
                                     picode->invalidate();
                                     numHlIcodes--;
                                     break;
@@ -782,7 +782,7 @@ void Function::findExps()
                             switch (ticode->ic.hl.opcode) {
                             case HLI_ASSIGN:
                                 forwardSubs (picode->ic.hl.oper.exp, exp,
-                                             &(*picode), &(*ticode), &localId,
+                                             picode, ticode, &localId,
                                              numHlIcodes);
                                 break;
 
@@ -822,7 +822,7 @@ void Function::findExps()
                                                       &ticode->ic.hl.oper.asgn.lhs,
                                                       picode->ic.hl.oper.call.proc->retVal.id.regi,
                                                       &localId);
-                                /***  HERE missing: 2 regs ****/
+                                /*** TODO: HERE missing: 2 regs ****/
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
@@ -899,7 +899,7 @@ void Function::findExps()
                                     break;
 
                                 case HLI_CALL:    /* register arguments */
-                                    newRegArg ( &(*picode), &(*ticode));
+                                    newRegArg ( picode, ticode);
                                     picode->invalidate();
                                     numHlIcodes--;
                                     break;

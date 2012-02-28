@@ -118,7 +118,7 @@ public:
     void structLoops(derSeq *derivedG);
     void buildCFG();
     void controlFlowAnalysis();
-    void newRegArg(ICODE *picode, ICODE *ticode);
+    void newRegArg(iICODE picode, iICODE ticode);
 protected:
     // TODO: replace those with friend visitor ?
     void propLongReg(Int loc_ident_idx, const ID &pLocId);

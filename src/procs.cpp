@@ -94,7 +94,7 @@ void CALL_GRAPH::write()
 /* Updates the argument table by including the register(s) (ie. lhs of
  * picode) and the actual expression (ie. rhs of picode).
  * Note: register(s) are only included once in the table.   */
-void Function::newRegArg(ICODE *picode, ICODE *ticode)
+void Function::newRegArg(iICODE picode, iICODE ticode)
 {
     COND_EXPR *lhs;
     STKFRAME * ps, *ts;
