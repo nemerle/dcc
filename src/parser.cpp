@@ -154,8 +154,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         if (Icode.end()!=labLoc)
         {   /* Synthetic jump */
             _Icode.type = LOW_LEVEL;
-            _Icode.ic.ll.opcode = iJMP;
-            _Icode.ic.ll.flg = I | SYNTHETIC | NO_OPS;
+            _Icode.ic.ll.set(iJMP,I | SYNTHETIC | NO_OPS);
             _Icode.ic.ll.src.SetImmediateOp(labLoc->GetLlLabel());
             _Icode.ic.ll.label = SynthLab++;
         }
@@ -882,6 +881,7 @@ static void setBits(int16 type, dword start, dword len)
 
 /* DU bit definitions for each reg value - including index registers */
 std::bitset<32> duReg[] = { 0x00,
+                  //AH AL . . AX, BH
                   0x11001, 0x22002, 0x44004, 0x88008, /* word regs    */
                   0x10, 0x20, 0x40, 0x80,
                   0x100, 0x200, 0x400, 0x800,         /* seg regs     */

@@ -110,6 +110,7 @@ static BB * Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function *
     Function *getParent()       { return Parent; }
     void writeBB(Int lev, Function *pProc, Int *numLoc);
     BB *rmJMP(Int marker, BB *pBB);
+    void genDU1();
 private:
     Function *Parent;
 

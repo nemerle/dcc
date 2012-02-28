@@ -273,14 +273,15 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
     /* liveOut for this procedure */
     liveOut = in_liveOut;
 
-    change = TRUE;
+    change = true;
     while (change)
     {
         /* Process nodes in reverse postorder order */
-        change = FALSE;
-        for (i = numBBs; i > 0; i--)
+        change = false;
+        //for (i = numBBs; i > 0; i--)
+        for(auto iBB=m_dfsLast.rbegin(); iBB!=m_dfsLast.rend(); ++iBB)
         {
-            pbb = m_dfsLast[i-1];
+            pbb = *iBB;//m_dfsLast[i-1];
             if (pbb->flg & INVALID_BB)		/* Do not process invalid BBs */
                 continue;
 
@@ -361,7 +362,7 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
 
             /* Check if live sets have been modified */
             if ((prevLiveIn != pbb->liveIn) || (prevLiveOut != pbb->liveOut))
-                change = TRUE;
+                change = true;
         }
     }
 
@@ -382,7 +383,132 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
     }
 }
 
+void BB::genDU1()
+{
+    byte regi;            /* Register that was defined */
+    Int k, defRegIdx, useIdx;
+    iICODE picode, ticode,lastInst;
+    BB *tbb;         /* Target basic block */
+    bool res;
+    //COND_EXPR *e
+    /* Process each register definition of a HIGH_LEVEL icode instruction.
+     * Note that register variables should not be considered registers.
+     */
+    assert(0!=Parent);
+    lastInst = this->end2();
+    for (picode = this->begin2(); picode != lastInst; picode++)
+    {
+        if (picode->type != HIGH_LEVEL)
+            continue;
+        regi = 0;
+        defRegIdx = 0;
+        // foreach defined register
+        for (k = 0; k < INDEXBASE; k++)
+        {
+            if (not picode->du.def.test(k))
+                continue;
+            regi = (byte)(k + 1);       /* defined register */
+            picode->du1.regi[defRegIdx] = regi;
 
+            /* Check remaining instructions of the BB for all uses
+             * of register regi, before any definitions of the
+             * register */
+            if ((regi == rDI) && (flg & DI_REGVAR))
+                continue;
+            if ((regi == rSI) && (flg & SI_REGVAR))
+                continue;
+            if (distance(picode,lastInst)>1) /* several instructions */
+            {
+                useIdx = 0;
+                for (auto ricode = ++iICODE(picode); ricode != lastInst; ricode++)
+                {
+                    ticode=ricode;
+                    if (ricode->type != HIGH_LEVEL) // Only check uses of HIGH_LEVEL icodes
+                        continue;
+                    /* if used, get icode index */
+                    if ((ricode->du.use & duReg[regi]).any())
+                        picode->du1.recordUse(defRegIdx,ricode);
+                    /* if defined, stop finding uses for this reg */
+                    if ((ricode->du.def & duReg[regi]).any())
+                        break;
+                }
+
+                /* Check if last definition of this register */
+                if ((not (ticode->du.def & duReg[regi]).any()) and (this->liveOut & duReg[regi]).any())
+                    picode->du.lastDefRegi |= duReg[regi];
+            }
+            else		/* only 1 instruction in this basic block */
+            {
+                /* Check if last definition of this register */
+                if ((this->liveOut & duReg[regi]).any())
+                    picode->du.lastDefRegi |= duReg[regi];
+            }
+
+            /* Find target icode for HLI_CALL icodes to procedures
+             * that are functions.  The target icode is in the
+             * next basic block (unoptimized code) or somewhere else
+             * on optimized code. */
+            if ((picode->ic.hl.opcode == HLI_CALL) &&
+                    (picode->ic.hl.oper.call.proc->flg & PROC_IS_FUNC))
+            {
+                tbb = this->edges[0].BBptr;
+                for (ticode = tbb->begin2(); ticode != tbb->end2(); ticode++)
+                {
+                    if (ticode->type != HIGH_LEVEL)
+                        continue;
+                    /* if used, get icode index */
+                    if ((ticode->du.use & duReg[regi]).any())
+                        picode->du1.recordUse(defRegIdx,ticode);
+                    /* if defined, stop finding uses for this reg */
+                    if ((ticode->du.def & duReg[regi]).any())
+                        break;
+                }
+
+                /* if not used in this basic block, check if the
+                 * register is live out, if so, make it the last
+                 * definition of this register */
+                if ( picode->du1.used(defRegIdx) && (tbb->liveOut & duReg[regi]).any())
+                    picode->du.lastDefRegi |= duReg[regi];
+            }
+
+            /* If not used within this bb or in successors of this
+             * bb (ie. not in liveOut), then register is useless,
+             * thus remove it.  Also check that this is not a return
+             * from a library function (routines such as printf
+             * return an integer, which is normally not taken into
+             * account by the programmer). 	*/
+            if (picode->valid() and not picode->du1.used(defRegIdx) and
+                (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
+                (not ((picode->ic.hl.opcode == HLI_CALL) &&
+                (picode->ic.hl.oper.call.proc->flg & PROC_ISLIB))))
+            {
+                if (! (this->liveOut & duReg[regi]).any())	/* not liveOut */
+                {
+                    res = picode->removeDefRegi (regi, defRegIdx+1,&Parent->localId);
+                    if (res != true)
+                    {
+                        defRegIdx++;
+                        continue;
+                    }
+
+                    /* Backpatch any uses of this instruction, within
+                     * the same BB, if the instruction was invalidated */
+                    for (auto ticode = riICODE(picode); ticode != this->rend2(); ticode++)
+                    {
+                        ticode->du1.remove(0,picode);
+                    }
+                }
+                else		/* liveOut */
+                    picode->du.lastDefRegi |= duReg[regi];
+            }
+            defRegIdx++;
+
+            /* Check if all defined registers have been processed */
+            if ((defRegIdx >= picode->du1.numRegsDef) || (defRegIdx == MAX_REGS_DEF))
+                break;
+        }
+    }
+}
 /* Generates the du chain of each instruction in a basic block */
 void Function::genDU1 ()
 {
@@ -395,145 +521,11 @@ void Function::genDU1 ()
 
     /* Traverse tree in dfsLast order */
     assert(m_dfsLast.size()==numBBs);
-    for (i = 0; i < numBBs; i++)
+    for(BB *pbb : m_dfsLast)
     {
-        pbb = m_dfsLast[i];
         if (pbb->flg & INVALID_BB)
             continue;
-
-        /* Process each register definition of a HIGH_LEVEL icode instruction.
-         * Note that register variables should not be considered registers.
-         */
-        lastInst = pbb->end2();
-        for (picode = pbb->begin2(); picode != lastInst; picode++)
-        {
-            if (picode->type != HIGH_LEVEL)
-                continue;
-            regi = 0;
-            defRegIdx = 0;
-            for (k = 0; k < INDEXBASE; k++)
-            {
-                if (not picode->du.def.test(k))
-                    continue;
-                regi = (byte)(k + 1);       /* defined register */
-                picode->du1.regi[defRegIdx] = regi;
-
-                /* Check remaining instructions of the BB for all uses
-                 * of register regi, before any definitions of the
-                 * register */
-                if ((regi == rDI) && (flg & DI_REGVAR))
-                    continue;
-                if ((regi == rSI) && (flg & SI_REGVAR))
-                    continue;
-                if (distance(picode,lastInst)>1) /* several instructions */
-                {
-                    useIdx = 0;
-                    for (auto ricode = ++iICODE(picode); ricode != lastInst; ricode++)
-                    {
-                        ticode=ricode;
-                        /* Only check uses of HIGH_LEVEL icodes */
-                        if (ricode->type == HIGH_LEVEL)
-                        {
-                            /* if used, get icode index */
-                            if ((ricode->du.use & duReg[regi]).any())
-                                picode->du1.idx[defRegIdx][useIdx++] = ricode->loc_ip;
-
-                            /* if defined, stop finding uses for this reg */
-                            if ((ricode->du.def & duReg[regi]).any())
-                                break;
-                        }
-                    }
-
-                    /* Check if last definition of this register */
-                    if ((not (ticode->du.def & duReg[regi]).any()) and (pbb->liveOut & duReg[regi]).any())
-                        picode->du.lastDefRegi |= duReg[regi];
-                }
-                else		/* only 1 instruction in this basic block */
-                {
-                    /* Check if last definition of this register */
-                    if ((pbb->liveOut & duReg[regi]).any())
-                        picode->du.lastDefRegi |= duReg[regi];
-                }
-
-                /* Find target icode for HLI_CALL icodes to procedures
-                                 * that are functions.  The target icode is in the
-                                 * next basic block (unoptimized code) or somewhere else
-                                 * on optimized code. */
-                if ((picode->ic.hl.opcode == HLI_CALL) &&
-                        (picode->ic.hl.oper.call.proc->flg & PROC_IS_FUNC))
-                {
-                    tbb = pbb->edges[0].BBptr;
-                    useIdx = 0;
-                    for (ticode = tbb->begin2(); ticode != tbb->end2(); ticode++)
-                    {
-                        if (ticode->type != HIGH_LEVEL)
-                            continue;
-                        /* if used, get icode index */
-                        if ((ticode->du.use & duReg[regi]).any())
-                            picode->du1.idx[defRegIdx][useIdx++] = ticode->loc_ip;
-
-                        /* if defined, stop finding uses for this reg */
-                        if ((ticode->du.def & duReg[regi]).any())
-                            break;
-                    }
-
-                    /* if not used in this basic block, check if the
-                     * register is live out, if so, make it the last
-                     * definition of this register */
-                    if ((picode->du1.idx[defRegIdx][useIdx] == 0) &&
-                            (tbb->liveOut & duReg[regi]).any())
-                        picode->du.lastDefRegi |= duReg[regi];
-                }
-
-                /* If not used within this bb or in successors of this
-                 * bb (ie. not in liveOut), then register is useless,
-                 * thus remove it.  Also check that this is not a return
-                 * from a library function (routines such as printf
-                 * return an integer, which is normally not taken into
-                 * account by the programmer). 	*/
-                if ((picode->invalid == FALSE) &&
-                    (picode->du1.idx[defRegIdx][0] == 0) &&
-                    (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
-                        //(! ((picode->ic.hl.opcode != HLI_CALL) &&
-                    (not ((picode->ic.hl.opcode == HLI_CALL) &&
-                    (picode->ic.hl.oper.call.proc->flg & PROC_ISLIB))))
-                {
-                    if (! (pbb->liveOut & duReg[regi]).any())	/* not liveOut */
-                    {
-                        res = picode->removeDefRegi (regi, defRegIdx+1,&localId);
-
-                        /* Backpatch any uses of this instruction, within
-                         * the same BB, if the instruction was invalidated */
-                        if (res == TRUE)
-                            for (auto ticode = riICODE(picode); ticode != pbb->rend2(); ticode++)
-                            {
-                                for (int n = 0; n < MAX_USES; n++)
-                                {
-                                    if (ticode->du1.idx[0][n] == picode->loc_ip)
-                                    {
-                                        if (n < MAX_USES - 1)
-                                        {
-                                            memmove (&ticode->du1.idx[0][n],
-                                                     &ticode->du1.idx[0][n+1],
-                                                     (size_t)((MAX_USES - n - 1) * sizeof(Int)));
-                                            n--;
-                                        }
-                                        ticode->du1.idx[0][MAX_USES - 1] = 0;
-                                    }
-                                }
-                            }
-                    }
-                    else		/* liveOut */
-                        picode->du.lastDefRegi |= duReg[regi];
-                }
-                defRegIdx++;
-
-                /* Check if all defined registers have been processed */
-                if ((defRegIdx >= picode->du1.numRegsDef) ||
-                        (defRegIdx == MAX_REGS_DEF))
-                    break;
-            }
-        }
+        pbb->genDU1();
     }
 
 }
@@ -605,7 +597,7 @@ static void forwardSubsLong (Int longIdx, COND_EXPR *exp, ICODE * picode,
 
 /* Returns whether the elements of the expression rhs are all x-clear from
  * instruction f up to instruction t.	*/
-static boolT xClear (COND_EXPR *rhs, iICODE f, Int t, iICODE lastBBinst, Function * pproc)
+static boolT xClear (COND_EXPR *rhs, iICODE f, iICODE t, iICODE lastBBinst, Function * pproc)
 {
     iICODE i;
     boolT res;
@@ -620,7 +612,7 @@ static boolT xClear (COND_EXPR *rhs, iICODE f, Int t, iICODE lastBBinst, Functio
         if (rhs->expr.ident.idType == REGISTER)
         {
             regi= pproc->localId.id_arr[rhs->expr.ident.idNode.regiIdx].id.regi;
-            for (i = ++iICODE(f); (i != lastBBinst) && (i->loc_ip < t); i++)
+            for (i = ++iICODE(f); (i != lastBBinst) && (i!=t); i++)
                 if ((i->type == HIGH_LEVEL) && ( not i->invalid ))
                 {
                     if ((i->du.def & duReg[regi]).any())
@@ -728,8 +720,7 @@ void Function::findExps()
                     /* Check for only one use of this register.  If this is
                      * the last definition of the register in this BB, check
                      * that it is not liveOut from this basic block */
-                    if ((picode->du1.idx[0][0] != 0) &&
-                            (picode->du1.idx[0][1] == 0))
+                    if (picode->du1.numUses(0)==1)
                     {
                         /* Check that this register is not liveOut, if it
                          * is the last definition of the register */
@@ -741,15 +732,14 @@ void Function::findExps()
                         case HLI_ASSIGN:
                             /* Replace rhs of current icode into target
                              * icode expression */
-                            ticode = Icode.begin();
-                            advance(ticode,picode->du1.idx[0][0]);
+                            ticode = picode->du1.idx[0].uses.front();
                             if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                     ((ticode->ic.hl.opcode != HLI_CALL) &&
                                      (ticode->ic.hl.opcode != HLI_RET)))
                                 continue;
 
                             if (xClear (picode->ic.hl.oper.asgn.rhs, picode,
-                                        picode->du1.idx[0][0],  lastInst, this))
+                                        picode->du1.idx[0].uses[0],  lastInst, this))
                             {
                                 switch (ticode->ic.hl.opcode) {
                                 case HLI_ASSIGN:
@@ -782,8 +772,7 @@ void Function::findExps()
                             break;
 
                         case HLI_POP:
-                            ticode = Icode.begin();
-                            advance(ticode,picode->du1.idx[0][0]);
+                            ticode = picode->du1.idx[0].uses.front();
                             if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                     ((ticode->ic.hl.opcode != HLI_CALL) &&
                                      (ticode->ic.hl.opcode != HLI_RET)))
@@ -818,8 +807,7 @@ void Function::findExps()
                             break;
 
                         case HLI_CALL:
-                            ticode = Icode.begin();
-                            advance(ticode,picode->du1.idx[0][0]);
+                            ticode = picode->du1.idx[0].uses.front();
                             switch (ticode->ic.hl.opcode) {
                             case HLI_ASSIGN:
                                 exp = COND_EXPR::idFunc (
@@ -877,19 +865,15 @@ void Function::findExps()
                 else if (picode->du1.numRegsDef == 2)   /* long regs */
                 {
                     /* Check for only one use of these registers */
-                    if ((picode->du1.idx[0][0] != 0) &&
-                            (picode->du1.idx[0][1] == 0) &&
-                            (picode->du1.idx[1][0] != 0) &&
-                            (picode->du1.idx[1][1] == 0))
+                    if ((picode->du1.numUses(0) == 1) and (picode->du1.numUses(1) == 1))
                     {
                         switch (picode->ic.hl.opcode) {
                         case HLI_ASSIGN:
                             /* Replace rhs of current icode into target
                              * icode expression */
-                            if (picode->du1.idx[0][0] == picode->du1.idx[1][0])
+                            if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                             {
-                                ticode = Icode.begin();
-                                advance(ticode,picode->du1.idx[0][0]);
+                                ticode = picode->du1.idx[0].uses.front();
                                 if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                         ((ticode->ic.hl.opcode != HLI_CALL) &&
                                          (ticode->ic.hl.opcode != HLI_RET)))
@@ -924,10 +908,9 @@ void Function::findExps()
                             break;
 
                         case HLI_POP:
-                            if (picode->du1.idx[0][0] == picode->du1.idx[1][0])
+                            if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                             {
-                                ticode = Icode.begin();
-                                advance(ticode,picode->du1.idx[0][0]);
+                                ticode = picode->du1.idx[0].uses.front();
                                 if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                         ((ticode->ic.hl.opcode != HLI_CALL) &&
                                          (ticode->ic.hl.opcode != HLI_RET)))
@@ -956,8 +939,7 @@ void Function::findExps()
                             break;
 
                         case HLI_CALL:    /* check for function return */
-                            ticode = Icode.begin();
-                            advance(ticode,picode->du1.idx[0][0]);
+                            ticode = picode->du1.idx[0].uses.front();
                             switch (ticode->ic.hl.opcode)
                             {
                             case HLI_ASSIGN:
@@ -1066,16 +1048,14 @@ void Function::findExps()
                 }
 
                 /* If we could not substitute the result of a function,
-                                 * assign it to the corresponding registers */
+                 * assign it to the corresponding registers */
                 if ((picode->ic.hl.opcode == HLI_CALL) &&
                         ((picode->ic.hl.oper.call.proc->flg & PROC_ISLIB) !=
-                         PROC_ISLIB) && (picode->du1.idx[0][0] == 0) &&
+                         PROC_ISLIB) && (not picode->du1.used(0)) &&
                         (picode->du1.numRegsDef > 0))
                 {
-                    exp = COND_EXPR::idFunc (picode->ic.hl.oper.call.proc,
-                                             picode->ic.hl.oper.call.args);
-                    lhs = COND_EXPR::idID (&picode->ic.hl.oper.call.proc->retVal,
-                                           &localId, picode/*picode->loc_ip*/);
+                    exp = COND_EXPR::idFunc (picode->ic.hl.oper.call.proc, picode->ic.hl.oper.call.args);
+                    lhs = COND_EXPR::idID (&picode->ic.hl.oper.call.proc->retVal, &localId, picode);
                     picode->setAsgn(lhs, exp);
                 }
             }

@@ -253,9 +253,8 @@ struct DU_ICODE
     std::bitset<32> def;        // For Registers: position in bitset is reg index
     //dword	def;		// For Registers: position in dword is reg index
     //dword	def;		// For Registers: position in dword is reg index
-    //dword	lastDefRegi;    // Bit set if last def of this register in BB
     std::bitset<32>	use;	// For Registers: position in dword is reg index
-    std::bitset<32> lastDefRegi;
+    std::bitset<32> lastDefRegi;// Bit set if last def of this register in BB
 };
 
 
@@ -338,6 +337,11 @@ struct LLInst : public llvm::MCInst
     {
         return (dst.regi==dest);
     }
+    void set(llIcode op,uint32_t flags)
+    {
+        opcode = op;
+        flg =flags;
+    }
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
@@ -345,16 +349,60 @@ struct ICODE
 {
     struct DU1
     {
-        Int     numRegsDef;			/* # registers defined by this inst		*/
-        byte	regi[MAX_REGS_DEF];	/* registers defined by this inst		*/
-        Int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
+        struct DefUse
+        {
+            int Reg; // used register
+            int DefLoc;
+            std::vector<std::list<ICODE>::iterator > useLoc; // use locations [MAX_USES]
+
+        };
+        struct Use
+        {
+            int Reg; // used register
+            std::vector<std::list<ICODE>::iterator> uses; // use locations [MAX_USES]
+            void removeUser(std::list<ICODE>::iterator us)
+            {
+                // ic is no no longer an user
+                auto iter=std::find(uses.begin(),uses.end(),us);
+                if(iter==uses.end())
+                    return;
+                uses.erase(iter);
+                assert("Same user more then once!" && uses.end()==std::find(uses.begin(),uses.end(),us));
+            }
+
+        };
+        Int     numRegsDef;             /* # registers defined by this inst */
+        byte	regi[MAX_REGS_DEF];	/* registers defined by this inst   */
+        Use     idx[MAX_REGS_DEF];
+        //Int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
+        bool    used(int regIdx)
+                {
+                    return not idx[regIdx].uses.empty();
+                }
+        int     numUses(int regIdx)
+                {
+                    return idx[regIdx].uses.size();
+                }
+        void recordUse(int regIdx,std::list<ICODE>::iterator location)
+                {
+                    idx[regIdx].uses.push_back(location);
+                }
+        void remove(int regIdx,int use_idx)
+                {
+                    idx[regIdx].uses.erase(idx[regIdx].uses.begin()+use_idx);
+                }
+        void remove(int regIdx,std::list<ICODE>::iterator ic)
+                {
+                    Use &u(idx[regIdx]);
+                    u.removeUser(ic);
+                }
     };
-    icodeType           type;           /* Icode type                   */
-    bool                invalid;        /* Has no HIGH_LEVEL equivalent */
-    BB			*inBB;      	/* BB to which this icode belongs */
-    DU_ICODE		du;             /* Def/use regs/vars			*/
-    DU1			du1;        	/* du chain 1					*/
-    Int			codeIdx;    	/* Index into cCode.code		*/
+    icodeType           type;           /* Icode type                       */
+    bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
+    BB			*inBB;      	/* BB to which this icode belongs   */
+    DU_ICODE		du;             /* Def/use regs/vars                */
+    DU1			du1;        	/* du chain 1                       */
+    Int			codeIdx;    	/* Index into cCode.code            */
     struct IC {         /* Different types of icodes    */
         LLInst ll;
         HLTYPE hl;  	/* For HIGH_LEVEL icodes    */
@@ -382,8 +430,9 @@ struct ICODE
     void setJCond(COND_EXPR *cexp);
     void emitGotoLabel(Int indLevel);
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
+    bool valid() {return not invalid;}
 public:
-    boolT removeDefRegi(byte regi, Int thisDefIdx, LOCAL_ID *locId);
+    bool removeDefRegi(byte regi, Int thisDefIdx, LOCAL_ID *locId);
     void checkHlCall();
 };
 

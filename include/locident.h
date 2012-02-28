@@ -101,10 +101,14 @@ struct ID
     } id;
     ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
     {
+        name[0]=0;
+        macro[0]=0;
         memset(&id,0,sizeof(id));
     }
     ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
     {
+        name[0]=0;
+        macro[0]=0;
         memset(&id,0,sizeof(id));
         loc=f;
     }

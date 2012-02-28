@@ -43,7 +43,7 @@ bool CIcodeRec::labelSrch(dword target, dword &pIndex)
     Int  i;
     iICODE location=labelSrch(target);
     if(end()==location)
-	    return false;
+            return false;
     pIndex=location->loc_ip;
     return true;
 }

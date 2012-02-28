@@ -90,19 +90,30 @@ void ICODE ::invalidate()
 }
 
 
-/* Removes the defined register regi from the lhs subtree.  If all registers
- * of this instruction are unused, the instruction is invalidated (ie.
- * removed) */
-boolT ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
+/* Removes the defined register regi from the lhs subtree.
+ * If all registers
+ * of this instruction are unused, the instruction is invalidated (ie. removed)
+ */
+bool ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
 {
     Int numDefs;
 
     numDefs = du1.numRegsDef;
+//    if (numDefs == thisDefIdx)
+//    {
+//        for ( ; numDefs > 0; numDefs--)
+//        {
+//            if ((du1.idx[numDefs-1][0] != 0)||(du.lastDefRegi.any()))
+//                break;
+//        }
+//    }
+
     if (numDefs == thisDefIdx)
     {
         for ( ; numDefs > 0; numDefs--)
         {
-            if ((du1.idx[numDefs-1][0] != 0)||(du.lastDefRegi.any()))
+
+            if (du1.used(numDefs-1)||(du.lastDefRegi[regi]))
                 break;
         }
     }
@@ -478,14 +489,12 @@ void ICODE::writeDU(Int idx)
     printf ("# regs defined = %d\n", du1.numRegsDef);
     for (i = 0; i < MAX_REGS_DEF; i++)
     {
-        if (du1.idx[i][0] != 0)
+        if (du1.used(i))
         {
             printf ("%d: du1[%d][] = ", idx, i);
-            for (j = 0; j < MAX_USES; j++)
+            for(std::list<ICODE>::iterator j : du1.idx[i].uses)
             {
-                if (du1.idx[i][j] == 0)
-                    break;
-                printf ("%d ", du1.idx[i][j]);
+                printf ("%d ", j->loc_ip);
             }
             printf ("\n");
         }

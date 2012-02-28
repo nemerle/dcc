@@ -48,18 +48,14 @@ void ICODE::setRegDU (byte regi, operDu du_in)
     case eDEF:
         du.def |= duReg[regi];
         du1.numRegsDef++;
-//        printf("%s du.def |= %x\n",__FUNCTION__,duReg[regi]);
         break;
     case eUSE:
         du.use |= duReg[regi];
-//        printf("%s du.use |= %x\n",__FUNCTION__,duReg[regi]);
         break;
     case USE_DEF:
         du.def |= duReg[regi];
-        du1.numRegsDef++;
-//        printf("%s du.def |= %x\n",__FUNCTION__,duReg[regi]);
-//        printf("%s du.use |= %x\n",__FUNCTION__,duReg[regi]);
         du.use |= duReg[regi];
+        du1.numRegsDef++;
         break;
     case NONE:    /* do nothing */
         break;
