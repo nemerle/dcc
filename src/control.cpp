@@ -15,10 +15,10 @@
 #endif
 
 //typedef struct list {
-//    Int         nodeIdx;
+//    int         nodeIdx;
 //    struct list *next;
 //} nodeList;
-typedef std::list<Int> nodeList; /* dfsLast index to the node */
+typedef std::list<int> nodeList; /* dfsLast index to the node */
 
 #define ancestor(a,b)	((a->dfsLastNum < b->dfsLastNum) && (a->dfsFirstNum < b->dfsFirstNum))
 /* there is a path on the DFST from a to b if the a was first visited in a
@@ -43,7 +43,7 @@ static boolT isBackEdge (BB * p,BB * s)
 
 /* Finds the common dominator of the current immediate dominator
  * currImmDom and its predecessor's immediate dominator predImmDom  */
-static Int commonDom (Int currImmDom, Int predImmDom, Function * pProc)
+static int commonDom (int currImmDom, int predImmDom, Function * pProc)
 {
     if (currImmDom == NO_DOM)
         return (predImmDom);
@@ -69,7 +69,7 @@ static Int commonDom (Int currImmDom, Int predImmDom, Function * pProc)
 void Function::findImmedDom ()
 {
     BB * currNode;
-    Int currIdx, j, predIdx;
+    int currIdx, j, predIdx;
 
     for (currIdx = 0; currIdx < numBBs; currIdx++)
     {
@@ -87,7 +87,7 @@ void Function::findImmedDom ()
 
 
 /* Inserts the node n to the list l. */
-static void insertList (nodeList &l, Int n)
+static void insertList (nodeList &l, int n)
 {
     l.push_back(n);
 }
@@ -95,7 +95,7 @@ static void insertList (nodeList &l, Int n)
 
 /* Returns whether or not the node n (dfsLast numbering of a basic block)
  * is on the list l. */
-static boolT inList (nodeList &l, Int n)
+static boolT inList (nodeList &l, int n)
 {
     return std::find(l.begin(),l.end(),n)!=l.end();
 }
@@ -119,7 +119,7 @@ static boolT inInt(BB * n, queue &q)
  * The follow node is the closest node to the loop. */
 static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
 {
-    Int j, succ;
+    int j, succ;
 
     head->loopFollow = MAX;
     nodeList::iterator p = loopNodes.begin();
@@ -140,9 +140,9 @@ static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
  * determines the type of loop.                     */
 static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &intNodes)
 {
-    Int i, headDfsNum, intNodeType;
+    int i, headDfsNum, intNodeType;
     nodeList loopNodes;
-    Int immedDom,     		/* dfsLast index to immediate dominator */
+    int immedDom,     		/* dfsLast index to immediate dominator */
         thenDfs, elseDfs;       /* dsfLast index for THEN and ELSE nodes */
     BB * pbb;
 
@@ -248,10 +248,10 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
     freeList(loopNodes);
 }
 
-//static void findNodesInInt (queue **intNodes, Int level, interval *Ii)
+//static void findNodesInInt (queue **intNodes, int level, interval *Ii)
 /* Recursive procedure to find nodes that belong to the interval (ie. nodes
  * from G1).                                */
-static void findNodesInInt (queue &intNodes, Int level, interval *Ii)
+static void findNodesInInt (queue &intNodes, int level, interval *Ii)
 {
     if (level == 1)
     {
@@ -271,7 +271,7 @@ void Function::structLoops(derSeq *derivedG)
     BB * intHead,      	/* interval header node         	*/
             * pred,     /* predecessor node         		*/
             * latchNode;/* latching node (in case of loops) */
-    Int i,              /* counter              			*/
+    int i,              /* counter              			*/
             level = 0;  /* derived sequence level       	*/
     interval *initInt;  /* initial interval         		*/
     queue intNodes;  	/* list of interval nodes       	*/
@@ -337,9 +337,9 @@ void Function::structLoops(derSeq *derivedG)
 
 /* Returns whether the BB indexed by s is a successor of the BB indexed by
  * h.  Note that h is a case node.                  */
-static boolT successor (Int s, Int h, Function * pProc)
+static boolT successor (int s, int h, Function * pProc)
 {
-    Int i;
+    int i;
     BB * header;
 
     header = pProc->m_dfsLast[h];
@@ -353,8 +353,8 @@ static boolT successor (Int s, Int h, Function * pProc)
 /* Recursive procedure to tag nodes that belong to the case described by
  * the list l, head and tail (dfsLast index to first and exit node of the
  * case).                               */
-static void tagNodesInCase (BB * pBB, nodeList &l, Int head, Int tail)
-{ Int current,      /* index to current node */
+static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
+{ int current,      /* index to current node */
             i;
 
     pBB->traversed = DFS_CASE;
@@ -374,9 +374,9 @@ static void tagNodesInCase (BB * pBB, nodeList &l, Int head, Int tail)
  * has a case node.                         */
 void Function::structCases()
 {
-    Int i, j;
+    int i, j;
     BB * caseHeader;       		/* case header node         */
-    Int exitNode = NO_NODE;   	/* case exit node           */
+    int exitNode = NO_NODE;   	/* case exit node           */
     nodeList caseNodes;   /* temporary: list of nodes in case */
 
     /* Linear scan of the nodes in reverse dfsLast order, searching for
@@ -417,7 +417,7 @@ void Function::structCases()
 
 /* Flags all nodes in the list l as having follow node f, and deletes all
  * nodes from the list.                         */
-static void flagNodes (nodeList &l, Int f, Function * pProc)
+static void flagNodes (nodeList &l, int f, Function * pProc)
 {
     nodeList::iterator p;
 
@@ -433,7 +433,7 @@ static void flagNodes (nodeList &l, Int f, Function * pProc)
 /* Structures if statements */
 void Function::structIfs ()
 {
-    Int curr,    				/* Index for linear scan of nodes   	*/
+    int curr,    				/* Index for linear scan of nodes   	*/
             desc,    				/* Index for descendant         		*/
             followInEdges,			/* Largest # in-edges so far 			*/
             follow;  				/* Possible follow node 				*/
@@ -491,7 +491,7 @@ void Function::structIfs ()
  * into one block with the appropriate condition */
 void Function::compoundCond()
 {
-    Int i, j, k, numOutEdges;
+    int i, j, k, numOutEdges;
     BB * pbb, * t, * e, * obb,* pred;
     ICODE * picode, * ticode;
     COND_EXPR *exp;

@@ -10,10 +10,10 @@ struct Function;
 struct SYMTABLE
 {
     std::string pSymName;              /* Ptr to symbolic name or comment */
-    dword   symOff;                 /* Symbol image offset */
+    uint32_t   symOff;                 /* Symbol image offset */
     Function *symProc;             /* Procedure pointer */
     SYMTABLE() : symOff(0),symProc(0) {}
-    SYMTABLE(dword _sym,Function *_proc) : symOff(_sym),symProc(_proc)
+    SYMTABLE(uint32_t _sym,Function *_proc) : symOff(_sym),symProc(_proc)
     {}
     bool operator == (const SYMTABLE &other) const
     {
@@ -32,6 +32,6 @@ enum tableType                     /* The table types */
 
 void    createSymTables(void);
 void    destroySymTables(void);
-boolT   readVal (std::ostringstream &symName, dword   symOff, Function *symProc);
+boolT   readVal (std::ostringstream &symName, uint32_t   symOff, Function *symProc);
 void    selectTable(tableType);     /* Select a particular table */
 

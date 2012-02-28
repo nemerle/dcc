@@ -22,7 +22,7 @@
 typedef struct HT_tag
 {
     char    htSym[SYMLEN];
-    byte    htPat[PATLEN];
+    uint8_t    htPat[PATLEN];
 } HT;
 
 /* Structure of the prototypes table. Same as the struct in parsehdr.h,
@@ -51,8 +51,8 @@ unsigned SymLen;        				/* Max size of the symbols, including null */
 FILE *f;                				/* File being read */
 static  char sSigName[100]; 			/* Full path name of .sig file */
 
-static  word    *T1base, *T2base;       /* Pointers to start of T1, T2 */
-static  word    *g;                     /* g[] */
+static  uint16_t    *T1base, *T2base;       /* Pointers to start of T1, T2 */
+static  uint16_t    *g;                     /* g[] */
 static  HT      *ht;                    /* The hash table */
 static  PH_FUNC_STRUCT *pFunc;          /* Points to the array of func names */
 static  hlType  *pArg=0;                /* Points to the array of param types */
@@ -62,8 +62,8 @@ static  int     numArg;                 /* Number of param names actually stored
 
 /* prototypes */
 void grab(int n, FILE *f);
-word readFileShort(FILE *f);
-void readFileSection(word* p, int len, FILE *f);
+uint16_t readFileShort(FILE *f);
+void readFileSection(uint16_t* p, int len, FILE *f);
 void cleanup(void);
 void checkStartup(STATE *state);
 void readProtoFile(void);
@@ -71,17 +71,17 @@ void fixNewline(char *s);
 int  searchPList(char *name);
 void checkHeap(char *msg);              /* For debugging */
 
-void fixWildCards(byte pat[]);			/* In fixwild.c */
+void fixWildCards(uint8_t pat[]);			/* In fixwild.c */
 
-static boolT locatePattern(byte *source, Int iMin, Int iMax, byte *pattern,
-                           Int iPatLen, Int *index);
+static boolT locatePattern(uint8_t *source, int iMin, int iMax, uint8_t *pattern,
+                           int iPatLen, int *index);
 
 /*  *   *   *   *   *   *   *   *   *   *   *   *   *   *   *\
 *                                                            *
 *   S t a r t   P a t t e r n s   ( V e n d o r    i d )     *
 *                                                            *
 \*  *   *   *   *   *   *   *   *   *   *   *   *   *   *   */
-static byte pattMsC5Start[] =
+static uint8_t pattMsC5Start[] =
 {
     0xB4, 0x30,         /* Mov ah, 30 */
     0xCD, 0x21,         /* int 21 (dos version number) */
@@ -90,7 +90,7 @@ static byte pattMsC5Start[] =
     0xCD, 0x20,         /* int 20 (exit) */
     0xBF                /* Mov di, DSEG */
 };
-static byte pattMsC8Start[] =
+static uint8_t pattMsC8Start[] =
 {
     0xB4, 0x30,         /* Mov ah, 30 */
     0xCD, 0x21,         /* int 21 */
@@ -101,7 +101,7 @@ static byte pattMsC8Start[] =
     0xCB,               /* retf */
     0xBF                /* mov di, DSEG */
 };
-static byte pattMsC8ComStart[] =
+static uint8_t pattMsC8ComStart[] =
 {
     0xB4, 0x30,         /* Mov ah, 30 */
     0xCD, 0x21,         /* int 21 (dos version number) */
@@ -110,7 +110,7 @@ static byte pattMsC8ComStart[] =
     0xC3,               /* ret */
     0x8C, 0xDF          /* Mov di, ds */
 };
-static byte pattBorl2Start[] =
+static uint8_t pattBorl2Start[] =
 {
     0xBA, WILD, WILD,       /* Mov dx, dseg */
     0x2E, 0x89, 0x16,       /* mov cs:[], dx */
@@ -126,7 +126,7 @@ static byte pattBorl2Start[] =
     0x89, 0x2E, WILD, WILD, /* mov [xx], bp */
     0xC7                    /* mov [xx], -1 */
 };
-static byte pattBorl3Start[] =
+static uint8_t pattBorl3Start[] =
 {
     0xBA, WILD, WILD,   	/* Mov dx, dseg */
     0x2E, 0x89, 0x16,   	/* mov cs:[], dx */
@@ -143,12 +143,12 @@ static byte pattBorl3Start[] =
     0xE8                    /* call ... */
 };
 
-static byte pattBorl4on[] =
+static uint8_t pattBorl4on[] =
 {
     0x9A, 0, 0, WILD, WILD	/* Call init (offset always 0) */
 };
 
-static byte pattBorl4Init[] =
+static uint8_t pattBorl4Init[] =
 {
     0xBA, WILD, WILD,		/* Mov dx, dseg */
     0x8E, 0xDA,         	/* mov ds, dx */
@@ -160,7 +160,7 @@ static byte pattBorl4Init[] =
     0x8C, 0xD2				/* mov dx, ss */
 };
 
-static byte pattBorl5Init[] =
+static uint8_t pattBorl5Init[] =
 {
     0xBA, WILD, WILD,		/* Mov dx, dseg */
     0x8E, 0xDA,         	/* mov ds, dx */
@@ -173,7 +173,7 @@ static byte pattBorl5Init[] =
     0x8C, 0xD2				/* mov dx, ss */
 };
 
-static byte pattBorl7Init[] =
+static uint8_t pattBorl7Init[] =
 {
     0xBA, WILD, WILD,		/* Mov dx, dseg */
     0x8E, 0xDA,         	/* mov ds, dx */
@@ -188,7 +188,7 @@ static byte pattBorl7Init[] =
 };
 
 
-static byte pattLogiStart[] =
+static uint8_t pattLogiStart[] =
 {
     0xEB, 0x04,         /* jmp short $+6 */
     WILD, WILD,         /* Don't know what this is */
@@ -197,7 +197,7 @@ static byte pattLogiStart[] =
     0x8E, 0xD8          /* mov ds, ax */
 };
 
-static byte pattTPasStart[] =
+static uint8_t pattTPasStart[] =
 {
     0xE9, 0x79, 0x2C    /* Jmp 2D7C - Turbo pascal 3.0 */
 };
@@ -212,7 +212,7 @@ static byte pattTPasStart[] =
 
 
 /* This pattern works for MS and Borland, small and tiny model */
-static byte pattMainSmall[] =
+static uint8_t pattMainSmall[] =
 {
     0xFF, 0x36, WILD, WILD,                 /* Push environment pointer */
     0xFF, 0x36, WILD, WILD,                 /* Push argv */
@@ -225,7 +225,7 @@ static byte pattMainSmall[] =
 #define OFFMAINSMALL 13
 
 /* This pattern works for MS and Borland, medium model */
-static byte pattMainMedium[] =
+static uint8_t pattMainMedium[] =
 {
     0xFF, 0x36, WILD, WILD,                 /* Push environment pointer */
     0xFF, 0x36, WILD, WILD,                 /* Push argv */
@@ -239,7 +239,7 @@ static byte pattMainMedium[] =
 #define OFFMAINMEDIUM 13
 
 /* This pattern works for MS and Borland, compact model */
-static byte pattMainCompact[] =
+static uint8_t pattMainCompact[] =
 {
     0xFF, 0x36, WILD, WILD,                 /* Push environment pointer lo */
     0xFF, 0x36, WILD, WILD,                 /* Push environment pointer hi */
@@ -254,7 +254,7 @@ static byte pattMainCompact[] =
 #define OFFMAINCOMPACT 21
 
 /* This pattern works for MS and Borland, large model */
-static byte pattMainLarge[] =
+static uint8_t pattMainLarge[] =
 {
     0xFF, 0x36, WILD, WILD,                 /* Push environment pointer lo */
     0xFF, 0x36, WILD, WILD,                 /* Push environment pointer hi */
@@ -277,7 +277,7 @@ static byte pattMainLarge[] =
 \*  *   *   *   *   *   *   *   *   *   *   *   *   *   *   */
 
 /* This pattern is for the stack check code in Microsoft compilers */
-static byte pattMsChkstk[] =
+static uint8_t pattMsChkstk[] =
 {
     0x59,					/* pop cx		*/
     0x8B, 0xDC,          	/* mov bx, sp	*/
@@ -297,7 +297,7 @@ static byte pattMsChkstk[] =
 /* This procedure is called to initialise the library check code */
 void SetupLibCheck(void)
 {
-    word w, len;
+    uint16_t w, len;
     int i;
 
     if ((f = fopen(sSigName, "rb")) == NULL)
@@ -348,7 +348,7 @@ void SetupLibCheck(void)
         printf("Expected 'T1'\n");
         exit(3);
     }
-    len = (word) (PatLen * 256 * sizeof(word));
+    len = (uint16_t) (PatLen * 256 * sizeof(uint16_t));
     w = readFileShort(f);
     if (w != len)
     {
@@ -378,7 +378,7 @@ void SetupLibCheck(void)
         printf("Expected 'gg'\n");
         exit(3);
     }
-    len = (word)(numVert * sizeof(word));
+    len = (uint16_t)(numVert * sizeof(uint16_t));
     w = readFileShort(f);
     if (w != len)
     {
@@ -403,7 +403,7 @@ void SetupLibCheck(void)
         exit(3);
     }
     w = readFileShort(f);
-    if (w != numKeys * (SymLen + PatLen + sizeof(word)))
+    if (w != numKeys * (SymLen + PatLen + sizeof(uint16_t)))
     {
         printf("Problem with size of hash table: file %d, calc %d\n", w, len);
         exit(6);
@@ -438,8 +438,8 @@ bool LibCheck(Function & pProc)
 {
     long fileOffset;
     int h, i, j, arg;
-    Int Idx;
-    byte pat[PATLEN];
+    int Idx;
+    uint8_t pat[PATLEN];
 
     if (prog.bSigs == FALSE)
     {
@@ -537,10 +537,10 @@ void grab(int n, FILE *f)
     }
 }
 
-word
+uint16_t
 readFileShort(FILE *f)
 {
-    byte b1, b2;
+    uint8_t b1, b2;
 
     if (fread(&b1, 1, 1, f) != 1)
     {
@@ -552,12 +552,12 @@ readFileShort(FILE *f)
         printf("Could not read short\n");
         exit(11);
     }
-    return (word)(b2 << 8) + (word)b1;
+    return (uint16_t)(b2 << 8) + (uint16_t)b1;
 }
 
 // Read a section of the file, considering endian issues
 void
-readFileSection(word* p, int len, FILE* f)
+readFileSection(uint16_t* p, int len, FILE* f)
 {
     for (int i=0; i < len; i += 2)
     {
@@ -566,7 +566,7 @@ readFileSection(word* p, int len, FILE* f)
 }
 
 /* The following two functions are dummies, since we don't call map() */
-void getKey(int i, byte **keys)
+void getKey(int i, uint8_t **keys)
 {
 
 }
@@ -578,16 +578,16 @@ void dispKey(int i)
 
 /* Search the source array between limits iMin and iMax for the pattern (length
     iPatLen). The pattern can contain wild bytes; if you really want to match
-    for the pattern that is used up by the WILD byte, tough - it will match with
+    for the pattern that is used up by the WILD uint8_t, tough - it will match with
     everything else as well. */
-static boolT locatePattern(byte *source, Int iMin, Int iMax, byte *pattern, Int iPatLen,
-                           Int *index)
+static boolT locatePattern(uint8_t *source, int iMin, int iMax, uint8_t *pattern, int iPatLen,
+                           int *index)
 {
-    Int i, j;
-    byte *pSrc;                             /* Pointer to start of considered source */
-    Int iLast;
+    int i, j;
+    uint8_t *pSrc;                             /* Pointer to start of considered source */
+    int iLast;
 
-    iLast = iMax - iPatLen;                 /* Last source byte to consider */
+    iLast = iMax - iPatLen;                 /* Last source uint8_t to consider */
 
     for (i=iMin; i <= iLast; i++)
     {
@@ -595,7 +595,7 @@ static boolT locatePattern(byte *source, Int iMin, Int iMax, byte *pattern, Int 
         /* i is the index of the start of the moving pattern */
         for (j=0; j < iPatLen; j++)
         {
-            /* j is the index of the byte being considered in the pattern. */
+            /* j is the index of the uint8_t being considered in the pattern. */
             if ((*pSrc != pattern[j]) && (pattern[j] != WILD))
             {
                 /* A definite mismatch */
@@ -625,15 +625,15 @@ void STATE::checkStartup()
     Also sets prog.offMain and prog.segMain if possible */
 
 
-    Int startOff;       /* Offset into the Image of the initial CS:IP */
-    Int i, rel, para, init;
+    int startOff;       /* Offset into the Image of the initial CS:IP */
+    int i, rel, para, init;
     char chModel = 'x';
     char chVendor = 'x';
     char chVersion = 'x';
     char *pPath;
     char temp[4];
 
-    startOff = ((dword)prog.initCS << 4) + prog.initIP;
+    startOff = ((uint32_t)prog.initCS << 4) + prog.initIP;
 
     /* Check the Turbo Pascal signatures first, since they involve only the
                 first 3 bytes, and false positives may be founf with the others later */
@@ -643,7 +643,7 @@ void STATE::checkStartup()
                         determine the version from that */
         rel = LH(&prog.Image[startOff+1]);  	 /* This is abs off of init */
         para= LH(&prog.Image[startOff+3]);/* This is abs seg of init */
-        init = ((dword)para << 4) + rel;
+        init = ((uint32_t)para << 4) + rel;
         if (locatePattern(prog.Image, init, init+26, pattBorl4Init,
                           sizeof(pattBorl4Init), &i))
         {
@@ -654,7 +654,7 @@ void STATE::checkStartup()
             chModel  = 'p';						/* Pascal */
             chVersion = '4';                    /* Version 4 */
             prog.offMain = startOff;            /* Code starts immediately */
-            prog.segMain = prog.initCS;			/* At the 5 byte jump */
+            prog.segMain = prog.initCS;			/* At the 5 uint8_t jump */
             goto gotVendor;                     /* Already have vendor */
         }
         else if (locatePattern(prog.Image, init, init+26, pattBorl5Init,
@@ -698,8 +698,8 @@ void STATE::checkStartup()
             rel = LH(&prog.Image[i+OFFMAINLARGE]);  /* This is abs off of main */
             para= LH(&prog.Image[i+OFFMAINLARGE+2]);/* This is abs seg of main */
             /* Save absolute image offset */
-            prog.offMain = ((dword)para << 4) + rel;
-            prog.segMain = (word)para;
+            prog.offMain = ((uint32_t)para << 4) + rel;
+            prog.segMain = (uint16_t)para;
             chModel = 'l';                          /* Large model */
         }
         else if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainCompact,
@@ -715,8 +715,8 @@ void STATE::checkStartup()
         {
             rel = LH(&prog.Image[i+OFFMAINMEDIUM]);  /* This is abs off of main */
             para= LH(&prog.Image[i+OFFMAINMEDIUM+2]);/* This is abs seg of main */
-            prog.offMain = ((dword)para << 4) + rel;
-            prog.segMain = (word)para;
+            prog.offMain = ((uint32_t)para << 4) + rel;
+            prog.segMain = (uint16_t)para;
             chModel = 'm';                          /* Medium model */
         }
         else if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainSmall,
@@ -787,7 +787,7 @@ void STATE::checkStartup()
     else if (locatePattern(prog.Image, startOff, startOff+0x30, pattBorl2Start,
                            sizeof(pattBorl2Start), &i))
     {
-        /* Borland startup. DS is at the second byte (offset 1) */
+        /* Borland startup. DS is at the second uint8_t (offset 1) */
         setState( rDS, LH(&prog.Image[i+1]));
         printf("Borland v2 detected\n");
         chVendor = 'b';                     /* Borland compiler */
@@ -797,7 +797,7 @@ void STATE::checkStartup()
     else if (locatePattern(prog.Image, startOff, startOff+0x30, pattBorl3Start,
                            sizeof(pattBorl3Start), &i))
     {
-        /* Borland startup. DS is at the second byte (offset 1) */
+        /* Borland startup. DS is at the second uint8_t (offset 1) */
         setState( rDS, LH(&prog.Image[i+1]));
         printf("Borland v3 detected\n");
         chVendor = 'b';                     /* Borland compiler */

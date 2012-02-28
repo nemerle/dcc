@@ -63,8 +63,8 @@ typedef std::list<BB *> queue;
 
 struct interval
 {
-    byte            numInt;         /* # of the interval    */
-    byte            numOutEdges;    /* Number of out edges  */
+    uint8_t            numInt;         /* # of the interval    */
+    uint8_t            numOutEdges;    /* Number of out edges  */
     queue           nodes;         /* Nodes of the interval*/
     queue::iterator currNode;      /* Current node     */
     interval *next;          /* Next interval    */

@@ -5,7 +5,7 @@
 #pragma once
 #include <llvm/ADT/ilist.h>
 #include <bitset>
-
+#include "Enums.h"
 #include "types.h"
 #include "ast.h"
 #include "icode.h"
@@ -29,9 +29,9 @@ struct SYM
 
     }
     char        name[10];   /* New name for this variable   */
-    dword       label;      /* physical address (20 bit)    */
-    Int         size;       /* maximum size                 */
-    flags32     flg;        /* SEG_IMMED, IMPURE, WORD_OFF  */
+    uint32_t       label;      /* physical address (20 bit)    */
+    int         size;       /* maximum size                 */
+    uint32_t     flg;        /* SEG_IMMED, IMPURE, WORD_OFF  */
     hlType      type;       /* probable type                */
     eDuVal      duVal;      /* DEF, USE, VAL                */
 };
@@ -48,42 +48,16 @@ public:
         {
         }
 public:
-        void writeNodeCallGraph(Int indIdx);
+        void writeNodeCallGraph(int indIdx);
         boolT insertCallGraph(ilFunction caller, ilFunction callee);
         boolT insertCallGraph(Function *caller, ilFunction callee);
         void insertArc(ilFunction newProc);
 };
-#define NUM_PROCS_DELTA		5		/* delta # procs a proc invokes		 	*/
+//#define NUM_PROCS_DELTA		5		/* delta # procs a proc invokes		 	*/
 //extern std::list<Function> pProcList;
 extern FunctionListType pProcList;
 extern CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
 extern bundle cCode;			/* Output C procedure's declaration and code */
-
-/* Procedure FLAGS */
-enum PROC_FLAGS
-{
-    PROC_BADINST=0x00000100,/* Proc contains invalid or 386 instruction */
-    PROC_IJMP   =0x00000200,/* Proc incomplete due to indirect jmp	 	*/
-    PROC_ICALL  =0x00000400, /* Proc incomplete due to indirect call		*/
-    PROC_HLL    =0x00001000, /* Proc is likely to be from a HLL			*/
-    CALL_PASCAL =0x00002000, /* Proc uses Pascal calling convention		*/
-    CALL_C      =0x00004000, /* Proc uses C calling convention			*/
-    CALL_UNKNOWN=0x00008000, /* Proc uses unknown calling convention		*/
-    PROC_NEAR   =0x00010000, /* Proc exits with near return				*/
-    PROC_FAR    =0x00020000, /* Proc exits with far return				*/
-    GRAPH_IRRED =0x00100000, /* Proc generates an irreducible graph		*/
-    SI_REGVAR   =0x00200000, /* SI is used as a stack variable 			*/
-    DI_REGVAR   =0x00400000, /* DI is used as a stack variable 			*/
-    PROC_IS_FUNC=0x00800000,	/* Proc is a function 						*/
-    REG_ARGS    =0x01000000, /* Proc has registers as arguments			*/
-    PROC_VARARG =0x02000000,	/* Proc has variable arguments				*/
-    PROC_OUTPUT =0x04000000, /* C for this proc has been output 			*/
-    PROC_RUNTIME=0x08000000, /* Proc is part of the runtime support		*/
-    PROC_ISLIB  =0x10000000, /* Proc is a library function				*/
-    PROC_ASM    =0x20000000, /* Proc is an intrinsic assembler routine   */
-    PROC_IS_HLL =0x40000000 /* Proc has HLL prolog code					*/
-};
-#define CALL_MASK    0xFFFF9FFF /* Masks off CALL_C and CALL_PASCAL		 	*/
 
 /**** Global variables ****/
 
@@ -106,28 +80,28 @@ extern SYMTAB symtab;       /* Global symbol table              */
 
 struct PROG /* Loaded program image parameters  */
 {
-    int16       initCS;
-    int16       initIP;     /* These are initial load values    */
-    int16       initSS;     /* Probably not of great interest   */
-    int16       initSP;
-    boolT       fCOM;       /* Flag set if COM program (else EXE)*/
-    Int         cReloc;     /* No. of relocation table entries  */
-    dword      *relocTable; /* Ptr. to relocation table         */
-    byte       *map;        /* Memory bitmap ptr                */
-    Int         cProcs;     /* Number of procedures so far      */
-    Int         offMain;    /* The offset  of the main() proc   */
-    word        segMain;    /* The segment of the main() proc   */
-    boolT       bSigs;		/* True if signatures loaded		*/
-    Int         cbImage;    /* Length of image in bytes         */
-    byte       *Image;      /* Allocated by loader to hold entire
+    int16_t     initCS;
+    int16_t     initIP;     /* These are initial load values    */
+    int16_t     initSS;     /* Probably not of great interest   */
+    int16_t     initSP;
+    bool        fCOM;       /* Flag set if COM program (else EXE)*/
+    int         cReloc;     /* No. of relocation table entries  */
+    uint32_t *  relocTable; /* Ptr. to relocation table         */
+    uint8_t *   map;        /* Memory bitmap ptr                */
+    int         cProcs;     /* Number of procedures so far      */
+    int         offMain;    /* The offset  of the main() proc   */
+    uint16_t    segMain;    /* The segment of the main() proc   */
+    bool        bSigs;		/* True if signatures loaded		*/
+    int         cbImage;    /* Length of image in bytes         */
+    uint8_t *   Image;      /* Allocated by loader to hold entire
                              * program image                    */
 };
 
 extern PROG prog;   		/* Loaded program image parameters  */
 extern std::bitset<32> duReg[30];   /* def/use bits for registers		*/
 
-//extern dword duReg[30];		/* def/use bits for registers		*/
-extern dword maskDuReg[30];	/* masks off du bits for regs		*/
+//extern uint32_t duReg[30];		/* def/use bits for registers		*/
+extern uint32_t maskDuReg[30];	/* masks off du bits for regs		*/
 
 /* Registers used by icode instructions */
 static constexpr const char *allRegs[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
@@ -144,13 +118,13 @@ static constexpr const char *allRegs[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
 /* Intermediate instructions statistics */
 struct STATS
 {
-        Int		numBBbef;		/* number of basic blocks initially 	       */
-        Int		numBBaft;		/* number of basic blocks at the end 	       */
-        Int		nOrder;			/* n-th order								   */
-        Int		numLLIcode;		/* number of low-level Icode instructions      */
-        Int		numHLIcode; 	/* number of high-level Icode instructions     */
-        Int		totalLL;		/* total number of low-level Icode insts       */
-        Int		totalHL;		/* total number of high-level Icod insts       */
+        int		numBBbef;		/* number of basic blocks initially 	       */
+        int		numBBaft;		/* number of basic blocks at the end 	       */
+        int		nOrder;			/* n-th order								   */
+        int		numLLIcode;		/* number of low-level Icode instructions      */
+        int		numHLIcode; 	/* number of high-level Icode instructions     */
+        int		totalLL;		/* total number of low-level Icode insts       */
+        int		totalHL;		/* total number of high-level Icod insts       */
 };
 
 extern STATS stats; /* Icode statistics */
@@ -159,19 +133,19 @@ extern STATS stats; /* Icode statistics */
 /**** Global function prototypes ****/
 
 void    FrontEnd(char *filename, CALL_GRAPH * *);            /* frontend.c   */
-void   *allocMem(Int cb);                                   /* frontend.c   */
+void   *allocMem(int cb);                                   /* frontend.c   */
 
 void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
-BB *    newBB(BB *, Int, Int, byte, Int, Function *);      /* graph.c      */
+BB *    newBB(BB *, int, int, uint8_t, int, Function *);      /* graph.c      */
 void    BackEnd(char *filename, CALL_GRAPH *);              /* backend.c    */
-char   *cChar(byte c);                                      /* backend.c    */
-eErrorId scan(dword ip, ICODE &p);                          /* scanner.c    */
+char   *cChar(uint8_t c);                                      /* backend.c    */
+eErrorId scan(uint32_t ip, ICODE &p);                          /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */
 
-Int     strSize (byte *, char);                             /* parser.c     */
-void    disassem(Int pass, Function * pProc);              /* disassem.c   */
-void    interactDis(Function * initProc, Int initIC);      /* disassem.c   */
+int     strSize (uint8_t *, char);                             /* parser.c     */
+void    disassem(int pass, Function * pProc);              /* disassem.c   */
+void    interactDis(Function * initProc, int initIC);      /* disassem.c   */
 bool   JmpInst(llIcode opcode);                            /* idioms.c     */
 queue::iterator  appendQueue(queue &Q, BB *node);                  /* reducible.c  */
 
@@ -181,29 +155,29 @@ bool    LibCheck(Function &p);                            /* chklib.c     */
 
 /* Exported functions from procs.c */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
-void	allocStkArgs (ICODE *, Int);
-void	placeStkArg (ICODE *, COND_EXPR *, Int);
+void	allocStkArgs (ICODE *, int);
+void	placeStkArg (ICODE *, COND_EXPR *, int);
 void	adjustActArgType (COND_EXPR *, hlType, Function *);
 
 /* Exported functions from ast.c */
-void	  removeRegFromLong (byte, LOCAL_ID *, COND_EXPR *);
-std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, Int *);
-Int       hlTypeSize (const COND_EXPR *, Function *);
+void	  removeRegFromLong (uint8_t, LOCAL_ID *, COND_EXPR *);
+std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, int *);
+int       hlTypeSize (const COND_EXPR *, Function *);
 hlType	  expType (const COND_EXPR *, Function *);
-bool      insertSubTreeReg(COND_EXPR *, COND_EXPR **, byte, LOCAL_ID *);
-bool	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, Int);
+bool      insertSubTreeReg(COND_EXPR *, COND_EXPR **, uint8_t, LOCAL_ID *);
+bool	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, int);
 
 
 /* Exported functions from hlicode.c */
-std::string writeCall (Function *, STKFRAME *, Function *, Int *);
-char 	*writeJcond (HLTYPE, Function *, Int *);
-char 	*writeJcondInv (HLTYPE, Function *, Int *);
-Int     power2 (Int);
+std::string writeCall (Function *, STKFRAME *, Function *, int *);
+char 	*writeJcond (HLTYPE, Function *, int *);
+char 	*writeJcondInv (HLTYPE, Function *, int *);
+int     power2 (int);
 
 /* Exported funcions from locident.c */
-boolT checkLongEq (LONG_STKID_TYPE, iICODE, Int, Function *, Assignment &asgn, Int);
-boolT checkLongRegEq (LONGID_TYPE, iICODE, Int, Function *, COND_EXPR *&, COND_EXPR *&, Int);
-byte otherLongRegi (byte, Int, LOCAL_ID *);
-void insertIdx (IDX_ARRAY *, Int);
+boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, int);
+boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, COND_EXPR *&, COND_EXPR *&, int);
+uint8_t otherLongRegi (uint8_t, int, LOCAL_ID *);
+void insertIdx (IDX_ARRAY *, int);
 
 

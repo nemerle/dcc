@@ -22,16 +22,16 @@ static char indentBuf[indSize] =
 
 
 /* Indentation according to the depth of the statement */
-char *indent (Int indLevel)
+char *indent (int indLevel)
 {
     return (&indentBuf[indSize-(indLevel*4)-1]);
 }
 
 
 /* Returns a unique index to the next label */
-Int getNextLabel()
+int getNextLabel()
 {
-    static Int labelIdx = 1;	/* index of the next label		*/
+    static int labelIdx = 1;	/* index of the next label		*/
     return (labelIdx++);
 }
 
@@ -58,7 +58,7 @@ static void fixupLabels (PPROC pProc)
  * a unique label number for it.  This label is placed in the associated
  * icode for the node (pProc->Icode).  The procedure is done in sequential
  * order of dsfLast numbering.	*/
-{ Int i;				/* index into the dfsLast array */
+{ int i;				/* index into the dfsLast array */
     PBB *dfsLast;			/* pointer to the dfsLast array */
 
     dfsLast = pProc->dfsLast;
@@ -73,7 +73,7 @@ static void fixupLabels (PPROC pProc)
 
 /* Returns the corresponding C string for the given character c.  Character
  * constants such as carriage return and line feed, require 2 C characters. */
-char *cChar (byte c)
+char *cChar (uint8_t c)
 {
     static char res[3];
 
@@ -106,19 +106,19 @@ char *cChar (byte c)
  *		exe file: prog.Image[operand+0x100] 	*/
 static void printGlobVar (SYM * psym)
 {
-    Int j;
-    dword relocOp = prog.fCOM ? psym->label : psym->label + 0x100;
+    int j;
+    uint32_t relocOp = prog.fCOM ? psym->label : psym->label + 0x100;
     char *strContents;		/* initial contents of variable */
 
     switch (psym->size) {
-        case 1: cCode.appendDecl( "byte\t%s = %ld;\n",
+        case 1: cCode.appendDecl( "uint8_t\t%s = %ld;\n",
                                   psym->name, prog.Image[relocOp]);
             break;
-        case 2: cCode.appendDecl( "word\t%s = %ld;\n",
+        case 2: cCode.appendDecl( "uint16_t\t%s = %ld;\n",
                                   psym->name, LH(prog.Image+relocOp));
             break;
         case 4: if (psym->type == TYPE_PTR)  /* pointer */
-                cCode.appendDecl( "word\t*%s = %ld;\n",
+                cCode.appendDecl( "uint16_t\t*%s = %ld;\n",
                                   psym->name, LH(prog.Image+relocOp));
             else 			/* char */
                 cCode.appendDecl(
@@ -144,7 +144,7 @@ static void printGlobVar (SYM * psym)
  * initialization. */
 static void writeGlobSymTable()
 {
-    Int idx;
+    int idx;
     char type[10];
     SYM * pSym;
 
@@ -158,7 +158,7 @@ static void writeGlobSymTable()
                 printGlobVar (&symtab[idx]);
             else {					/* first defined */
                 switch (pSym->size) {
-                    case 1:  strcpy (type, "byte\t"); break;
+                    case 1:  strcpy (type, "uint8_t\t"); break;
                     case 2:  strcpy (type, "int\t"); break;
                     case 4:  if (pSym->type == TYPE_PTR)
                             strcpy (type, "int\t*");
@@ -195,9 +195,9 @@ static void writeHeader (std::ostream &ios, char *fileName)
 
 
 /* Writes the registers that are set in the bitvector */
-static void writeBitVector (dword regi)
+static void writeBitVector (uint32_t regi)
 {
-    Int j;
+    int j;
 
     for (j = 0; j < INDEXBASE; j++)
     {
@@ -206,7 +206,7 @@ static void writeBitVector (dword regi)
     }
 }
 static void writeBitVector (const std::bitset<32> &regi)
-{ Int j;
+{ int j;
 
     for (j = 0; j < INDEXBASE; j++)
     {
@@ -223,7 +223,7 @@ static void writeBitVector (const std::bitset<32> &regi)
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be forward on
  *		 the code; that is, the target code has not been traversed yet. */
-static void emitFwdGotoLabel (ICODE * pt, Int indLevel)
+static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 {
     if (! (pt->ic.ll.flg & HLL_LABEL)) /* node hasn't got a lab */
     {
@@ -240,7 +240,7 @@ static void emitFwdGotoLabel (ICODE * pt, Int indLevel)
  * and invokes the procedure that writes the code of the given record *hli */
 void Function::codeGen (std::ostream &fs)
 {
-    Int i, numLoc;
+    int i, numLoc;
     //STKFRAME * args;       /* Procedure arguments              */
     char buf[200],        /* Procedure's definition           */
             arg[30];         /* One argument                     */
@@ -339,7 +339,7 @@ void Function::codeGen (std::ostream &fs)
  * of the call graph.	*/
 static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &ios)
 {
-    Int i;
+    int i;
 
     //	IFace.Yield();			/* This is a good place to yield to other apps */
 

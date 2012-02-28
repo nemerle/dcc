@@ -95,7 +95,7 @@ bool Idiom18::match(iICODE picode)
 
     m_is_dec = m_icodes[1]->ic.ll.match(iDEC);
     int type = -1;	/* type of variable: 1 = reg-var, 2 = local */
-    byte regi;		/* register of the MOV */
+    uint8_t regi;		/* register of the MOV */
 
     /* Get variable */
     if (m_icodes[1]->ic.ll.dst.regi == 0)	/* global variable */
@@ -238,7 +238,7 @@ int Idiom19::action()
 bool Idiom20::match(iICODE picode)
 {
     uint8_t type = 0;	/* type of variable: 1 = reg-var, 2 = local */
-    byte regi;		/* register of the MOV */
+    uint8_t regi;		/* register of the MOV */
     if(std::distance(picode,m_end)<4)
         return false;
     for(int i=0; i<4; ++i)

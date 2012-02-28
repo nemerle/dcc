@@ -38,7 +38,7 @@ int Idiom3::action()
 {
     if (m_icodes[0]->ic.ll.flg & I)
     {
-        m_icodes[0]->ic.ll.src.proc.proc->cbParam = (int16)m_param_count;
+        m_icodes[0]->ic.ll.src.proc.proc->cbParam = (int16_t)m_param_count;
         m_icodes[0]->ic.ll.src.proc.cb = m_param_count;
         m_icodes[0]->ic.ll.src.proc.proc->flg |= CALL_C;
     }
@@ -73,7 +73,7 @@ bool Idiom17::match(iICODE picode)
     /* Match ADD  SP, immed */
     for(int i=0; i<2; ++i)
         m_icodes.push_back(picode++);
-    byte regi;
+    uint8_t regi;
 
     /* Match POP reg */
     if (m_icodes[1]->ic.ll.match(iPOP))
@@ -98,7 +98,7 @@ int Idiom17::action()
 {
     if (m_icodes[0]->isLlFlag(I))
     {
-        m_icodes[0]->ic.ll.src.proc.proc->cbParam = (int16)m_param_count;
+        m_icodes[0]->ic.ll.src.proc.proc->cbParam = (int16_t)m_param_count;
         m_icodes[0]->ic.ll.src.proc.cb = m_param_count;
         m_icodes[0]->ic.ll.src.proc.proc->flg |= CALL_C;
         for(int idx=1; idx<m_icodes.size(); ++idx)

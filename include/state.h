@@ -3,26 +3,27 @@
  * (C) Cristina Cifuentes, Mike van Emmerik
  ****************************************************************************/
 #pragma once
+#include <stdint.h>
 #include <cstring>
-#include "types.h"
+#include "Enums.h"
 /* STATE TABLE */
 struct STATE
 {
-    dword       IP;             /* Offset into Image                    */
-    int16       r[INDEXBASE];   /* Value of segs and AX                 */
-    byte        f[INDEXBASE];   /* True if r[.] has a value             */
+    uint32_t       IP;             /* Offset into Image                    */
+    int16_t       r[INDEXBASE];   /* Value of segs and AX                 */
+    uint8_t        f[INDEXBASE];   /* True if r[.] has a value             */
     struct
     {                           /* For case stmt indexed reg            */
-        byte    regi;           /*   Last conditional jump              */
-        int16   immed;          /*   Contents of the previous register  */
+        uint8_t    regi;           /*   Last conditional jump              */
+        int16_t   immed;          /*   Contents of the previous register  */
     }           JCond;
-    void setState(word reg, int16 value);
+    void setState(uint16_t reg, int16_t value);
     void checkStartup();
     STATE() : IP(0)
     {
         JCond.immed=0;
-        memset(r,0,sizeof(int16)*INDEXBASE);
-        memset(f,0,sizeof(byte)*INDEXBASE);
+        memset(r,0,sizeof(int16_t)*INDEXBASE);
+        memset(f,0,sizeof(uint8_t)*INDEXBASE);
     }
 };
 

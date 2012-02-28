@@ -22,7 +22,7 @@ static boolT isJCond (llIcode opcode)
 
 
 /* Returns whether the conditions for a 2-3 long variable are satisfied */
-static boolT isLong23 (iICODE iter, BB * pbb, Int *off, Int *arc)
+static boolT isLong23 (iICODE iter, BB * pbb, int *off, int *arc)
 {
     BB * t, * e, * obb2;
 
@@ -59,7 +59,7 @@ static boolT isLong23 (iICODE iter, BB * pbb, Int *off, Int *arc)
 
 
 /* Returns whether the conditions for a 2-2 long variable are satisfied */
-static boolT isLong22 (iICODE pIcode, iICODE pEnd, Int *off)
+static boolT isLong22 (iICODE pIcode, iICODE pEnd, int *off)
 {
     if(distance(pIcode,pEnd)<4)
         return false;
@@ -82,7 +82,7 @@ static boolT isLong22 (iICODE pIcode, iICODE pEnd, Int *off)
  * @return number of ICODEs to skip
 
 */
-static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, Int arc, Int off)
+static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, int off)
 {
     BB * pbb, * obb1, * obb2, * tbb;
     int skipped_insn=0;
@@ -169,7 +169,7 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, Int arc, 
 */
 static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEnd)
 {
-    Int j;
+    int j;
     BB * pbb, * obb1, * tbb;
     if(distance(pIcode,pEnd)<4)
         return false;
@@ -227,9 +227,9 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEn
  * Arguments: i     : index into the local identifier table
  *            pLocId: ptr to the long local identifier
  *            pProc : ptr to current procedure's record.        */
-void Function::propLongStk (Int i, const ID &pLocId)
+void Function::propLongStk (int i, const ID &pLocId)
 {
-    Int off, arc;
+    int off, arc;
     Assignment asgn;
     //COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
     iICODE next1, pEnd;
@@ -502,7 +502,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
  * @arg pLocId ptr to the long local identifier
  *
  */
-void Function::propLongReg (Int loc_ident_idx, const ID &pLocId)
+void Function::propLongReg (int loc_ident_idx, const ID &pLocId)
 {
     /* Process all definitions/uses of long registers at an icode position */
     // WARNING: this loop modifies the iterated-over container.
@@ -526,7 +526,7 @@ void Function::propLongReg (Int loc_ident_idx, const ID &pLocId)
 
 /* Propagates the long global address across all LOW_LEVEL icodes.
  * Transforms some LOW_LEVEL icodes into HIGH_LEVEL     */
-void Function::propLongGlb (Int i, const ID &pLocId)
+void Function::propLongGlb (int i, const ID &pLocId)
 {
     printf("WARN: Function::propLongGlb not implemented");
 }
@@ -536,7 +536,7 @@ void Function::propLongGlb (Int i, const ID &pLocId)
  * into HIGH_LEVEL icodes.  */
 void Function::propLong()
 {
-    Int i;
+    int i;
     /* Pointer to current local identifier */
 
     for (i = 0; i < localId.csym(); i++)

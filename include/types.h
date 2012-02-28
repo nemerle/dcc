@@ -5,17 +5,8 @@
 #pragma once
 #include <stdint.h>
 /**** Common definitions and macros ****/
-#ifdef __MSDOS__            /* Intel: 16 bit integer        */
-typedef long    Int;        /* Int: 0x80000000..0x7FFFFFFF  */
-typedef unsigned long flags32;  /* 32 bits  */
-typedef unsigned long dword;    /* 32 bits  */
+typedef unsigned int uint32_t;  /* 32 bits  */
 #define MAX 0x7FFFFFFF
-#else                       /* Unix: 32 bit integer         */
-typedef int Int;            /* Int: 0x80000000..0x7FFFFFFF  */
-typedef unsigned int flags32;  /* 32 bits  */
-typedef unsigned int dword;    /* 32 bits  */
-#define MAX 0x7FFFFFFF
-#endif
 
 /* Type definitions used in the program */
 typedef unsigned char byte; /* 8 bits   */

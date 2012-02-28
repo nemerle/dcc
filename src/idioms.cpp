@@ -38,9 +38,9 @@ bool JmpInst(llIcode opcode)
  ****************************************************************************/
 void Function::findIdioms()
 {
-//    Int     ip;             /* Index to current icode                   */
+//    int     ip;             /* Index to current icode                   */
     iICODE  pEnd, pIcode;   /* Pointers to end of BB and current icodes */
-    int16   delta;
+    int16_t   delta;
 
     pIcode = Icode.begin();
     pEnd = Icode.end();
@@ -219,9 +219,9 @@ void Function::findIdioms()
  * binds jump target addresses to icode offsets.    */
 void Function::bindIcodeOff()
 {
-    Int i;                 /* idx into icode array */
+    int i;                 /* idx into icode array */
     iICODE pIcode;            /* ptr icode array      */
-    dword *p;                 /* for case table       */
+    uint32_t *p;                 /* for case table       */
 
     if (Icode.empty())        /* No Icode */
         return;
@@ -255,7 +255,7 @@ void Function::bindIcodeOff()
             continue;
         if (icode.ic.ll.flg & I)
             {
-                dword found;
+                uint32_t found;
             if (! Icode.labelSrch(icode.ic.ll.src.op(), found))
                 icode.ic.ll.flg |= NO_LABEL;
                 else

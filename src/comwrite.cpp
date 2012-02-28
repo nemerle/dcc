@@ -113,7 +113,7 @@ static const char *int21h[] =
     "Reserved",
     "Reserved",
     "Get PSP address",
-    "Get DBCS lead byte table",
+    "Get DBCS lead uint8_t table",
     "Reserved",
     "Get extended country information",
     "Get or set code page",

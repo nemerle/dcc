@@ -6,26 +6,26 @@ struct IDENTTYPE
     condId           idType;
     regType          regiType;  /* for REGISTER only                */
     union _idNode {
-        Int          regiIdx;   /* index into localId, REGISTER		*/
-        Int          globIdx;   /* index into symtab for GLOB_VAR   */
-        Int          localIdx;  /* idx into localId,  LOCAL_VAR		*/
-        Int          paramIdx;  /* idx into args symtab, PARAMS     */
-        Int			 idxGlbIdx;	/* idx into localId, GLOB_VAR_IDX   */
+        int          regiIdx;   /* index into localId, REGISTER		*/
+        int          globIdx;   /* index into symtab for GLOB_VAR   */
+        int          localIdx;  /* idx into localId,  LOCAL_VAR		*/
+        int          paramIdx;  /* idx into args symtab, PARAMS     */
+        int			 idxGlbIdx;	/* idx into localId, GLOB_VAR_IDX   */
         struct _kte
         {			/* for CONSTANT only					*/
-            dword   kte;   	/*   value of the constant			*/
-            byte    size;       /*   #bytes size constant	 		*/
+            uint32_t   kte;   	/*   value of the constant			*/
+            uint8_t    size;       /*   #bytes size constant	 		*/
         } kte;
-        dword		 strIdx;	/* idx into image, for STRING	 	*/
-        Int			 longIdx;	/* idx into LOCAL_ID table, LONG_VAR*/
+        uint32_t        strIdx;	/* idx into image, for STRING	 	*/
+        int             longIdx;	/* idx into LOCAL_ID table, LONG_VAR*/
         struct _call {			/* for FUNCTION only				*/
             Function     *proc;
             STKFRAME *args;
         }			 call;
         struct {                /* for OTHER; tmp struct            */
-            byte     seg;       /*   segment                        */
-            byte     regi;      /*   index mode                     */
-            int16    off;       /*   offset                         */
+            uint8_t     seg;       /*   segment                        */
+            uint8_t     regi;      /*   index mode                     */
+            int16_t    off;       /*   offset                         */
         }            other;
     }                idNode;
 };

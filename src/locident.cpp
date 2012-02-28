@@ -5,8 +5,23 @@
  * (C) Cristina Cifuentes
  */
 
+#include <cstring>
+#include "locident.h"
 #include "dcc.h"
-#include <string.h>
+
+ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
+{
+    name[0]=0;
+    macro[0]=0;
+    memset(&id,0,sizeof(id));
+}
+ID::ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
+{
+    name[0]=0;
+    macro[0]=0;
+    memset(&id,0,sizeof(id));
+    loc=f;
+}
 
 
 #define LOCAL_ID_DELTA  25
@@ -26,9 +41,9 @@ void LOCAL_ID::newIdent(hlType t, frameType f)
 
 /* Creates a new register identifier node of TYPE_BYTE_(UN)SIGN or
  * TYPE_WORD_(UN)SIGN type.  Returns the index to this new entry.       */
-Int LOCAL_ID::newByteWordReg(hlType t, byte regi)
+int LOCAL_ID::newByteWordReg(hlType t, uint8_t regi)
 {
-    Int idx;
+    int idx;
 
     /* Check for entry in the table */
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[t,regi](ID &el)->bool {
@@ -50,9 +65,9 @@ Int LOCAL_ID::newByteWordReg(hlType t, byte regi)
  *       the array 1 position.  The problem is that indexes into this
  *       array have already been saved in several positions; therefore,
  *       flagging this entry as illegal is all that can be done.    */
-void LOCAL_ID::flagByteWordId (Int off)
+void LOCAL_ID::flagByteWordId (int off)
 {
-    Int idx;
+    int idx;
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off](ID &en)->bool {
      //if (((en.type == TYPE_WORD_SIGN) || (en.type == TYPE_BYTE_SIGN)) &&
      if ((en.isSigned()) &&
@@ -70,9 +85,9 @@ void LOCAL_ID::flagByteWordId (Int off)
 
 /* Creates a new stack identifier node of TYPE_BYTE_(UN)SIGN or
  * TYPE_WORD_(UN)SIGN type.  Returns the index to this new entry.       */
-Int LOCAL_ID::newByteWordStk(hlType t, Int off, byte regOff)
+int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
 {
-    Int idx;
+    int idx;
 
     /* Check for entry in the table */
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off,regOff](ID &el)->bool {
@@ -101,9 +116,9 @@ Int LOCAL_ID::newByteWordStk(hlType t, Int off, byte regOff)
  *            regi: indexed register into global variable
  *            ix: index into icode array
  *            t: HIGH_LEVEL type            */
-Int LOCAL_ID::newIntIdx(int16 seg, int16 off, byte regi,Int ix, hlType t)
+int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, uint8_t regi, int ix, hlType t)
 {
-    Int idx;
+    int idx;
 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -128,9 +143,9 @@ Int LOCAL_ID::newIntIdx(int16 seg, int16 off, byte regi,Int ix, hlType t)
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new register identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, iICODE ix_)
+int LOCAL_ID::newLongReg(hlType t, uint8_t regH, uint8_t regL, iICODE ix_)
 {
-    Int idx;
+    int idx;
     //iICODE ix_;
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -166,9 +181,9 @@ Int LOCAL_ID::newLongReg(hlType t, byte regH, byte regL, iICODE ix_)
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new global identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-Int LOCAL_ID::newLongGlb(int16 seg, int16 offH, int16 offL,hlType t)
+int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
 {
-    Int idx;
+    int idx;
 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -193,8 +208,8 @@ Int LOCAL_ID::newLongGlb(int16 seg, int16 offH, int16 offL,hlType t)
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new global identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-Int LOCAL_ID::newLongIdx( int16 seg, int16 offH, int16 offL,byte regi, hlType t)
-{ Int idx;
+int LOCAL_ID::newLongIdx( int16_t seg, int16_t offH, int16_t offL,uint8_t regi, hlType t)
+{ int idx;
 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -220,9 +235,9 @@ Int LOCAL_ID::newLongIdx( int16 seg, int16 offH, int16 offL,byte regi, hlType t)
 
 /* Creates a new stack identifier node of type TYPE_LONG_(UN)SIGN.
  * Returns the index to this entry. */
-Int LOCAL_ID::newLongStk(hlType t, Int offH, Int offL)
+int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
 {
-    Int idx;
+    int idx;
 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -249,9 +264,9 @@ Int LOCAL_ID::newLongStk(hlType t, Int offH, Int offL)
 /* Returns the index to an appropriate long identifier.
  * Note: long constants should be checked first and stored as a long integer
  *       number in an expression record.    */
-Int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, Int off)
+int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, int off)
 {
-    Int idx;
+    int idx;
   LLOperand *pmH, *pmL;
   iICODE atOffset(pIcode);
   advance(atOffset,off);
@@ -308,8 +323,8 @@ Int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, I
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i,
-                  Function * pProc, Assignment &asgn, Int off)
+boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i,
+                  Function * pProc, Assignment &asgn, int off)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
     iICODE atOffset(pIcode);
@@ -349,8 +364,8 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i,
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i,
-                      Function * pProc, COND_EXPR *&rhs, COND_EXPR *&lhs, Int off)
+boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
+                      Function * pProc, COND_EXPR *&rhs, COND_EXPR *&lhs, int off)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
     iICODE atOffset(pIcode);
@@ -384,7 +399,7 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i,
 /* Given an index into the local identifier table for a long register
  * variable, determines whether regi is the high or low part, and returns
  * the other part   */
-byte otherLongRegi (byte regi, Int idx, LOCAL_ID *locTbl)
+uint8_t otherLongRegi (uint8_t regi, int idx, LOCAL_ID *locTbl)
 {
     ID *id;
 
@@ -405,9 +420,9 @@ byte otherLongRegi (byte regi, Int idx, LOCAL_ID *locTbl)
  * the local identifier table.  If so, macros for these registers are
  * placed in the local identifier table, as these registers belong to a
  * long register identifier.	*/
-void LOCAL_ID::propLongId (byte regL, byte regH, const char *name)
+void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const char *name)
 {
-    Int i;
+    int i;
     ID *_id;
 
     for (i = 0; i < id_arr.size(); i++)

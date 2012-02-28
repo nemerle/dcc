@@ -6,7 +6,7 @@
 #include <memory.h>
 
 #include "dcc.h"
-#include "types.h"		// Common types like byte, etc
+#include "types.h"		// Common types like uint8_t, etc
 #include "ast.h"		// Some icode types depend on these
 #include "icode.h"
 
@@ -38,18 +38,18 @@ void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
 
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and
    replaces *pIndex with an icode index */
-bool CIcodeRec::labelSrch(dword target, dword &pIndex)
+bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
 {
-    Int  i;
+    int  i;
     iICODE location=labelSrch(target);
     if(end()==location)
             return false;
     pIndex=location->loc_ip;
     return true;
 }
-CIcodeRec::iterator CIcodeRec::labelSrch(dword target)
+CIcodeRec::iterator CIcodeRec::labelSrch(uint32_t target)
 {
-    Int  i;
+    int  i;
     return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ic.ll.label==target;});
 }
 ICODE * CIcodeRec::GetIcode(int ip)
@@ -61,14 +61,14 @@ ICODE * CIcodeRec::GetIcode(int ip)
 }
 
 extern char *indent(int level);
-extern Int getNextLabel();
+extern int getNextLabel();
 extern bundle cCode;
 /* Checks the given icode to determine whether it has a label associated
  * to it.  If so, a goto is emitted to this label; otherwise, a new label
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be backpatched
  *       onto code in cCode.code */
-void ICODE::emitGotoLabel (Int indLevel)
+void ICODE::emitGotoLabel (int indLevel)
 {
     if (! (ic.ll.flg & HLL_LABEL)) /* node hasn't got a lab */
     {

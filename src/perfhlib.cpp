@@ -11,7 +11,7 @@
 
 /* Private data structures */
 
-static  word    *T1, *T2;   /* Pointers to T1[i], T2[i] */
+static  uint16_t    *T1, *T2;   /* Pointers to T1[i], T2[i] */
 static  short   *g;         /* g[] */
 
 static  int     numEdges;   /* An edge counter */
@@ -39,8 +39,8 @@ PatternHasher::init(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin,
     NumVert  = _NumVert;
 
     /* Allocate the variable sized tables etc */
-    T1base = new word [EntryLen * SetSize];
-    T2base = new word [EntryLen * SetSize];
+    T1base = new uint16_t [EntryLen * SetSize];
+    T2base = new uint16_t [EntryLen * SetSize];
     graphNode = new int [NumEntry*2 + 1];
     graphNext = new int [NumEntry*2 + 1];
     graphFirst = new int [NumVert + 1];
@@ -66,9 +66,9 @@ void PatternHasher::cleanup(void)
 //    delete [] visited;
 }
 
-int PatternHasher::hash(byte *string)
+int PatternHasher::hash(uint8_t *string)
 {
-    word u, v;
+    uint16_t u, v;
     int  j;
 
     u = 0;
@@ -90,18 +90,18 @@ int PatternHasher::hash(byte *string)
     return (g[u] + g[v]) % NumEntry;
 }
 
-word * PatternHasher::readT1(void)
+uint16_t * PatternHasher::readT1(void)
 {
     return T1base;
 }
 
-word *PatternHasher::readT2(void)
+uint16_t *PatternHasher::readT2(void)
 {
     return T2base;
 }
 
-word * PatternHasher::readG(void)
+uint16_t * PatternHasher::readG(void)
 {
-    return (word *)g;
+    return (uint16_t *)g;
 }
 

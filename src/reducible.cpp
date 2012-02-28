@@ -10,7 +10,7 @@
 #include <malloc.h>		/* For free() */
 #include <string.h>
 
-static Int      numInt;     /* Number of intervals      */
+static int      numInt;     /* Number of intervals      */
 
 
 #define nonEmpty(q)     (q != NULL)
@@ -84,7 +84,7 @@ static void appendNodeInt (queue &pqH, BB *node, interval *pI)
         auto found_iter=std::find(pqH.begin(),pqH.end(),node);
         if(found_iter!=pqH.end())
         {
-            pI->numOutEdges -= (byte)(*found_iter)->inEdges.size() - 1;
+            pI->numOutEdges -= (uint8_t)(*found_iter)->inEdges.size() - 1;
             pqH.erase(found_iter);
         }
     }
@@ -103,7 +103,7 @@ void derSeq_Entry::findIntervals (Function *c)
     BB *h,           /* Node being processed         */
             *header,          /* Current interval's header node   */
             *succ;            /* Successor basic block        */
-    Int i;           /* Counter              */
+    int i;           /* Counter              */
     queue H;            /* Queue of possible header nodes   */
     boolT first = TRUE;       /* First pass through the loop      */
 
@@ -116,7 +116,7 @@ void derSeq_Entry::findIntervals (Function *c)
     {
         header = firstOfQueue (H);
         pI = new interval;
-        pI->numInt = (byte)numInt++;
+        pI->numInt = (uint8_t)numInt++;
         if (first)               /* ^ to first interval  */
             Ii = J = pI;
         appendNodeInt (H, header, pI);   /* pI(header) = {header} */
@@ -244,7 +244,7 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
             *succ       /* Successor node               */
             ;
     //queue *listIi;    /* List of intervals                */
-    Int i,        /* Index to outEdges array          */
+    int i,        /* Index to outEdges array          */
         j;        /* Index to successors              */
     boolT   sameGraph; /* Boolean, isomorphic graphs           */
 
@@ -313,7 +313,7 @@ return (boolT)(! sameGraph);
 /* Finds the derived sequence of the graph derivedG->Gi (ie. cfg).
  * Constructs the n-th order graph and places all the intermediate graphs
  * in the derivedG list sequence.                   */
-byte Function::findDerivedSeq (derSeq *derivedGi)
+uint8_t Function::findDerivedSeq (derSeq *derivedGi)
 {
     BB *Gi;      /* Current derived sequence graph       */
 
@@ -346,7 +346,7 @@ byte Function::findDerivedSeq (derSeq *derivedGi)
 
 /* Converts the irreducible graph G into an equivalent reducible one, by
  * means of node splitting.  */
-static void nodeSplitting (std::vector<BB *> &G)
+static void nodeSplitting (std::list<BB *> &G)
 {
     fprintf(stderr,"Attempt to perform node splitting: NOT IMPLEMENTED\n");
 }
@@ -354,7 +354,7 @@ static void nodeSplitting (std::vector<BB *> &G)
 /* Displays the derived sequence and intervals of the graph G */
 void derSeq::display()
 {
-    Int n = 1;      /* Derived sequence number */
+    int n = 1;      /* Derived sequence number */
     printf ("\nDerived Sequence Intervals\n");
     derSeq::iterator iter=this->begin();
     while (iter!=this->end())
@@ -374,7 +374,7 @@ void derSeq::display()
 derSeq * Function::checkReducibility()
 {
     derSeq * der_seq;
-    byte    reducible;  /* Reducible graph flag     */
+    uint8_t    reducible;  /* Reducible graph flag     */
 
     numInt = 1;         /* reinitialize no. of intervals*/
     stats.nOrder = 1;   /* nOrder(cfg) = 1      */

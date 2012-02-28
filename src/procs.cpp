@@ -15,7 +15,7 @@
 static char indentBuf[indSize] =
         "                                                            ";
 
-static char *indent (Int indLevel) // Indentation according to the depth of the statement
+static char *indent (int indLevel) // Indentation according to the depth of the statement
 {
     return (&indentBuf[indSize-(indLevel*3)-1]);
 }
@@ -26,7 +26,7 @@ static char *indent (Int indLevel) // Indentation according to the depth of the 
 void CALL_GRAPH::insertArc (ilFunction newProc)
 {
     CALL_GRAPH *pcg;
-    Int i;
+    int i;
 
     /* Check if procedure already exists */
     auto res=std::find_if(outEdges.begin(),outEdges.end(),[newProc](CALL_GRAPH *e) {return e->proc==newProc;});
@@ -42,7 +42,7 @@ void CALL_GRAPH::insertArc (ilFunction newProc)
 /* Inserts a (caller, callee) arc in the call graph tree. */
 boolT CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
 {
-    Int i;
+    int i;
 
     if (proc == caller)
     {
@@ -69,9 +69,9 @@ boolT CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
 
 /* Displays the current node of the call graph, and invokes recursively on
  * the nodes the procedure invokes. */
-void CALL_GRAPH::writeNodeCallGraph(Int indIdx)
+void CALL_GRAPH::writeNodeCallGraph(int indIdx)
 {
-    Int i;
+    int i;
 
     printf ("%s%s\n", indent(indIdx), proc->name.c_str());
     for (i = 0; i < outEdges.size(); i++)
@@ -99,7 +99,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     COND_EXPR *lhs;
     STKFRAME * ps, *ts;
     ID *id;
-    Int i, tidx;
+    int i, tidx;
     boolT regExist;
     condId type;
     Function * tproc;
@@ -218,7 +218,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
 */
 bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
 {
-    byte regi;
+    uint8_t regi;
     /* Check for far procedure call, in which case, references to segment
          * registers are not be considered another parameter (i.e. they are
          * long references to another segment) */
@@ -246,7 +246,7 @@ bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
 
 /* Places the actual argument exp in the position given by pos in the
  * argument list of picode.	*/
-void CallType::placeStkArg (COND_EXPR *exp, Int pos)
+void CallType::placeStkArg (COND_EXPR *exp, int pos)
 {
     args->sym[pos].actual = exp;
     sprintf (args->sym[pos].name, "arg%ld", pos);
@@ -259,7 +259,7 @@ void CallType::placeStkArg (COND_EXPR *exp, Int pos)
 void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
 {
     hlType actType;
-    Int offset, offL;
+    int offset, offL;
 
     if (exp == NULL)
         return;
@@ -311,11 +311,11 @@ void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
 /* Determines whether the formal argument has the same type as the given
  * type (type of the actual argument).  If not, the formal argument is
  * changed its type */
-void STKFRAME::adjustForArgType(Int numArg_, hlType actType_)
+void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
 {
     hlType forType;
     STKSYM * psym, * nsym;
-    Int off, i;
+    int off, i;
 
     /* Find stack offset for this argument */
     off = m_minOff;

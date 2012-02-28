@@ -10,7 +10,7 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 /* This file implements a symbol table with a symbolic name, a symbol value
-    (word), and a procedure number. Two tables are maintained, to be able to
+    (uint16_t), and a procedure number. Two tables are maintained, to be able to
     look up by name or by value. Pointers are used for the duplicated symbolic
     name to save space. Both tables have the same structure.
     The hash tables automatically expand when they get 90% full; they are
@@ -30,7 +30,7 @@
 #define TABLESIZE 16                /* Number of entries added each expansion */
 /* Probably has to be a power of 2 */
 #define STRTABSIZE 256              /* Size string table is inc'd by */
-#define NIL ((word)-1)
+#define NIL ((uint16_t)-1)
 using namespace std;
 static  char *pStrTab;              /* Pointer to the current string table */
 static  int   strTabNext;           /* Next free index into pStrTab */
@@ -41,8 +41,8 @@ struct hash<SYMTABLE> : public unary_function<const SYMTABLE &,size_t>
 {
     size_t operator()(const SYMTABLE & key) const
     {
-        word h = 0;
-        h = (word)(key.symOff ^ (key.symOff >> 8));
+        uint16_t h = 0;
+        h = (uint16_t)(key.symOff ^ (key.symOff >> 8));
         return h;
     }
 
@@ -55,15 +55,15 @@ struct TABLEINFO_TYPE
     {
         symTab=valTab=0;
     }
-    void    deleteVal(dword symOff, Function *symProc, boolT bSymToo);
+    void    deleteVal(uint32_t symOff, Function *symProc, boolT bSymToo);
     void create(tableType type);
     void destroy();
 private:
 
     SYMTABLE *symTab;   /* Pointer to the symbol hashed table */
     SYMTABLE *valTab;   /* Pointer to the value  hashed table */
-    word      numEntry; /* Number of entries in this table */
-    word      tableSize;/* Size of the table (entries) */
+    uint16_t      numEntry; /* Number of entries in this table */
+    uint16_t      tableSize;/* Size of the table (entries) */
     unordered_map<string,SYMTABLE> z;
     unordered_map<SYMTABLE,string> z2;
 };
@@ -133,7 +133,7 @@ void destroySymTables(void)
 }
 
 /* Using the value, read the symbolic name */
-boolT readVal(std::ostringstream &symName, dword symOff, Function * symProc)
+boolT readVal(std::ostringstream &symName, uint32_t symOff, Function * symProc)
 {
     return false; // no symbolic names for now
 }

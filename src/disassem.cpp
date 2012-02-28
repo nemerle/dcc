@@ -127,36 +127,36 @@ static const char *szWreg[12] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di"
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 
-static void  dis1Line  (ICODE &icode, Int pass);
-void  dis1LineOp(Int i, boolT fWin, char attr, word *len, Function * pProc);
-static void  formatRM(ostringstream &p, flags32 flg, const LLOperand &pm);
-static ostringstream &strDst(ostringstream &os, flags32 flg, LLOperand &pm);
+static void  dis1Line  (ICODE &icode, int pass);
+void  dis1LineOp(int i, boolT fWin, char attr, uint16_t *len, Function * pProc);
+static void  formatRM(ostringstream &p, uint32_t flg, const LLOperand &pm);
+static ostringstream &strDst(ostringstream &os, uint32_t flg, LLOperand &pm);
 static ostringstream &strSrc(ostringstream &os,const LLInst &pc,bool skip_comma=false);
 
-static char *strHex(dword d);
-static Int   checkScanned(dword pcCur);
+static char *strHex(uint32_t d);
+static int   checkScanned(uint32_t pcCur);
 static void  setProc(Function * proc);
-static void  dispData(word dataSeg);
+static void  dispData(uint16_t dataSeg);
 void flops(LLInst &pIcode, std::ostringstream &out);
-boolT callArg(word off, char *temp);  /* Check for procedure name */
+boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 static  FILE   *fp;
 static  CIcodeRec pc;
 static std::ostringstream buf;
-static  Int     cb, j, numIcode, allocIcode, eop;
+static  int     cb, j, numIcode, allocIcode, eop;
 static  map<int,int> pl;
-static  dword   nextInst;
+static  uint32_t   nextInst;
 static  boolT    fImpure;
-static  Int     lab, prevPass;
+static  int     lab, prevPass;
 static  Function *   pProc;          /* Points to current proc struct */
 
 struct POSSTACK_ENTRY
 {
-    Int     ic;                 /* An icode offset */
+    int     ic;                 /* An icode offset */
     Function *   pProc;              /* A pointer to a PROCEDURE structure */
 } ;
 vector<POSSTACK_ENTRY> posStack; /* position stack */
-byte              iPS;          /* Index into the stack */
+uint8_t              iPS;          /* Index into the stack */
 
 //static  char    cbuf[256];      /* Has to be 256 for wgetstr() to work */
 
@@ -174,9 +174,9 @@ byte              iPS;          /* Index into the stack */
  *			  pass == 2 generates output on file .a2
  *			  pass == 3 generates output on file .b
  ****************************************************************************/
-void disassem(Int pass, Function * ppProc)
+void disassem(int pass, Function * ppProc)
 {
-    Int         i;
+    int         i;
 
     pProc = ppProc;             /* Save the passes pProc */
     if (pass != prevPass)
@@ -263,7 +263,7 @@ void disassem(Int pass, Function * ppProc)
  * i is index into Icode for this proc                                      *
  * It is assumed that icode i is already scanned                            *
  ****************************************************************************/
-static void dis1Line(ICODE &icode_iter, Int pass)
+static void dis1Line(ICODE &icode_iter, int pass)
 {
     ostringstream oper_stream;
     ostringstream hex_bytes;
@@ -298,7 +298,7 @@ static void dis1Line(ICODE &icode_iter, Int pass)
         nextInst = _IcLL.label;
     else
     {
-        cb = (dword) _IcLL.numBytes;
+        cb = (uint32_t) _IcLL.numBytes;
         nextInst = _IcLL.label + cb;
 
         /* Output hexa code in program image */
@@ -402,7 +402,7 @@ static void dis1Line(ICODE &icode_iter, Int pass)
     {
         ICODE *lab=pc.GetIcode(_IcLL.src.op());
             selectTable(Label);
-        if ((_IcLL.src.op() < (dword)numIcode) &&  /* Ensure in range */
+        if ((_IcLL.src.op() < (uint32_t)numIcode) &&  /* Ensure in range */
                 readVal(oper_stream, lab->ic.ll.label, 0))
             {
                 break;                          /* Symbolic label. Done */
@@ -528,7 +528,7 @@ static void dis1Line(ICODE &icode_iter, Int pass)
     }
     else
     {
-        for (j = _IcLL.label, fImpure = 0; j > 0 && j < (Int)nextInst; j++)
+        for (j = _IcLL.label, fImpure = 0; j > 0 && j < (int)nextInst; j++)
         {
             fImpure |= BITMAP(j, BM_DATA);
         }
@@ -604,7 +604,7 @@ static void dis1Line(ICODE &icode_iter, Int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(std::ostringstream &p, flags32 flg, const LLOperand &pm)
+static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
 {
     char    seg[4];
 
@@ -616,7 +616,7 @@ static void formatRM(std::ostringstream &p, flags32 flg, const LLOperand &pm)
 
     if (pm.regi == 0)
     {
-        p<<seg<<"["<<strHex((dword)pm.off)<<"]";
+        p<<seg<<"["<<strHex((uint32_t)pm.off)<<"]";
     }
 
     else if (pm.regi == (INDEXBASE - 1))
@@ -636,11 +636,11 @@ static void formatRM(std::ostringstream &p, flags32 flg, const LLOperand &pm)
     {
         if (pm.off < 0)
         {
-            p <<seg<<"["<<szIndex[pm.regi - INDEXBASE]<<"-"<<strHex((dword)(- pm.off))<<"]";
+            p <<seg<<"["<<szIndex[pm.regi - INDEXBASE]<<"-"<<strHex((uint32_t)(- pm.off))<<"]";
         }
         else
         {
-            p <<seg<<"["<<szIndex[pm.regi - INDEXBASE]<<"+"<<strHex((dword)(pm.off))<<"]";
+            p <<seg<<"["<<szIndex[pm.regi - INDEXBASE]<<"+"<<strHex((uint32_t)(pm.off))<<"]";
         }
     }
     else
@@ -651,7 +651,7 @@ static void formatRM(std::ostringstream &p, flags32 flg, const LLOperand &pm)
 /*****************************************************************************
  * strDst
  ****************************************************************************/
-static ostringstream & strDst(ostringstream &os,flags32 flg, LLOperand &pm)
+static ostringstream & strDst(ostringstream &os,uint32_t flg, LLOperand &pm)
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);
@@ -685,7 +685,7 @@ static ostringstream &strSrc(ostringstream &os,const LLInst &l_ins,bool skip_com
 /****************************************************************************
  * strHex                                                                   *
  ****************************************************************************/
-static char *strHex(dword d)
+static char *strHex(uint32_t d)
 {
     static char buf[10];
 
@@ -697,7 +697,7 @@ static char *strHex(dword d)
 /****************************************************************************
  *          interactDis - interactive disassembler                          *
  ****************************************************************************/
-void interactDis(Function * initProc, Int initIC)
+void interactDis(Function * initProc, int initIC)
 {
     printf("Sorry - interactive disasassembler option not available for Unix\n");
     return;
@@ -707,7 +707,7 @@ void interactDis(Function * initProc, Int initIC)
 void flops(LLInst &pIcode,std::ostringstream &out)
 {
     char bf[30];
-    byte op = (byte)pIcode.src.op();
+    uint8_t op = (uint8_t)pIcode.src.op();
 
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */
@@ -743,7 +743,7 @@ void flops(LLInst &pIcode,std::ostringstream &out)
                         break;
 
                     default:
-                        strcpy(bf, "word  ptr ");
+                        strcpy(bf, "uint16_t  ptr ");
                         break;
                 }
         }

@@ -13,11 +13,11 @@ using namespace std;
 #define ICODE_DELTA 25
 
 /* Masks off bits set by duReg[] */
-dword maskDuReg[] = { 0x00,
-                      0xFEEFFE, 0xFDDFFD, 0xFBB00B, 0xF77007, /* word regs */
+uint32_t maskDuReg[] = { 0x00,
+                      0xFEEFFE, 0xFDDFFD, 0xFBB00B, 0xF77007, /* uint16_t regs */
                       0xFFFFEF, 0xFFFFDF, 0xFFFFBF, 0xFFFF7F,
                       0xFFFEFF, 0xFFFDFF, 0xFFFBFF, 0xFFF7FF, /* seg regs  */
-                      0xFFEFFF, 0xFFDFFF, 0xFFBFFF, 0xFF7FFF, /* byte regs */
+                      0xFFEFFF, 0xFFDFFF, 0xFFBFFF, 0xFF7FFF, /* uint8_t regs */
                       0xFEFFFF, 0xFDFFFF, 0xFBFFFF, 0xF7FFFF,
                       0xEFFFFF,                               /* tmp reg   */
                       0xFFFFB7, 0xFFFF77, 0xFFFF9F, 0xFFFF5F, /* index regs */
@@ -87,9 +87,9 @@ void ICODE ::invalidate()
  * If all registers
  * of this instruction are unused, the instruction is invalidated (ie. removed)
  */
-bool ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
+bool ICODE::removeDefRegi (uint8_t regi, int thisDefIdx, LOCAL_ID *locId)
 {
-    Int numDefs;
+    int numDefs;
 
     numDefs = du1.numRegsDef;
 //    if (numDefs == thisDefIdx)
@@ -130,11 +130,11 @@ bool ICODE::removeDefRegi (byte regi, Int thisDefIdx, LOCAL_ID *locId)
  * Note: this process should be done before data flow analysis, which
  *       refines the HIGH_LEVEL icodes. */
 void Function::highLevelGen()
-{   Int i,                /* idx into icode array */
+{   int i,                /* idx into icode array */
             numIcode;         /* number of icode instructions */
     iICODE pIcode;        /* ptr to current icode node */
     COND_EXPR *lhs, *rhs; /* left- and right-hand side of expression */
-    flags32 flg;          /* icode flags */
+    uint32_t flg;          /* icode flags */
 
     numIcode = Icode.size();
     for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
@@ -257,7 +257,8 @@ void Function::highLevelGen()
                 case iRETF:   pIcode->setUnary(HLI_RET, NULL);
                     break;
 
-                case iSHL:    rhs = COND_EXPR::boolOp (lhs, rhs, SHL);
+                case iSHL:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, SHL);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
@@ -332,9 +333,9 @@ COND_EXPR *COND_EXPR::inverse ()
 
 /* Returns the string that represents the procedure call of tproc (ie. with
  * actual parameters) */
-std::string writeCall (Function * tproc, STKFRAME * args, Function * pproc, Int *numLoc)
+std::string writeCall (Function * tproc, STKFRAME * args, Function * pproc, int *numLoc)
 {
-    Int i;                        /* counter of # arguments       */
+    int i;                        /* counter of # arguments       */
     string condExp;
     ostringstream s;
     s<<tproc->name<<" (";
@@ -350,7 +351,7 @@ std::string writeCall (Function * tproc, STKFRAME * args, Function * pproc, Int 
 
 
 /* Displays the output of a HLI_JCOND icode. */
-char *writeJcond (HLTYPE h, Function * pProc, Int *numLoc)
+char *writeJcond (HLTYPE h, Function * pProc, int *numLoc)
 {
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
@@ -368,7 +369,7 @@ char *writeJcond (HLTYPE h, Function * pProc, Int *numLoc)
 /* Displays the inverse output of a HLI_JCOND icode.  This is used in the case
  * when the THEN clause of an if..then..else is empty.  The clause is
  * negated and the ELSE clause is used instead.	*/
-char *writeJcondInv (HLTYPE h, Function * pProc, Int *numLoc)
+char *writeJcondInv (HLTYPE h, Function * pProc, int *numLoc)
 {
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
@@ -379,7 +380,7 @@ char *writeJcondInv (HLTYPE h, Function * pProc, Int *numLoc)
     return (buf);
 }
 
-string AssignType::writeOut(Function *pProc, Int *numLoc)
+string AssignType::writeOut(Function *pProc, int *numLoc)
 {
     ostringstream ostr;
     ostr << walkCondExpr (lhs, pProc, numLoc);
@@ -388,14 +389,14 @@ string AssignType::writeOut(Function *pProc, Int *numLoc)
     ostr << ";\n";
     return ostr.str();
 }
-string CallType::writeOut(Function *pProc, Int *numLoc)
+string CallType::writeOut(Function *pProc, int *numLoc)
 {
     ostringstream ostr;
     ostr << writeCall (proc, args, pProc,numLoc);
     ostr << ";\n";
     return ostr.str();
 }
-string ExpType::writeOut(Function *pProc, Int *numLoc)
+string ExpType::writeOut(Function *pProc, int *numLoc)
 {
     return walkCondExpr (v, pProc, numLoc);
 }
@@ -404,7 +405,7 @@ string ExpType::writeOut(Function *pProc, Int *numLoc)
  * Note: this routine does not output the contens of HLI_JCOND icodes.  This is
  * 		 done in a separate routine to be able to support the removal of
  *		 empty THEN clauses on an if..then..else.	*/
-string HLTYPE::write1HlIcode (Function * pProc, Int *numLoc)
+string HLTYPE::write1HlIcode (Function * pProc, int *numLoc)
 {
     string e;
     ostringstream ostr;
@@ -435,7 +436,7 @@ string HLTYPE::write1HlIcode (Function * pProc, Int *numLoc)
 }
 
 
-Int power2 (Int i)
+int power2 (int i)
 /* Returns the value of 2 to the power of i */
 {
     if (i == 0)
@@ -446,10 +447,10 @@ Int power2 (Int i)
 
 /* Writes the registers/stack variables that are used and defined by this
  * instruction. */
-void ICODE::writeDU(Int idx)
+void ICODE::writeDU(int idx)
 {
     static char buf[100];
-    Int i, j;
+    int i, j;
 
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';

@@ -131,7 +131,7 @@ bool Idiom4::match(iICODE pIcode)
     /* Check for RET(F) immed */
     if (pIcode->ic.ll.flg & I)
     {
-        m_param_count = (int16)pIcode->ic.ll.src.op();
+        m_param_count = (int16_t)pIcode->ic.ll.src.op();
     }
 }
 int Idiom4::action()
@@ -140,7 +140,7 @@ int Idiom4::action()
         m_icodes[idx]->invalidate();
     if(m_param_count)
     {
-        m_func->cbParam = (int16)m_param_count;
+        m_func->cbParam = (int16_t)m_param_count;
         m_func->flg |= CALL_PASCAL;
     }
     return 1;

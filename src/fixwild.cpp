@@ -20,25 +20,25 @@
 #define bool  unsigned char
 #define TRUE  1
 #define FALSE 0
-#define byte  unsigned char
+#define uint8_t  unsigned char
 #endif
 
 static int pc;                              /* Indexes into pat[] */
 
 /* prototypes */
-static bool ModRM(byte pat[]);              /* Handle the mod/rm byte */
-static bool TwoWild(byte pat[]);            /* Make the next 2 bytes wild */
-static bool FourWild(byte pat[]);           /* Make the next 4 bytes wild */
-       void fixWildCards(byte pat[]);       /* Main routine */
+static bool ModRM(uint8_t pat[]);              /* Handle the mod/rm uint8_t */
+static bool TwoWild(uint8_t pat[]);            /* Make the next 2 bytes wild */
+static bool FourWild(uint8_t pat[]);           /* Make the next 4 bytes wild */
+       void fixWildCards(uint8_t pat[]);       /* Main routine */
 
 
 /* Handle the mod/rm case. Returns true if pattern exhausted */
-static bool ModRM(byte pat[])
+static bool ModRM(uint8_t pat[])
 {
-    byte op;
+    uint8_t op;
 
-    /* A standard mod/rm byte follows opcode */
-    op = pat[pc++];                         /* The mod/rm byte */
+    /* A standard mod/rm uint8_t follows opcode */
+    op = pat[pc++];                         /* The mod/rm uint8_t */
     if (pc >= PATLEN) return TRUE;          /* Skip Mod/RM */
     switch (op & 0xC0)
     {
@@ -71,7 +71,7 @@ static bool ModRM(byte pat[])
 
 /* Change the next two bytes to wild cards */
 static bool
-TwoWild(byte pat[])
+TwoWild(uint8_t pat[])
 {
     pat[pc++] = WILD;
     if (pc >= PATLEN) return TRUE;      /* Pattern exhausted */
@@ -82,7 +82,7 @@ TwoWild(byte pat[])
 
 /* Change the next four bytes to wild cards */
 static bool
-FourWild(byte pat[])
+FourWild(uint8_t pat[])
 {
             TwoWild(pat);
     return  TwoWild(pat);
@@ -91,16 +91,16 @@ FourWild(byte pat[])
 /* Chop from the current point by wiping with zeroes. Can't rely on anything
     after this point */
 static void
-chop(byte pat[])
+chop(uint8_t pat[])
 {
     if (pc >= PATLEN) return;               /* Could go negative otherwise */
     memset(&pat[pc], 0, PATLEN - pc);
 }
 
-static bool op0F(byte pat[])
+static bool op0F(uint8_t pat[])
 {
-    /* The two byte opcodes */
-    byte op = pat[pc++];
+    /* The two uint8_t opcodes */
+    uint8_t op = pat[pc++];
     switch (op & 0xF0)
     {
         case 0x00:              /* 00 - 0F */
@@ -115,10 +115,10 @@ static bool op0F(byte pat[])
             return ModRM(pat);
 
         case 0x80:
-            pc += 2;            /* Word displacement cond jumps */
+            pc += 2;            /* uint16_t displacement cond jumps */
             return FALSE;
 
-        case 0x90:              /* Byte set on condition */
+        case 0x90:              /* uint8_t set on condition */
             return ModRM(pat);
 
         case 0xA0:
@@ -168,7 +168,7 @@ static bool op0F(byte pat[])
             return FALSE;
 
         default:
-            return FALSE;       /* Treat as double byte opcodes */
+            return FALSE;       /* Treat as double uint8_t opcodes */
 
     }
 
@@ -183,10 +183,10 @@ static bool op0F(byte pat[])
     PATLEN bytes are scanned.
 */
 void
-fixWildCards(byte pat[])
+fixWildCards(uint8_t pat[])
 {
 
-    byte op, quad, intArg;
+    uint8_t op, quad, intArg;
 
 
     pc=0;
@@ -195,17 +195,17 @@ fixWildCards(byte pat[])
         op = pat[pc++];
         if (pc >= PATLEN) return;
 
-        quad = (byte) (op & 0xC0);			/* Quadrant of the opcode map */
+        quad = (uint8_t) (op & 0xC0);			/* Quadrant of the opcode map */
         if (quad == 0)
         {
             /* Arithmetic group 00-3F */
 
             if ((op & 0xE7) == 0x26)        /* First check for the odds */
             {
-                /* Segment prefix: treat as 1 byte opcode */
+                /* Segment prefix: treat as 1 uint8_t opcode */
                 continue;
             }
-            if (op == 0x0F)                 /* 386 2 byte opcodes */
+            if (op == 0x0F)                 /* 386 2 uint8_t opcodes */
             {
                 if (op0F(pat)) return;
                 continue;
@@ -216,20 +216,20 @@ fixWildCards(byte pat[])
                 /* All these are constant. Work out the instr length */
                 if (op & 2)
                 {
-                    /* Push, pop, other 1 byte opcodes */
+                    /* Push, pop, other 1 uint8_t opcodes */
                     continue;
                 }
                 else
                 {
                     if (op & 1)
                     {
-                        /* Word immediate operands */
+                        /* uint16_t immediate operands */
                         pc += 2;
                         continue;
                     }
                     else
                     {
-                        /* Byte immediate operands */
+                        /* uint8_t immediate operands */
                         pc++;
                         continue;
                     }
@@ -255,7 +255,7 @@ fixWildCards(byte pat[])
                 /* 0x60 - 0x70 */
                 if (op & 0x10)
                 {
-                    /* 70-7F 2 byte jump opcodes */
+                    /* 70-7F 2 uint8_t jump opcodes */
                     pc++;
                     continue;
                 }
@@ -282,11 +282,11 @@ fixWildCards(byte pat[])
                             if (TwoWild(pat)) return;
                             continue;
 
-                        case 0x68:  /* Push byte */
-                        case 0x6A:  /* Push byte */
+                        case 0x68:  /* Push uint8_t */
+                        case 0x6A:  /* Push uint8_t */
                         case 0x6D:  /* insb port */
                         case 0x6F:  /* outsb port */
-                            /* 2 byte instr, no wilds */
+                            /* 2 uint8_t instr, no wilds */
                             pc++;
                             continue;
 
@@ -300,14 +300,14 @@ fixWildCards(byte pat[])
             switch (op & 0xF0)
             {
                 case 0x80:          /* 80 - 8F */
-                    /* All have a mod/rm byte */
+                    /* All have a mod/rm uint8_t */
                     if (ModRM(pat)) return;
                     /* These also have immediate values */
                     switch (op)
                     {
                         case 0x80:
                         case 0x83:
-                            /* One byte immediate */
+                            /* One uint8_t immediate */
                             pc++;
                             continue;
 
@@ -326,7 +326,7 @@ fixWildCards(byte pat[])
                         if (FourWild(pat)) return;
                         continue;
                     }
-                    /* All others are 1 byte opcodes */
+                    /* All others are 1 uint8_t opcodes */
                     continue;
                 case 0xA0:          /* A0 - AF */
                     if ((op & 0x0C) == 0)
@@ -337,7 +337,7 @@ fixWildCards(byte pat[])
                     }
                     else if ((op & 0xFE) == 0xA8)
                     {
-                        /* test al,#byte or test ax,#word */
+                        /* test al,#uint8_t or test ax,#uint16_t */
                         if (op & 1) pc += 2;
                         else        pc += 1;
                         continue;
@@ -366,10 +366,10 @@ fixWildCards(byte pat[])
             /* In the last quadrant of the op code table */
             switch (op)
             {
-                case 0xC0:          /* 386: Rotate group 2 ModRM, byte, #byte */
-                case 0xC1:          /* 386: Rotate group 2 ModRM, word, #byte */
+                case 0xC0:          /* 386: Rotate group 2 ModRM, uint8_t, #uint8_t */
+                case 0xC1:          /* 386: Rotate group 2 ModRM, uint16_t, #uint8_t */
                     if (ModRM(pat)) return;
-                    /* Byte immediate value follows ModRM */
+                    /* uint8_t immediate value follows ModRM */
                     pc++;
                     continue;
 
@@ -390,27 +390,27 @@ fixWildCards(byte pat[])
 
                 case 0xC6:          /* Mov ModRM, #nn */
                     if (ModRM(pat)) return;
-                    /* Byte immediate value follows ModRM */
+                    /* uint8_t immediate value follows ModRM */
                     pc++;
                     continue;
                 case 0xC7:          /* Mov ModRM, #nnnn */
                     if (ModRM(pat)) return;
-                    /* Word immediate value follows ModRM */
+                    /* uint16_t immediate value follows ModRM */
                     /* Immediate 16 bit values might be constant, but also
                         might be relocatable. For now, make them wild */
                     if (TwoWild(pat)) return;
                     continue;
 
                 case 0xC8:          /* Enter Iw, Ib */
-                    pc += 3;        /* Constant word, byte */
+                    pc += 3;        /* Constant uint16_t, uint8_t */
                     continue;
                 case 0xC9:          /* Leave */
                     continue;
 
-                case 0xCC:          /* Int 3 */
+                case 0xCC:          /* int 3 */
                     continue;
 
-                case 0xCD:          /* Int nn */
+                case 0xCD:          /* int nn */
                     intArg = pat[pc++];
                     if ((intArg >= 0x34) && (intArg <= 0x3B))
                     {
@@ -425,10 +425,10 @@ fixWildCards(byte pat[])
                 case 0xCF:          /* Iret */
                     continue;
 
-                case 0xD0:          /* Group 2 rotate, byte, 1 bit */
-                case 0xD1:          /* Group 2 rotate, word, 1 bit */
-                case 0xD2:          /* Group 2 rotate, byte, CL bits */
-                case 0xD3:          /* Group 2 rotate, word, CL bits */
+                case 0xD0:          /* Group 2 rotate, uint8_t, 1 bit */
+                case 0xD1:          /* Group 2 rotate, uint16_t, 1 bit */
+                case 0xD2:          /* Group 2 rotate, uint8_t, CL bits */
+                case 0xD3:          /* Group 2 rotate, uint16_t, CL bits */
                     if (ModRM(pat)) return;
                     continue;
 
@@ -500,8 +500,8 @@ fixWildCards(byte pat[])
                 case 0xFD:          /* Std */
                     continue;
 
-                case 0xF6:          /* Group 3 byte test/not/mul/div */
-                case 0xF7:          /* Group 3 word test/not/mul/div */
+                case 0xF6:          /* Group 3 uint8_t test/not/mul/div */
+                case 0xF7:          /* Group 3 uint16_t test/not/mul/div */
                 case 0xFE:          /* Inc/Dec group 4 */
                     if (ModRM(pat)) return;
                     continue;
@@ -511,7 +511,7 @@ fixWildCards(byte pat[])
                     if (ModRM(pat)) return;
                     continue;
 
-                default:            /* Rest are single byte opcodes */
+                default:            /* Rest are single uint8_t opcodes */
                     continue;
             }
         }

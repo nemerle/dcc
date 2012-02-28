@@ -12,9 +12,9 @@
 #endif
 #include "graph.h"
 
-//static BB *  rmJMP(Function * pProc, Int marker, BB * pBB);
+//static BB *  rmJMP(Function * pProc, int marker, BB * pBB);
 static void mergeFallThrough(Function * pProc, BB * pBB);
-static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, Int *first, Int *last);
+static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, int *first, int *last);
 
 /*****************************************************************************
  * createCFG - Create the basic control flow graph
@@ -32,8 +32,8 @@ void Function::createCFG()
      * 5) Repeated string instructions
      * 6) End of procedure
      */
-    Int		i;
-    Int		ip, start;
+    int		i;
+    int		ip, start;
     BB *        psBB;
     BB *        pBB;
     iICODE 	pIcode = Icode.begin();
@@ -63,7 +63,7 @@ void Function::createCFG()
                     pBB = BB::Create(start, ip, TWO_BRANCH, 2, this);
 CondJumps:
                     start = ip + 1;
-                    pBB->edges[0].ip = (dword)start;
+                    pBB->edges[0].ip = (uint32_t)start;
                     /* This is for jumps off into nowhere */
                     if (pIcode->ic.ll.flg & NO_LABEL)
                     {
@@ -105,7 +105,7 @@ CondJumps:
                     pBB = BB::Create(start, ip, CALL_NODE, i, this);
                     start = ip + 1;
                     if (i)
-                        pBB->edges[0].ip = (dword)start;
+                        pBB->edges[0].ip = (uint32_t)start;
                 }
                     break;
 
@@ -130,14 +130,14 @@ CondJumps:
                         {
                             pBB = BB::Create(start, ip, FALL_NODE, 1, this);
                             start = ip + 1;
-                            pBB->edges[0].ip = (dword)start;
+                            pBB->edges[0].ip = (uint32_t)start;
                         }
                     }
                 break;
             }
         }
     }
-    std::vector<BB *>::iterator iter=heldBBs.begin();
+    auto iter=heldBBs.begin();
     /* Convert list of BBs into a graph */
     for (; iter!=heldBBs.end(); ++iter)
     {
@@ -169,7 +169,7 @@ void Function::markImpure()
         if ( not icod.isLlFlag(SYM_USE | SYM_DEF))
             continue;
         psym = &symtab[icod.ic.ll.caseTbl.numEntries];
-        for (int c = (Int)psym->label; c < (Int)psym->label+psym->size; c++)
+        for (int c = (int)psym->label; c < (int)psym->label+psym->size; c++)
         {
             if (BITMAP(c, BM_CODE))
             {
@@ -204,7 +204,7 @@ void Function::freeCFG()
 void Function::compressCFG()
 {
     BB * pBB, *pNxt;
-    Int	ip, first=0, last, i;
+    int	ip, first=0, last, i;
 
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
@@ -223,8 +223,8 @@ void Function::compressCFG()
             {
                 pBB->edges[i].BBptr = pNxt;
                 assert(pBB->back().loc_ip==ip);
-                pBB->back().SetImmediateOp((dword)pNxt->begin());
-                //Icode[ip].SetImmediateOp((dword)pNxt->begin());
+                pBB->back().SetImmediateOp((uint32_t)pNxt->begin());
+                //Icode[ip].SetImmediateOp((uint32_t)pNxt->begin());
             }
         }
     }
@@ -270,7 +270,7 @@ void Function::compressCFG()
 /****************************************************************************
  * rmJMP - If BB addressed is just a JMP it is replaced with its target
  ***************************************************************************/
-BB *BB::rmJMP(Int marker, BB * pBB)
+BB *BB::rmJMP(int marker, BB * pBB)
 {
     marker += DFS_JMP;
 
@@ -323,7 +323,7 @@ BB *BB::rmJMP(Int marker, BB * pBB)
 void BB::mergeFallThrough( CIcodeRec &Icode)
 {
     BB *	pChild;
-    Int	i;
+    int	i;
 
     if (!this)
     {
@@ -374,7 +374,7 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
  * dfsNumbering - Numbers nodes during first and last visits and determine
  * in-edges
  ****************************************************************************/
-void BB::dfsNumbering(std::vector<BB *> &dfsLast, Int *first, Int *last)
+void BB::dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last)
 {
     BB *		pChild;
     traversed = DFS_NUM;

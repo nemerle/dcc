@@ -8,7 +8,7 @@
  *                          [PUSH SI]
  * In which case, the stack variable flags are set
  ****************************************************************************/
-Int Idiom1::checkStkVars (iICODE pIcode)
+int Idiom1::checkStkVars (iICODE pIcode)
 {
     /* Look for PUSH SI */
     int si_matched=0;
@@ -51,12 +51,12 @@ Int Idiom1::checkStkVars (iICODE pIcode)
 bool Idiom1::match(iICODE picode)
 {
     uint8_t type = 0;	/* type of variable: 1 = reg-var, 2 = local */
-    byte regi;		/* register of the MOV */
+    uint8_t regi;		/* register of the MOV */
     if(m_func->flg & PROC_HLL)
         return false;
     if(picode==m_end)
         return false;
-    Int n;
+    int n;
     m_icodes.clear();
     m_min_off = 0;
     /* PUSH BP as first instruction of procedure */

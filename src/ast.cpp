@@ -40,7 +40,7 @@ static char *hexStr (uint16_t i)
 
 
 /* Sets the du record for registers according to the du flag    */
-void ICODE::setRegDU (byte regi, operDu du_in)
+void ICODE::setRegDU (uint8_t regi, operDu du_in)
 {
     //    printf("%s %d %x\n",__FUNCTION__,regi,int(du_in));
     switch (du_in)
@@ -120,10 +120,10 @@ COND_EXPR *COND_EXPR::unary(condNodeType t, COND_EXPR *sub_expr)
 
 
 /* Returns an identifier conditional expression node of type GLOB_VAR */
-COND_EXPR *COND_EXPR::idGlob (int16 segValue, int16 off)
+COND_EXPR *COND_EXPR::idGlob (int16_t segValue, int16_t off)
 {
     COND_EXPR *newExp;
-    dword adr;
+    uint32_t adr;
     size_t i;
 
     newExp = new COND_EXPR(IDENTIFIER);
@@ -140,7 +140,7 @@ COND_EXPR *COND_EXPR::idGlob (int16 segValue, int16 off)
 
 
 /* Returns an identifier conditional expression node of type REGISTER */
-COND_EXPR *COND_EXPR::idReg(byte regi, flags32 icodeFlg, LOCAL_ID *locsym)
+COND_EXPR *COND_EXPR::idReg(uint8_t regi, uint32_t icodeFlg, LOCAL_ID *locsym)
 {
     COND_EXPR *newExp;
 
@@ -151,7 +151,7 @@ COND_EXPR *COND_EXPR::idReg(byte regi, flags32 icodeFlg, LOCAL_ID *locsym)
         newExp->expr.ident.idNode.regiIdx = locsym->newByteWordReg(TYPE_BYTE_SIGN, regi);
         newExp->expr.ident.regiType = BYTE_REG;
     }
-    else    /* word */
+    else    /* uint16_t */
     {
         newExp->expr.ident.idNode.regiIdx = locsym->newByteWordReg( TYPE_WORD_SIGN, regi);
         newExp->expr.ident.regiType = WORD_REG;
@@ -161,7 +161,7 @@ COND_EXPR *COND_EXPR::idReg(byte regi, flags32 icodeFlg, LOCAL_ID *locsym)
 
 
 /* Returns an identifier conditional expression node of type REGISTER */
-COND_EXPR *COND_EXPR::idRegIdx(Int idx, regType reg_type)
+COND_EXPR *COND_EXPR::idRegIdx(int idx, regType reg_type)
 {
     COND_EXPR *newExp;
 
@@ -173,7 +173,7 @@ COND_EXPR *COND_EXPR::idRegIdx(Int idx, regType reg_type)
 }
 
 /* Returns an identifier conditional expression node of type LOCAL_VAR */
-COND_EXPR *COND_EXPR::idLoc(Int off, LOCAL_ID *localId)
+COND_EXPR *COND_EXPR::idLoc(int off, LOCAL_ID *localId)
 {
     COND_EXPR *newExp;
     size_t i;
@@ -193,7 +193,7 @@ COND_EXPR *COND_EXPR::idLoc(Int off, LOCAL_ID *localId)
 
 
 /* Returns an identifier conditional expression node of type PARAM */
-COND_EXPR *COND_EXPR::idParam(Int off, const STKFRAME * argSymtab)
+COND_EXPR *COND_EXPR::idParam(int off, const STKFRAME * argSymtab)
 {
     COND_EXPR *newExp;
     size_t i;
@@ -211,7 +211,7 @@ COND_EXPR *COND_EXPR::idParam(Int off, const STKFRAME * argSymtab)
 
 /* Returns an identifier conditional expression node of type GLOB_VAR_IDX.
  * This global variable is indexed by regi.     */
-COND_EXPR *idCondExpIdxGlob (int16 segValue, int16 off, byte regi, const LOCAL_ID *locSym)
+COND_EXPR *idCondExpIdxGlob (int16_t segValue, int16_t off, uint8_t regi, const LOCAL_ID *locSym)
 {
     COND_EXPR *newExp;
     size_t i;
@@ -231,7 +231,7 @@ COND_EXPR *idCondExpIdxGlob (int16 segValue, int16 off, byte regi, const LOCAL_I
 
 
 /* Returns an identifier conditional expression node of type CONSTANT */
-COND_EXPR *COND_EXPR::idKte(dword kte, byte size)
+COND_EXPR *COND_EXPR::idKte(uint32_t kte, uint8_t size)
 {
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
     newExp->expr.ident.idType = CONSTANT;
@@ -243,7 +243,7 @@ COND_EXPR *COND_EXPR::idKte(dword kte, byte size)
 
 /* Returns an identifier conditional expression node of type LONG_VAR,
  * that points to the given index idx.  */
-COND_EXPR *COND_EXPR::idLongIdx (Int idx)
+COND_EXPR *COND_EXPR::idLongIdx (int idx)
 {
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
     newExp->expr.ident.idType = LONG_VAR;
@@ -253,9 +253,9 @@ COND_EXPR *COND_EXPR::idLongIdx (Int idx)
 
 
 /* Returns an identifier conditional expression node of type LONG_VAR */
-COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, Int off)
+COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off)
 {
-    Int idx;
+    int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
     /* Check for long constant and save it as a constant expression */
     if ((sd == SRC) && ((pIcode->ic.ll.flg & I) == I))  /* constant */
@@ -298,7 +298,7 @@ COND_EXPR *COND_EXPR::idFunc(Function * pproc, STKFRAME * args)
 /* Returns an identifier conditional expression node of type OTHER.
  * Temporary solution, should really be encoded as an indexed type (eg.
  * arrays). */
-COND_EXPR *COND_EXPR::idOther(byte seg, byte regi, int16 off)
+COND_EXPR *COND_EXPR::idOther(uint8_t seg, uint8_t regi, int16_t off)
 {
     COND_EXPR *newExp;
 
@@ -316,7 +316,7 @@ COND_EXPR *COND_EXPR::idOther(byte seg, byte regi, int16 off)
 COND_EXPR *COND_EXPR::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
 {
     COND_EXPR *newExp;
-    Int idx;
+    int idx;
 
     newExp = new COND_EXPR(IDENTIFIER);
     if (retVal->type == TYPE_LONG_SIGN)
@@ -344,7 +344,7 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE
 {
     COND_EXPR *newExp;
 
-    Int idx;          /* idx into pIcode->localId table */
+    int idx;          /* idx into pIcode->localId table */
 
     const LLOperand &pm((sd == SRC) ? pIcode.ic.ll.src : pIcode.ic.ll.dst);
 
@@ -451,13 +451,13 @@ condId ICODE::idType(opLoc sd)
 
 
 /* Size of hl types */
-Int hlSize[] = {2, 1, 1, 2, 2, 4, 4, 4, 2, 2, 1, 4, 4};
+int hlSize[] = {2, 1, 1, 2, 2, 4, 4, 4, 2, 2, 1, 4, 4};
 
 
 /* Returns the type of the expression */
-Int hlTypeSize (const COND_EXPR *expr, Function * pproc)
+int hlTypeSize (const COND_EXPR *expr, Function * pproc)
 {
-    Int first, second;
+    int first, second;
 
     if (expr == NULL)
         return (2);		/* for TYPE_UNKNOWN */
@@ -578,10 +578,10 @@ hlType expType (const COND_EXPR *expr, Function * pproc)
 /* Removes the register from the tree.  If the register was part of a long
  * register (eg. dx:ax), the node gets transformed into an integer register
  * node.        */
-void HlTypeSupport::performLongRemoval (byte regi, LOCAL_ID *locId, COND_EXPR *tree)
+void HlTypeSupport::performLongRemoval (uint8_t regi, LOCAL_ID *locId, COND_EXPR *tree)
 {
     IDENTTYPE* ident;     	/* ptr to an identifier */
-    byte otherRegi;         /* high or low part of long register */
+    uint8_t otherRegi;         /* high or low part of long register */
 
     switch (tree->type) {
     case BOOLEAN_OP:
@@ -606,10 +606,10 @@ void HlTypeSupport::performLongRemoval (byte regi, LOCAL_ID *locId, COND_EXPR *t
 
 
 /* Returns the string located in image, formatted in C format. */
-static std::string getString (Int offset)
+static std::string getString (int offset)
 {
     ostringstream o;
-    Int strLen, i;
+    int strLen, i;
 
     strLen = strSize (&prog.Image[offset], '\0');
     o << '"';
@@ -621,9 +621,9 @@ static std::string getString (Int offset)
 
 
 /* Walks the conditional expression tree and returns the result on a string */
-string walkCondExpr (const COND_EXPR* expr, Function * pProc, Int* numLoc)
+string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
 {
-    int16 off;              /* temporal - for OTHER */
+    int16_t off;              /* temporal - for OTHER */
     ID* id;                 /* Pointer to local identifier table */
     //char* o;              /* Operand string pointer */
     bool needBracket;       /* Determine whether parenthesis is needed */
@@ -828,9 +828,9 @@ void COND_EXPR::changeBoolOp (condOp newOp)
 
 /* Inserts the expression exp into the tree at the location specified by the
  * register regi */
-bool insertSubTreeReg (COND_EXPR *expr, COND_EXPR **tree, byte regi,LOCAL_ID *locsym)
+bool insertSubTreeReg (COND_EXPR *expr, COND_EXPR **tree, uint8_t regi,LOCAL_ID *locsym)
 {
-    byte treeReg;
+    uint8_t treeReg;
 
     if (*tree == NULL)
         return FALSE;
@@ -840,12 +840,12 @@ bool insertSubTreeReg (COND_EXPR *expr, COND_EXPR **tree, byte regi,LOCAL_ID *lo
         if ((*tree)->expr.ident.idType == REGISTER)
         {
             treeReg = locsym->id_arr[(*tree)->expr.ident.idNode.regiIdx].id.regi;
-            if (treeReg == regi)                        /* word reg */
+            if (treeReg == regi)                        /* uint16_t reg */
             {
                 *tree = expr;
                 return TRUE;
             }
-            else if ((regi >= rAX) && (regi <= rBX))    /* word/byte reg */
+            else if ((regi >= rAX) && (regi <= rBX))    /* uint16_t/uint8_t reg */
             {
                 if ((treeReg == (regi + rAL-1)) || (treeReg == (regi + rAH-1)))
                 {
@@ -876,7 +876,7 @@ bool insertSubTreeReg (COND_EXPR *expr, COND_EXPR **tree, byte regi,LOCAL_ID *lo
 
 /* Inserts the expression exp into the tree at the location specified by the
  * long register index longIdx*/
-bool insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR **tree, Int longIdx)
+bool insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR **tree, int longIdx)
 {
     switch ((*tree)->type)
     {

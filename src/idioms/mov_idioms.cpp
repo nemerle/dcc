@@ -3,7 +3,7 @@
 using namespace std;
 
 /*****************************************************************************
- * idiom 14 - Long word assign
+ * idiom 14 - Long uint16_t assign
  *      MOV regL, mem/reg
  *      XOR regH, regH
  *      Eg:     MOV ax, di
@@ -61,14 +61,14 @@ int Idiom14::action()
 
 
 /*****************************************************************************
- * idiom 13 - Word assign
+ * idiom 13 - uint16_t assign
  *      MOV regL, mem
  *      MOV regH, 0
  *      Eg:     MOV al, [bp-2]
  *              MOV ah, 0
  *      => MOV ax, [bp-2]
  *      Found in Borland Turbo C, used for multiplication and division of
- *      byte operands (ie. they need to be extended to words).
+ *      uint8_t operands (ie. they need to be extended to words).
  ****************************************************************************/
 bool Idiom13::match(iICODE pIcode)
 {
@@ -77,7 +77,7 @@ bool Idiom13::match(iICODE pIcode)
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
     m_loaded_reg = 0;
-    byte regi;
+    uint8_t regi;
 
     /* Check for regL */
     regi = m_icodes[0]->ic.ll.dst.regi;
@@ -101,7 +101,7 @@ int Idiom13::action()
     COND_EXPR *lhs,*rhs;
     lhs = COND_EXPR::idReg (m_loaded_reg, 0, &m_func->localId);
     m_icodes[0]->setRegDU( m_loaded_reg, eDEF);
-    m_icodes[0]->du1.numRegsDef--;   	/* prev byte reg def */
+    m_icodes[0]->du1.numRegsDef--;   	/* prev uint8_t reg def */
     rhs = COND_EXPR::id (*m_icodes[0], SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();

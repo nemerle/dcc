@@ -5,34 +5,34 @@
  **************************************************************************/
 
 /* Type definitions for intel 80x86 architecture */
-typedef unsigned int    Word;       /* 16 bits */
-typedef unsigned char   Byte;       /* 8 bits  */
+typedef unsigned int    uint16_t;       /* 16 bits */
+typedef unsigned char   uint8_t;       /* 8 bits  */
 typedef union {
     unsigned long   dW;
-    Word            wL, wH;         /* 2 words */
+    uint16_t            wL, wH;         /* 2 words */
 } Dword;                            /* 32 bits */
 
-/* Structure to access high and low bits of a Byte or Word variable */
+/* Structure to access high and low bits of a uint8_t or uint16_t variable */
 typedef struct {
-    /* low  byte */
-    Word    lowBitWord  : 1;
-    Word    filler1     : 6;
-    Word    highBitByte : 1;
-    /* high byte */ 
-    Word    lowBitByte  : 1;
-    Word    filler2     : 6;
-    Word    highBitWord : 1;
+    /* low  uint8_t */
+    uint16_t    lowBitWord  : 1;
+    uint16_t    filler1     : 6;
+    uint16_t    highBitByte : 1;
+    /* high uint8_t */ 
+    uint16_t    lowBitByte  : 1;
+    uint16_t    filler2     : 6;
+    uint16_t    highBitWord : 1;
 } wordBits;
 
-/* Low and high bits of a Byte or Word variable */
+/* Low and high bits of a uint8_t or uint16_t variable */
 #define lowBit(a)       ((wordBits)(a).lowBitWord)
 #define highBitByte(a)  ((wordBits)(a).highBitByte)
 #define lowBitByte(a)   ((wordBits)(a).lowBitByte)
-#define highBit(a)      (sizeof(a) == sizeof(Word) ? \
+#define highBit(a)      (sizeof(a) == sizeof(uint16_t) ? \
                         ((wordBits)(a).highBitWord):\
                         ((wordBits)(a).highBitByte))
 
-/* Word register variables */
+/* uint16_t register variables */
 #define ax      regs.x.ax
 #define bx      regs.x.bx
 #define cx      regs.x.cx
@@ -52,7 +52,7 @@ typedef struct {
 #define carry       regs.x.cflags
 #define overF       regs.x.flags    /***** check *****/
 
-/* Byte register variables */
+/* uint8_t register variables */
 #define ah      regs.h.ah
 #define al      regs.h.al
 #define bh      regs.h.bh
@@ -64,8 +64,8 @@ typedef struct {
 
 
 /* High and low words of a Dword */
-#define highWord(w)     (*((Word*)&(w) + 1))
-#define lowWord(w)      ((Word)(w))
+#define highWord(w)     (*((uint16_t*)&(w) + 1))
+#define lowWord(w)      ((uint16_t)(w))
 
 #define MAXByte     0xFF
 #define MAXWord     0xFFFF

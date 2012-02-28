@@ -21,7 +21,7 @@ void newBundle (bundle *)
 
 
 /* Returns the next available index into the table */
-Int nextBundleIdx (strTable *strTab)
+int nextBundleIdx (strTable *strTab)
 {
     return (strTab->size());
 }
@@ -29,7 +29,7 @@ Int nextBundleIdx (strTable *strTab)
 
 /* Adds the given label to the start of the line strTab[idx].  The first
  * tab is removed and replaced by this label */
-void addLabelBundle (strTable &strTab, Int idx, Int label)
+void addLabelBundle (strTable &strTab, int idx, int label)
 {
     char s[lineSize];
     sprintf (s, "l%ld: %s", label, strTab[idx].c_str()+4);
@@ -40,7 +40,7 @@ void addLabelBundle (strTable &strTab, Int idx, Int label)
 /* Writes the contents of the string table on the file fp.  */
 static void writeStrTab (std::ostream &ios, strTable &strTab)
 {
-    Int i;
+    int i;
 
     for (i = 0; i < strTab.size(); i++)
         ios << strTab[i];

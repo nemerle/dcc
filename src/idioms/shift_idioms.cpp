@@ -30,7 +30,7 @@ int Idiom8::action()
 {
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
-    byte regH,regL;
+    uint8_t regH,regL;
     regH=m_icodes[0]->ic.ll.dst.regi;
     regL=m_icodes[1]->ic.ll.dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, regH, regL, m_icodes[0]);
@@ -58,8 +58,8 @@ int Idiom8::action()
  ****************************************************************************/
 bool Idiom15::match(iICODE pIcode)
 {
-    Int n = 1;
-    byte regi;
+    int n = 1;
+    uint8_t regi;
 
     if(distance(pIcode,m_end)<2)
         return false;
@@ -122,7 +122,7 @@ int Idiom12::action()
 {
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
-    byte regH,regL;
+    uint8_t regH,regL;
     regL=m_icodes[0]->ic.ll.dst.regi;
     regH=m_icodes[1]->ic.ll.dst.regi;
 
@@ -162,7 +162,7 @@ int Idiom9::action()
 {
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
-    byte regH,regL;
+    uint8_t regH,regL;
     regL=m_icodes[1]->ic.ll.dst.regi;
     regH=m_icodes[0]->ic.ll.dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN,regH,regL,m_icodes[0]);

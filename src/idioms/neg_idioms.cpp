@@ -79,7 +79,7 @@ bool Idiom16::match (iICODE picode)
     for(int i=0; i<3; ++i)
         m_icodes[i]=picode++;
 
-    byte regi = m_icodes[0]->ic.ll.dst.regi;
+    uint8_t regi = m_icodes[0]->ic.ll.dst.regi;
     if ((regi >= rAX) && (regi < INDEXBASE))
     {
         if (m_icodes[1]->ic.ll.match(iSBB) && m_icodes[2]->ic.ll.match(iINC))

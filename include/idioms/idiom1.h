@@ -5,7 +5,7 @@ struct Idiom1 : public Idiom
 protected:
     std::vector<iICODE> m_icodes;
     int m_min_off;
-    Int checkStkVars (iICODE pIcode);
+    int checkStkVars (iICODE pIcode);
 public:
     Idiom1(Function *f) : Idiom(f)
     {

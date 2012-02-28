@@ -18,7 +18,7 @@ struct ExpStack
     void        init();
     void        push(COND_EXPR *);
     COND_EXPR * pop();
-    Int         numElem();
+    int         numElem();
     boolT	empty();
 };
 /***************************************************************************
@@ -53,7 +53,7 @@ COND_EXPR *ExpStack::pop()
 }
 
 /* Returns the number of elements available in the expression stack */
-Int ExpStack::numElem()
+int ExpStack::numElem()
 {
     return expStk.size();
 }
@@ -69,9 +69,9 @@ ExpStack g_exp_stk;
 
 /* Returns the index of the local variable or parameter at offset off, if it
  * is in the stack frame provided.  */
-Int STKFRAME::getLocVar(Int off)
+int STKFRAME::getLocVar(int off)
 {
-    Int     i;
+    int     i;
 
     for (i = 0; i < sym.size(); i++)
         if (sym[i].off == off)
@@ -102,16 +102,13 @@ static COND_EXPR *dstIdent (const ICODE & Icode, Function * pProc, iICODE i, ICO
     /** Is it needed? (pIcode->ic.ll.flg) & NO_SRC_B **/
     return (n);
 }
-
-
-
 /* Eliminates all condition codes and generates new hlIcode instructions */
 void Function::elimCondCodes ()
 {
-    Int i;
+    int i;
 
-    byte use;           /* Used flags bit vector                  */
-    byte def;           /* Defined flags bit vector               */
+    uint8_t use;           /* Used flags bit vector                  */
+    uint8_t def;           /* Defined flags bit vector               */
     boolT notSup;       /* Use/def combination not supported      */
     COND_EXPR *rhs;     /* Source operand                         */
     COND_EXPR *lhs;     /* Destination operand                    */
@@ -127,9 +124,7 @@ void Function::elimCondCodes ()
 
         for (useAt = pBB->rbegin2(); useAt != pBB->rend2(); useAt++)
         {
-            if ((useAt->type == LOW_LEVEL) &&
-                    (useAt->invalid == FALSE) &&
-                    (use = useAt->ic.ll.flagDU.u))
+            if ((useAt->type == LOW_LEVEL) && (useAt->valid()) && (use = useAt->ic.ll.flagDU.u))
             {
                 /* Find definition within the same basic block */
                 defAt=useAt;
@@ -139,65 +134,82 @@ void Function::elimCondCodes ()
                     def = defAt->ic.ll.flagDU.d;
                     if ((use & def) != use)
                         continue;
-                        notSup = FALSE;
-                        if ((useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
-                        {
+                    notSup = FALSE;
+                    if ((useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
+                    {
                         iICODE befDefAt = (++riICODE(defAt)).base();
-                            switch (defAt->GetLlOpcode())
-                            {
-                            case iCMP:
+                        switch (defAt->GetLlOpcode())
+                        {
+                        case iCMP:
                             rhs = srcIdent (*defAt, this, befDefAt,*useAt, eUSE);
                             lhs = dstIdent (*defAt, this, befDefAt,*useAt, eUSE);
-                                break;
+                            break;
 
-                            case iOR:
-                                lhs = defAt->ic.hl.asgn.lhs->clone();
-                                useAt->copyDU(*defAt, eUSE, eDEF);
-                                if (defAt->isLlFlag(B))
-                                    rhs = COND_EXPR::idKte (0, 1);
-                                else
-                                    rhs = COND_EXPR::idKte (0, 2);
-                                break;
+                        case iOR:
+                            lhs = defAt->ic.hl.asgn.lhs->clone();
+                            useAt->copyDU(*defAt, eUSE, eDEF);
+                            if (defAt->isLlFlag(B))
+                                rhs = COND_EXPR::idKte (0, 1);
+                            else
+                                rhs = COND_EXPR::idKte (0, 2);
+                            break;
 
-                            case iTEST:
+                        case iTEST:
                             rhs = srcIdent (*defAt,this, befDefAt,*useAt, eUSE);
                             lhs = dstIdent (*defAt,this, befDefAt,*useAt, eUSE);
-                                lhs = COND_EXPR::boolOp (lhs, rhs, AND);
-                                if (defAt->isLlFlag(B))
-                                    rhs = COND_EXPR::idKte (0, 1);
-                                else
-                                    rhs = COND_EXPR::idKte (0, 2);
-                                break;
+                            lhs = COND_EXPR::boolOp (lhs, rhs, AND);
+                            if (defAt->isLlFlag(B))
+                                rhs = COND_EXPR::idKte (0, 1);
+                            else
+                                rhs = COND_EXPR::idKte (0, 2);
+                            break;
 
-                            default:
-                                notSup = TRUE;
-                                std::cout << hex<<defAt->loc_ip;
-                                reportError (JX_NOT_DEF, defAt->GetLlOpcode());
-                                flg |= PROC_ASM;		/* generate asm */
-                            }
-                            if (! notSup)
-                            {
-                                exp = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAt->GetLlOpcode()-iJB]);
-                                useAt->setJCond(exp);
-                            }
-                        }
-
-                        else if (useAt->GetLlOpcode() == iJCXZ)
-                        {
-                            lhs = COND_EXPR::idReg (rCX, 0, &localId);
-                            useAt->setRegDU (rCX, eUSE);
-                            rhs = COND_EXPR::idKte (0, 2);
-                            exp = COND_EXPR::boolOp (lhs, rhs, EQUAL);
-                            useAt->setJCond(exp);
-                        }
-
-                        else
-                        {
-                            reportError (NOT_DEF_USE,defAt->GetLlOpcode(),useAt->GetLlOpcode());
+                        default:
+                            notSup = TRUE;
+                            std::cout << hex<<defAt->loc_ip;
+                            reportError (JX_NOT_DEF, defAt->GetLlOpcode());
                             flg |= PROC_ASM;		/* generate asm */
                         }
-                        break;
+                        if (! notSup)
+                        {
+                            exp = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAt->GetLlOpcode()-iJB]);
+                            useAt->setJCond(exp);
+                        }
                     }
+
+                    else if (useAt->GetLlOpcode() == iJCXZ)
+                    {
+                        lhs = COND_EXPR::idReg (rCX, 0, &localId);
+                        useAt->setRegDU (rCX, eUSE);
+                        rhs = COND_EXPR::idKte (0, 2);
+                        exp = COND_EXPR::boolOp (lhs, rhs, EQUAL);
+                        useAt->setJCond(exp);
+                    }
+//                    else if (useAt->GetLlOpcode() == iRCL)
+//                    {
+//                        ICODE &a(*defAt);
+//                        ICODE &b(*useAt);
+//                        if(a.GetLlOpcode() == iRCL)
+//                        {
+//                            if ((b.ic.ll.flg & NO_SRC) != NO_SRC)   /* if there is src op */
+//                                rhs = COND_EXPR::id (*useAt, SRC, this, Icode.end(), *useAt, NONE);
+//                            lhs = COND_EXPR::id (*useAt, DST, this, Icode.end(), *useAt, USE_DEF);
+
+//                            rhs = COND_EXPR::boolOp (lhs, rhs, SHL);
+//                            useAt->setAsgn(lhs->clone(), rhs);
+//                            printf("RCL\n");
+//                        }
+
+//                    }
+                    else
+                    {
+                        ICODE &a(*defAt);
+                        ICODE &b(*useAt);
+                        reportError (NOT_DEF_USE,a.GetLlOpcode(),b.GetLlOpcode());
+                        flg |= PROC_ASM;		/* generate asm */
+                    }
+                    break;
+                }
 
                 /* Check for extended basic block */
                 if ((pBB->size() == 1) &&(useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
@@ -231,7 +243,7 @@ void Function::elimCondCodes ()
  *       is not really meant to be a register that is used before defined). */
 void Function::genLiveKtes ()
 {
-    Int i;
+    int i;
     BB * pbb;
     bitset<32> liveUse, def;
 
@@ -261,11 +273,11 @@ void Function::genLiveKtes ()
  * Propagates register usage information to the procedure call. */
 void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
 {
-    Int i, j;
+    int i, j;
     BB * pbb=0;              /* pointer to current basic block   */
     Function * pcallee;        /* invoked subroutine               */
     //ICODE  *ticode        /* icode that invokes a subroutine  */
-            ;
+    ;
     std::bitset<32> prevLiveOut,	/* previous live out 				*/
             prevLiveIn;		/* previous live in					*/
     boolT change;			/* is there change in the live sets?*/
@@ -329,7 +341,7 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                     {
                         if ( (pcallee->flg & PROC_IS_FUNC) && /* returns a value */
                              (pcallee->liveOut & pbb->edges[0].BBptr->liveIn).any()
-                           )
+                             )
                             pbb->liveOut = pcallee->liveOut;
                         else
                             pbb->liveOut = 0;
@@ -384,8 +396,8 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
 
 void BB::genDU1()
 {
-    byte regi;            /* Register that was defined */
-    Int k, defRegIdx, useIdx;
+    uint8_t regi;            /* Register that was defined */
+    int k, defRegIdx, useIdx;
     iICODE picode, ticode,lastInst;
     BB *tbb;         /* Target basic block */
     bool res;
@@ -406,7 +418,7 @@ void BB::genDU1()
         {
             if (not picode->du.def.test(k))
                 continue;
-            regi = (byte)(k + 1);       /* defined register */
+            regi = (uint8_t)(k + 1);       /* defined register */
             picode->du1.regi[defRegIdx] = regi;
 
             /* Check remaining instructions of the BB for all uses
@@ -477,9 +489,9 @@ void BB::genDU1()
              * return an integer, which is normally not taken into
              * account by the programmer). 	*/
             if (picode->valid() and not picode->du1.used(defRegIdx) and
-                (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
-                (not ((picode->ic.hl.opcode == HLI_CALL) &&
-                (picode->ic.hl.call.proc->flg & PROC_ISLIB))))
+                    (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
+                    (not ((picode->ic.hl.opcode == HLI_CALL) &&
+                          (picode->ic.hl.call.proc->flg & PROC_ISLIB))))
             {
                 if (! (this->liveOut & duReg[regi]).any())	/* not liveOut */
                 {
@@ -511,8 +523,8 @@ void BB::genDU1()
 /* Generates the du chain of each instruction in a basic block */
 void Function::genDU1 ()
 {
-    byte regi;            /* Register that was defined */
-    Int i,  k, defRegIdx, useIdx;
+    uint8_t regi;            /* Register that was defined */
+    int i,  k, defRegIdx, useIdx;
     iICODE picode, ticode,lastInst;/* Current and target bb    */
     BB * pbb, *tbb;         /* Current and target basic block */
     bool res;
@@ -533,7 +545,7 @@ void Function::genDU1 ()
 /* Substitutes the rhs (or lhs if rhs not possible) of ticode for the rhs
  * of picode. */
 static void forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode,
-                         iICODE ticode, LOCAL_ID *locsym, Int &numHlIcodes)
+                         iICODE ticode, LOCAL_ID *locsym, int &numHlIcodes)
 {
     boolT res;
 
@@ -566,8 +578,8 @@ static void forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode,
 
 /* Substitutes the rhs (or lhs if rhs not possible) of ticode for the
  * expression exp given */
-static void forwardSubsLong (Int longIdx, COND_EXPR *exp, iICODE picode,
-                             iICODE ticode, Int *numHlIcodes)
+static void forwardSubsLong (int longIdx, COND_EXPR *exp, iICODE picode,
+                             iICODE ticode, int *numHlIcodes)
 {
     bool res;
 
@@ -600,7 +612,7 @@ static boolT xClear (COND_EXPR *rhs, iICODE f, iICODE t, iICODE lastBBinst, Func
 {
     iICODE i;
     boolT res;
-    byte regi;
+    uint8_t regi;
 
     if (rhs == NULL)
         return false;
@@ -646,7 +658,7 @@ static boolT xClear (COND_EXPR *rhs, iICODE f, iICODE t, iICODE lastBBinst, Func
 /* Checks the type of the formal argument as against to the actual argument,
  * whenever possible, and then places the actual argument on the procedure's
  * argument list.	*/
-static void processCArg (Function * pp, Function * pProc, ICODE * picode, Int numArgs, Int *k)
+static void processCArg (Function * pp, Function * pProc, ICODE * picode, int numArgs, int *k)
 {
     COND_EXPR *exp;
     boolT res;
@@ -685,7 +697,7 @@ static void processCArg (Function * pp, Function * pProc, ICODE * picode, Int nu
  * For HLI_CALL hlIcodes, places the arguments in the argument list.    */
 void Function::findExps()
 {
-    Int i, k, numHlIcodes;
+    int i, k, numHlIcodes;
     iICODE lastInst,
             picode,     // Current icode                            */
             ticode;     // Target icode                             */
@@ -694,7 +706,7 @@ void Function::findExps()
     COND_EXPR *exp,     // expression pointer - for HLI_POP and HLI_CALL    */
             *lhs;	// exp ptr for return value of a HLI_CALL		*/
     //STKFRAME * args;  // pointer to arguments - for HLI_CALL          */
-    byte regi;		// register(s) to be forward substituted	*/
+    uint8_t regi;		// register(s) to be forward substituted	*/
     ID *retVal;         // function return value
 
     /* Initialize expression stack */
@@ -714,7 +726,7 @@ void Function::findExps()
             if ((picode->type == HIGH_LEVEL) && (picode->invalid == FALSE))
             {
                 numHlIcodes++;
-                if (picode->du1.numRegsDef == 1)    /* byte/word regs */
+                if (picode->du1.numRegsDef == 1)    /* uint8_t/uint16_t regs */
                 {
                     /* Check for only one use of this register.  If this is
                      * the last definition of the register in this BB, check
@@ -959,7 +971,7 @@ void Function::findExps()
                                 res = insertSubTreeLongReg (exp,
                                                             &ticode->ic.hl.exp.v,
                                                             localId.newLongReg ( retVal->type, retVal->id.longId.h,
-                                                                retVal->id.longId.l, picode));
+                                                                                 retVal->id.longId.l, picode));
                                 if (res)	/* was substituted */
                                 {
                                     picode->invalidate();
@@ -992,7 +1004,7 @@ void Function::findExps()
                 if ((picode->ic.hl.opcode == HLI_CALL) &&
                         ! (picode->ic.hl.call.proc->flg & REG_ARGS))
                 { Function * pp;
-                    Int cb, numArgs;
+                    int cb, numArgs;
                     boolT res;
 
                     pp = picode->ic.hl.call.proc;
@@ -1060,7 +1072,7 @@ void Function::findExps()
 void Function::dataFlow(std::bitset<32> &liveOut)
 {
     boolT isAx, isBx, isCx, isDx;
-    Int idx;
+    int idx;
 
     /* Remove references to register variables */
     if (flg & SI_REGVAR)
@@ -1086,7 +1098,7 @@ void Function::dataFlow(std::bitset<32> &liveOut)
             idx = localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, Icode.begin()/*0*/);
             localId.propLongId (rAX, rDX, "\0");
         }
-        else if (isAx || isBx || isCx || isDx)	/* word */
+        else if (isAx || isBx || isCx || isDx)	/* uint16_t */
         {
             retVal.type = TYPE_WORD_SIGN;
             retVal.loc = REG_FRAME;

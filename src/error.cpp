@@ -40,10 +40,10 @@ void fatalError(eErrorId errId, ...)
 {  va_list args;
 //#ifdef __UNIX__   /* ultrix */
 #if 0
-   Int errId;
+   int errId;
 
     va_start(args);
-    errId = va_arg(args, Int);
+    errId = va_arg(args, int);
 #else
     va_start(args, errId);
 #endif
@@ -66,10 +66,10 @@ void reportError(eErrorId errId, ...)
 {  va_list args;
 //#ifdef __UNIX__   /* ultrix */
 #if 0
-   Int errId;
+   int errId;
 
     va_start(args);
-    errId = va_arg(args, Int);
+    errId = va_arg(args, int);
 #else           /* msdos or windows*/
     va_start(args, errId);
 #endif

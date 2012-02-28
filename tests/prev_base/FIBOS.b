@@ -44,8 +44,7 @@ int loc4;
     while ((loc3 <= loc1)) {
         printf ("Input number: ");
         scanf ("%d", &loc2);
-        loc4 = proc_1 (loc2);
-        printf ("fibonacci(%d) = %u\n", loc2, loc4);
+        printf ("fibonacci(%d) = %u\n", loc2, proc_1 (loc2));
         loc3 = (loc3 + 1);
     }	/* end of while */
     exit (0);

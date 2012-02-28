@@ -23,8 +23,8 @@ public:
 #define lineSize	360		/* 3 lines in the mean time */
 
 void    newBundle (bundle *procCode);
-Int     nextBundleIdx (strTable *strTab);
-void	addLabelBundle (strTable &strTab, Int idx, Int label);
+int     nextBundleIdx (strTable *strTab);
+void	addLabelBundle (strTable &strTab, int idx, int label);
 void    writeBundle (std::ostream &ios, bundle procCode);
 void    freeBundle (bundle *procCode);
 

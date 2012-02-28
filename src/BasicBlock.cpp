@@ -5,7 +5,7 @@
 #include "Procedure.h"
 #include "dcc.h"
 using namespace std;
-extern char *indent (Int indLevel);
+extern char *indent (int indLevel);
 BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
 {
     BB *pnewBB = new BB;
@@ -13,7 +13,7 @@ BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
     return pnewBB;
 }
 
-BB *BB::Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function *parent)
+BB *BB::Create(int start, int ip, uint8_t nodeType, int numOutEdges, Function *parent)
 {
     parent->m_cfg;
     BB* pnewBB;
@@ -65,7 +65,7 @@ void BB::display()
  ****************************************************************************/
 void BB::displayDfs()
 {
-    Int i;
+    int i;
     assert(this);
     traversed = DFS_DISP;
 
@@ -114,9 +114,9 @@ void BB::displayDfs()
  *						current procedure.
  *				indLevel: indentation level - used for formatting.
  *				numLoc: last # assigned to local variables 				*/
-void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, Int _ifFollow)
+void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, int _ifFollow)
 {
-    Int follow,						/* ifFollow						*/
+    int follow,						/* ifFollow						*/
             _loopType, 					/* Type of loop, if any 		*/
             _nodeType;						/* Type of node 				*/
     BB * succ, *latch;					/* Successor and latching node 	*/
@@ -330,7 +330,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
  * Args: pBB: pointer to the current basic block.
  *		 Icode: pointer to the array of icodes for current procedure.
  *		 lev: indentation level - used for formatting.	*/
-void BB::writeBB(Int lev, Function * pProc, Int *numLoc)
+void BB::writeBB(int lev, Function * pProc, int *numLoc)
 {
     /* Save the index into the code table in case there is a later goto
   * into this instruction (first instruction of the BB) */

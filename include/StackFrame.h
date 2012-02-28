@@ -1,20 +1,17 @@
 #pragma once
+#include <vector>
+#include <cstring>
 #include "types.h"
-#include "ast.h"
-#include "icode.h"
-#include "locident.h"
-#include "error.h"
-#include "graph.h"
-#include "bundle.h"
-
+#include "Enums.h"
+struct COND_EXPR;
 /* STACK FRAME */
 struct STKSYM
 {
     COND_EXPR	*actual;	/* Expression tree of actual parameter 		*/
     COND_EXPR 	*regs;		/* For register arguments only				*/
-    int16       off;        /* Immediate off from BP (+:args, -:params) */
-    byte        regOff;     /* Offset is a register (e.g. SI, DI)       */
-    Int         size;       /* Size             						*/
+    int16_t       off;        /* Immediate off from BP (+:args, -:params) */
+    uint8_t        regOff;     /* Offset is a register (e.g. SI, DI)       */
+    int         size;       /* Size             						*/
     hlType      type;       /* Probable type    						*/
     eDuVal      duVal;      /* DEF, USE, VAL    						*/
     boolT       hasMacro;	/* This type needs a macro					*/
@@ -31,14 +28,14 @@ struct STKFRAME
 {
     std::vector<STKSYM> sym;
     //STKSYM *    sym;        /* Symbols                      */
-    int16       m_minOff;     /* Initial offset in stack frame*/
-    int16       maxOff;     /* Maximum offset in stack frame*/
-    Int         cb;         /* Number of bytes in arguments */
-    Int         numArgs;    /* No. of arguments in the table*/
-    void        adjustForArgType(Int numArg_, hlType actType_);
+    int16_t       m_minOff;     /* Initial offset in stack frame*/
+    int16_t       maxOff;     /* Maximum offset in stack frame*/
+    int         cb;         /* Number of bytes in arguments */
+    int         numArgs;    /* No. of arguments in the table*/
+    void        adjustForArgType(int numArg_, hlType actType_);
     STKFRAME() : sym(0),m_minOff(0),maxOff(0),cb(0),numArgs(0)
     {
 
     }
-    Int getLocVar(Int off);
+    int getLocVar(int off);
 };

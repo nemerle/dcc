@@ -1,22 +1,24 @@
 #pragma once
 #include <list>
 #include <vector>
+#include <bitset>
 #include <string>
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
 #include "types.h"
 #include "graph.h"
-#include "icode.h"
+//#include "icode.h"
 /* Basic block (BB) node definition */
 struct Function;
 class CIcodeRec;
 struct BB;
 struct interval;
 struct ICODE;
-
+typedef std::list<ICODE>::iterator iICODE;
+typedef std::list<ICODE>::reverse_iterator riICODE;
 typedef union
 {
-    dword         ip;             /* Out edge icode address       */
+    uint32_t         ip;             /* Out edge icode address       */
     BB *          BBptr;          /* Out edge pointer to next BB  */
     interval     *intPtr;         /* Out edge ptr to next interval*/
 } TYPEADR_TYPE;
@@ -36,36 +38,36 @@ private:
 
     }
     //friend class SymbolTableListTraits<BB, Function>;
-    //Int             numInEdges;     /* Number of in edges           */
-    Int             start;          /* First instruction offset     */
-    Int             length;         /* No. of instructions this BB  */
+    //int             numInEdges;     /* Number of in edges           */
+    int             start;          /* First instruction offset     */
+    int             length;         /* No. of instructions this BB  */
 
 public:
-    Int    begin();
+    int    begin();
     iICODE begin2();
     iICODE end2();
-    Int	   end();
-    Int    rbegin();
-    Int    rend();
+    int	   end();
+    int    rbegin();
+    int    rend();
     riICODE rbegin2();
     riICODE rend2();
     ICODE &front();
     ICODE &back();
     size_t size();
-    byte            nodeType;       /* Type of node                 */
+    uint8_t            nodeType;       /* Type of node                 */
     int             traversed;      /* Boolean: traversed yet?      */
-    Int             numHlIcodes;	/* No. of high-level icodes		*/
-    flags32         flg;			/* BB flags						*/
+    int             numHlIcodes;	/* No. of high-level icodes		*/
+    uint32_t         flg;			/* BB flags						*/
 
     /* In edges and out edges */
     std::vector<BB *> inEdges; // does not own held pointers
 
-    //Int             numOutEdges;    /* Number of out edges          */
+    //int             numOutEdges;    /* Number of out edges          */
     std::vector<TYPEADR_TYPE> edges;/* Array of ptrs. to out edges  */
 
     /* For interval construction */
-    Int             beenOnH;        /* #times been on header list H */
-    Int             inEdgeCount;    /* #inEdges (to find intervals) */
+    int             beenOnH;        /* #times been on header list H */
+    int             inEdgeCount;    /* #inEdges (to find intervals) */
     BB *            reachingInt;    /* Reaching interval header     */
     interval       *inInterval;     /* Node's interval              */
 
@@ -81,35 +83,35 @@ public:
     std::bitset<32> liveOut;		/* LiveOut(b)					*/
 
     /* For structuring analysis */
-    Int             dfsFirstNum;    /* DFS #: first visit of node   */
-    Int             dfsLastNum;     /* DFS #: last visit of node    */
-    Int             immedDom;       /* Immediate dominator (dfsLast
+    int             dfsFirstNum;    /* DFS #: first visit of node   */
+    int             dfsLastNum;     /* DFS #: last visit of node    */
+    int             immedDom;       /* Immediate dominator (dfsLast
                                      * index)                       */
-    Int             ifFollow;       /* node that ends the if        */
-    Int             loopType;       /* Type of loop (if any)        */
-    Int             latchNode;      /* latching node of the loop    */
-    Int             numBackEdges;	/* # of back edges				*/
-    Int             loopHead;       /* most nested loop head to which
+    int             ifFollow;       /* node that ends the if        */
+    int             loopType;       /* Type of loop (if any)        */
+    int             latchNode;      /* latching node of the loop    */
+    int             numBackEdges;	/* # of back edges				*/
+    int             loopHead;       /* most nested loop head to which
                                      * thcis node belongs (dfsLast)  */
-    Int             loopFollow;     /* node that follows the loop   */
-    Int             caseHead;       /* most nested case to which this
+    int             loopFollow;     /* node that follows the loop   */
+    int             caseHead;       /* most nested case to which this
                                         node belongs (dfsLast)      */
-    Int             caseTail;       /* tail node for the case       */
+    int             caseTail;       /* tail node for the case       */
 
-    Int             index;          /* Index, used in several ways  */
+    int             index;          /* Index, used in several ways  */
 static BB * Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
-static BB * Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function * parent);
-    void    writeCode(Int indLevel, Function *pProc, Int *numLoc, Int latchNode, Int ifFollow);
+static BB * Create(int start, int ip, uint8_t nodeType, int numOutEdges, Function * parent);
+    void    writeCode(int indLevel, Function *pProc, int *numLoc, int latchNode, int ifFollow);
     void    mergeFallThrough(CIcodeRec &Icode);
-    void    dfsNumbering(std::vector<BB *> &dfsLast, Int *first, Int *last);
+    void    dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last);
     void    displayDfs();
     void    display();
     /// getParent - Return the enclosing method, or null if none
     ///
     const Function *getParent() const { return Parent; }
     Function *getParent()       { return Parent; }
-    void writeBB(Int lev, Function *pProc, Int *numLoc);
-    BB *rmJMP(Int marker, BB *pBB);
+    void writeBB(int lev, Function *pProc, int *numLoc);
+    BB *rmJMP(int marker, BB *pBB);
     void genDU1();
 private:
     Function *Parent;
