@@ -22,40 +22,6 @@ static boolT isJCond (llIcode opcode)
 
 
 /* Returns whether the conditions for a 2-3 long variable are satisfied */
-static boolT isLong23 (Int i, BB * pbb, Int *off, Int *arc)
-{
-    BB * t, * e, * obb2;
-
-    if (pbb->nodeType != TWO_BRANCH)
-        return false;
-    t = pbb->edges[THEN].BBptr;
-    e = pbb->edges[ELSE].BBptr;
-
-    /* Check along the THEN path */
-    if ((t->size() == 1) && (t->nodeType == TWO_BRANCH) && (t->inEdges.size() == 1))
-    {
-        obb2 = t->edges[THEN].BBptr;
-        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ic.ll.opcode == iCMP))
-        {
-            *off = obb2->front().loc_ip - i;
-            *arc = THEN;
-            return true;
-        }
-    }
-
-    /* Check along the ELSE path  */
-    else if ((e->size() == 1) && (e->nodeType == TWO_BRANCH) && (e->inEdges.size() == 1))
-    {
-        obb2 = e->edges[THEN].BBptr;
-        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ic.ll.opcode == iCMP))
-        {
-            *off = obb2->front().loc_ip - i;
-            *arc = ELSE;
-            return true;
-        }
-    }
-    return false;
-}
 static boolT isLong23 (iICODE iter, BB * pbb, Int *off, Int *arc)
 {
     BB * t, * e, * obb2;
@@ -95,14 +61,13 @@ static boolT isLong23 (iICODE iter, BB * pbb, Int *off, Int *arc)
 /* Returns whether the conditions for a 2-2 long variable are satisfied */
 static boolT isLong22 (iICODE pIcode, iICODE pEnd, Int *off)
 {
-    iICODE next1 = pIcode+1;
-    iICODE next2 = pIcode+2;
-    iICODE next3 = pIcode+3;
-    if(next3>=pEnd)
+    if(distance(pIcode,pEnd)<4)
         return false;
-    if (   (next2->ic.ll.opcode == iCMP) &&
-           (isJCond (next1->ic.ll.opcode)) &&
-           (isJCond (next3->ic.ll.opcode)))
+    // preincrement because pIcode is not checked here
+    iICODE icodes[] = { ++pIcode,++pIcode,++pIcode };
+    if (   icodes[1]->ic.ll.match(iCMP) &&
+           (isJCond (icodes[0]->ic.ll.opcode)) &&
+           (isJCond (icodes[2]->ic.ll.opcode)))
     {
         *off = 2;
         return true;
@@ -173,12 +138,14 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, Int arc, 
         /* Update icode index */
         skipped_insn = 2;
     }
-
+    iICODE atOffset(pIcode),atOffset1(pIcode),next1(++iICODE(pIcode));
+    advance(atOffset,off);
+    advance(atOffset1,off+1);
     /* Create new HLI_JCOND and condition */
-    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[(pIcode+off+1)->ic.ll.opcode-iJB]);
-    (pIcode+1)->setJCond(lhs);
-    (pIcode+1)->copyDU(*pIcode, eUSE, eUSE);
-    (pIcode+1)->du.use |= (pIcode+off)->du.use;
+    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[atOffset1->ic.ll.opcode-iJB]);
+    next1->setJCond(lhs);
+    next1->copyDU(*pIcode, eUSE, eUSE);
+    next1->du.use |= atOffset->du.use;
 
     /* Update statistics */
     obb1->flg |= INVALID_BB;
@@ -187,8 +154,10 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, Int arc, 
 
     pIcode->invalidate();
     obb1->front().invalidate();
-    obb2->front().invalidate();
-    (obb2->begin2()+1)->invalidate();
+    // invalidate 2 first instructions of BB 2
+    iICODE ibb2 = obb2->begin2();
+    (ibb2++)->invalidate();
+    (ibb2++)->invalidate();
     return skipped_insn;
 }
 
@@ -198,22 +167,24 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, Int arc, 
  * the new edges for the remaining nodes.
  * @return number of ICODE's to skip
 */
-static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode)
+static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEnd)
 {
     Int j;
     BB * pbb, * obb1, * tbb;
-    iICODE next1=pIcode+1;
-    iICODE next2=pIcode+2;
-    iICODE next3=pIcode+3;
+    if(distance(pIcode,pEnd)<4)
+        return false;
+    // preincrement because pIcode is not checked here
+    iICODE icodes[] = { pIcode++,pIcode++,pIcode++,pIcode++ };
+
     /* Form conditional expression */
-    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[(pIcode+3)->ic.ll.opcode - iJB]);
-    next1->setJCond(lhs);
-    next1->copyDU (*pIcode, eUSE, eUSE);
-    next1->du.use |= next2->du.use;
+    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[icodes[3]->ic.ll.opcode - iJB]);
+    icodes[1]->setJCond(lhs);
+    icodes[1]->copyDU (*icodes[0], eUSE, eUSE);
+    icodes[1]->du.use |= icodes[2]->du.use;
 
     /* Adjust outEdges[0] to the new target basic block */
-    pbb = pIcode->inBB;
-    if (pbb->back().loc_ip == next1->loc_ip)
+    pbb = icodes[0]->inBB;
+    if (pbb->back().loc_ip == icodes[1]->loc_ip)
     {
         /* Find intermediate and target basic blocks */
         obb1 = pbb->edges[THEN].BBptr;
@@ -227,7 +198,7 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode)
         assert(iter!=tbb->inEdges.end());
         tbb->inEdges.erase(iter);
 
-        if ((pIcode+3)->ic.ll.opcode != iJE)
+        if (icodes[3]->ic.ll.opcode != iJE)
             tbb->inEdges.push_back(pbb); /* iJNE => replace arc */
 
         /* Modify ELSE out edge of header basic block */
@@ -237,7 +208,7 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode)
         iter=std::find(tbb->inEdges.begin(),tbb->inEdges.end(),obb1);
         assert(iter!=tbb->inEdges.end());
         tbb->inEdges.erase(iter);
-        if ((pIcode+3)->ic.ll.opcode == iJE)	/* replace */
+        if (icodes[3]->ic.ll.opcode == iJE)	/* replace */
             tbb->inEdges.push_back(pbb);
 
         /* Update statistics */
@@ -245,9 +216,9 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode)
         stats.numBBaft--;
     }
 
-    pIcode->invalidate();
-    next2->invalidate();
-    next3->invalidate();
+    icodes[0]->invalidate();
+    icodes[2]->invalidate();
+    icodes[3]->invalidate();
     return 4;
 }
 
@@ -258,20 +229,24 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode)
  *            pProc : ptr to current procedure's record.        */
 void Function::propLongStk (Int i, const ID &pLocId)
 {
-    Int idx, off, arc;
+    Int off, arc;
     Assignment asgn;
     //COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
-    iICODE pIcode, pEnd;
+    iICODE next1, pEnd;
 
     /* Check all icodes for offHi:offLo */
     pEnd = Icode.end();
-    for (idx = 0; idx < (this->Icode.size() - 1); idx++)
+    int stat_size=Icode.size();
+//    for (idx = 0; idx < (Icode.size() - 1); idx++)
+    for(auto pIcode = Icode.begin(); ;++pIcode)
     {
-        pIcode = Icode.begin()+idx;
+        assert(Icode.size()==stat_size);
+        next1 = ++iICODE(pIcode);
+        if(next1==pEnd)
+            break;
         if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
             continue;
-
-        if (pIcode->ic.ll.opcode == (pIcode+1)->ic.ll.opcode)
+        if (pIcode->ic.ll.opcode == next1->ic.ll.opcode)
         {
             switch (pIcode->ic.ll.opcode)
             {
@@ -279,8 +254,7 @@ void Function::propLongStk (Int i, const ID &pLocId)
                 if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
                 {
                     pIcode->setAsgn(asgn.lhs, asgn.rhs);
-                    (pIcode+1)->invalidate();
-                    idx++;
+                    next1->invalidate();
                 }
                 break;
 
@@ -294,8 +268,7 @@ void Function::propLongStk (Int i, const ID &pLocId)
                     case iXOR: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR); break;
                     }
                     pIcode->setAsgn(asgn.lhs, asgn.rhs);
-                    (pIcode+1)->invalidate();
-                    idx++;
+                    next1->invalidate();
                 }
                 break;
 
@@ -303,19 +276,18 @@ void Function::propLongStk (Int i, const ID &pLocId)
                 if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
                 {
                     pIcode->setUnary( HLI_PUSH, asgn.lhs);
-                    (pIcode+1)->invalidate();
-                    idx++;
+                    next1->invalidate();
                 }
                 break;
             } /*eos*/
         }
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (idx, pIcode->inBB, &off, &arc)))
+        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
         {
             if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, off) )
             {
-                idx += longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off); //
+                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off));
             }
         }
 
@@ -325,7 +297,7 @@ void Function::propLongStk (Int i, const ID &pLocId)
         {
             if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this,asgn, off) )
             {
-                idx += longJCond22 (asgn.rhs, asgn.lhs, pIcode); // maybe this should have -1 to offset loop autoincrement?
+                advance(pIcode,longJCond22 (asgn.rhs, asgn.lhs, pIcode,pEnd));
             }
         }
     }
@@ -339,9 +311,9 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
     bool forced_finish=false;
     for (; not forced_finish and rev!=Icode.rend();rev++) //idx = pLocId_idx - 1; idx > 0 ; idx--
     {
-        ICODE &icode(*rev);
-        ICODE &next1(*(rev-1)); // prev reverse is actually next instruction
-        pIcode = (rev+1).base();//Icode.begin()+(idx-1);
+        pIcode = (++riICODE(rev)).base();//forward iterator from rev
+        ICODE &icode(*pIcode);
+        ICODE &next1(*(++iICODE(pIcode))); // next instruction
 
 
         if ((icode.type == HIGH_LEVEL) || (icode.invalid == TRUE))
@@ -414,9 +386,11 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
     bool forced_finish=false;
     auto pEnd=Icode.end();
     Assignment asgn;
-    for (auto pIcode=beg; not forced_finish and ((pIcode+1)!=Icode.end()); ++pIcode)
+    for (auto pIcode=beg; not forced_finish; ++pIcode)
     {
-        iICODE next1(pIcode+1);
+        iICODE next1(++iICODE(pIcode));
+        if(next1==pEnd)
+            break;
         LLOperand * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
         int off,arc;
 
@@ -474,7 +448,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                         break;
                     }
                     pIcode->setAsgn(asgn.lhs, asgn.rhs);
-                    (pIcode+1)->invalidate();
+                    next1->invalidate();
                     // ftw loop restart ????
                     //idx = 0;
                     // maybe this should end the loop instead
@@ -488,19 +462,18 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         {
             if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, off) == TRUE)
             {
-                pIcode += longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off);
+                                // reduce the advance by 1 here (loop increases) ?
+                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off));
             }
         }
 
         /* Check for long conditional equality or inequality.  This requires
              * 2 CMPs and 2 branches */
-        else if ((pIcode->ic.ll.opcode == iCMP) &&
-                 (isLong22 (pIcode, pEnd, &off)))
+        else if (pIcode->ic.ll.match(iCMP) && (isLong22 (pIcode, pEnd, &off)))
         {
-            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this,
-                                asgn.rhs, asgn.lhs, off) == TRUE)
+            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, off) == TRUE)
             {
-                pIcode += longJCond22 (asgn.rhs, asgn.lhs, pIcode);
+                advance(pIcode,longJCond22 (asgn.rhs, asgn.lhs, pIcode,pEnd) - 1);
             }
         }
 
@@ -508,14 +481,11 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
              *			 JX lab
              *		=> HLI_JCOND (regH:regL X 0) lab
              * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
-        else if ((pIcode->ic.ll.opcode == iOR) && (next1 < pEnd) &&
-                 (isJCond (next1->ic.ll.opcode)))
+        else if (pIcode->ic.ll.match(iOR) && (next1 != pEnd) && (isJCond (next1->ic.ll.opcode)))
         {
-            if ((pIcode->ic.ll.dst.regi == pLocId.id.longId.h) &&
-                    (pIcode->ic.ll.src.regi == pLocId.id.longId.l))
+            if ((pIcode->ic.ll.dst.regi == pLocId.id.longId.h) && (pIcode->ic.ll.src.regi == pLocId.id.longId.l))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-
                 asgn.rhs = COND_EXPR::idKte (0, 4);	/* long 0 */
                 asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[next1->ic.ll.opcode - iJB]);
                 next1->setJCond(asgn.lhs);
@@ -523,7 +493,6 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                 pIcode->invalidate();
             }
         }
-
     } /* end for */
 }
 

@@ -108,7 +108,7 @@ static BB * Create(Int start, Int ip, byte nodeType, Int numOutEdges, Function *
     ///
     const Function *getParent() const { return Parent; }
     Function *getParent()       { return Parent; }
-    void writeBB(ICODE *hli, Int lev, Function *pProc, Int *numLoc);
+    void writeBB(Int lev, Function *pProc, Int *numLoc);
     BB *rmJMP(Int marker, BB *pBB);
 private:
     Function *Parent;

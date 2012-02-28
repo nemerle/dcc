@@ -15,7 +15,7 @@
 #include "shift_idioms.h"
 #include "arith_idioms.h"
 #include "dcc.h"
-
+#include <boost/iterator/filter_iterator.hpp>
 /*****************************************************************************
  * JmpInst - Returns TRUE if opcode is a conditional or unconditional jump
  ****************************************************************************/
@@ -70,8 +70,12 @@ void Function::findIdioms()
     Idiom18 i18(this);
     Idiom19 i19(this);
     Idiom20 i20(this);
-
-    while (pIcode < pEnd)
+    struct is_valid
+    {
+        bool operator()(ICODE &z) { return not z.invalid;}
+    };
+    typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
+    while (pIcode != pEnd)
     {
         switch (pIcode->ic.ll.opcode)
         {
@@ -224,13 +228,22 @@ void Function::bindIcodeOff()
     pIcode = Icode.begin();
 
     /* Flag all jump targets for BB construction and disassembly stage 2 */
-    for (i = 0; i < Icode.size(); i++)
-        if ((pIcode[i].ic.ll.flg & I) && JmpInst(pIcode[i].ic.ll.opcode))
+    for(ICODE &c : Icode)
         {
-            iICODE loc=Icode.labelSrch(pIcode[i].ic.ll.src.op());
+        if ((c.ic.ll.flg & I) && JmpInst(c.ic.ll.opcode))
+        {
+            iICODE loc=Icode.labelSrch(c.ic.ll.src.op());
             if (loc!=Icode.end())
                 loc->ic.ll.flg |= TARGET;
         }
+    }
+//    for (i = 0; i < Icode.size(); i++)
+//        if ((pIcode[i].ic.ll.flg & I) && JmpInst(pIcode[i].ic.ll.opcode))
+//        {
+//            iICODE loc=Icode.labelSrch(pIcode[i].ic.ll.src.op());
+//            if (loc!=Icode.end())
+//                loc->ic.ll.flg |= TARGET;
+//        }
 
     /* Finally bind jump targets to Icode offsets.  Jumps for which no label
      * is found (no code at dest. of jump) are simply left unlinked and

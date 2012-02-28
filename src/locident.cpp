@@ -249,20 +249,22 @@ Int LOCAL_ID::newLongStk(hlType t, Int offH, Int offL)
 /* Returns the index to an appropriate long identifier.
  * Note: long constants should be checked first and stored as a long integer
  *       number in an expression record.    */
-Int LOCAL_ID::newLong(opLoc sd, ICODE *pIcode, hlFirst f, iICODE ix,operDu du, Int off)
+Int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, Int off)
 {
     Int idx;
   LLOperand *pmH, *pmL;
+  iICODE atOffset(pIcode);
+  advance(atOffset,off);
 
     if (f == LOW_FIRST)
     {
         pmL = (sd == SRC) ? &pIcode->ic.ll.src : &pIcode->ic.ll.dst;
-        pmH = (sd == SRC) ? &(pIcode+off)->ic.ll.src : &(pIcode+off)->ic.ll.dst;
+        pmH = (sd == SRC) ? &atOffset->ic.ll.src : &atOffset->ic.ll.dst;
     }
     else        /* HIGH_FIRST */
     {
         pmH = (sd == SRC) ? &pIcode->ic.ll.src : &pIcode->ic.ll.dst;
-        pmL = (sd == SRC) ? &(pIcode+off)->ic.ll.src : &(pIcode+off)->ic.ll.dst;
+        pmL = (sd == SRC) ? &atOffset->ic.ll.src : &atOffset->ic.ll.dst;
     }
 
     if (pmL->regi == 0)                                 /* global variable */
@@ -310,11 +312,13 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, Int i,
                   Function * pProc, Assignment &asgn, Int off)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
+    iICODE atOffset(pIcode);
+    advance(atOffset,off);
 
     pmHdst = &pIcode->ic.ll.dst;
-    pmLdst = &(pIcode+off)->ic.ll.dst;
+    pmLdst = &atOffset->ic.ll.dst;
     pmHsrc = &pIcode->ic.ll.src;
-    pmLsrc = &(pIcode+off)->ic.ll.src;
+    pmLsrc = &atOffset->ic.ll.src;
 
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
@@ -349,18 +353,19 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i,
                       Function * pProc, COND_EXPR *&rhs, COND_EXPR *&lhs, Int off)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
+    iICODE atOffset(pIcode);
+    advance(atOffset,off);
 
     pmHdst = &pIcode->ic.ll.dst;
-    pmLdst = &(pIcode+off)->ic.ll.dst;
+    pmLdst = &atOffset->ic.ll.dst;
     pmHsrc = &pIcode->ic.ll.src;
-    pmLsrc = &(pIcode+off)->ic.ll.src;
+    pmLsrc = &atOffset->ic.ll.src;
 
     if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
     {
         lhs = COND_EXPR::idLongIdx (i);
         if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
         {
-            //rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  idx, eUSE, off);
             rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, off);
         }
         return true;
@@ -368,7 +373,6 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, Int i,
     else if ((longId.h == pmHsrc->regi) && (longId.l == pmLsrc->regi))
     {
         lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, off);
-        //lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, idx, eDEF, off);
         rhs = COND_EXPR::idLongIdx (i);
         return true;
     }

@@ -153,7 +153,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
                 if (numHlIcodes > 1)
                 {
                     /* Write the code for this basic block */
-                    writeBB(&pProc->Icode.front(), indLevel, pProc, numLoc);
+                    writeBB(indLevel, pProc, numLoc);
                     repCond = true;
                 }
 
@@ -183,7 +183,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
 
     /* Write the code for this basic block */
     if (repCond == FALSE)
-        writeBB (&pProc->Icode.front(), indLevel, pProc, numLoc);
+        writeBB (indLevel, pProc, numLoc);
 
     /* Check for end of path */
     _nodeType = nodeType;
@@ -218,7 +218,7 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
             /* Check if there is need to repeat other statements involved
                          * in while condition, then, emit the loop trailer */
             if (repCond)
-                writeBB (&pProc->Icode.front(), indLevel+1, pProc, numLoc);
+                writeBB (indLevel+1, pProc, numLoc);
             cCode.appendCode( "%s}	/* end of while */\n",indent(indLevel));
         }
         else if (_loopType == ENDLESS_TYPE)
@@ -325,28 +325,34 @@ void BB::writeCode (Int indLevel, Function * pProc , Int *numLoc,Int latchNode, 
  * Args: pBB: pointer to the current basic block.
  *		 Icode: pointer to the array of icodes for current procedure.
  *		 lev: indentation level - used for formatting.	*/
-void BB::writeBB(ICODE * hli, Int lev, Function * pProc, Int *numLoc)
+void BB::writeBB(Int lev, Function * pProc, Int *numLoc)
 {
     Int	i, last;
     char *line;           /* Pointer to the HIGH-LEVEL line   */
 
     /* Save the index into the code table in case there is a later goto
   * into this instruction (first instruction of the BB) */
-    hli[start].codeIdx = nextBundleIdx (&cCode.code);
+    front().codeIdx = nextBundleIdx (&cCode.code);
+    //hli[start].codeIdx = nextBundleIdx (&cCode.code);
+    //for (i = start, last = i + length; i < last; i++)
 
     /* Generate code for each hlicode that is not a HLI_JCOND */
-    for (i = start, last = i + length; i < last; i++)
-        if ((hli[i].type == HIGH_LEVEL) && (hli[i].invalid == FALSE))
+    int idx=start;
+    for(iICODE hli=begin2(); hli!=end2(); ++hli)
+    {
+        if ((hli->type == HIGH_LEVEL) && (hli->invalid == FALSE))
         {
-            line = write1HlIcode (hli[i].ic.hl, pProc, numLoc);
+            line = write1HlIcode (hli->ic.hl, pProc, numLoc);
             if (line[0] != '\0')
             {
                 cCode.appendCode( "%s%s", indent(lev), line);
                 stats.numHLIcode++;
             }
             if (option.verbose)
-                hli[i].writeDU(i);
+                hli->writeDU(idx);
         }
+        idx++;
+    }
 }
 int BB::begin()
 {
@@ -355,12 +361,16 @@ int BB::begin()
 
 iICODE BB::begin2()
 {
-    return Parent->Icode.begin()+start;
+    iICODE result(Parent->Icode.begin());
+    advance(result,start);
+    return result;
 }
 
 iICODE BB::end2()
 {
-    return Parent->Icode.begin()+start+length;
+    iICODE result(Parent->Icode.begin());
+    advance(result,start+length);
+    return result;
 }
 int BB::rbegin()
 {
@@ -372,7 +382,7 @@ int BB::end()
 }
 ICODE &BB::back()
 {
-    return Parent->Icode[rbegin()];
+    return *rbegin2();
 }
 
 size_t BB::size()
@@ -382,17 +392,16 @@ size_t BB::size()
 
 ICODE &BB::front()
 {
-    return Parent->Icode[start];
+    return *begin2();
 }
 
 riICODE BB::rbegin2()
 {
-    riICODE res(Parent->Icode.begin()+start+length);
-    assert(res->loc_ip==back().loc_ip);
+    riICODE res(end2());
+    assert(res->loc_ip==rbegin());
     return res;
 }
 riICODE BB::rend2()
 {
-    riICODE res(Parent->Icode.begin()+start);
-    return res;
+    return riICODE(begin2());
 }

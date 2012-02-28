@@ -170,21 +170,6 @@ int Idiom18::action() // action length
     m_icodes[1]->invalidate();
     m_icodes[2]->invalidate();
     return 3;
-    /*
-        lhs = COND_EXPR::id (*(pIcode-1), SRC, this, pIcode, *pIcode, eUSE);
-        if (pIcode->ic.ll.opcode == iDEC)
-            lhs = COND_EXPR::unary (POST_DEC, lhs);
-        else
-            lhs = COND_EXPR::unary (POST_INC, lhs);
-        rhs = COND_EXPR::id (*(pIcode+1), SRC, this, pIcode, *(pIcode+2), eUSE);
-        exp = COND_EXPR::boolOp (lhs, rhs, condOpJCond[(pIcode+2)->ic.ll.opcode - iJB]);
-        (pIcode+2)->setJCond(exp);
-
-        (pIcode-1)->invalidate();
-        pIcode->invalidate();
-        (pIcode+1)->invalidate();
-        pIcode += 3;
-    */
 }
 
 /*****************************************************************************
@@ -320,8 +305,7 @@ int Idiom20::action()
     rhs  = COND_EXPR::id (*m_icodes[2], SRC, m_func, m_icodes[0], *m_icodes[3], eUSE);
     expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ic.ll.opcode - iJB]);
     m_icodes[3]->setJCond(expr);
-    m_icodes[0]->invalidate();
-    m_icodes[1]->invalidate();
-    m_icodes[2]->invalidate();
+    for(int i=0; i<3; ++i)
+        m_icodes[i]->invalidate();
     return 4;
 }

@@ -4,6 +4,7 @@
  ****************************************************************************/
 #pragma once
 #include <vector>
+#include <list>
 #include <bitset>
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCAsmInfo.h>
@@ -276,8 +277,8 @@ struct HLTYPE
         struct {					/* for HLI_CALL				*/
             Function     *proc;
             STKFRAME *args;	/* actual arguments			*/
-        }				 call;
-    }                    oper;      /* operand                  */
+        } call;
+    } oper;      /* operand                  */
 } ;
 /* LOW_LEVEL icode operand record */
 struct LLOperand //: public llvm::MCOperand
@@ -344,9 +345,9 @@ struct ICODE
 {
     struct DU1
     {
-        Int		numRegsDef;			/* # registers defined by this inst		*/
+        Int     numRegsDef;			/* # registers defined by this inst		*/
         byte	regi[MAX_REGS_DEF];	/* registers defined by this inst		*/
-        Int		idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
+        Int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
     };
     icodeType           type;           /* Icode type                   */
     bool                invalid;        /* Has no HIGH_LEVEL equivalent */
@@ -387,7 +388,7 @@ public:
 };
 
 // This is the icode array object.
-class CIcodeRec : public std::vector<ICODE>
+class CIcodeRec : public std::list<ICODE>
 {
 public:
     CIcodeRec();	// Constructor

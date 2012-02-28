@@ -150,12 +150,13 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         flg |= (_Icode.ic.ll.flg & (NOT_HLL | FLOAT_OP));
 
         /* Check if this instruction has already been parsed */
-        if (Icode.labelSrch(_Icode.ic.ll.label, lab))
+        iICODE labLoc = Icode.labelSrch(_Icode.ic.ll.label);
+        if (Icode.end()!=labLoc)
         {   /* Synthetic jump */
             _Icode.type = LOW_LEVEL;
             _Icode.ic.ll.opcode = iJMP;
             _Icode.ic.ll.flg = I | SYNTHETIC | NO_OPS;
-            _Icode.ic.ll.src.SetImmediateOp(Icode[lab].GetLlLabel());
+            _Icode.ic.ll.src.SetImmediateOp(labLoc->GetLlLabel());
             _Icode.ic.ll.label = SynthLab++;
         }
 
@@ -484,13 +485,15 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
             {
                 memcpy(&StCopy, pstate, sizeof(STATE));
                 StCopy.IP = cs + LH(&prog.Image[i]);
+                iICODE last_current_insn = (++Icode.rbegin()).base();
                 ip = Icode.size();
 
                 FollowCtrl (pcallGraph, &StCopy);
+                ++last_current_insn;
+                last_current_insn->ic.ll.caseTbl.numEntries = k++;
+                last_current_insn->ic.ll.flg |= CASE;
+                *psw++ = last_current_insn->GetLlLabel();
 
-                Icode.GetIcode(ip)->ic.ll.caseTbl.numEntries = k++;
-                Icode.GetIcode(ip)->ic.ll.flg |= CASE;
-                *psw++ = Icode[ip].GetLlLabel();
             }
             return TRUE;
         }
@@ -516,7 +519,7 @@ boolT Function::process_JMP (ICODE * pIcode, STATE *pstate, CALL_GRAPH * pcallGr
 
 boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
-    Int   ip = Icode.size() - 1;
+    ICODE &last_insn(Icode.back());
     STATE localState;     /* Local copy of the machine state */
     dword off;
     boolT indirect;
@@ -581,7 +584,7 @@ boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *ps
                 /* A library function. No need to do any more to it */
                 pcallGraph->insertCallGraph (this, iter);
                 iter = (++pProcList.rbegin()).base();
-                Icode.GetIcode(ip)->ic.ll.src.proc.proc = &x;
+                last_insn.ic.ll.src.proc.proc = &x;
                 return false;
             }
 
@@ -621,7 +624,7 @@ boolT Function::process_CALL (ICODE * pIcode, CALL_GRAPH * pcallGraph, STATE *ps
         else
             pcallGraph->insertCallGraph (this, iter);
 
-        Icode[ip].ic.ll.src.proc.proc = &(*iter); // ^ target proc
+        last_insn.ic.ll.src.proc.proc = &(*iter); // ^ target proc
 
         /* return ((p->flg & TERMINATES) != 0); */
         return FALSE;
@@ -856,20 +859,7 @@ void STATE::setState(word reg, int16 value)
 
 /* labelSrchRepl - Searches Icode for instruction with label = target, and
     replaces *pIndex with an icode index */
-bool labelSrch(CIcodeRec &pIcode, Int numIp, dword target, Int *pIndex)
-{
-    Int  i;
 
-    for (i = 0; i < numIp; i++)
-    {
-        if (pIcode[i].ic.ll.label == target)
-        {
-            *pIndex = i;
-            return true;
-        }
-    }
-    return false;
-}
 
 
 static void setBits(int16 type, dword start, dword len)

@@ -9,6 +9,7 @@
 long LMOD@ (long arg0, int arg2, int arg3)
 /* Takes 8 bytes of parameters.
  * Runtime support routine of the compiler.
+ * High-level language prologue code.
  * Untranslatable routine.  Assembler provided.
  * Return value in registers dx:ax.
  * Pascal calling convention.

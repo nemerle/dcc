@@ -132,19 +132,22 @@ void Function::elimCondCodes ()
                     (use = useAt->ic.ll.flagDU.u))
             {
                 /* Find definition within the same basic block */
-                for (defAt = useAt+1; defAt != pBB->rend2(); defAt++)
+                defAt=useAt;
+                ++defAt;
+                for (; defAt != pBB->rend2(); defAt++)
                 {
                     def = defAt->ic.ll.flagDU.d;
-                    if ((use & def) == use)
-                    {
+                    if ((use & def) != use)
+                        continue;
                         notSup = FALSE;
                         if ((useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
                         {
+                        iICODE befDefAt = (++riICODE(defAt)).base();
                             switch (defAt->GetLlOpcode())
                             {
                             case iCMP:
-                                rhs = srcIdent (*defAt, this, (defAt+1).base(),*useAt, eUSE);
-                                lhs = dstIdent (*defAt, this, (defAt+1).base(),*useAt, eUSE);
+                            rhs = srcIdent (*defAt, this, befDefAt,*useAt, eUSE);
+                            lhs = dstIdent (*defAt, this, befDefAt,*useAt, eUSE);
                                 break;
 
                             case iOR:
@@ -157,8 +160,8 @@ void Function::elimCondCodes ()
                                 break;
 
                             case iTEST:
-                                rhs = srcIdent (*defAt,this, (defAt+1).base(),*useAt, eUSE);
-                                lhs = dstIdent (*defAt,this, (defAt+1).base(),*useAt, eUSE);
+                            rhs = srcIdent (*defAt,this, befDefAt,*useAt, eUSE);
+                            lhs = dstIdent (*defAt,this, befDefAt,*useAt, eUSE);
                                 lhs = COND_EXPR::boolOp (lhs, rhs, AND);
                                 if (defAt->isLlFlag(B))
                                     rhs = COND_EXPR::idKte (0, 1);
@@ -195,7 +198,6 @@ void Function::elimCondCodes ()
                         }
                         break;
                     }
-                }
 
                 /* Check for extended basic block */
                 if ((pBB->size() == 1) &&(useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
@@ -423,10 +425,10 @@ void Function::genDU1 ()
                     continue;
                 if ((regi == rSI) && (flg & SI_REGVAR))
                     continue;
-                if ((picode + 1) != lastInst)		/* several instructions */
+                if (distance(picode,lastInst)>1) /* several instructions */
                 {
                     useIdx = 0;
-                    for (auto ricode = picode + 1; ricode != lastInst; ricode++)
+                    for (auto ricode = ++iICODE(picode); ricode != lastInst; ricode++)
                     {
                         ticode=ricode;
                         /* Only check uses of HIGH_LEVEL icodes */
@@ -608,7 +610,6 @@ static boolT xClear (COND_EXPR *rhs, iICODE f, Int t, iICODE lastBBinst, Functio
     iICODE i;
     boolT res;
     byte regi;
-    ICODE * picode;
 
     if (rhs == NULL)
         return false;
@@ -618,9 +619,8 @@ static boolT xClear (COND_EXPR *rhs, iICODE f, Int t, iICODE lastBBinst, Functio
     case IDENTIFIER:
         if (rhs->expr.ident.idType == REGISTER)
         {
-            picode = &pproc->Icode.front();
             regi= pproc->localId.id_arr[rhs->expr.ident.idNode.regiIdx].id.regi;
-            for (i = (f + 1); (i != lastBBinst) && (i->loc_ip < t); i++)
+            for (i = ++iICODE(f); (i != lastBBinst) && (i->loc_ip < t); i++)
                 if ((i->type == HIGH_LEVEL) && ( not i->invalid ))
                 {
                     if ((i->du.def & duReg[regi]).any())
@@ -741,7 +741,8 @@ void Function::findExps()
                         case HLI_ASSIGN:
                             /* Replace rhs of current icode into target
                              * icode expression */
-                            ticode = Icode.begin()+picode->du1.idx[0][0];
+                            ticode = Icode.begin();
+                            advance(ticode,picode->du1.idx[0][0]);
                             if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                     ((ticode->ic.hl.opcode != HLI_CALL) &&
                                      (ticode->ic.hl.opcode != HLI_RET)))
@@ -781,7 +782,8 @@ void Function::findExps()
                             break;
 
                         case HLI_POP:
-                            ticode = Icode.begin()+(picode->du1.idx[0][0]);
+                            ticode = Icode.begin();
+                            advance(ticode,picode->du1.idx[0][0]);
                             if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                     ((ticode->ic.hl.opcode != HLI_CALL) &&
                                      (ticode->ic.hl.opcode != HLI_RET)))
@@ -816,7 +818,8 @@ void Function::findExps()
                             break;
 
                         case HLI_CALL:
-                            ticode = Icode.begin()+(picode->du1.idx[0][0]);
+                            ticode = Icode.begin();
+                            advance(ticode,picode->du1.idx[0][0]);
                             switch (ticode->ic.hl.opcode) {
                             case HLI_ASSIGN:
                                 exp = COND_EXPR::idFunc (
@@ -885,7 +888,8 @@ void Function::findExps()
                              * icode expression */
                             if (picode->du1.idx[0][0] == picode->du1.idx[1][0])
                             {
-                                ticode = Icode.begin()+(picode->du1.idx[0][0]);
+                                ticode = Icode.begin();
+                                advance(ticode,picode->du1.idx[0][0]);
                                 if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                         ((ticode->ic.hl.opcode != HLI_CALL) &&
                                          (ticode->ic.hl.opcode != HLI_RET)))
@@ -922,7 +926,8 @@ void Function::findExps()
                         case HLI_POP:
                             if (picode->du1.idx[0][0] == picode->du1.idx[1][0])
                             {
-                                ticode = Icode.begin()+(picode->du1.idx[0][0]);
+                                ticode = Icode.begin();
+                                advance(ticode,picode->du1.idx[0][0]);
                                 if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                         ((ticode->ic.hl.opcode != HLI_CALL) &&
                                          (ticode->ic.hl.opcode != HLI_RET)))
@@ -951,7 +956,8 @@ void Function::findExps()
                             break;
 
                         case HLI_CALL:    /* check for function return */
-                            ticode = Icode.begin()+(picode->du1.idx[0][0]);
+                            ticode = Icode.begin();
+                            advance(ticode,picode->du1.idx[0][0]);
                             switch (ticode->ic.hl.opcode)
                             {
                             case HLI_ASSIGN:

@@ -15,7 +15,6 @@
 
 CIcodeRec::CIcodeRec()
 {
-    reserve(1024);
 }
 
 /* Copies the icode that is pointed to by pIcode to the icode array.
@@ -30,8 +29,11 @@ ICODE * CIcodeRec::addIcode(ICODE *pIcode)
 
 void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
 {
-    for (int i = start; i <= end; i++)
-        at(i).inBB = pnewBB;
+    for(ICODE &icode : *this)
+        if((icode.loc_ip>=start) and (icode.loc_ip<=end))
+            icode.inBB = pnewBB;
+//    for (int i = start; i <= end; i++)
+//        at(i).inBB = pnewBB;
 }
 
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and
@@ -39,33 +41,23 @@ void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
 bool CIcodeRec::labelSrch(dword target, dword &pIndex)
 {
     Int  i;
-
-    for (i = 0; i < size(); i++)
-    {
-        if (at(i).ic.ll.label == target)
-        {
-            pIndex = i;
-            return true;
-        }
-    }
-    return false;
+    iICODE location=labelSrch(target);
+    if(end()==location)
+	    return false;
+    pIndex=location->loc_ip;
+    return true;
 }
 CIcodeRec::iterator CIcodeRec::labelSrch(dword target)
 {
     Int  i;
-
-    for (i = 0; i < size(); i++)
-    {
-        if (at(i).ic.ll.label == target)
-        {
-            return begin()+i;
-        }
-    }
-    return end();
+    return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ic.ll.label==target;});
 }
 ICODE * CIcodeRec::GetIcode(int ip)
 {
-    return &at(ip);
+    assert(ip>=0 && ip<size());
+    iICODE res=begin();
+    advance(res,ip);
+    return &(*res);
 }
 
 extern char *indent(int level);

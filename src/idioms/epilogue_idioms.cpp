@@ -54,7 +54,7 @@ bool Idiom2::match(iICODE pIcode)
     m_icodes.clear();
     m_icodes.push_back(pIcode);
     /* Get next icode, skip over holes in the icode array */
-    nicode = pIcode + 1;
+    nicode = ++iICODE(pIcode);
     while (nicode->ic.ll.flg & NO_CODE && (nicode != m_end))
     {
         nicode++;
@@ -73,7 +73,8 @@ bool Idiom2::match(iICODE pIcode)
                 )
         {
             m_icodes.push_back(nicode); // Matched RET
-            popStkVars (pIcode-2); // will add optional pop di/si to m_icodes
+            advance(pIcode,-2); // move back before our start
+            popStkVars (pIcode); // and add optional pop di/si to m_icodes
             return true;
         }
     }
@@ -108,15 +109,23 @@ bool Idiom4::match(iICODE pIcode)
     /* Check for [POP DI]
      *           [POP SI] */
     if(distance(m_func->Icode.begin(),pIcode)>=3)
-        popStkVars (pIcode-3);
+    {
+        iICODE search_at(pIcode);
+        advance(search_at,-3);
+        popStkVars(search_at);
+    }
     if(pIcode != m_func->Icode.begin())
     {
-        iICODE prev1=pIcode-1;
+        iICODE prev1 = --iICODE(pIcode);
         /* Check for POP BP */
         if (prev1->ic.ll.match(iPOP,rBP) && not prev1->ic.ll.anyFlagSet(I) )
             m_icodes.push_back(prev1);
         else if(prev1!=m_func->Icode.begin())
-            popStkVars (pIcode-2);
+        {
+            iICODE search_at(pIcode);
+            advance(search_at,-2);
+            popStkVars (search_at);
+        }
     }
 
     /* Check for RET(F) immed */

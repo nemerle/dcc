@@ -116,19 +116,24 @@ CondJumps:
 
                 default:
                     /* Check for exit to DOS */
+                    iICODE next1=++iICODE(pIcode);
                     if (pIcode->ic.ll.flg & TERMINATES)
                     {
                         pBB = BB::Create(start, ip, TERMINATE_NODE, 0, this);
                         start = ip + 1;
                     }
                     /* Check for a fall through */
-                    else if (Icode[ip + 1].ic.ll.flg & (TARGET | CASE))
+                    else if (next1 != Icode.end())
                     {
-                        pBB = BB::Create(start, ip, FALL_NODE, 1, this);
-                        start = ip + 1;
-                        pBB->edges[0].ip = (dword)start;
+                        assert(next1->loc_ip==ip+1);
+                        if (next1->ic.ll.flg & (TARGET | CASE))
+                        {
+                            pBB = BB::Create(start, ip, FALL_NODE, 1, this);
+                            start = ip + 1;
+                            pBB->edges[0].ip = (dword)start;
+                        }
                     }
-                    break;
+                break;
             }
         }
     }
@@ -217,7 +222,9 @@ void Function::compressCFG()
             if (not pBB->edges.empty())   /* Might have been clobbered */
             {
                 pBB->edges[i].BBptr = pNxt;
-                Icode[ip].SetImmediateOp((dword)pNxt->begin());
+                assert(pBB->back().loc_ip==ip);
+                pBB->back().SetImmediateOp((dword)pNxt->begin());
+                //Icode[ip].SetImmediateOp((dword)pNxt->begin());
             }
         }
     }

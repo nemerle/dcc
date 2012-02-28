@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+require 'fileutils'
+print("Regression tester 0.0.1\n")
+def path_local(from)
+    
+    return from #from.gsub('/','//')
+    from.gsub('/','\\\\')
+end
+TESTS_DIR="./tests"
+def perform_test(exepath,filepath,outname)
+	output_path=path_local(TESTS_DIR+"/outputs/"+outname)
+	error_path=path_local(TESTS_DIR+"/errors/"+outname)
+	exepath=path_local(exepath)
+	output_path=path_local(output_path)
+	filepath=path_local(filepath)
+	printf("calling:" + "#{exepath} -a1 -o#{output_path}.a1 #{filepath}\n")
+	valgrind_mode="valgrind --track-origins=yes "
+	#valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes 
+	result = `#{valgrind_mode} #{exepath} -a2V -o#{output_path}.a2 #{filepath} 2>#{error_path}.val`
+	puts result
+	p $?
+end
+`rm -rf #{TESTS_DIR}/outputs/*.*`
+#exit(1)
+if(ARGV.size()==0)
+    puts("valgrind_tester DCC_EXECUTABLE")
+    exit(0)
+end
+Dir.open(TESTS_DIR+"/inputs").each() {|f|
+	next if f=="." or f==".."
+	perform_test(".//"+ARGV[0],TESTS_DIR+"/inputs/"+f,f)
+}
+Dir.open(TESTS_DIR+"/inputs").each() {|f|
+	next if f=="." or f==".."
+	FileUtils.mv(TESTS_DIR+"/inputs/"+f,TESTS_DIR+"/outputs/"+f) if f.end_with?(".b")
+}
+"diff -rqbwB"

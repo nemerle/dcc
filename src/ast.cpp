@@ -261,23 +261,24 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst
 {
     Int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
-
     /* Check for long constant and save it as a constant expression */
     if ((sd == SRC) && ((pIcode->ic.ll.flg & I) == I))  /* constant */
     {
+        iICODE atOffset=pIcode;
+        advance(atOffset,off);
         newExp->expr.ident.idType = CONSTANT;
         if (f == HIGH_FIRST)
             newExp->expr.ident.idNode.kte.kte = (pIcode->ic.ll.src.op() << 16) +
-                    (pIcode+off)->ic.ll.src.op();
+                    atOffset->ic.ll.src.op();
         else        /* LOW_FIRST */
             newExp->expr.ident.idNode.kte.kte =
-                    ((pIcode+off)->ic.ll.src.op() << 16)+ pIcode->ic.ll.src.op();
+                    (atOffset->ic.ll.src.op() << 16)+ pIcode->ic.ll.src.op();
         newExp->expr.ident.idNode.kte.size = 4;
     }
     /* Save it as a long expression (reg, stack or glob) */
     else
     {
-        idx = localId->newLong(sd, &(*pIcode), f, ix, du, off);
+        idx = localId->newLong(sd, pIcode, f, ix, du, off);
         newExp->expr.ident.idType = LONG_VAR;
         newExp->expr.ident.idNode.longIdx = idx;
     }

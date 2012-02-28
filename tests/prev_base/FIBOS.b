@@ -12,7 +12,7 @@ int proc_1 (int arg0)
  * C calling convention.
  */
 {
-int loc1;
+int loc1; /* si */
 int loc2; /* ax */
 
     loc1 = arg0;

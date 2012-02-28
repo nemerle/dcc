@@ -99,14 +99,13 @@ struct ID
             dword 	l;		/*	 low word								 */
         } longKte;
     } id;
-    ID()
+    ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
     {
-        memset(this,0,sizeof(ID));
+        memset(&id,0,sizeof(id));
     }
-    ID(hlType t, frameType f)
+    ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
     {
-        memset(this,0,sizeof(ID));
-        type=t;
+        memset(&id,0,sizeof(id));
         loc=f;
     }
     bool isSigned() const { return (type==TYPE_BYTE_SIGN)||(type==TYPE_WORD_SIGN)||(type==TYPE_LONG_SIGN);}
@@ -133,7 +132,7 @@ public:
     Int newByteWordStk(hlType t, Int off, byte regOff);
     Int newIntIdx(int16 seg, int16 off, byte regi, Int ix, hlType t);
     Int newLongReg(hlType t, byte regH, byte regL, iICODE ix_);
-    Int newLong(opLoc sd, ICODE *pIcode, hlFirst f, iICODE ix, operDu du, Int off);
+    Int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, Int off);
     void newIdent(hlType t, frameType f);
     void flagByteWordId(Int off);
     void propLongId(byte regL, byte regH, const char *name);
