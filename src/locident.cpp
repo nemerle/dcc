@@ -273,13 +273,13 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, i
 
     if (f == LOW_FIRST)
     {
-        pmL = (sd == SRC) ? &pIcode->ic.ll.src : &pIcode->ic.ll.dst;
-        pmH = (sd == SRC) ? &atOffset->ic.ll.src : &atOffset->ic.ll.dst;
+        pmL = (sd == SRC) ? &pIcode->ll()->src : &pIcode->ll()->dst;
+        pmH = (sd == SRC) ? &atOffset->ll()->src : &atOffset->ll()->dst;
     }
     else        /* HIGH_FIRST */
     {
-        pmH = (sd == SRC) ? &pIcode->ic.ll.src : &pIcode->ic.ll.dst;
-        pmL = (sd == SRC) ? &atOffset->ic.ll.src : &atOffset->ic.ll.dst;
+        pmH = (sd == SRC) ? &pIcode->ll()->src : &pIcode->ll()->dst;
+        pmL = (sd == SRC) ? &atOffset->ll()->src : &atOffset->ll()->dst;
     }
 
     if (pmL->regi == 0)                                 /* global variable */
@@ -330,16 +330,16 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i,
     iICODE atOffset(pIcode);
     advance(atOffset,off);
 
-    pmHdst = &pIcode->ic.ll.dst;
-    pmLdst = &atOffset->ic.ll.dst;
-    pmHsrc = &pIcode->ic.ll.src;
-    pmLsrc = &atOffset->ic.ll.src;
+    pmHdst = &pIcode->ll()->dst;
+    pmLdst = &atOffset->ll()->dst;
+    pmHsrc = &pIcode->ll()->src;
+    pmLsrc = &atOffset->ll()->src;
 
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
         asgn.lhs = COND_EXPR::idLongIdx (i);
 
-        if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
+        if ( not pIcode->ll()->isLlFlag(NO_SRC) )
         {
             asgn.rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, off);
         }
@@ -371,15 +371,15 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
     iICODE atOffset(pIcode);
     advance(atOffset,off);
 
-    pmHdst = &pIcode->ic.ll.dst;
-    pmLdst = &atOffset->ic.ll.dst;
-    pmHsrc = &pIcode->ic.ll.src;
-    pmLsrc = &atOffset->ic.ll.src;
+    pmHdst = &pIcode->ll()->dst;
+    pmLdst = &atOffset->ll()->dst;
+    pmHsrc = &pIcode->ll()->src;
+    pmLsrc = &atOffset->ll()->src;
 
     if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
     {
         lhs = COND_EXPR::idLongIdx (i);
-        if ((pIcode->ic.ll.flg & NO_SRC) != NO_SRC)
+        if ( not pIcode->ll()->isLlFlag(NO_SRC) )
         {
             rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, off);
         }

@@ -15,18 +15,18 @@ int Idiom1::checkStkVars (iICODE pIcode)
     int di_matched=0;
     if(pIcode==m_end)
         return 0;
-    if (pIcode->ic.ll.match(iPUSH,rSI))
+    if (pIcode->ll()->match(iPUSH,rSI))
     {
         si_matched = 1;
         ++pIcode;
-        if ((pIcode != m_end) && pIcode->ic.ll.match(iPUSH,rDI)) // Look for PUSH DI
+        if ((pIcode != m_end) && pIcode->ll()->match(iPUSH,rDI)) // Look for PUSH DI
             di_matched = 1;
     }
-    else if (pIcode->ic.ll.match(iPUSH,rDI))
+    else if (pIcode->ll()->match(iPUSH,rDI))
     {
         di_matched = 1;
         ++pIcode;
-        if ((pIcode != m_end) && pIcode->ic.ll.match(iPUSH,rSI)) // Look for PUSH SI
+        if ((pIcode != m_end) && pIcode->ll()->match(iPUSH,rSI)) // Look for PUSH SI
             si_matched = 1;
     }
     m_func->flg |= (si_matched ? SI_REGVAR : 0) | (di_matched ? DI_REGVAR : 0);
@@ -60,13 +60,13 @@ bool Idiom1::match(iICODE picode)
     m_icodes.clear();
     m_min_off = 0;
     /* PUSH BP as first instruction of procedure */
-    if ( !(picode->ic.ll.flg & I) && picode->ic.ll.src.regi == rBP)
+    if ( (not picode->ll()->isLlFlag(I)) && picode->ll()->src.regi == rBP)
     {
         m_icodes.push_back( picode++ ); // insert iPUSH
         if(picode==m_end)
             return false;
         /* MOV BP, SP as next instruction */
-        if ( !picode->ic.ll.anyFlagSet(I | TARGET | CASE) && picode->ic.ll.match(iMOV ,rBP,rSP) )
+        if ( !picode->ll()->isLlFlag(I | TARGET | CASE) && picode->ll()->match(iMOV ,rBP,rSP) )
         {
             m_icodes.push_back( picode++ ); // insert iMOV
             if(picode==m_end)
@@ -75,7 +75,7 @@ bool Idiom1::match(iICODE picode)
 
             /* Look for SUB SP, immed */
             if (
-                picode->ic.ll.anyFlagSet(I | TARGET | CASE) && picode->ic.ll.match(iSUB,rSP)
+                picode->ll()->isLlFlag(I | TARGET | CASE) && picode->ll()->match(iSUB,rSP)
                 )
             {
                 m_icodes.push_back( picode++ ); // insert iSUB
@@ -99,8 +99,8 @@ bool Idiom1::match(iICODE picode)
                     return false;
                 /* Look for MOV BP, SP */
                 if ( picode != m_end &&
-                    !picode->ic.ll.anyFlagSet(I | TARGET | CASE) &&
-                     picode->ic.ll.match(iMOV,rBP,rSP))
+                    !picode->ll()->isLlFlag(I | TARGET | CASE) &&
+                     picode->ll()->match(iMOV,rBP,rSP))
                 {
                     m_icodes.push_back(picode);
                     m_min_off = 2 + (n * 2);

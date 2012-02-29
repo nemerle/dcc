@@ -213,22 +213,22 @@ void disassem(int pass, Function * ppProc)
         //for (i = 0; i < numIcode; i++)
         for( ICODE &icode : pc)
         {
-            if ((icode.ic.ll.flg & I) && !(icode.ic.ll.flg & JMP_ICODE) &&
-                    JmpInst(icode.ic.ll.opcode))
+            LLInst *ll=icode.ll();
+            if (ll->isLlFlag(I) && ! ll->isLlFlag(JMP_ICODE) && JmpInst(ll->opcode))
             {
                 /* Replace the immediate operand with an icode index */
-                iICODE labTgt=pc.labelSrch(icode.ic.ll.src.op());
+                iICODE labTgt=pc.labelSrch(ll->src.op());
                 if (labTgt!=pc.end())
                 {
-                    icode.ic.ll.src.SetImmediateOp(labTgt->loc_ip);
+                    ll->src.SetImmediateOp(labTgt->loc_ip);
                     /* This icode is the target of a jump */
-                    labTgt->ic.ll.flg |= TARGET;
-                    icode.ic.ll.flg |= JMP_ICODE;   /* So its not done twice */
+                    labTgt->ll()->SetLlFlag(TARGET);
+                    ll->SetLlFlag(JMP_ICODE);   /* So its not done twice */
                 }
                 else
                 {
                     /* This jump cannot be linked to a label */
-                    icode.ic.ll.flg |= NO_LABEL;
+                    ll->SetLlFlag(NO_LABEL);
                 }
             }
         }
@@ -271,21 +271,21 @@ static void dis1Line(ICODE &icode_iter, int pass)
 
     oper_stream << uppercase;
     hex_bytes << uppercase;
-    LLInst &_IcLL(icode_iter.ic.ll);
+    LLInst &_IcLL(*icode_iter.ll());
     /* Disassembly stage 1 --
          * Do not try to display NO_CODE entries or synthetic instructions,
          * other than JMPs, that have been introduced for def/use analysis. */
     if ((option.asm1) &&
-            ((_IcLL.flg & NO_CODE) ||
-             ((_IcLL.flg & SYNTHETIC) && (_IcLL.opcode != iJMP))))
+            ( _IcLL.isLlFlag(NO_CODE) ||
+             (_IcLL.isLlFlag(SYNTHETIC) && (_IcLL.opcode != iJMP))))
     {
         return;
     }
-    else if (_IcLL.flg & NO_CODE)
+    else if (_IcLL.isLlFlag(NO_CODE))
     {
         return;
     }
-    if (_IcLL.flg & (TARGET | CASE))
+    if (_IcLL.isLlFlag(TARGET | CASE))
     {
         if (pass == 3)
             cCode.appendCode("\n"); /* Print to c code buffer */
@@ -294,7 +294,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
     }
 
     /* Find next instruction label and print hex bytes */
-    if (_IcLL.flg & SYNTHETIC)
+    if (_IcLL.isLlFlag(SYNTHETIC))
         nextInst = _IcLL.label;
     else
     {
@@ -321,7 +321,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
         {
             lab_contents << ':';             /* Also removes the null */
         }
-        else if (_IcLL.flg & TARGET)    /* Symbols override Lnn labels */
+        else if (_IcLL.isLlFlag(TARGET))    /* Symbols override Lnn labels */
         {
             /* Print label */
             if (pl.count(icode_iter.loc_ip)==0)
@@ -332,7 +332,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
         }
         oper_stream<< lab_contents.str();
     }
-    if (_IcLL.opcode == iSIGNEX && (_IcLL.flg & B))
+    if (_IcLL.opcode == iSIGNEX && _IcLL.isLlFlag(B))
     {
         _IcLL.opcode = iCBW;
     }
@@ -342,7 +342,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
     {
         case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
         case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-            strDst(oper_stream,_IcLL.flg, _IcLL.dst);
+            strDst(oper_stream,_IcLL.GetLlFlag(), _IcLL.dst);
             strSrc(oper_stream,_IcLL);
             break;
 
@@ -352,42 +352,42 @@ static void dis1Line(ICODE &icode_iter, int pass)
 
         case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
         case iROR:
-            strDst(oper_stream,_IcLL.flg | I, _IcLL.dst);
-            if(_IcLL.flg & I)
+            strDst(oper_stream,_IcLL.GetLlFlag() | I, _IcLL.dst);
+            if(_IcLL.isLlFlag(I))
                 strSrc(oper_stream,_IcLL);
             else
                 oper_stream<<", cl";
             break;
 
         case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-            strDst(oper_stream,_IcLL.flg | I, _IcLL.dst);
+            strDst(oper_stream,_IcLL.GetLlFlag() | I, _IcLL.dst);
             break;
 
         case iPUSH:
-            if (_IcLL.flg & I)
+            if (_IcLL.isLlFlag(I))
             {
                 oper_stream<<strHex(_IcLL.src.op());
-//                strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+//                strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
             }
             else
             {
-                strDst(oper_stream,_IcLL.flg | I, _IcLL.dst);
+                strDst(oper_stream,_IcLL.GetLlFlag() | I, _IcLL.dst);
             }
             break;
 
         case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
-            if (_IcLL.flg & I)
+            if (_IcLL.isLlFlag(I))
             {
-                strDst(oper_stream,_IcLL.flg, _IcLL.dst) <<", ";
-                formatRM(oper_stream, _IcLL.flg, _IcLL.src);
+                strDst(oper_stream,_IcLL.GetLlFlag(), _IcLL.dst) <<", ";
+                formatRM(oper_stream, _IcLL.GetLlFlag(), _IcLL.src);
                 strSrc(oper_stream,_IcLL);
             }
             else
-                strDst(oper_stream,_IcLL.flg | I, _IcLL.src);
+                strDst(oper_stream,_IcLL.GetLlFlag() | I, _IcLL.src);
             break;
 
         case iLDS:  case iLES:  case iBOUND:
-            strDst(oper_stream,_IcLL.flg, _IcLL.dst)<<", dword ptr";
+            strDst(oper_stream,_IcLL.GetLlFlag(), _IcLL.dst)<<", dword ptr";
             strSrc(oper_stream,_IcLL,true);
             break;
 
@@ -403,18 +403,18 @@ static void dis1Line(ICODE &icode_iter, int pass)
         ICODE *lab=pc.GetIcode(_IcLL.src.op());
             selectTable(Label);
         if ((_IcLL.src.op() < (uint32_t)numIcode) &&  /* Ensure in range */
-                readVal(oper_stream, lab->ic.ll.label, 0))
+                readVal(oper_stream, lab->ll()->label, 0))
             {
                 break;                          /* Symbolic label. Done */
         }
             }
 
-            if (_IcLL.flg & NO_LABEL)
+            if (_IcLL.isLlFlag(NO_LABEL))
             {
-                //strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+                //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
                 oper_stream<<strHex(_IcLL.src.op());
             }
-            else if (_IcLL.flg & I)
+            else if (_IcLL.isLlFlag(I) )
             {
                 j = _IcLL.src.op();
                 if (pl.count(j)==0)       /* Forward jump */
@@ -439,7 +439,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
             break;
 
         case iCALL: case iCALLF:
-            if (_IcLL.flg & I)
+            if (_IcLL.isLlFlag(I))
             {
                 if((_IcLL.opcode == iCALL))
                     oper_stream<< "near";
@@ -462,7 +462,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
             break;
 
         case iRET:  case iRETF:  case iINT:
-            if (_IcLL.flg & I)
+            if (_IcLL.isLlFlag(I))
             {
                 oper_stream<<strHex(_IcLL.src.op());
             }
@@ -479,9 +479,9 @@ static void dis1Line(ICODE &icode_iter, int pass)
             {
                 bool is_dx_src=(_IcLL.opcode == iOUTS || _IcLL.opcode == iREP_OUTS);
                 if(is_dx_src)
-                    oper_stream<<"dx, "<<szPtr[_IcLL.flg & B];
+                    oper_stream<<"dx, "<<szPtr[_IcLL.GetLlFlag() & B];
                 else
-                    oper_stream<<szPtr[_IcLL.flg & B];
+                    oper_stream<<szPtr[_IcLL.GetLlFlag() & B];
                 if (_IcLL.opcode == iLODS ||
                     _IcLL.opcode == iREP_LODS ||
                     _IcLL.opcode == iOUTS ||
@@ -496,7 +496,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
                 oper_stream<<":[si]";
             }
             else
-                oper_stream<<(_IcLL.flg & B)? "B": "W";
+                oper_stream<<(_IcLL.GetLlFlag() & B)? "B": "W";
             break;
 
         case iXLAT:
@@ -508,13 +508,13 @@ static void dis1Line(ICODE &icode_iter, int pass)
             break;
 
         case iIN:
-            oper_stream<<(_IcLL.flg & B)?"al, ": "ax, ";
-            oper_stream<<(_IcLL.flg & I)? strHex(_IcLL.src.op()): "dx";
+            oper_stream<<(_IcLL.GetLlFlag() & B)?"al, ": "ax, ";
+            oper_stream<<(_IcLL.isLlFlag(I))? strHex(_IcLL.src.op()): "dx";
             break;
 
         case iOUT:
-            oper_stream<<(_IcLL.flg & I)? strHex(_IcLL.src.op()): "dx";
-            oper_stream<<(_IcLL.flg & B)?", al": ", ax";
+            oper_stream<<(_IcLL.isLlFlag(I))? strHex(_IcLL.src.op()): "dx";
+            oper_stream<<(_IcLL.GetLlFlag() & B)?", al": ", ax";
             break;
 
         default:
@@ -522,7 +522,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
     }
 
     /* Comments */
-    if (_IcLL.flg & SYNTHETIC)
+    if (_IcLL.isLlFlag(SYNTHETIC))
     {
         fImpure = FALSE;
     }
@@ -542,13 +542,13 @@ static void dis1Line(ICODE &icode_iter, int pass)
     {
         result_stream <<"; "<<cbuf.str();
     }
-    else if (fImpure || (_IcLL.flg & (SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
+    else if (fImpure || (_IcLL.isLlFlag(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
     {
-        if (_IcLL.flg & CASE)
+        if (_IcLL.isLlFlag(CASE))
         {
             result_stream << ";Case l"<< _IcLL.caseTbl.numEntries;
         }
-        if (_IcLL.flg & SWITCH)
+        if (_IcLL.isLlFlag(SWITCH))
         {
             result_stream << ";Switch ";
         }
@@ -556,15 +556,15 @@ static void dis1Line(ICODE &icode_iter, int pass)
         {
             result_stream << ";Accessed as data ";
         }
-        if (_IcLL.flg & IMPURE)
+        if (_IcLL.isLlFlag(IMPURE))
         {
             result_stream << ";Impure operand ";
         }
-        if (_IcLL.flg & SEG_IMMED)
+        if (_IcLL.isLlFlag(SEG_IMMED))
         {
             result_stream << ";Segment constant";
         }
-        if (_IcLL.flg & TERMINATES)
+        if (_IcLL.isLlFlag(TERMINATES))
         {
             result_stream << ";Exit to DOS";
         }
@@ -578,7 +578,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
     if(pass==3)
     {
         /* output to .b code buffer */
-        if (_IcLL.anyFlagSet(SYNTHETIC))
+        if (_IcLL.isLlFlag(SYNTHETIC))
             result_stream<<";Synthetic inst";
         if (pass == 3)		/* output to .b code buffer */
             cCode.appendCode("%s\n", result_stream.str().c_str());
@@ -586,7 +586,7 @@ static void dis1Line(ICODE &icode_iter, int pass)
     }
     else
     {
-        if (not _IcLL.anyFlagSet(SYNTHETIC) )
+        if (not _IcLL.isLlFlag(SYNTHETIC) )
         {
             /* output to .a1 or .a2 file */
             fprintf (fp, "%03ld %06lX %s\n", icode_iter.loc_ip, _IcLL.label, result_stream.str().c_str());
@@ -670,12 +670,12 @@ static ostringstream &strSrc(ostringstream &os,const LLInst &l_ins,bool skip_com
     static char buf[30] = {", "};
     if(false==skip_comma)
         os<<", ";
-    if (l_ins.flg & I)
+    if (l_ins.isLlFlag(I))
         os<<strHex(l_ins.src.op());
-    else if (l_ins.flg & IM_SRC)		/* level 2 */
+    else if (l_ins.isLlFlag(IM_SRC))		/* level 2 */
         os<<"dx:ax";
     else
-        formatRM(os, l_ins.flg, l_ins.src);
+        formatRM(os, l_ins.GetLlFlag(), l_ins.src);
 
     return os;
 }
@@ -748,7 +748,7 @@ void flops(LLInst &pIcode,std::ostringstream &out)
                 }
         }
 
-        formatRM(out, pIcode.flg, pIcode.dst);
+        formatRM(out, pIcode.GetLlFlag(), pIcode.dst);
     }
     else
     {

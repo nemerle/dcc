@@ -12,22 +12,22 @@ void EpilogIdiom::popStkVars(iICODE pIcode)
 {
     // TODO : only process SI-DI DI-SI pairings, no SI-SI, DI-DI like it's now
     /* Match [POP DI] */
-    if (pIcode->ic.ll.match(iPOP))
+    if (pIcode->ll()->match(iPOP))
     {
-        if ((m_func->flg & DI_REGVAR) && pIcode->ic.ll.match(rDI))
+        if ((m_func->flg & DI_REGVAR) && pIcode->ll()->match(rDI))
             m_icodes.push_front(pIcode);
-        else if ((m_func->flg & SI_REGVAR) && pIcode->ic.ll.match(rSI))
+        else if ((m_func->flg & SI_REGVAR) && pIcode->ll()->match(rSI))
             m_icodes.push_front(pIcode);
     }
     ++pIcode;
     if(pIcode==m_end)
         return;
     /* Match [POP SI] */
-    if (pIcode->ic.ll.match(iPOP))
+    if (pIcode->ll()->match(iPOP))
     {
-        if ((m_func->flg & SI_REGVAR) && pIcode->ic.ll.match(rSI))
+        if ((m_func->flg & SI_REGVAR) && pIcode->ll()->match(rSI))
             m_icodes.push_front(pIcode);
-        else if ((m_func->flg & DI_REGVAR) && pIcode->ic.ll.match(rDI))
+        else if ((m_func->flg & DI_REGVAR) && pIcode->ll()->match(rDI))
             m_icodes.push_front(pIcode);
     }
 }
@@ -46,7 +46,7 @@ bool Idiom2::match(iICODE pIcode)
     iICODE nicode;
     if(pIcode==m_func->Icode.begin()) // pIcode->loc_ip == 0
         return false;
-    if ( ((pIcode->ic.ll.flg & I) == I) || not pIcode->ic.ll.match(rSP,rBP))
+    if ( pIcode->ll()->isLlFlag(I) || (not pIcode->ll()->match(rSP,rBP)) )
         return false;
     if(distance(pIcode,m_end)<3)
         return false;
@@ -55,21 +55,21 @@ bool Idiom2::match(iICODE pIcode)
     m_icodes.push_back(pIcode);
     /* Get next icode, skip over holes in the icode array */
     nicode = ++iICODE(pIcode);
-    while (nicode->ic.ll.flg & NO_CODE && (nicode != m_end))
+    while (nicode->ll()->isLlFlag(NO_CODE) && (nicode != m_end))
     {
         nicode++;
     }
     if(nicode == m_end)
         return false;
 
-    if (nicode->ic.ll.match(iPOP,rBP) && ! (nicode->ic.ll.flg & (I | TARGET | CASE)) )
+    if (nicode->ll()->match(iPOP,rBP) && ! (nicode->ll()->isLlFlag(I | TARGET | CASE)) )
     {
         m_icodes.push_back(nicode++); // Matched POP BP
 
         /* Match RET(F) */
         if (    nicode != m_end &&
-                !(nicode->ic.ll.flg & (I | TARGET | CASE)) &&
-                (nicode->ic.ll.match(iRET) || nicode->ic.ll.match(iRETF))
+                !(nicode->ll()->isLlFlag(I | TARGET | CASE)) &&
+                (nicode->ll()->match(iRET) || nicode->ll()->match(iRETF))
                 )
         {
             m_icodes.push_back(nicode); // Matched RET
@@ -118,7 +118,7 @@ bool Idiom4::match(iICODE pIcode)
     {
         iICODE prev1 = --iICODE(pIcode);
         /* Check for POP BP */
-        if (prev1->ic.ll.match(iPOP,rBP) && not prev1->ic.ll.anyFlagSet(I) )
+        if (prev1->ll()->match(iPOP,rBP) && not prev1->ll()->isLlFlag(I) )
             m_icodes.push_back(prev1);
         else if(prev1!=m_func->Icode.begin())
         {
@@ -129,9 +129,9 @@ bool Idiom4::match(iICODE pIcode)
     }
 
     /* Check for RET(F) immed */
-    if (pIcode->ic.ll.flg & I)
+    if (pIcode->ll()->isLlFlag(I) )
     {
-        m_param_count = (int16_t)pIcode->ic.ll.src.op();
+        m_param_count = (int16_t)pIcode->ll()->src.op();
     }
 }
 int Idiom4::action()

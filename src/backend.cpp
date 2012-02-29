@@ -64,8 +64,8 @@ static void fixupLabels (PPROC pProc)
     dfsLast = pProc->dfsLast;
     for (i = 0; i < pProc->numBBs; i++)
         if (dfsLast[i]->flg/* & BB_HAS_LABEL*/) {
-            pProc->Icode.icode[dfsLast[i]->start].ic.ll.flg |= HLL_LABEL;
-            pProc->Icode.icode[dfsLast[i]->start].ic.ll.hllLabNum = getNextLabel();
+            pProc->Icode.icode[dfsLast[i]->start].ll()->flg |= HLL_LABEL;
+            pProc->Icode.icode[dfsLast[i]->start].ll()->hllLabNum = getNextLabel();
         }
 }
 #endif
@@ -225,14 +225,13 @@ static void writeBitVector (const std::bitset<32> &regi)
  *		 the code; that is, the target code has not been traversed yet. */
 static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 {
-    if (! (pt->ic.ll.flg & HLL_LABEL)) /* node hasn't got a lab */
+    if ( not pt->ll()->isLlFlag(HLL_LABEL)) /* node hasn't got a lab */
     {
         /* Generate new label */
-        pt->ic.ll.hllLabNum = getNextLabel();
-        pt->ic.ll.flg |= HLL_LABEL;
+        pt->ll()->hllLabNum = getNextLabel();
+        pt->ll()->SetLlFlag(HLL_LABEL);
     }
-    cCode.appendCode( "%sgoto l%ld;\n", indent(indLevel),
-                      pt->ic.ll.hllLabNum);
+    cCode.appendCode( "%sgoto l%ld;\n", indent(indLevel), pt->ll()->hllLabNum);
 }
 
 

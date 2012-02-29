@@ -27,22 +27,22 @@ bool Idiom11::match (iICODE picode)
         return false;
     /* Check NEG reg/mem
      *       SBB reg/mem, 0*/
-    if (not m_icodes[1]->ic.ll.match(iNEG) or not m_icodes[2]->ic.ll.match(iSBB))
+    if (not m_icodes[1]->ll()->match(iNEG) or not m_icodes[2]->ll()->match(iSBB))
         return false;
     switch (type)
     {
     case GLOB_VAR:
-        if ((m_icodes[2]->ic.ll.dst.segValue == m_icodes[0]->ic.ll.dst.segValue) &&
-                (m_icodes[2]->ic.ll.dst.off == m_icodes[0]->ic.ll.dst.off))
+        if ((m_icodes[2]->ll()->dst.segValue == m_icodes[0]->ll()->dst.segValue) &&
+                (m_icodes[2]->ll()->dst.off == m_icodes[0]->ll()->dst.off))
             return true;
         break;
     case REGISTER:
-        if (m_icodes[2]->ic.ll.dst.regi == m_icodes[0]->ic.ll.dst.regi)
+        if (m_icodes[2]->ll()->dst.regi == m_icodes[0]->ll()->dst.regi)
             return true;
         break;
     case PARAM:
     case LOCAL_VAR:
-        if (m_icodes[2]->ic.ll.dst.off == m_icodes[0]->ic.ll.dst.off)
+        if (m_icodes[2]->ll()->dst.off == m_icodes[0]->ll()->dst.off)
             return true;
         break;
     }
@@ -79,13 +79,13 @@ bool Idiom16::match (iICODE picode)
     for(int i=0; i<3; ++i)
         m_icodes[i]=picode++;
 
-    uint8_t regi = m_icodes[0]->ic.ll.dst.regi;
+    uint8_t regi = m_icodes[0]->ll()->dst.regi;
     if ((regi >= rAX) && (regi < INDEXBASE))
     {
-        if (m_icodes[1]->ic.ll.match(iSBB) && m_icodes[2]->ic.ll.match(iINC))
-            if ((m_icodes[1]->ic.ll.dst.regi == (m_icodes[1]->ic.ll.src.regi)) &&
-                    m_icodes[1]->ic.ll.match((eReg)regi) &&
-                    m_icodes[2]->ic.ll.match((eReg)regi))
+        if (m_icodes[1]->ll()->match(iSBB) && m_icodes[2]->ll()->match(iINC))
+            if ((m_icodes[1]->ll()->dst.regi == (m_icodes[1]->ll()->src.regi)) &&
+                    m_icodes[1]->ll()->match((eReg)regi) &&
+                    m_icodes[2]->ll()->match((eReg)regi))
                 return true;
     }
     return false;
@@ -93,7 +93,7 @@ bool Idiom16::match (iICODE picode)
 int Idiom16::action()
 {
     COND_EXPR *lhs,*rhs;
-    lhs = COND_EXPR::idReg (m_icodes[0]->ic.ll.dst.regi, m_icodes[0]->ic.ll.flg,&m_func->localId);
+    lhs = COND_EXPR::idReg (m_icodes[0]->ll()->dst.regi, m_icodes[0]->ll()->GetLlFlag(),&m_func->localId);
     rhs = COND_EXPR::unary (NEGATION, lhs->clone());
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();

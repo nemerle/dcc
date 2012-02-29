@@ -28,14 +28,14 @@ bool Idiom14::match(iICODE pIcode)
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
     /* Check for regL */
-    m_regL = m_icodes[0]->ic.ll.dst.regi;
-    if (not m_icodes[0]->isLlFlag(I) && ((m_regL == rAX) || (m_regL ==rBX)))
+    m_regL = m_icodes[0]->ll()->dst.regi;
+    if (not m_icodes[0]->ll()->isLlFlag(I) && ((m_regL == rAX) || (m_regL ==rBX)))
     {
         /* Check for XOR regH, regH */
-        if (m_icodes[1]->ic.ll.match(iXOR) && not m_icodes[1]->isLlFlag(I))
+        if (m_icodes[1]->ll()->match(iXOR) && not m_icodes[1]->ll()->isLlFlag(I))
         {
-            m_regH = m_icodes[1]->ic.ll.dst.regi;
-            if (m_regH == m_icodes[1]->ic.ll.src.regi)
+            m_regH = m_icodes[1]->ll()->dst.regi;
+            if (m_regH == m_icodes[1]->ll()->src.regi)
             {
                 if ((m_regL == rAX) && (m_regH == rDX))
                     return true;
@@ -80,13 +80,13 @@ bool Idiom13::match(iICODE pIcode)
     uint8_t regi;
 
     /* Check for regL */
-    regi = m_icodes[0]->ic.ll.dst.regi;
-    if (not m_icodes[0]->isLlFlag(I) && (regi >= rAL) && (regi <= rBH))
+    regi = m_icodes[0]->ll()->dst.regi;
+    if (not m_icodes[0]->ll()->isLlFlag(I) && (regi >= rAL) && (regi <= rBH))
     {
         /* Check for MOV regH, 0 */
-        if (m_icodes[1]->ic.ll.match(iMOV) && m_icodes[1]->isLlFlag(I) && (m_icodes[1]->ic.ll.src.op() == 0))
+        if (m_icodes[1]->ll()->match(iMOV) && m_icodes[1]->ll()->isLlFlag(I) && (m_icodes[1]->ll()->src.op() == 0))
         {
-            if (m_icodes[1]->ic.ll.dst.regi == (regi + 4)) //TODO: based on distance between AH-AL,BH-BL etc.
+            if (m_icodes[1]->ll()->dst.regi == (regi + 4)) //TODO: based on distance between AH-AL,BH-BL etc.
             {
                 m_loaded_reg=(regi - rAL + rAX);
                 return true;

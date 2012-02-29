@@ -35,7 +35,7 @@ static boolT isLong23 (iICODE iter, BB * pbb, int *off, int *arc)
     if ((t->size() == 1) && (t->nodeType == TWO_BRANCH) && (t->inEdges.size() == 1))
     {
         obb2 = t->edges[THEN].BBptr;
-        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ic.ll.opcode == iCMP))
+        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ll()->opcode == iCMP))
         {
             *off = std::distance(iter,obb2->begin2());
             *arc = THEN;
@@ -47,7 +47,7 @@ static boolT isLong23 (iICODE iter, BB * pbb, int *off, int *arc)
     else if ((e->size() == 1) && (e->nodeType == TWO_BRANCH) && (e->inEdges.size() == 1))
     {
         obb2 = e->edges[THEN].BBptr;
-        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ic.ll.opcode == iCMP))
+        if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ll()->opcode == iCMP))
         {
             *off = std::distance(iter,obb2->begin2());//obb2->front().loc_ip - i;
             *arc = ELSE;
@@ -65,9 +65,9 @@ static boolT isLong22 (iICODE pIcode, iICODE pEnd, int *off)
         return false;
     // preincrement because pIcode is not checked here
     iICODE icodes[] = { ++pIcode,++pIcode,++pIcode };
-    if (   icodes[1]->ic.ll.match(iCMP) &&
-           (isJCond (icodes[0]->ic.ll.opcode)) &&
-           (isJCond (icodes[2]->ic.ll.opcode)))
+    if (   icodes[1]->ll()->match(iCMP) &&
+           (isJCond (icodes[0]->ll()->opcode)) &&
+           (isJCond (icodes[2]->ll()->opcode)))
     {
         *off = 2;
         return true;
@@ -142,7 +142,7 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
     advance(atOffset,off);
     advance(atOffset1,off+1);
     /* Create new HLI_JCOND and condition */
-    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[atOffset1->ic.ll.opcode-iJB]);
+    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[atOffset1->ll()->opcode-iJB]);
     next1->setJCond(lhs);
     next1->copyDU(*pIcode, eUSE, eUSE);
     next1->du.use |= atOffset->du.use;
@@ -177,7 +177,7 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEn
     iICODE icodes[] = { pIcode++,pIcode++,pIcode++,pIcode++ };
 
     /* Form conditional expression */
-    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[icodes[3]->ic.ll.opcode - iJB]);
+    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[icodes[3]->ll()->opcode - iJB]);
     icodes[1]->setJCond(lhs);
     icodes[1]->copyDU (*icodes[0], eUSE, eUSE);
     icodes[1]->du.use |= icodes[2]->du.use;
@@ -198,7 +198,7 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEn
         assert(iter!=tbb->inEdges.end());
         tbb->inEdges.erase(iter);
 
-        if (icodes[3]->ic.ll.opcode != iJE)
+        if (icodes[3]->ll()->opcode != iJE)
             tbb->inEdges.push_back(pbb); /* iJNE => replace arc */
 
         /* Modify ELSE out edge of header basic block */
@@ -208,7 +208,7 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEn
         iter=std::find(tbb->inEdges.begin(),tbb->inEdges.end(),obb1);
         assert(iter!=tbb->inEdges.end());
         tbb->inEdges.erase(iter);
-        if (icodes[3]->ic.ll.opcode == iJE)	/* replace */
+        if (icodes[3]->ll()->opcode == iJE)	/* replace */
             tbb->inEdges.push_back(pbb);
 
         /* Update statistics */
@@ -246,9 +246,9 @@ void Function::propLongStk (int i, const ID &pLocId)
             break;
         if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
             continue;
-        if (pIcode->ic.ll.opcode == next1->ic.ll.opcode)
+        if (pIcode->ll()->opcode == next1->ll()->opcode)
         {
-            switch (pIcode->ic.ll.opcode)
+            switch (pIcode->ll()->opcode)
             {
             case iMOV:
                 if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
@@ -261,7 +261,7 @@ void Function::propLongStk (int i, const ID &pLocId)
             case iAND: case iOR: case iXOR:
                 if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
                 {
-                    switch (pIcode->ic.ll.opcode)
+                    switch (pIcode->ll()->opcode)
                     {
                     case iAND: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND); break;
                     case iOR: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR); break;
@@ -283,7 +283,7 @@ void Function::propLongStk (int i, const ID &pLocId)
         }
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
+        else if ((pIcode->ll()->opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
         {
             if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, off) )
             {
@@ -293,7 +293,7 @@ void Function::propLongStk (int i, const ID &pLocId)
 
         /* Check for long conditional equality or inequality.  This requires
                  * 2 CMPs and 2 branches */
-        else if ((pIcode->ic.ll.opcode == iCMP) && isLong22 (pIcode, pEnd, &off))
+        else if ((pIcode->ll()->opcode == iCMP) && isLong22 (pIcode, pEnd, &off))
         {
             if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this,asgn, off) )
             {
@@ -318,14 +318,14 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
 
         if ((icode.type == HIGH_LEVEL) || (icode.invalid == TRUE))
             continue;
-        if (icode.ic.ll.opcode != next1.ic.ll.opcode)
+        if (icode.ll()->opcode != next1.ll()->opcode)
             continue;
 
-        switch (icode.ic.ll.opcode)
+        switch (icode.ll()->opcode)
         {
         case iMOV:
-            pmH = &icode.ic.ll.dst;
-            pmL = &next1.ic.ll.dst;
+            pmH = &icode.ll()->dst;
+            pmL = &next1.ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 localId.id_arr[loc_ident_idx].idx.push_back(pIcode);//idx-1//insert
@@ -339,8 +339,8 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             break;
 
         case iPOP:
-            pmH = &next1.ic.ll.dst;
-            pmL = &icode.ic.ll.dst;
+            pmH = &next1.ll()->dst;
+            pmL = &icode.ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
@@ -355,14 +355,14 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             //                /**** others missing ***/
 
         case iAND: case iOR: case iXOR:
-            pmL = &icode.ic.ll.dst;
-            pmH = &next1.ic.ll.dst;
+            pmL = &icode.ll()->dst;
+            pmH = &next1.ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
                 asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, pIcode/*idx*/, eUSE, 1);
                 icode.setRegDU( pmH->regi, USE_DEF);
-                switch (icode.ic.ll.opcode)
+                switch (icode.ll()->opcode)
                 {
                 case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
                     break;
@@ -397,14 +397,14 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
             continue;
 
-        if (pIcode->ic.ll.opcode == next1->ic.ll.opcode)
-            switch (pIcode->ic.ll.opcode)
+        if (pIcode->ll()->opcode == next1->ll()->opcode)
+            switch (pIcode->ll()->opcode)
             {
             case iMOV:
-                if ((pLocId.id.longId.h == pIcode->ic.ll.src.regi) &&
-                        (pLocId.id.longId.l == next1->ic.ll.src.regi))
+                if ((pLocId.id.longId.h == pIcode->ll()->src.regi) &&
+                        (pLocId.id.longId.l == next1->ll()->src.regi))
                 {
-                    pIcode->setRegDU( next1->ic.ll.src.regi, eUSE);
+                    pIcode->setRegDU( next1->ll()->src.regi, eUSE);
 
                     asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
                     asgn.lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, 1);
@@ -416,11 +416,11 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                 break;
 
             case iPUSH:
-                if ((pLocId.id.longId.h == pIcode->ic.ll.src.regi) &&
-                        (pLocId.id.longId.l == next1->ic.ll.src.regi))
+                if ((pLocId.id.longId.h == pIcode->ll()->src.regi) &&
+                        (pLocId.id.longId.l == next1->ll()->src.regi))
                 {
                     asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                    pIcode->setRegDU( next1->ic.ll.src.regi, eUSE);
+                    pIcode->setRegDU( next1->ll()->src.regi, eUSE);
                     pIcode->setUnary(HLI_PUSH, asgn.rhs);
                     next1->invalidate();
                 }
@@ -430,8 +430,8 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                 /*** others missing ****/
 
             case iAND: case iOR: case iXOR:
-                pmL = &pIcode->ic.ll.dst;
-                pmH = &next1->ic.ll.dst;
+                pmL = &pIcode->ll()->dst;
+                pmH = &next1->ll()->dst;
                 if ((pLocId.id.longId.h == pmH->regi) &&
                         (pLocId.id.longId.l == pmL->regi))
                 {
@@ -439,7 +439,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                     pIcode->setRegDU( pmH->regi, USE_DEF);
                     asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode,
                                                   LOW_FIRST, pIcode/*idx*/, eUSE, 1);
-                    switch (pIcode->ic.ll.opcode) {
+                    switch (pIcode->ll()->opcode) {
                     case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
                         break;
                     case iOR:  asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR);
@@ -458,7 +458,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             } /* eos */
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ic.ll.opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
+        else if ((pIcode->ll()->opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
         {
             if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, off) == TRUE)
             {
@@ -469,7 +469,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
 
         /* Check for long conditional equality or inequality.  This requires
              * 2 CMPs and 2 branches */
-        else if (pIcode->ic.ll.match(iCMP) && (isLong22 (pIcode, pEnd, &off)))
+        else if (pIcode->ll()->match(iCMP) && (isLong22 (pIcode, pEnd, &off)))
         {
             if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, off) == TRUE)
             {
@@ -481,13 +481,13 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
              *			 JX lab
              *		=> HLI_JCOND (regH:regL X 0) lab
              * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
-        else if (pIcode->ic.ll.match(iOR) && (next1 != pEnd) && (isJCond (next1->ic.ll.opcode)))
+        else if (pIcode->ll()->match(iOR) && (next1 != pEnd) && (isJCond (next1->ll()->opcode)))
         {
-            if ((pIcode->ic.ll.dst.regi == pLocId.id.longId.h) && (pIcode->ic.ll.src.regi == pLocId.id.longId.l))
+            if ((pIcode->ll()->dst.regi == pLocId.id.longId.h) && (pIcode->ll()->src.regi == pLocId.id.longId.l))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
                 asgn.rhs = COND_EXPR::idKte (0, 4);	/* long 0 */
-                asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[next1->ic.ll.opcode - iJB]);
+                asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[next1->ll()->opcode - iJB]);
                 next1->setJCond(asgn.lhs);
                 next1->copyDU(*pIcode, eUSE, eUSE);
                 pIcode->invalidate();

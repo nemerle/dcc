@@ -146,7 +146,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                 picode = &this->back();
 
                 /* Check for error in while condition */
-                if (picode->ic.hl.opcode != HLI_JCOND)
+                if (picode->hl()->opcode != HLI_JCOND)
                     reportError (WHILE_FAIL);
 
                 /* Check if condition is more than 1 HL instruction */
@@ -161,13 +161,13 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                  * the THEN path of the header node */
                 if (edges[ELSE].BBptr->dfsLastNum == loopFollow)
                 {
-                    COND_EXPR *old_expr=picode->ic.hl.expr();
+                    COND_EXPR *old_expr=picode->hl()->expr();
                     string e=walkCondExpr (old_expr, pProc, numLoc);
-                    picode->ic.hl.expr(picode->ic.hl.expr()->inverse());
+                    picode->hl()->expr(picode->hl()->expr()->inverse());
                     delete old_expr;
                 }
                 {
-                    string e=walkCondExpr (picode->ic.hl.expr(), pProc, numLoc);
+                    string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
                     cCode.appendCode( "\n%swhile (%s) {\n", indent(indLevel),e.c_str());
                 }
                 picode->invalidate();
@@ -213,7 +213,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
             if (succ->traversed != DFS_ALPHA)
                 succ->writeCode (indLevel, pProc, numLoc, latch->dfsLastNum,_ifFollow);
             else	/* has been traversed so we need a goto */
-                succ->front().emitGotoLabel (indLevel);
+                succ->front().ll()->emitGotoLabel (indLevel);
         }
 
         /* Loop epilogue: generate the loop trailer */
@@ -230,10 +230,10 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
             cCode.appendCode( "%s}	/* end of loop */\n",indent(indLevel));
         else if (_loopType == REPEAT_TYPE)
         {
-            if (picode->ic.hl.opcode != HLI_JCOND)
+            if (picode->hl()->opcode != HLI_JCOND)
                 reportError (REPEAT_FAIL);
             {
-                string e=walkCondExpr (picode->ic.hl.expr(), pProc, numLoc);
+                string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
                 cCode.appendCode( "%s} while (%s);\n", indent(indLevel),e.c_str());
             }
         }
@@ -245,7 +245,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
             if (succ->traversed != DFS_ALPHA)
                 succ->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
             else		/* has been traversed so we need a goto */
-                succ->front().emitGotoLabel (indLevel);
+                succ->front().ll()->emitGotoLabel (indLevel);
         }
     }
 
@@ -266,20 +266,20 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                 {
                     if (succ->dfsLastNum != follow)	/* THEN part */
                     {
-                        l = writeJcond ( back().ic.hl, pProc, numLoc);
+                        l = writeJcond ( *back().hl(), pProc, numLoc);
                         cCode.appendCode( "\n%s%s", indent(indLevel-1), l);
                         succ->writeCode (indLevel, pProc, numLoc, latchNode,follow);
                     }
                     else		/* empty THEN part => negate ELSE part */
                     {
-                        l = writeJcondInv ( back().ic.hl, pProc, numLoc);
+                        l = writeJcondInv ( *back().hl(), pProc, numLoc);
                         cCode.appendCode( "\n%s%s", indent(indLevel-1), l);
                         edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, follow);
                         emptyThen = true;
                     }
                 }
                 else	/* already visited => emit label */
-                    succ->front().emitGotoLabel(indLevel);
+                    succ->front().ll()->emitGotoLabel(indLevel);
 
                 /* process the ELSE part */
                 succ = edges[ELSE].BBptr;
@@ -297,7 +297,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                 {
                     cCode.appendCode( "%s}\n%selse {\n",
                                       indent(indLevel-1), indent(indLevel - 1));
-                    succ->front().emitGotoLabel (indLevel);
+                    succ->front().ll()->emitGotoLabel (indLevel);
                 }
                 cCode.appendCode( "%s}\n", indent(--indLevel));
 
@@ -308,8 +308,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
             }
             else		/* no follow => if..then..else */
             {
-                l = writeJcond (
-                        back().ic.hl, pProc, numLoc);
+                l = writeJcond ( *back().hl(), pProc, numLoc);
                 cCode.appendCode( "%s%s", indent(indLevel-1), l);
                 edges[THEN].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
                 cCode.appendCode( "%s}\n%selse {\n", indent(indLevel-1), indent(indLevel - 1));
@@ -334,7 +333,7 @@ void BB::writeBB(int lev, Function * pProc, int *numLoc)
 {
     /* Save the index into the code table in case there is a later goto
   * into this instruction (first instruction of the BB) */
-    front().codeIdx = nextBundleIdx (&cCode.code);
+    front().ll()->codeIdx = nextBundleIdx (&cCode.code);
     //hli[start].codeIdx = nextBundleIdx (&cCode.code);
     //for (i = start, last = i + length; i < last; i++)
 
@@ -344,7 +343,7 @@ void BB::writeBB(int lev, Function * pProc, int *numLoc)
     {
         if ((hli->type == HIGH_LEVEL) && (hli->invalid == FALSE))
         {
-            std::string line = hli->ic.hl.write1HlIcode(pProc, numLoc);
+            std::string line = hli->hl()->write1HlIcode(pProc, numLoc);
             if (!line.empty())
             {
                 cCode.appendCode( "%s%s", indent(lev), line.c_str());

@@ -77,7 +77,7 @@ void Function::findIdioms()
     typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
     while (pIcode != pEnd)
     {
-        switch (pIcode->ic.ll.opcode)
+        switch (pIcode->ll()->opcode)
         {
             case iDEC: case iINC:
             if (i18.match(pIcode))
@@ -114,12 +114,12 @@ void Function::findIdioms()
             case iCALL:  case iCALLF:
                 /* Check for library functions that return a long register.
                          * Propagate this result */
-                if (pIcode->ic.ll.src.proc.proc != 0)
-                    if ((pIcode->ic.ll.src.proc.proc->flg & PROC_ISLIB) &&
-                        (pIcode->ic.ll.src.proc.proc->flg & PROC_IS_FUNC))
+                if (pIcode->ll()->src.proc.proc != 0)
+                    if ((pIcode->ll()->src.proc.proc->flg & PROC_ISLIB) &&
+                        (pIcode->ll()->src.proc.proc->flg & PROC_IS_FUNC))
                     {
-                        if ((pIcode->ic.ll.src.proc.proc->retVal.type==TYPE_LONG_SIGN)
-                            || (pIcode->ic.ll.src.proc.proc->retVal.type == TYPE_LONG_UNSIGN))
+                        if ((pIcode->ll()->src.proc.proc->retVal.type==TYPE_LONG_SIGN)
+                            || (pIcode->ll()->src.proc.proc->retVal.type == TYPE_LONG_UNSIGN))
                             localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, pIcode/*ip*/);
                     }
 
@@ -230,20 +230,14 @@ void Function::bindIcodeOff()
     /* Flag all jump targets for BB construction and disassembly stage 2 */
     for(ICODE &c : Icode)
         {
-        if ((c.ic.ll.flg & I) && JmpInst(c.ic.ll.opcode))
+        LLInst *ll=c.ll();
+        if (ll->isLlFlag(I) && JmpInst(ll->opcode))
         {
-            iICODE loc=Icode.labelSrch(c.ic.ll.src.op());
+            iICODE loc=Icode.labelSrch(ll->src.op());
             if (loc!=Icode.end())
-                loc->ic.ll.flg |= TARGET;
+                loc->ll()->SetLlFlag(TARGET);
         }
     }
-//    for (i = 0; i < Icode.size(); i++)
-//        if ((pIcode[i].ic.ll.flg & I) && JmpInst(pIcode[i].ic.ll.opcode))
-//        {
-//            iICODE loc=Icode.labelSrch(pIcode[i].ic.ll.src.op());
-//            if (loc!=Icode.end())
-//                loc->ic.ll.flg |= TARGET;
-//        }
 
     /* Finally bind jump targets to Icode offsets.  Jumps for which no label
      * is found (no code at dest. of jump) are simply left unlinked and
@@ -251,21 +245,22 @@ void Function::bindIcodeOff()
     //for (pIcode = Icode.begin(); pIcode!= Icode.end(); pIcode++)
     for(ICODE &icode : Icode)
         {
-        if (not JmpInst(icode.ic.ll.opcode))
+        LLInst *ll=icode.ll();
+        if (not JmpInst(ll->opcode))
             continue;
-        if (icode.ic.ll.flg & I)
+        if (ll->isLlFlag(I) )
             {
                 uint32_t found;
-            if (! Icode.labelSrch(icode.ic.ll.src.op(), found))
-                icode.ic.ll.flg |= NO_LABEL;
+            if (! Icode.labelSrch(ll->src.op(), found))
+                ll->SetLlFlag( NO_LABEL );
                 else
-                icode.ic.ll.src.SetImmediateOp(found);
+                ll->src.SetImmediateOp(found);
 
             }
-        else if (icode.ic.ll.flg & SWITCH)
+        else if (ll->isLlFlag(SWITCH) )
             {
-            p = icode.ic.ll.caseTbl.entries;
-            for (int j = 0; j < icode.ic.ll.caseTbl.numEntries; j++, p++)
+            p = ll->caseTbl.entries;
+            for (int j = 0; j < ll->caseTbl.numEntries; j++, p++)
                     Icode.labelSrch(*p, *p);
             }
         }

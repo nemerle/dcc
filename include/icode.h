@@ -45,7 +45,7 @@ struct DU
 
 /* Definition-use chain for level 1 (within a basic block) */
 #define MAX_REGS_DEF	2		/* 2 regs def'd for long-reg vars */
-#define MAX_USES		5
+//#define MAX_USES		5
 
 
 struct COND_EXPR;
@@ -162,11 +162,14 @@ struct LLOperand //: public llvm::MCOperand
     void SetImmediateOp(uint32_t dw) {opz=dw;}
 
 };
-struct LLInst : public llvm::MCInst
+struct LLInst : public llvm::ilist_node<LLInst>
 {
+protected:
+    uint32_t     flg;            /* icode flags                  */
+public:
+    int          codeIdx;    	/* Index into cCode.code            */
     llIcode      opcode;         /* llIcode instruction          */
     uint8_t      numBytes;       /* Number of bytes this instr   */
-    uint32_t     flg;            /* icode flags                  */
     uint32_t     label;          /* offset in image (20-bit adr) */
     LLOperand    dst;            /* destination operand          */
     LLOperand    src;            /* source operand               */
@@ -181,7 +184,18 @@ struct LLInst : public llvm::MCInst
     {
         return (opcode >= iJB) && (opcode < iJCXZ);
     }
-    bool anyFlagSet(uint32_t x) const { return (flg & x)!=0;}
+    bool isLlFlag(uint32_t x) const { return (flg & x)!=0;}
+    void  SetLlFlag(uint32_t flag) {flg |= flag;}
+    void  ClrLlFlag(uint32_t flag) {flg &= ~flag;}
+
+    uint32_t GetLlFlag() const {return flg;}
+    llIcode GetLlOpcode() const { return opcode; }
+
+    uint32_t  GetLlLabel() const { return label;}
+
+    void SetImmediateOp(uint32_t dw) {src.SetImmediateOp(dw);}
+
+
     bool match(llIcode op)
     {
         return (opcode==op);
@@ -189,6 +203,10 @@ struct LLInst : public llvm::MCInst
     bool match(llIcode op,eReg dest)
     {
         return (opcode==op)&&dst.regi==dest;
+    }
+    bool match(llIcode op,eReg dest,uint32_t flgs)
+    {
+        return (opcode==op) and (dst.regi==dest) and isLlFlag(flgs);
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
@@ -202,16 +220,25 @@ struct LLInst : public llvm::MCInst
     {
         return (dst.regi==dest);
     }
+    bool match(llIcode op,uint32_t flgs)
+    {
+        return (opcode==op) and isLlFlag(flgs);
+    }
     void set(llIcode op,uint32_t flags)
     {
         opcode = op;
         flg =flags;
     }
+    void emitGotoLabel(int indLevel);
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
 struct ICODE
 {
+protected:
+    LLInst m_ll;
+    HLTYPE m_hl;
+public:
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
     {
@@ -273,21 +300,11 @@ struct ICODE
     BB			*inBB;      	/* BB to which this icode belongs   */
     DU_ICODE		du;             /* Def/use regs/vars                */
     DU1			du1;        	/* du chain 1                       */
-    int			codeIdx;    	/* Index into cCode.code            */
-    struct IC {         /* Different types of icodes    */
-        LLInst ll;
-        HLTYPE hl;  	/* For HIGH_LEVEL icodes    */
-    };
-    IC ic;/* intermediate code        */
+    LLInst *            ll() { return &m_ll;}
+    const LLInst *      ll() const { return &m_ll;}
+    HLTYPE *            hl() { return &m_hl;}
+    const HLTYPE *      hl() const { return &m_hl;}
     int loc_ip; // used by CICodeRec to number ICODEs
-
-    void  ClrLlFlag(uint32_t flag) {ic.ll.flg &= ~flag;}
-    void  SetLlFlag(uint32_t flag) {ic.ll.flg |= flag;}
-    uint32_t GetLlFlag() {return ic.ll.flg;}
-    bool isLlFlag(uint32_t flg) {return (ic.ll.flg&flg)!=0;}
-    llIcode GetLlOpcode() const { return ic.ll.opcode; }
-    uint32_t  GetLlLabel() const { return ic.ll.label;}
-    void SetImmediateOp(uint32_t dw) {ic.ll.src.SetImmediateOp(dw);}
 
     void writeIntComment(std::ostringstream &s);
     void setRegDU(uint8_t regi, operDu du_in);
@@ -307,7 +324,7 @@ public:
     void checkHlCall();
     bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc)
     {
-        return ic.hl.call.newStkArg(exp,opcode,pproc);
+        return hl()->call.newStkArg(exp,opcode,pproc);
     }
 };
 

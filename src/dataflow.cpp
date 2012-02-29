@@ -83,11 +83,11 @@ int STKFRAME::getLocVar(int off)
 /* Returns a string with the source operand of Icode */
 static COND_EXPR *srcIdent (const ICODE &Icode, Function * pProc, iICODE i, ICODE & duIcode, operDu du)
 {
-    if (Icode.ic.ll.flg & I)   /* immediate operand */
+    if (Icode.ll()->isLlFlag(I))   /* immediate operand */
     {
-        if (Icode.ic.ll.flg & B)
-            return COND_EXPR::idKte (Icode.ic.ll.src.op(), 1);
-        return COND_EXPR::idKte (Icode.ic.ll.src.op(), 2);
+        if (Icode.ll()->isLlFlag(B))
+            return COND_EXPR::idKte (Icode.ll()->src.op(), 1);
+        return COND_EXPR::idKte (Icode.ll()->src.op(), 2);
     }
     // otherwise
     return COND_EXPR::id (Icode, SRC, pProc, i, duIcode, du);
@@ -99,7 +99,7 @@ static COND_EXPR *dstIdent (const ICODE & Icode, Function * pProc, iICODE i, ICO
 {
     COND_EXPR *n;
     n = COND_EXPR::id (Icode, DST, pProc, i, duIcode, du);
-    /** Is it needed? (pIcode->ic.ll.flg) & NO_SRC_B **/
+    /** Is it needed? (pIcode->ll()->flg) & NO_SRC_B **/
     return (n);
 }
 /* Eliminates all condition codes and generates new hlIcode instructions */
@@ -124,21 +124,22 @@ void Function::elimCondCodes ()
 
         for (useAt = pBB->rbegin2(); useAt != pBB->rend2(); useAt++)
         {
-            if ((useAt->type == LOW_LEVEL) && (useAt->valid()) && (use = useAt->ic.ll.flagDU.u))
+            llIcode useAtOp = useAt->ll()->GetLlOpcode();
+            if ((useAt->type == LOW_LEVEL) && (useAt->valid()) && (use = useAt->ll()->flagDU.u))
             {
                 /* Find definition within the same basic block */
                 defAt=useAt;
                 ++defAt;
                 for (; defAt != pBB->rend2(); defAt++)
                 {
-                    def = defAt->ic.ll.flagDU.d;
+                    def = defAt->ll()->flagDU.d;
                     if ((use & def) != use)
                         continue;
                     notSup = FALSE;
-                    if ((useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
+                    if ((useAtOp >= iJB) && (useAtOp <= iJNS))
                     {
                         iICODE befDefAt = (++riICODE(defAt)).base();
-                        switch (defAt->GetLlOpcode())
+                        switch (defAt->ll()->GetLlOpcode())
                         {
                         case iCMP:
                             rhs = srcIdent (*defAt, this, befDefAt,*useAt, eUSE);
@@ -146,9 +147,9 @@ void Function::elimCondCodes ()
                             break;
 
                         case iOR:
-                            lhs = defAt->ic.hl.asgn.lhs->clone();
+                            lhs = defAt->hl()->asgn.lhs->clone();
                             useAt->copyDU(*defAt, eUSE, eDEF);
-                            if (defAt->isLlFlag(B))
+                            if (defAt->ll()->isLlFlag(B))
                                 rhs = COND_EXPR::idKte (0, 1);
                             else
                                 rhs = COND_EXPR::idKte (0, 2);
@@ -158,7 +159,7 @@ void Function::elimCondCodes ()
                             rhs = srcIdent (*defAt,this, befDefAt,*useAt, eUSE);
                             lhs = dstIdent (*defAt,this, befDefAt,*useAt, eUSE);
                             lhs = COND_EXPR::boolOp (lhs, rhs, AND);
-                            if (defAt->isLlFlag(B))
+                            if (defAt->ll()->isLlFlag(B))
                                 rhs = COND_EXPR::idKte (0, 1);
                             else
                                 rhs = COND_EXPR::idKte (0, 2);
@@ -167,17 +168,17 @@ void Function::elimCondCodes ()
                         default:
                             notSup = TRUE;
                             std::cout << hex<<defAt->loc_ip;
-                            reportError (JX_NOT_DEF, defAt->GetLlOpcode());
+                            reportError (JX_NOT_DEF, defAt->ll()->GetLlOpcode());
                             flg |= PROC_ASM;		/* generate asm */
                         }
                         if (! notSup)
                         {
-                            exp = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAt->GetLlOpcode()-iJB]);
+                            exp = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAtOp-iJB]);
                             useAt->setJCond(exp);
                         }
                     }
 
-                    else if (useAt->GetLlOpcode() == iJCXZ)
+                    else if (useAtOp == iJCXZ)
                     {
                         lhs = COND_EXPR::idReg (rCX, 0, &localId);
                         useAt->setRegDU (rCX, eUSE);
@@ -191,7 +192,7 @@ void Function::elimCondCodes ()
 //                        ICODE &b(*useAt);
 //                        if(a.GetLlOpcode() == iRCL)
 //                        {
-//                            if ((b.ic.ll.flg & NO_SRC) != NO_SRC)   /* if there is src op */
+//                            if ((b.ll()->flg & NO_SRC) != NO_SRC)   /* if there is src op */
 //                                rhs = COND_EXPR::id (*useAt, SRC, this, Icode.end(), *useAt, NONE);
 //                            lhs = COND_EXPR::id (*useAt, DST, this, Icode.end(), *useAt, USE_DEF);
 
@@ -205,20 +206,20 @@ void Function::elimCondCodes ()
                     {
                         ICODE &a(*defAt);
                         ICODE &b(*useAt);
-                        reportError (NOT_DEF_USE,a.GetLlOpcode(),b.GetLlOpcode());
+                        reportError (NOT_DEF_USE,a.ll()->GetLlOpcode(),b.ll()->GetLlOpcode());
                         flg |= PROC_ASM;		/* generate asm */
                     }
                     break;
                 }
 
                 /* Check for extended basic block */
-                if ((pBB->size() == 1) &&(useAt->GetLlOpcode() >= iJB) && (useAt->GetLlOpcode() <= iJNS))
+                if ((pBB->size() == 1) &&(useAtOp >= iJB) && (useAtOp <= iJNS))
                 {
                     ICODE & prev(pBB->back()); /* For extended basic blocks - previous icode inst */
-                    if (prev.ic.hl.opcode == HLI_JCOND)
+                    if (prev.hl()->opcode == HLI_JCOND)
                     {
-                        exp = prev.ic.hl.expr()->clone();
-                        exp->changeBoolOp (condOpJCond[useAt->GetLlOpcode()-iJB]);
+                        exp = prev.hl()->expr()->clone();
+                        exp->changeBoolOp (condOpJCond[useAtOp-iJB]);
                         useAt->copyDU(prev, eUSE, eUSE);
                         useAt->setJCond(exp);
                     }
@@ -226,7 +227,7 @@ void Function::elimCondCodes ()
                 /* Error - definition not found for use of a cond code */
                 else if (defAt == pBB->rend2())
                 {
-                    reportError(DEF_NOT_FOUND,useAt->GetLlOpcode());
+                    reportError(DEF_NOT_FOUND,useAtOp);
                     //fatalError (DEF_NOT_FOUND, Icode.GetLlOpcode(useAt-1));
                 }
             }
@@ -311,10 +312,10 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                 if (flg & PROC_IS_FUNC)
                 {
                     auto picode = pbb->rbegin2(); /* icode of function return */
-                    if (picode->ic.hl.opcode == HLI_RET)
+                    if (picode->hl()->opcode == HLI_RET)
                     {
                         //pbb->back().loc_ip
-                        picode->ic.hl.expr(COND_EXPR::idID (&retVal, &localId, (++pbb->rbegin2()).base()));
+                        picode->hl()->expr(COND_EXPR::idID (&retVal, &localId, (++pbb->rbegin2()).base()));
                         picode->du.use = in_liveOut;
                     }
                 }
@@ -328,7 +329,7 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                 if (pbb->nodeType == CALL_NODE)
                 {
                     ICODE &ticode(pbb->back());
-                    pcallee = ticode.ic.hl.call.proc;
+                    pcallee = ticode.hl()->call.proc;
 
                     /* user/runtime routine */
                     if (! (pcallee->flg & PROC_ISLIB))
@@ -414,10 +415,13 @@ void BB::genDU1()
         regi = 0;
         defRegIdx = 0;
         // foreach defined register
+        bitset<32> processed=0;
         for (k = 0; k < INDEXBASE; k++)
         {
             if (not picode->du.def.test(k))
                 continue;
+            //printf("Processing reg")
+            processed |= duReg[k];
             regi = (uint8_t)(k + 1);       /* defined register */
             picode->du1.regi[defRegIdx] = regi;
 
@@ -443,7 +447,6 @@ void BB::genDU1()
                     if ((ricode->du.def & duReg[regi]).any())
                         break;
                 }
-
                 /* Check if last definition of this register */
                 if ((not (ticode->du.def & duReg[regi]).any()) and (this->liveOut & duReg[regi]).any())
                     picode->du.lastDefRegi |= duReg[regi];
@@ -459,8 +462,8 @@ void BB::genDU1()
              * that are functions.  The target icode is in the
              * next basic block (unoptimized code) or somewhere else
              * on optimized code. */
-            if ((picode->ic.hl.opcode == HLI_CALL) &&
-                    (picode->ic.hl.call.proc->flg & PROC_IS_FUNC))
+            if ((picode->hl()->opcode == HLI_CALL) &&
+                    (picode->hl()->call.proc->flg & PROC_IS_FUNC))
             {
                 tbb = this->edges[0].BBptr;
                 for (ticode = tbb->begin2(); ticode != tbb->end2(); ticode++)
@@ -490,8 +493,8 @@ void BB::genDU1()
              * account by the programmer). 	*/
             if (picode->valid() and not picode->du1.used(defRegIdx) and
                     (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
-                    (not ((picode->ic.hl.opcode == HLI_CALL) &&
-                          (picode->ic.hl.call.proc->flg & PROC_ISLIB))))
+                    (not ((picode->hl()->opcode == HLI_CALL) &&
+                          (picode->hl()->call.proc->flg & PROC_ISLIB))))
             {
                 if (! (this->liveOut & duReg[regi]).any())	/* not liveOut */
                 {
@@ -553,7 +556,7 @@ static void forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode,
         return;
 
     /* Insert on rhs of ticode, if possible */
-    res = insertSubTreeReg (rhs, &ticode->ic.hl.asgn.rhs,
+    res = insertSubTreeReg (rhs, &ticode->hl()->asgn.rhs,
                             locsym->id_arr[lhs->expr.ident.idNode.regiIdx].id.regi,
                             locsym);
     if (res)
@@ -564,7 +567,7 @@ static void forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode,
     else
     {
         /* Try to insert it on lhs of ticode*/
-        res = insertSubTreeReg (rhs, &ticode->ic.hl.asgn.lhs,
+        res = insertSubTreeReg (rhs, &ticode->hl()->asgn.lhs,
                                 locsym->id_arr[lhs->expr.ident.idNode.regiIdx].id.regi,
                                 locsym);
         if (res)
@@ -587,7 +590,7 @@ static void forwardSubsLong (int longIdx, COND_EXPR *exp, iICODE picode,
         return;
 
     /* Insert on rhs of ticode, if possible */
-    res = insertSubTreeLongReg (exp, &ticode->ic.hl.asgn.rhs, longIdx);
+    res = insertSubTreeLongReg (exp, &ticode->hl()->asgn.rhs, longIdx);
     if (res)
     {
         picode->invalidate();
@@ -596,7 +599,7 @@ static void forwardSubsLong (int longIdx, COND_EXPR *exp, iICODE picode,
     else
     {
         /* Try to insert it on lhs of ticode*/
-        res = insertSubTreeLongReg (exp, &ticode->ic.hl.asgn.lhs, longIdx);
+        res = insertSubTreeLongReg (exp, &ticode->hl()->asgn.lhs, longIdx);
         if (res)
         {
             picode->invalidate();
@@ -677,13 +680,13 @@ static void processCArg (Function * pp, Function * pProc, ICODE * picode, int nu
             }
             else
                 adjustActArgType (exp, pp->args.sym[numArgs].type, pProc);
-        res = picode->newStkArg (exp, picode->ic.ll.opcode, pProc);
+        res = picode->newStkArg (exp, picode->ll()->opcode, pProc);
     }
     else			/* user function */
     {
         if (pp->args.numArgs > 0)
             pp->args.adjustForArgType (numArgs, expType (exp, pProc));
-        res = picode->newStkArg (exp, picode->ic.ll.opcode, pProc);
+        res = picode->newStkArg (exp, picode->ll()->opcode, pProc);
     }
 
     /* Do not update the size of k if the expression was a segment register
@@ -738,33 +741,33 @@ void Function::findExps()
                         regi = picode->du1.regi[0];
 
                         /* Check if we can forward substitute this register */
-                        switch (picode->ic.hl.opcode)
+                        switch (picode->hl()->opcode)
                         {
                         case HLI_ASSIGN:
                             /* Replace rhs of current icode into target
                              * icode expression */
                             ticode = picode->du1.idx[0].uses.front();
                             if ((picode->du.lastDefRegi & duReg[regi]).any() &&
-                                    ((ticode->ic.hl.opcode != HLI_CALL) &&
-                                     (ticode->ic.hl.opcode != HLI_RET)))
+                                    ((ticode->hl()->opcode != HLI_CALL) &&
+                                     (ticode->hl()->opcode != HLI_RET)))
                                 continue;
 
-                            if (xClear (picode->ic.hl.asgn.rhs, picode,
+                            if (xClear (picode->hl()->asgn.rhs, picode,
                                         picode->du1.idx[0].uses[0],  lastInst, this))
                             {
-                                switch (ticode->ic.hl.opcode) {
+                                switch (ticode->hl()->opcode) {
                                 case HLI_ASSIGN:
-                                    forwardSubs (picode->ic.hl.asgn.lhs,
-                                                 picode->ic.hl.asgn.rhs,
+                                    forwardSubs (picode->hl()->asgn.lhs,
+                                                 picode->hl()->asgn.rhs,
                                                  picode, ticode, &localId,
                                                  numHlIcodes);
                                     break;
 
                                 case HLI_JCOND: case HLI_PUSH: case HLI_RET:
                                     res = insertSubTreeReg (
-                                                picode->ic.hl.asgn.rhs,
-                                                &ticode->ic.hl.exp.v,
-                                                localId.id_arr[picode->ic.hl.asgn.lhs->expr.ident.idNode.regiIdx].id.regi,
+                                                picode->hl()->asgn.rhs,
+                                                &ticode->hl()->exp.v,
+                                                localId.id_arr[picode->hl()->asgn.lhs->expr.ident.idNode.regiIdx].id.regi,
                                                 &localId);
                                     if (res)
                                     {
@@ -785,22 +788,22 @@ void Function::findExps()
                         case HLI_POP:
                             ticode = picode->du1.idx[0].uses.front();
                             if ((picode->du.lastDefRegi & duReg[regi]).any() &&
-                                    ((ticode->ic.hl.opcode != HLI_CALL) &&
-                                     (ticode->ic.hl.opcode != HLI_RET)))
+                                    ((ticode->hl()->opcode != HLI_CALL) &&
+                                     (ticode->hl()->opcode != HLI_RET)))
                                 continue;
 
                             exp = g_exp_stk.pop();  /* pop last exp pushed */
-                            switch (ticode->ic.hl.opcode) {
+                            switch (ticode->hl()->opcode) {
                             case HLI_ASSIGN:
-                                forwardSubs (picode->ic.hl.expr(), exp,
+                                forwardSubs (picode->hl()->expr(), exp,
                                              picode, ticode, &localId,
                                              numHlIcodes);
                                 break;
 
                             case HLI_JCOND: case HLI_PUSH: case HLI_RET:
                                 res = insertSubTreeReg (exp,
-                                                        &ticode->ic.hl.exp.v,
-                                                        localId.id_arr[picode->ic.hl.expr()->expr.ident.idNode.regiIdx].id.regi,
+                                                        &ticode->hl()->exp.v,
+                                                        localId.id_arr[picode->hl()->expr()->expr.ident.idNode.regiIdx].id.regi,
                                                         &localId);
                                 if (res)
                                 {
@@ -819,19 +822,19 @@ void Function::findExps()
 
                         case HLI_CALL:
                             ticode = picode->du1.idx[0].uses.front();
-                            switch (ticode->ic.hl.opcode) {
+                            switch (ticode->hl()->opcode) {
                             case HLI_ASSIGN:
                                 exp = COND_EXPR::idFunc (
-                                            picode->ic.hl.call.proc,
-                                            picode->ic.hl.call.args);
+                                            picode->hl()->call.proc,
+                                            picode->hl()->call.args);
                                 res = insertSubTreeReg (exp,
-                                                        &ticode->ic.hl.asgn.rhs,
-                                                        picode->ic.hl.call.proc->retVal.id.regi,
+                                                        &ticode->hl()->asgn.rhs,
+                                                        picode->hl()->call.proc->retVal.id.regi,
                                                         &localId);
                                 if (! res)
                                     insertSubTreeReg (exp,
-                                                      &ticode->ic.hl.asgn.lhs,
-                                                      picode->ic.hl.call.proc->retVal.id.regi,
+                                                      &ticode->hl()->asgn.lhs,
+                                                      picode->hl()->call.proc->retVal.id.regi,
                                                       &localId);
                                 /*** TODO: HERE missing: 2 regs ****/
                                 picode->invalidate();
@@ -839,16 +842,16 @@ void Function::findExps()
                                 break;
 
                             case HLI_PUSH: case HLI_RET:
-                                ticode->ic.hl.expr( COND_EXPR::idFunc ( picode->ic.hl.call.proc, picode->ic.hl.call.args) );
+                                ticode->hl()->expr( COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args) );
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
 
                             case HLI_JCOND:
-                                exp = COND_EXPR::idFunc ( picode->ic.hl.call.proc, picode->ic.hl.call.args);
-                                retVal = &picode->ic.hl.call.proc->retVal,
+                                exp = COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args);
+                                retVal = &picode->hl()->call.proc->retVal,
                                         res = insertSubTreeReg (exp,
-                                                                &ticode->ic.hl.exp.v,
+                                                                &ticode->hl()->exp.v,
                                                                 retVal->id.regi, &localId);
                                 if (res)	/* was substituted */
                                 {
@@ -873,7 +876,7 @@ void Function::findExps()
                     /* Check for only one use of these registers */
                     if ((picode->du1.numUses(0) == 1) and (picode->du1.numUses(1) == 1))
                     {
-                        switch (picode->ic.hl.opcode) {
+                        switch (picode->hl()->opcode) {
                         case HLI_ASSIGN:
                             /* Replace rhs of current icode into target
                              * icode expression */
@@ -881,22 +884,22 @@ void Function::findExps()
                             {
                                 ticode = picode->du1.idx[0].uses.front();
                                 if ((picode->du.lastDefRegi & duReg[regi]).any() &&
-                                        ((ticode->ic.hl.opcode != HLI_CALL) &&
-                                         (ticode->ic.hl.opcode != HLI_RET)))
+                                        ((ticode->hl()->opcode != HLI_CALL) &&
+                                         (ticode->hl()->opcode != HLI_RET)))
                                     continue;
 
-                                switch (ticode->ic.hl.opcode) {
+                                switch (ticode->hl()->opcode) {
                                 case HLI_ASSIGN:
-                                    forwardSubsLong (picode->ic.hl.asgn.lhs->expr.ident.idNode.longIdx,
-                                                     picode->ic.hl.asgn.rhs, picode,ticode,
+                                    forwardSubsLong (picode->hl()->asgn.lhs->expr.ident.idNode.longIdx,
+                                                     picode->hl()->asgn.rhs, picode,ticode,
                                                      &numHlIcodes);
                                     break;
 
                                 case HLI_JCOND:  case HLI_PUSH:  case HLI_RET:
                                     res = insertSubTreeLongReg (
-                                                picode->ic.hl.asgn.rhs,
-                                                &ticode->ic.hl.exp.v,
-                                                picode->ic.hl.asgn.lhs->expr.ident.idNode.longIdx);
+                                                picode->hl()->asgn.rhs,
+                                                &ticode->hl()->exp.v,
+                                                picode->hl()->asgn.lhs->expr.ident.idNode.longIdx);
                                     if (res)
                                     {
                                         picode->invalidate();
@@ -918,20 +921,20 @@ void Function::findExps()
                             {
                                 ticode = picode->du1.idx[0].uses.front();
                                 if ((picode->du.lastDefRegi & duReg[regi]).any() &&
-                                        ((ticode->ic.hl.opcode != HLI_CALL) &&
-                                         (ticode->ic.hl.opcode != HLI_RET)))
+                                        ((ticode->hl()->opcode != HLI_CALL) &&
+                                         (ticode->hl()->opcode != HLI_RET)))
                                     continue;
 
                                 exp = g_exp_stk.pop(); /* pop last exp pushed */
-                                switch (ticode->ic.hl.opcode) {
+                                switch (ticode->hl()->opcode) {
                                 case HLI_ASSIGN:
-                                    forwardSubsLong (picode->ic.hl.expr()->expr.ident.idNode.longIdx,
+                                    forwardSubsLong (picode->hl()->expr()->expr.ident.idNode.longIdx,
                                                      exp, picode, ticode, &numHlIcodes);
                                     break;
                                 case HLI_JCOND: case HLI_PUSH:
                                     res = insertSubTreeLongReg (exp,
-                                                                &ticode->ic.hl.exp.v,
-                                                                picode->ic.hl.asgn.lhs->expr.ident.idNode.longIdx);
+                                                                &ticode->hl()->exp.v,
+                                                                picode->hl()->asgn.lhs->expr.ident.idNode.longIdx);
                                     if (res)
                                     {
                                         picode->invalidate();
@@ -946,30 +949,30 @@ void Function::findExps()
 
                         case HLI_CALL:    /* check for function return */
                             ticode = picode->du1.idx[0].uses.front();
-                            switch (ticode->ic.hl.opcode)
+                            switch (ticode->hl()->opcode)
                             {
                             case HLI_ASSIGN:
                                 exp = COND_EXPR::idFunc (
-                                            picode->ic.hl.call.proc,
-                                            picode->ic.hl.call.args);
-                                ticode->ic.hl.asgn.lhs =
+                                            picode->hl()->call.proc,
+                                            picode->hl()->call.args);
+                                ticode->hl()->asgn.lhs =
                                         COND_EXPR::idLong(&localId, DST, ticode,HIGH_FIRST, picode, eDEF, 1);
-                                ticode->ic.hl.asgn.rhs = exp;
+                                ticode->hl()->asgn.rhs = exp;
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
 
                             case HLI_PUSH:  case HLI_RET:
-                                ticode->ic.hl.expr( COND_EXPR::idFunc ( picode->ic.hl.call.proc, picode->ic.hl.call.args) );
+                                ticode->hl()->expr( COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args) );
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
 
                             case HLI_JCOND:
-                                exp = COND_EXPR::idFunc ( picode->ic.hl.call.proc, picode->ic.hl.call.args);
-                                retVal = &picode->ic.hl.call.proc->retVal;
+                                exp = COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args);
+                                retVal = &picode->hl()->call.proc->retVal;
                                 res = insertSubTreeLongReg (exp,
-                                                            &ticode->ic.hl.exp.v,
+                                                            &ticode->hl()->exp.v,
                                                             localId.newLongReg ( retVal->type, retVal->id.longId.h,
                                                                                  retVal->id.longId.l, picode));
                                 if (res)	/* was substituted */
@@ -991,9 +994,9 @@ void Function::findExps()
                 /* HLI_PUSH doesn't define any registers, only uses registers.
                  * Push the associated expression to the register on the local
                  * expression stack */
-                else if (picode->ic.hl.opcode == HLI_PUSH)
+                else if (picode->hl()->opcode == HLI_PUSH)
                 {
-                    g_exp_stk.push(picode->ic.hl.expr());
+                    g_exp_stk.push(picode->hl()->expr());
                     picode->invalidate();
                     numHlIcodes--;
                 }
@@ -1001,13 +1004,13 @@ void Function::findExps()
                 /* For HLI_CALL instructions that use arguments from the stack,
                                  * pop them from the expression stack and place them on the
                                  * procedure's argument list */
-                if ((picode->ic.hl.opcode == HLI_CALL) &&
-                        ! (picode->ic.hl.call.proc->flg & REG_ARGS))
+                if ((picode->hl()->opcode == HLI_CALL) &&
+                        ! (picode->hl()->call.proc->flg & REG_ARGS))
                 { Function * pp;
                     int cb, numArgs;
                     boolT res;
 
-                    pp = picode->ic.hl.call.proc;
+                    pp = picode->hl()->call.proc;
                     if (pp->flg & CALL_PASCAL)
                     {
                         cb = pp->cbParam;	/* fixed # arguments */
@@ -1018,13 +1021,13 @@ void Function::findExps()
                             {
                                 if (pp->args.numArgs > 0)
                                     adjustActArgType(exp, pp->args.sym[numArgs].type, this);
-                                res = picode->newStkArg (exp, picode->ic.ll.opcode, this);
+                                res = picode->newStkArg (exp, picode->ll()->opcode, this);
                             }
                             else			/* user function */
                             {
                                 if (pp->args.numArgs >0)
                                     pp->args.adjustForArgType (numArgs,expType (exp, this));
-                                res = picode->newStkArg (exp,picode->ic.ll.opcode, this);
+                                res = picode->newStkArg (exp,picode->ll()->opcode, this);
                             }
                             if (res == FALSE)
                                 k += hlTypeSize (exp, this);
@@ -1032,12 +1035,12 @@ void Function::findExps()
                     }
                     else		/* CALL_C */
                     {
-                        cb = picode->ic.hl.call.args->cb;
+                        cb = picode->hl()->call.args->cb;
                         numArgs = 0;
                         if (cb)
                             for (k = 0; k < cb; numArgs++)
                                 processCArg (pp, this, &(*picode), numArgs, &k);
-                        else if ((cb == 0) && (picode->ic.ll.flg & REST_STK))
+                        else if ((cb == 0) && picode->ll()->isLlFlag(REST_STK))
                             while (! g_exp_stk.empty())
                             {
                                 processCArg (pp, this, &(*picode), numArgs, &k);
@@ -1048,13 +1051,13 @@ void Function::findExps()
 
                 /* If we could not substitute the result of a function,
                  * assign it to the corresponding registers */
-                if ((picode->ic.hl.opcode == HLI_CALL) &&
-                        ((picode->ic.hl.call.proc->flg & PROC_ISLIB) !=
+                if ((picode->hl()->opcode == HLI_CALL) &&
+                        ((picode->hl()->call.proc->flg & PROC_ISLIB) !=
                          PROC_ISLIB) && (not picode->du1.used(0)) &&
                         (picode->du1.numRegsDef > 0))
                 {
-                    exp = COND_EXPR::idFunc (picode->ic.hl.call.proc, picode->ic.hl.call.args);
-                    lhs = COND_EXPR::idID (&picode->ic.hl.call.proc->retVal, &localId, picode);
+                    exp = COND_EXPR::idFunc (picode->hl()->call.proc, picode->hl()->call.args);
+                    lhs = COND_EXPR::idID (&picode->hl()->call.proc->retVal, &localId, picode);
                     picode->setAsgn(lhs, exp);
                 }
             }

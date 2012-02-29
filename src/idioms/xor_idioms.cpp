@@ -23,16 +23,16 @@ bool Idiom21::match (iICODE picode)
     m_icodes[0]=picode++;
     m_icodes[1]=picode++;
 
-    if (not m_icodes[1]->isLlFlag(I))
+    if (not m_icodes[1]->ll()->isLlFlag(I))
         return false;
 
-    dst = &m_icodes[0]->ic.ll.dst;
-    src = &m_icodes[0]->ic.ll.src;
+    dst = &m_icodes[0]->ll()->dst;
+    src = &m_icodes[0]->ll()->src;
     if ((dst->regi == src->regi) && (dst->regi > 0) && (dst->regi < INDEXBASE))
     {
-        if ((dst->regi == rDX) && m_icodes[1]->ic.ll.match(rAX))
+        if ((dst->regi == rDX) && m_icodes[1]->ll()->match(rAX))
             return true;
-        if ((dst->regi == rCX) && m_icodes[1]->ic.ll.match(rBX))
+        if ((dst->regi == rCX) && m_icodes[1]->ll()->match(rBX))
             return true;
     }
     return false;
@@ -41,7 +41,7 @@ int Idiom21::action()
 {
     COND_EXPR *lhs,*rhs;
     lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, 1);
-    rhs = COND_EXPR::idKte (m_icodes[1]->ic.ll.src.op() , 4);
+    rhs = COND_EXPR::idKte (m_icodes[1]->ll()->src.op() , 4);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[0]->du.use = 0;		/* clear register used in iXOR */
     m_icodes[1]->invalidate();
@@ -61,8 +61,8 @@ bool Idiom7::match(iICODE picode)
         return false;
     LLOperand *dst, *src;
     m_icode=picode;
-    dst = &picode->ic.ll.dst;
-    src = &picode->ic.ll.src;
+    dst = &picode->ll()->dst;
+    src = &picode->ll()->src;
     if (dst->regi == 0)                 /* global variable */
     {
         if ((dst->segValue == src->segValue) && (dst->off == src->off))
@@ -87,7 +87,7 @@ int Idiom7::action()
     rhs = COND_EXPR::idKte (0, 2);
     m_icode->setAsgn(lhs, rhs);
     m_icode->du.use = 0;    /* clear register used in iXOR */
-    m_icode->ic.ll.flg |= I;
+    m_icode->ll()->SetLlFlag(I);
     return 1;
 }
 
@@ -113,11 +113,11 @@ bool Idiom10::match(iICODE pIcode)
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
     /* Check OR reg, reg */
-    if (not m_icodes[0]->isLlFlag(I)  &&
-            (m_icodes[0]->ic.ll.src.regi > 0) &&
-            (m_icodes[0]->ic.ll.src.regi < INDEXBASE) &&
-            (m_icodes[0]->ic.ll.src.regi == m_icodes[0]->ic.ll.dst.regi))
-        if (m_icodes[1]->ic.ll.match(iJNE)) //.conditionalJump()
+    if (not m_icodes[0]->ll()->isLlFlag(I)  &&
+            (m_icodes[0]->ll()->src.regi > 0) &&
+            (m_icodes[0]->ll()->src.regi < INDEXBASE) &&
+            (m_icodes[0]->ll()->src.regi == m_icodes[0]->ll()->dst.regi))
+        if (m_icodes[1]->ll()->match(iJNE)) //.conditionalJump()
         {
             return true;
         }
@@ -126,9 +126,9 @@ bool Idiom10::match(iICODE pIcode)
 
 int Idiom10::action()
 {
-    m_icodes[0]->ic.ll.opcode = iCMP;
-    m_icodes[0]->ic.ll.flg |= I;
-    m_icodes[0]->ic.ll.src.SetImmediateOp(0); // todo check if proc should be zeroed too
+    m_icodes[0]->ll()->opcode = iCMP;
+    m_icodes[0]->ll()->SetLlFlag(I);
+      m_icodes[0]->ll()->src.SetImmediateOp(0); // todo check if proc should be zeroed too
     m_icodes[0]->du.def = 0;
     m_icodes[0]->du1.numRegsDef = 0;
     return 2;

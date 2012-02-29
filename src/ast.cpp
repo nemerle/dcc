@@ -66,7 +66,7 @@ void ICODE::setRegDU (uint8_t regi, operDu du_in)
 /* Copies the def, use, or def and use fields of duIcode into pIcode */
 void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
 {
-    //    printf("%s %d,%d from %d to %d\n",__FUNCTION__,int(du),int(duDu),duIcode->ic.ll.opcode,pIcode->ic.ll.opcode);
+    //    printf("%s %d,%d from %d to %d\n",__FUNCTION__,int(du),int(duDu),duIcode->ll()->opcode,pIcode->ll()->opcode);
     switch (_du)
     {
     case eDEF:
@@ -258,17 +258,17 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst
     int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
     /* Check for long constant and save it as a constant expression */
-    if ((sd == SRC) && ((pIcode->ic.ll.flg & I) == I))  /* constant */
+    if ((sd == SRC) && pIcode->ll()->isLlFlag(I))  /* constant */
     {
         iICODE atOffset=pIcode;
         advance(atOffset,off);
         newExp->expr.ident.idType = CONSTANT;
         if (f == HIGH_FIRST)
-            newExp->expr.ident.idNode.kte.kte = (pIcode->ic.ll.src.op() << 16) +
-                    atOffset->ic.ll.src.op();
+            newExp->expr.ident.idNode.kte.kte = (pIcode->ll()->src.op() << 16) +
+                    atOffset->ll()->src.op();
         else        /* LOW_FIRST */
             newExp->expr.ident.idNode.kte.kte =
-                    (atOffset->ic.ll.src.op() << 16)+ pIcode->ic.ll.src.op();
+                    (atOffset->ll()->src.op() << 16)+ pIcode->ll()->src.op();
         newExp->expr.ident.idNode.kte.size = 4;
     }
     /* Save it as a long expression (reg, stack or glob) */
@@ -337,7 +337,7 @@ COND_EXPR *COND_EXPR::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
 
 /* Returns an identifier conditional expression node, according to the given
  * type.
- * Arguments: i : index into the icode array, used for newLongRegId only.
+ * Arguments:
  *            duIcode: icode instruction that needs the du set.
  *            du: operand is defined or used in current instruction.    */
 COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE ix_,ICODE &duIcode, operDu du)
@@ -346,10 +346,10 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE
 
     int idx;          /* idx into pIcode->localId table */
 
-    const LLOperand &pm((sd == SRC) ? pIcode.ic.ll.src : pIcode.ic.ll.dst);
+    const LLOperand &pm((sd == SRC) ? pIcode.ll()->src : pIcode.ll()->dst);
 
-    if (    ((sd == DST) && pIcode.ic.ll.anyFlagSet(IM_DST)) or
-            ((sd == SRC) && pIcode.ic.ll.anyFlagSet(IM_SRC)) or
+    if (    ((sd == DST) && pIcode.ll()->isLlFlag(IM_DST)) or
+            ((sd == SRC) && pIcode.ll()->isLlFlag(IM_SRC)) or
             (sd == LHS_OP))             /* for MUL lhs */
     {                                                   /* implicit dx:ax */
         idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, rDX, rAX, ix_);
@@ -358,20 +358,21 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE
         duIcode.setRegDU (rAX, du);
     }
 
-    else if ((sd == DST) && pIcode.ic.ll.anyFlagSet(IM_TMP_DST))
+    else if ((sd == DST) && pIcode.ll()->isLlFlag(IM_TMP_DST))
     {                                                   /* implicit tmp */
         newExp = COND_EXPR::idReg (rTMP, 0, &pProc->localId);
         duIcode.setRegDU(rTMP, (operDu)eUSE);
     }
 
-    else if ((sd == SRC) && pIcode.ic.ll.anyFlagSet(I)) /* constant */
-        newExp = COND_EXPR::idKte (pIcode.ic.ll.src.op(), 2);
+    else if ((sd == SRC) && pIcode.ll()->isLlFlag(I)) /* constant */
+        newExp = COND_EXPR::idKte (pIcode.ll()->src.op(), 2);
     else if (pm.regi == 0)                             /* global variable */
         newExp = COND_EXPR::idGlob(pm.segValue, pm.off);
     else if (pm.regi < INDEXBASE)                      /* register */
     {
-        newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? pIcode.ic.ll.flg :
-                                                           pIcode.ic.ll.flg & NO_SRC_B, &pProc->localId);
+        newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? pIcode.ll()->GetLlFlag() :
+                                                           pIcode.ll()->GetLlFlag() & NO_SRC_B,
+                                   &pProc->localId);
         duIcode.setRegDU( pm.regi, du);
     }
 
@@ -430,9 +431,9 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE
 /* Returns the identifier type */
 condId ICODE::idType(opLoc sd)
 {
-    LLOperand &pm((sd == SRC) ? ic.ll.src : ic.ll.dst);
+    LLOperand &pm((sd == SRC) ? ll()->src : ll()->dst);
 
-    if ((sd == SRC) && ((ic.ll.flg & I) == I))
+    if ((sd == SRC) && ll()->isLlFlag(I))
         return (CONSTANT);
     else if (pm.regi == 0)
         return (GLOB_VAR);

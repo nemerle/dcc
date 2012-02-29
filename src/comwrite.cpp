@@ -150,17 +150,17 @@ static const char *intOthers[] = {
 void ICODE::writeIntComment (std::ostringstream &s)
 {
     s<<"\t/* ";
-    if (ic.ll.src.op() == 0x21)
+    if (ll()->src.op() == 0x21)
     {
-        s <<int21h[ic.ll.dst.off];
+        s <<int21h[ll()->dst.off];
     }
-    else if (ic.ll.src.op() > 0x1F && ic.ll.src.op() < 0x2F)
+    else if (ll()->src.op() > 0x1F && ll()->src.op() < 0x2F)
     {
-        s <<intOthers[ic.ll.src.op() - 0x20];
+        s <<intOthers[ll()->src.op() - 0x20];
     }
-    else if (ic.ll.src.op() == 0x2F)
+    else if (ll()->src.op() == 0x2F)
     {
-        switch (ic.ll.dst.off)
+        switch (ll()->dst.off)
         {
             case 0x01 :
                 s << "Print spooler";

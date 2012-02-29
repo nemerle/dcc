@@ -50,7 +50,7 @@ bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
 CIcodeRec::iterator CIcodeRec::labelSrch(uint32_t target)
 {
     int  i;
-    return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ic.ll.label==target;});
+    return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ll()->label==target;});
 }
 ICODE * CIcodeRec::GetIcode(int ip)
 {
@@ -68,19 +68,19 @@ extern bundle cCode;
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be backpatched
  *       onto code in cCode.code */
-void ICODE::emitGotoLabel (int indLevel)
+void LLInst::emitGotoLabel (int indLevel)
 {
-    if (! (ic.ll.flg & HLL_LABEL)) /* node hasn't got a lab */
+    if ( not isLlFlag(HLL_LABEL) ) /* node hasn't got a lab */
     {
         /* Generate new label */
-        ic.ll.hllLabNum = getNextLabel();
-        ic.ll.flg |= HLL_LABEL;
+        hllLabNum = getNextLabel();
+        SetLlFlag(HLL_LABEL);
 
         /* Node has been traversed already, so backpatch this label into
                  * the code */
-        addLabelBundle (cCode.code, codeIdx, ic.ll.hllLabNum);
+        addLabelBundle (cCode.code, codeIdx, hllLabNum);
     }
-    cCode.appendCode( "%sgoto L%ld;\n", indent(indLevel), ic.ll.hllLabNum);
+    cCode.appendCode( "%sgoto L%ld;\n", indent(indLevel), hllLabNum);
     stats.numHLIcode++;
 }
 

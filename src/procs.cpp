@@ -106,13 +106,13 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     uint8_t regL, regH;		/* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
-    tproc = ticode->ic.hl.call.proc;
+    tproc = ticode->hl()->call.proc;
     tproc->flg |= REG_ARGS;
 
     /* Get registers and index into target procedure's local list */
-    ps = ticode->ic.hl.call.args;
+    ps = ticode->hl()->call.args;
     ts = &tproc->args;
-    lhs = picode->ic.hl.asgn.lhs;
+    lhs = picode->hl()->asgn.lhs;
     type = lhs->expr.ident.idType;
     if (type == REGISTER)
     {
@@ -187,7 +187,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     /* Do ps (actual arguments) */
     STKSYM newsym;
     sprintf (newsym.name, "arg%ld", ps->sym.size());
-    newsym.actual = picode->ic.hl.asgn.rhs;
+    newsym.actual = picode->hl()->asgn.rhs;
     newsym.regs = lhs;
     /* Mask off high and low register(s) in picode */
     switch (type) {

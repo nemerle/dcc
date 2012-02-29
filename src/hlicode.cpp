@@ -31,29 +31,29 @@ static char buf[lineSize];     /* Line buffer for hl icode output */
 void ICODE::setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
 {
     type = HIGH_LEVEL;
-    ic.hl.set(lhs,rhs);
+    hl()->set(lhs,rhs);
 
 }
 void ICODE::checkHlCall()
 {
-    //assert((ic.ll.immed.proc.cb != 0)||ic.ll.immed.proc.proc!=0);
+    //assert((ll()->immed.proc.cb != 0)||ll()->immed.proc.proc!=0);
 }
 /* Places the new HLI_CALL high-level operand in the high-level icode array */
 void ICODE::newCallHl()
 {
     type = HIGH_LEVEL;
-    ic.hl.opcode = HLI_CALL;
-    ic.hl.call.proc = ic.ll.src.proc.proc;
-    ic.hl.call.args = new STKFRAME;
+    hl()->opcode = HLI_CALL;
+    hl()->call.proc = ll()->src.proc.proc;
+    hl()->call.args = new STKFRAME;
 
-    if (ic.ll.src.proc.cb != 0)
-        ic.hl.call.args->cb = ic.ll.src.proc.cb;
-    else if(ic.hl.call.proc)
-        ic.hl.call.args->cb =ic.hl.call.proc->cbParam;
+    if (ll()->src.proc.cb != 0)
+        hl()->call.args->cb = ll()->src.proc.cb;
+    else if(hl()->call.proc)
+        hl()->call.args->cb =hl()->call.proc->cbParam;
     else
     {
         printf("Function with no cb set, and no valid oper.call.proc , probaby indirect call\n");
-        ic.hl.call.args->cb = 0;
+        hl()->call.args->cb = 0;
     }
 }
 
@@ -63,7 +63,7 @@ void ICODE::newCallHl()
 void ICODE::setUnary(hlIcode op, COND_EXPR *exp)
 {
     type = HIGH_LEVEL;
-    ic.hl.set(op,exp);
+    hl()->set(op,exp);
 }
 
 
@@ -71,7 +71,7 @@ void ICODE::setUnary(hlIcode op, COND_EXPR *exp)
 void ICODE::setJCond(COND_EXPR *cexp)
 {
     type = HIGH_LEVEL;
-    ic.hl.set(HLI_JCOND,cexp);
+    hl()->set(HLI_JCOND,cexp);
 }
 
 
@@ -116,7 +116,7 @@ bool ICODE::removeDefRegi (uint8_t regi, int thisDefIdx, LOCAL_ID *locId)
         invalidate();
         return true;
     }
-    HlTypeSupport *p=ic.hl.get();
+    HlTypeSupport *p=hl()->get();
     if(p and p->removeRegFromLong(regi,locId))
     {
         du1.numRegsDef--;
@@ -141,11 +141,12 @@ void Function::highLevelGen()
     {
         assert(numIcode==Icode.size());
         pIcode = i; //Icode.GetIcode(i)
-        if ((pIcode->ic.ll.flg & NOT_HLL) == NOT_HLL)
+        LLInst *ll = pIcode->ll();
+        if ( ll->isLlFlag(NOT_HLL) )
             pIcode->invalidate();
-        if ((pIcode->type == LOW_LEVEL) && (pIcode->invalid == FALSE))
+        if ((pIcode->type == LOW_LEVEL) && pIcode->valid() )
         {
-            flg = pIcode->ic.ll.flg;
+            flg = ll->GetLlFlag();
             if ((flg & IM_OPS) != IM_OPS)   /* not processing IM_OPS yet */
                 if ((flg & NO_OPS) != NO_OPS)       /* if there are opers */
                 {
@@ -154,7 +155,7 @@ void Function::highLevelGen()
                     lhs = COND_EXPR::id (*pIcode, DST, this, i, *pIcode, NONE);
                 }
 
-            switch (pIcode->ic.ll.opcode)
+            switch (ll->opcode)
             {
                 case iADD:
                     rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
@@ -181,7 +182,7 @@ void Function::highLevelGen()
                 case iDIV:
                 case iIDIV:/* should be signed div */
                     rhs = COND_EXPR::boolOp (lhs, rhs, DIV);
-                    if (pIcode->ic.ll.flg & B)
+                    if ( ll->isLlFlag(B) )
                     {
                         lhs = COND_EXPR::idReg (rAL, 0, &localId);
                         pIcode->setRegDU( rAL, eDEF);
@@ -206,12 +207,14 @@ void Function::highLevelGen()
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iLEA:    rhs = COND_EXPR::unary (ADDRESSOF, rhs);
+                case iLEA:
+                    rhs = COND_EXPR::unary (ADDRESSOF, rhs);
                     pIcode->setAsgn(lhs, rhs);
                     break;
 
-                case iMOD:    rhs = COND_EXPR::boolOp (lhs, rhs, MOD);
-                    if (pIcode->ic.ll.flg & B)
+                case iMOD:
+                    rhs = COND_EXPR::boolOp (lhs, rhs, MOD);
+                    if ( ll->isLlFlag(B) )
                     {
                         lhs = COND_EXPR::idReg (rAH, 0, &localId);
                         pIcode->setRegDU( rAH, eDEF);
@@ -494,8 +497,8 @@ void ICODE::writeDU(int idx)
     }
 
     /* For HLI_CALL, print # parameter bytes */
-    if (ic.hl.opcode == HLI_CALL)
-        printf ("# param bytes = %d\n", ic.hl.call.args->cb);
+    if (hl()->opcode == HLI_CALL)
+        printf ("# param bytes = %d\n", hl()->call.args->cb);
     printf ("\n");
 }
 

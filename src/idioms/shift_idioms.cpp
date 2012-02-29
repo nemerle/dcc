@@ -18,10 +18,9 @@ bool Idiom8::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->isLlFlag(I) && (m_icodes[0]->ic.ll.src.op() == 1))
-        if (m_icodes[1]->ic.ll.match(iRCR) &&
-            m_icodes[1]->isLlFlag(I) &&
-            (m_icodes[1]->ic.ll.src.op() == 1))
+    if (m_icodes[0]->ll()->isLlFlag(I) && (m_icodes[0]->ll()->src.op() == 1))
+        if ( m_icodes[1]->ll()->match(iRCR,I) &&
+            (m_icodes[1]->ll()->src.op() == 1))
             return true;
     return false;
 }
@@ -31,8 +30,8 @@ int Idiom8::action()
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
     uint8_t regH,regL;
-    regH=m_icodes[0]->ic.ll.dst.regi;
-    regL=m_icodes[1]->ic.ll.dst.regi;
+    regH=m_icodes[0]->ll()->dst.regi;
+    regL=m_icodes[1]->ll()->dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, regH, regL, m_icodes[0]);
     lhs = COND_EXPR::idLongIdx (idx);
     m_icodes[0]->setRegDU( regL, USE_DEF);
@@ -64,15 +63,14 @@ bool Idiom15::match(iICODE pIcode)
     if(distance(pIcode,m_end)<2)
         return false;
     /* Match SHL reg, 1 */
-    if (not pIcode->isLlFlag(I) or (pIcode->ic.ll.src.op() != 1))
+    if (not pIcode->ll()->isLlFlag(I) or (pIcode->ll()->src.op() != 1))
         return false;
     m_icodes.clear();
-    regi = pIcode->ic.ll.dst.regi;
+    regi = pIcode->ll()->dst.regi;
     m_icodes.push_back(pIcode++);
     while(  (pIcode!=m_end) and
-            pIcode->ic.ll.match(iSHL,(eReg)regi) and
-            pIcode->isLlFlag(I) and
-            (pIcode->ic.ll.src.op() == 1) )
+            pIcode->ll()->match(iSHL,(eReg)regi,I) and
+            (pIcode->ll()->src.op() == 1) )
     {
         n++;
         m_icodes.push_back(pIcode++);
@@ -83,9 +81,9 @@ bool Idiom15::match(iICODE pIcode)
 int Idiom15::action()
 {
     COND_EXPR *lhs,*rhs,*exp;
-    lhs = COND_EXPR::idReg (m_icodes[0]->ic.ll.dst.regi,
-                            m_icodes[0]->ic.ll.flg & NO_SRC_B,
-                            &m_func->localId);
+    lhs = COND_EXPR::idReg (m_icodes[0]->ll()->dst.regi,
+                            m_icodes[0]->ll()->GetLlFlag() & NO_SRC_B,
+                             &m_func->localId);
     rhs = COND_EXPR::idKte (m_icodes.size(), 2);
     exp = COND_EXPR::boolOp (lhs, rhs, SHL);
     m_icodes[0]->setAsgn(lhs, exp);
@@ -111,9 +109,8 @@ bool Idiom12::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->isLlFlag(I) && (m_icodes[0]->ic.ll.src.op() == 1))
-        if (m_icodes[1]->ic.ll.match(iRCL) &&
-                m_icodes[1]->isLlFlag(I) && (m_icodes[1]->ic.ll.src.op() == 1))
+    if (m_icodes[0]->ll()->isLlFlag(I) && (m_icodes[0]->ll()->src.op() == 1))
+        if (m_icodes[1]->ll()->match(iRCL,I) && (m_icodes[1]->ll()->src.op() == 1))
             return true;
     return false;
 }
@@ -123,8 +120,8 @@ int Idiom12::action()
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
     uint8_t regH,regL;
-    regL=m_icodes[0]->ic.ll.dst.regi;
-    regH=m_icodes[1]->ic.ll.dst.regi;
+    regL=m_icodes[0]->ll()->dst.regi;
+    regH=m_icodes[1]->ll()->dst.regi;
 
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN, regH, regL,m_icodes[0]);
     lhs = COND_EXPR::idLongIdx (idx);
@@ -151,9 +148,8 @@ bool Idiom9::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->isLlFlag(I) && (m_icodes[0]->ic.ll.src.op() == 1))
-        if (m_icodes[1]->ic.ll.match(iRCR) &&
-                m_icodes[1]->isLlFlag(I) && (m_icodes[1]->ic.ll.src.op() == 1))
+    if (m_icodes[0]->ll()->isLlFlag(I) && (m_icodes[0]->ll()->src.op() == 1))
+        if (m_icodes[1]->ll()->match(iRCR,I) && (m_icodes[1]->ll()->src.op() == 1))
             return true;
     return false;
 }
@@ -163,8 +159,8 @@ int Idiom9::action()
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
     uint8_t regH,regL;
-    regL=m_icodes[1]->ic.ll.dst.regi;
-    regH=m_icodes[0]->ic.ll.dst.regi;
+    regL=m_icodes[1]->ll()->dst.regi;
+    regH=m_icodes[0]->ll()->dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN,regH,regL,m_icodes[0]);
     lhs = COND_EXPR::idLongIdx (idx);
     m_icodes[0]->setRegDU(regL, USE_DEF);
