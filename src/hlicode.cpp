@@ -28,10 +28,9 @@ static char buf[lineSize];     /* Line buffer for hl icode output */
 
 
 /* Places the new HLI_ASSIGN high-level operand in the high-level icode array */
-void ICODE::setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
+void HLTYPE::setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
 {
-    type = HIGH_LEVEL;
-    hl()->set(lhs,rhs);
+    set(lhs,rhs);
 
 }
 void ICODE::checkHlCall()
@@ -155,7 +154,7 @@ void Function::highLevelGen()
                     lhs = COND_EXPR::id (*pIcode, DST, this, i, *pIcode, NONE);
                 }
 
-            switch (ll->opcode)
+            switch (ll->getOpcode())
             {
                 case iADD:
                     rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
@@ -452,38 +451,34 @@ int power2 (int i)
  * instruction. */
 void ICODE::writeDU(int idx)
 {
-    static char buf[100];
-    int i, j;
-
-    memset (buf, ' ', sizeof(buf));
-    buf[0] = '\0';
-    for (i = 0; i < (INDEXBASE-1); i++)
     {
-        if (du.def[i])
-        {
-            strcat (buf, allRegs[i]);
-            strcat (buf, " ");
-        }
+        ostringstream ostr;
+        for (int i = 0; i < (INDEXBASE-1); i++)
+            if (du.def[i])
+                ostr << allRegs[i] << " ";
+        if (!ostr.str().empty())
+            printf ("Def (reg) = %s\n", ostr.str().c_str());
     }
-    if (buf[0] != '\0')
-        printf ("Def (reg) = %s\n", buf);
-
-    memset (buf, ' ', sizeof(buf));
-    buf[0] = '\0';
-    for (i = 0; i < INDEXBASE; i++)
     {
-        if (du.use[i])
+        ostringstream ostr;
+        for (int i = 0; i < (INDEXBASE-1); i++)
+            if (du.def[i])
+                ostr << allRegs[i] << " ";
+        if (!ostr.str().empty())
+            printf ("Def (reg) = %s\n", ostr.str().c_str());
+        for (int i = 0; i < INDEXBASE; i++)
         {
-            strcat (buf, allRegs[i]);
-            strcat (buf, " ");
+            if (du.use[i])
+                ostr << allRegs[i] << " ";
         }
+        if (!ostr.str().empty())
+            printf ("Use (reg) = %s\n", ostr.str().c_str());
+
     }
-    if (buf[0] != '\0')
-        printf ("Use (reg) = %s\n", buf);
 
     /* Print du1 chain */
     printf ("# regs defined = %d\n", du1.numRegsDef);
-    for (i = 0; i < MAX_REGS_DEF; i++)
+    for (int i = 0; i < MAX_REGS_DEF; i++)
     {
         if (du1.used(i))
         {

@@ -175,5 +175,5 @@ int     power2 (int);
 
 /* Exported funcions from locident.c */
 boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE atOffset);
-boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, COND_EXPR *&, COND_EXPR *&, iICODE);
+boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE);
 uint8_t otherLongRegi (uint8_t, int, LOCAL_ID *);

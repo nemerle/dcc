@@ -44,10 +44,10 @@ void Function::createCFG()
         LLInst *ll = pIcode->ll();
         /* Stick a NOWHERE_NODE on the end if we terminate
                  * with anything other than a ret, jump or terminate */
-        if (ip + 1 == Icode.size() &&
-                (not ll->testFlags(TERMINATES)) &&
-                ll->opcode != iJMP && ll->opcode != iJMPF &&
-                ll->opcode != iRET && ll->opcode != iRETF)
+        if (ip + 1 == Icode.size() and
+                (not ll->testFlags(TERMINATES)) and
+                (not ll->match(iJMP)) and (not ll->match(iJMPF)) and
+                (not ll->match(iRET)) and (not ll->match(iRETF)))
         {
             pBB=BB::Create(start, ip, NOWHERE_NODE, 0, this);
         }
@@ -55,7 +55,7 @@ void Function::createCFG()
         /* Only process icodes that have valid instructions */
         else if (not ll->testFlags(NO_CODE) )
         {
-            switch (ll->opcode) {
+            switch (ll->getOpcode()) {
                 case iJB:  case iJBE:  case iJAE:  case iJA:
                 case iJL:  case iJLE:  case iJGE:  case iJG:
                 case iJE:  case iJNE:  case iJS:   case iJNS:

@@ -147,20 +147,20 @@ static const char *intOthers[] = {
 
 /* Writes the description of the current interrupt. Appends it to the
  * string s.	*/
-void ICODE::writeIntComment (std::ostringstream &s)
+void LLInst::writeIntComment (std::ostringstream &s)
 {
     s<<"\t/* ";
-    if (ll()->src.op() == 0x21)
+    if (src.op() == 0x21)
     {
-        s <<int21h[ll()->dst.off];
+        s <<int21h[dst.off];
     }
-    else if (ll()->src.op() > 0x1F && ll()->src.op() < 0x2F)
+    else if (src.op() > 0x1F && src.op() < 0x2F)
     {
-        s <<intOthers[ll()->src.op() - 0x20];
+        s <<intOthers[src.op() - 0x20];
     }
-    else if (ll()->src.op() == 0x2F)
+    else if (src.op() == 0x2F)
     {
-        switch (ll()->dst.off)
+        switch (dst.off)
         {
             case 0x01 :
                 s << "Print spooler";

@@ -153,12 +153,12 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         }
 
         /* Copy Icode to Proc */
-        if ((_Icode.ll()->opcode == iDIV) || (_Icode.ll()->opcode == iIDIV))
+        if ((_Icode.ll()->getOpcode() == iDIV) || (_Icode.ll()->getOpcode() == iIDIV))
         {
             /* MOV rTMP, reg */
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->opcode = iMOV;
+            eIcode.ll()->set(iMOV,0);
             eIcode.ll()->dst.regi = rTMP;
             if (ll->testFlags(B) )
             {
@@ -184,19 +184,19 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             /* iMOD */
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->opcode = iMOD;
+            eIcode.ll()->set(iMOD,0);
             eIcode.ll()->src = _Icode.ll()->src;
             eIcode.du = _Icode.du;
             eIcode.ll()->setFlags( ( ll->getFlag() | SYNTHETIC) );
             eIcode.ll()->label = SynthLab++;
             pIcode = Icode.addIcode(&eIcode);
         }
-        else if (_Icode.ll()->opcode == iXCHG)
+        else if (_Icode.ll()->getOpcode() == iXCHG)
         {
             /* MOV rTMP, regDst */
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->opcode = iMOV;
+            eIcode.ll()->set(iMOV,0);
             eIcode.ll()->dst.regi = rTMP;
             eIcode.ll()->src.regi = _Icode.ll()->dst.regi;
             eIcode.setRegDU( rTMP, eDEF);
@@ -207,28 +207,26 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             Icode.addIcode(&eIcode);
 
             /* MOV regDst, regSrc */
-            _Icode.ll()->opcode = iMOV;
-            ll->setFlags( SYNTHETIC );
+            _Icode.ll()->set(iMOV,SYNTHETIC);
             /* Icode.ll()->label = SynthLab++; */
             Icode.addIcode(&_Icode);
-            ll->opcode = iXCHG; /* for next case */
+            ll->setOpcode(iXCHG); /* for next case */
 
             /* MOV regSrc, rTMP */
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->opcode = iMOV;
+            eIcode.ll()->set(iMOV,SYNTHETIC);
             eIcode.ll()->dst.regi = ll->src.regi;
             eIcode.ll()->src.regi = rTMP;
             eIcode.setRegDU( eIcode.ll()->dst.regi, eDEF);
             eIcode.setRegDU( rTMP, eUSE);
-            eIcode.ll()->setFlags(SYNTHETIC);
             eIcode.ll()->label = SynthLab++;
             pIcode = Icode.addIcode(&eIcode);
         }
         else
             pIcode = Icode.addIcode(&_Icode);
 
-        switch (ll->opcode) {
+        switch (ll->getOpcode()) {
             /*** Conditional jumps ***/
             case iLOOP: case iLOOPE:    case iLOOPNE:
             case iJB:   case iJBE:      case iJAE:  case iJA:
@@ -246,15 +244,15 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 /* This sets up range check for indexed JMPs hopefully
              * Handles JA/JAE for fall through and JB/JBE on branch
             */
-                if (ip > 0 && prev.ll()->opcode == iCMP && (prev.ll()->testFlags(I)))
+                if (ip > 0 && prev.ll()->getOpcode() == iCMP && (prev.ll()->testFlags(I)))
                 {
                     pstate->JCond.immed = (int16_t)prev.ll()->src.op();
-                    if (ll->opcode == iJA || ll->opcode == iJBE)
+                    if (ll->match(iJA) || ll->match(iJBE) )
                         pstate->JCond.immed++;
-                    if (ll->opcode == iJAE || ll->opcode == iJA)
+                    if (ll->getOpcode() == iJAE || ll->getOpcode() == iJA)
                         pstate->JCond.regi = prev.ll()->dst.regi;
                     fBranch = (boolT)
-                            (ll->opcode == iJB || ll->opcode == iJBE);
+                            (ll->getOpcode() == iJB || ll->getOpcode() == iJBE);
                 }
                 StCopy = *pstate;
                 //memcpy(&StCopy, pstate, sizeof(STATE));
@@ -286,7 +284,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 /*** Returns ***/
             case iRET:
             case iRETF:
-                this->flg |= (ll->opcode == iRET)? PROC_NEAR:PROC_FAR;
+                this->flg |= (ll->getOpcode() == iRET)? PROC_NEAR:PROC_FAR;
                 /* Fall through */
             case iIRET:
                 this->flg &= ~TERMINATES;
@@ -357,7 +355,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 if ((psym = lookupAddr(&ll->src, pstate, 4, eDuVal::USE))
                         /* && (Icode.ll()->flg & SEG_IMMED) */ ) {
                     offset = LH(&prog.Image[psym->label]);
-                    pstate->setState( (ll->opcode == iLDS)? rDS: rES,
+                    pstate->setState( (ll->getOpcode() == iLDS)? rDS: rES,
                                       LH(&prog.Image[psym->label + 2]));
                     pstate->setState( ll->dst.regi, (int16_t)offset);
                     psym->type = TYPE_PTR;
@@ -393,7 +391,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
 
     if (pIcode.ll()->testFlags(I))
     {
-        if (pIcode.ll()->opcode == iJMPF)
+        if (pIcode.ll()->getOpcode() == iJMPF)
             pstate->setState( rCS, LH(prog.Image + pIcode.ll()->label + 3));
         i = pstate->IP = pIcode.ll()->src.op();
         if ((long)i < 0)
@@ -545,7 +543,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
         /* Address of function is given by 4 (CALLF) or 2 (CALL) bytes at
                  * previous offset into the program image */
         uint32_t tgtAddr=0;
-        if (pIcode.ll()->opcode == iCALLF)
+        if (pIcode.ll()->getOpcode() == iCALLF)
             tgtAddr= LH(&prog.Image[off]) + (uint32_t)(LH(&prog.Image[off+2])) << 4;
         else
             tgtAddr= LH(&prog.Image[off]) + (uint32_t)(uint16_t)state.r[rCS] << 4;
@@ -595,7 +593,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
             /* Save machine state in localState, load up IP and CS.*/
             localState = *pstate;
             pstate->IP = pIcode.ll()->src.op();
-            if (pIcode.ll()->opcode == iCALLF)
+            if (pIcode.ll()->getOpcode() == iCALLF)
                 pstate->setState( rCS, LH(prog.Image + pIcode.ll()->label + 3));
             x.state = *pstate;
 
@@ -1022,7 +1020,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
     int   cb   = pIcode.ll()->testFlags(B) ? 1: 2;
     uint32_t Imm  = (pIcode.ll()->testFlags(I));
 
-    switch (pIcode.ll()->opcode) {
+    switch (pIcode.ll()->getOpcode()) {
         case iAND:  case iOR:   case iXOR:
         case iSAR:  case iSHL:  case iSHR:
         case iRCL:  case iRCR:  case iROL:  case iROR:
@@ -1096,7 +1094,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             cb = 4;
         case iCALL:  case iPUSH:  case iPOP:
             if (! Imm) {
-                if (pIcode.ll()->opcode == iPOP)
+                if (pIcode.ll()->getOpcode() == iPOP)
                     def(DST, pIcode, this, pstate, cb, ix);
                 else
                     use(DST, pIcode, this, pstate, cb, ix);
@@ -1108,7 +1106,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             break;
 
         case iLDS:  case iLES:
-            pIcode.du.def |= duReg[(pIcode.ll()->opcode == iLDS) ? rDS : rES];
+            pIcode.du.def |= duReg[(pIcode.ll()->getOpcode() == iLDS) ? rDS : rES];
             pIcode.du1.numRegsDef++;
             cb = 4;
         case iMOV:
@@ -1157,7 +1155,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
         case iSCAS:  case iSTOS:  case iINS:
             pIcode.du.def |= duReg[rDI];
             pIcode.du1.numRegsDef++;
-            if (pIcode.ll()->opcode == iREP_INS || pIcode.ll()->opcode== iINS)
+            if (pIcode.ll()->getOpcode() == iREP_INS || pIcode.ll()->getOpcode()== iINS)
             {
                 pIcode.du.use |= duReg[rDI] | duReg[rES] | duReg[rDX];
             }

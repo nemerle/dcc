@@ -124,7 +124,7 @@ void Function::elimCondCodes ()
 
         for (useAt = pBB->rbegin2(); useAt != pBB->rend2(); useAt++)
         {
-            llIcode useAtOp = useAt->ll()->GetLlOpcode();
+            llIcode useAtOp = useAt->ll()->getOpcode();
             if ((useAt->type == LOW_LEVEL) && (useAt->valid()) && (use = useAt->ll()->flagDU.u))
             {
                 /* Find definition within the same basic block */
@@ -139,7 +139,7 @@ void Function::elimCondCodes ()
                     if ((useAtOp >= iJB) && (useAtOp <= iJNS))
                     {
                         iICODE befDefAt = (++riICODE(defAt)).base();
-                        switch (defAt->ll()->GetLlOpcode())
+                        switch (defAt->ll()->getOpcode())
                         {
                         case iCMP:
                             rhs = srcIdent (*defAt, this, befDefAt,*useAt, eUSE);
@@ -168,7 +168,7 @@ void Function::elimCondCodes ()
                         default:
                             notSup = TRUE;
                             std::cout << hex<<defAt->loc_ip;
-                            reportError (JX_NOT_DEF, defAt->ll()->GetLlOpcode());
+                            reportError (JX_NOT_DEF, defAt->ll()->getOpcode());
                             flg |= PROC_ASM;		/* generate asm */
                         }
                         if (! notSup)
@@ -186,11 +186,11 @@ void Function::elimCondCodes ()
                         exp = COND_EXPR::boolOp (lhs, rhs, EQUAL);
                         useAt->setJCond(exp);
                     }
-//                    else if (useAt->GetLlOpcode() == iRCL)
+//                    else if (useAt->getOpcode() == iRCL)
 //                    {
 //                        ICODE &a(*defAt);
 //                        ICODE &b(*useAt);
-//                        if(a.GetLlOpcode() == iRCL)
+//                        if(a.getOpcode() == iRCL)
 //                        {
 //                            if ((b.ll()->flg & NO_SRC) != NO_SRC)   /* if there is src op */
 //                                rhs = COND_EXPR::id (*useAt, SRC, this, Icode.end(), *useAt, NONE);
@@ -206,7 +206,7 @@ void Function::elimCondCodes ()
                     {
                         ICODE &a(*defAt);
                         ICODE &b(*useAt);
-                        reportError (NOT_DEF_USE,a.ll()->GetLlOpcode(),b.ll()->GetLlOpcode());
+                        reportError (NOT_DEF_USE,a.ll()->getOpcode(),b.ll()->getOpcode());
                         flg |= PROC_ASM;		/* generate asm */
                     }
                     break;
@@ -228,7 +228,7 @@ void Function::elimCondCodes ()
                 else if (defAt == pBB->rend2())
                 {
                     reportError(DEF_NOT_FOUND,useAtOp);
-                    //fatalError (DEF_NOT_FOUND, Icode.GetLlOpcode(useAt-1));
+                    //fatalError (DEF_NOT_FOUND, Icode.getOpcode(useAt-1));
                 }
             }
         }
@@ -680,13 +680,13 @@ static void processCArg (Function * pp, Function * pProc, ICODE * picode, int nu
             }
             else
                 adjustActArgType (exp, pp->args.sym[numArgs].type, pProc);
-        res = picode->newStkArg (exp, picode->ll()->opcode, pProc);
+        res = picode->newStkArg (exp, picode->ll()->getOpcode(), pProc);
     }
     else			/* user function */
     {
         if (pp->args.numArgs > 0)
             pp->args.adjustForArgType (numArgs, expType (exp, pProc));
-        res = picode->newStkArg (exp, picode->ll()->opcode, pProc);
+        res = picode->newStkArg (exp, picode->ll()->getOpcode(), pProc);
     }
 
     /* Do not update the size of k if the expression was a segment register
@@ -1019,13 +1019,13 @@ void Function::findExps()
                             {
                                 if (pp->args.numArgs > 0)
                                     adjustActArgType(exp, pp->args.sym[numArgs].type, this);
-                                res = picode->newStkArg (exp, picode->ll()->opcode, this);
+                                res = picode->newStkArg (exp, picode->ll()->getOpcode(), this);
                             }
                             else			/* user function */
                             {
                                 if (pp->args.numArgs >0)
                                     pp->args.adjustForArgType (numArgs,expType (exp, this));
-                                res = picode->newStkArg (exp,picode->ll()->opcode, this);
+                                res = picode->newStkArg (exp,picode->ll()->getOpcode(), this);
                             }
                             if (res == FALSE)
                                 k += hlTypeSize (exp, this);

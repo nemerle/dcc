@@ -127,17 +127,14 @@ static const char *szWreg[12] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di"
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 
-static void  dis1Line  (ICODE &icode, int pass);
 void  dis1LineOp(int i, boolT fWin, char attr, uint16_t *len, Function * pProc);
 static void  formatRM(ostringstream &p, uint32_t flg, const LLOperand &pm);
 static ostringstream &strDst(ostringstream &os, uint32_t flg, LLOperand &pm);
-static ostringstream &strSrc(ostringstream &os,const LLInst &pc,bool skip_comma=false);
 
 static char *strHex(uint32_t d);
 static int   checkScanned(uint32_t pcCur);
 static void  setProc(Function * proc);
 static void  dispData(uint16_t dataSeg);
-void flops(LLInst &pIcode, std::ostringstream &out);
 boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 static  FILE   *fp;
@@ -168,6 +165,27 @@ uint8_t              iPS;          /* Index into the stack */
 #define dis_show()					// Nothing to do unless using Curses
 
 
+void LLInst::findJumpTargets(CIcodeRec &pc)
+{
+    if (testFlags(I) && ! testFlags(JMP_ICODE) && isJmpInst())
+    {
+        /* Replace the immediate operand with an icode index */
+        iICODE labTgt=pc.labelSrch(src.op());
+        if (labTgt!=pc.end())
+        {
+            src.SetImmediateOp(labTgt->loc_ip);
+            /* This icode is the target of a jump */
+            labTgt->ll()->setFlags(TARGET);
+            setFlags(JMP_ICODE);   /* So its not done twice */
+        }
+        else
+        {
+            /* This jump cannot be linked to a label */
+            setFlags(NO_LABEL);
+        }
+    }
+
+}
 /*****************************************************************************
  * disassem - Prints a disassembled listing of a procedure.
  *			  pass == 1 generates output on file .a1
@@ -214,23 +232,7 @@ void disassem(int pass, Function * ppProc)
         for( ICODE &icode : pc)
         {
             LLInst *ll=icode.ll();
-            if (ll->testFlags(I) && ! ll->testFlags(JMP_ICODE) && JmpInst(ll->opcode))
-            {
-                /* Replace the immediate operand with an icode index */
-                iICODE labTgt=pc.labelSrch(ll->src.op());
-                if (labTgt!=pc.end())
-                {
-                    ll->src.SetImmediateOp(labTgt->loc_ip);
-                    /* This icode is the target of a jump */
-                    labTgt->ll()->setFlags(TARGET);
-                    ll->setFlags(JMP_ICODE);   /* So its not done twice */
-                }
-                else
-                {
-                    /* This jump cannot be linked to a label */
-                    ll->setFlags(NO_LABEL);
-                }
-            }
+            ll->findJumpTargets(pc);
         }
     }
 
@@ -243,9 +245,10 @@ void disassem(int pass, Function * ppProc)
 
     /* Loop over array printing each record */
     nextInst = 0;
-    std::for_each(pc.begin(),
-                  pc.end(),
-                  [pass](ICODE &iter)->void {dis1Line(iter, pass);});
+    for( ICODE &icode : pc)
+    {
+        icode.ll()->dis1Line(icode.loc_ip,pass);
+    }
 
     /* Write procedure epilogue */
     if (pass != 3)
@@ -263,7 +266,7 @@ void disassem(int pass, Function * ppProc)
  * i is index into Icode for this proc                                      *
  * It is assumed that icode i is already scanned                            *
  ****************************************************************************/
-static void dis1Line(ICODE &icode_iter, int pass)
+void LLInst::dis1Line(int loc_ip, int pass)
 {
     ostringstream oper_stream;
     ostringstream hex_bytes;
@@ -271,21 +274,20 @@ static void dis1Line(ICODE &icode_iter, int pass)
 
     oper_stream << uppercase;
     hex_bytes << uppercase;
-    LLInst &_IcLL(*icode_iter.ll());
     /* Disassembly stage 1 --
          * Do not try to display NO_CODE entries or synthetic instructions,
          * other than JMPs, that have been introduced for def/use analysis. */
     if ((option.asm1) &&
-            ( _IcLL.testFlags(NO_CODE) ||
-             (_IcLL.testFlags(SYNTHETIC) && (_IcLL.opcode != iJMP))))
+            ( testFlags(NO_CODE) ||
+             (testFlags(SYNTHETIC) && (opcode != iJMP))))
     {
         return;
     }
-    else if (_IcLL.testFlags(NO_CODE))
+    else if (testFlags(NO_CODE))
     {
         return;
     }
-    if (_IcLL.testFlags(TARGET | CASE))
+    if (testFlags(TARGET | CASE))
     {
         if (pass == 3)
             cCode.appendCode("\n"); /* Print to c code buffer */
@@ -294,19 +296,19 @@ static void dis1Line(ICODE &icode_iter, int pass)
     }
 
     /* Find next instruction label and print hex bytes */
-    if (_IcLL.testFlags(SYNTHETIC))
-        nextInst = _IcLL.label;
+    if (testFlags(SYNTHETIC))
+        nextInst = label;
     else
     {
-        cb = (uint32_t) _IcLL.numBytes;
-        nextInst = _IcLL.label + cb;
+        cb = (uint32_t) numBytes;
+        nextInst = label + cb;
 
         /* Output hexa code in program image */
         if (pass != 3)
         {
             for (j = 0; j < cb; j++)
             {
-                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[_IcLL.label + j]);
+                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[label + j]);
             }
             hex_bytes << ' ';
         }
@@ -317,78 +319,78 @@ static void dis1Line(ICODE &icode_iter, int pass)
     oper_stream << setw(5)<<left; // align for the labels
     {
         ostringstream lab_contents;
-        if (readVal(lab_contents, _IcLL.label, 0))
+        if (readVal(lab_contents, label, 0))
         {
             lab_contents << ':';             /* Also removes the null */
         }
-        else if (_IcLL.testFlags(TARGET))    /* Symbols override Lnn labels */
+        else if (testFlags(TARGET))    /* Symbols override Lnn labels */
         {
             /* Print label */
-            if (pl.count(icode_iter.loc_ip)==0)
+            if (pl.count(loc_ip)==0)
             {
-                pl[icode_iter.loc_ip] = ++lab;
+                pl[loc_ip] = ++lab;
             }
-            lab_contents<< "L"<<pl[icode_iter.loc_ip]<<':';
+            lab_contents<< "L"<<pl[loc_ip]<<':';
         }
         oper_stream<< lab_contents.str();
     }
-    if (_IcLL.opcode == iSIGNEX && _IcLL.testFlags(B))
+    if (opcode == iSIGNEX && testFlags(B))
     {
-        _IcLL.opcode = iCBW;
+        opcode = iCBW;
     }
-    oper_stream << setw(15) << left <<szOps[_IcLL.opcode];
+    oper_stream << setw(15) << left <<szOps[opcode];
 
-    switch (_IcLL.opcode)
+    switch (opcode)
     {
         case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
         case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-            strDst(oper_stream,_IcLL.getFlag(), _IcLL.dst);
-            strSrc(oper_stream,_IcLL);
+            strDst(oper_stream,getFlag(), dst);
+            strSrc(oper_stream);
             break;
 
         case iESC:
-            flops(_IcLL,oper_stream);
+            flops(oper_stream);
             break;
 
         case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
         case iROR:
-            strDst(oper_stream,_IcLL.getFlag() | I, _IcLL.dst);
-            if(_IcLL.testFlags(I))
-                strSrc(oper_stream,_IcLL);
+            strDst(oper_stream,getFlag() | I, dst);
+            if(testFlags(I))
+                strSrc(oper_stream);
             else
                 oper_stream<<", cl";
             break;
 
         case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-            strDst(oper_stream,_IcLL.getFlag() | I, _IcLL.dst);
+            strDst(oper_stream,getFlag() | I, dst);
             break;
 
         case iPUSH:
-            if (_IcLL.testFlags(I))
+            if (testFlags(I))
             {
-                oper_stream<<strHex(_IcLL.src.op());
+                oper_stream<<strHex(src.op());
 //                strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
             }
             else
             {
-                strDst(oper_stream,_IcLL.getFlag() | I, _IcLL.dst);
+                strDst(oper_stream,getFlag() | I, dst);
             }
             break;
 
         case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
-            if (_IcLL.testFlags(I))
+            if (testFlags(I))
             {
-                strDst(oper_stream,_IcLL.getFlag(), _IcLL.dst) <<", ";
-                formatRM(oper_stream, _IcLL.getFlag(), _IcLL.src);
-                strSrc(oper_stream,_IcLL);
+                strDst(oper_stream,getFlag(), dst) <<", ";
+                formatRM(oper_stream, getFlag(), src);
+                strSrc(oper_stream);
             }
             else
-                strDst(oper_stream,_IcLL.getFlag() | I, _IcLL.src);
+                strDst(oper_stream,getFlag() | I, src);
             break;
 
         case iLDS:  case iLES:  case iBOUND:
-            strDst(oper_stream,_IcLL.getFlag(), _IcLL.dst)<<", dword ptr";
-            strSrc(oper_stream,_IcLL,true);
+            strDst(oper_stream,getFlag(), dst)<<", dword ptr";
+            strSrc(oper_stream,true);
             break;
 
         case iJB:  case iJBE:  case iJAE:  case iJA:
@@ -400,71 +402,71 @@ static void dis1Line(ICODE &icode_iter, int pass)
 
             /* Check if there is a symbol here */
     {
-        ICODE *lab=pc.GetIcode(_IcLL.src.op());
+        ICODE *lab=pc.GetIcode(src.op());
             selectTable(Label);
-        if ((_IcLL.src.op() < (uint32_t)numIcode) &&  /* Ensure in range */
+        if ((src.op() < (uint32_t)numIcode) &&  /* Ensure in range */
                 readVal(oper_stream, lab->ll()->label, 0))
             {
                 break;                          /* Symbolic label. Done */
         }
             }
 
-            if (_IcLL.testFlags(NO_LABEL))
+            if (testFlags(NO_LABEL))
             {
                 //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
-                oper_stream<<strHex(_IcLL.src.op());
+                oper_stream<<strHex(src.op());
             }
-            else if (_IcLL.testFlags(I) )
+            else if (testFlags(I) )
             {
-                j = _IcLL.src.op();
+                j = src.op();
                 if (pl.count(j)==0)       /* Forward jump */
                 {
                     pl[j] = ++lab;
                 }
-                if (_IcLL.opcode == iJMPF)
+                if (opcode == iJMPF)
                 {
                     oper_stream<<" far ptr ";
                 }
                 oper_stream<<"L"<<pl[j];
             }
-            else if (_IcLL.opcode == iJMPF)
+            else if (opcode == iJMPF)
             {
                 oper_stream<<"dword ptr";
-                strSrc(oper_stream,_IcLL,true);
+                strSrc(oper_stream,true);
             }
             else
             {
-                strDst(oper_stream,I, _IcLL.src);
+                strDst(oper_stream,I, src);
             }
             break;
 
         case iCALL: case iCALLF:
-            if (_IcLL.testFlags(I))
+            if (testFlags(I))
             {
-                if((_IcLL.opcode == iCALL))
+                if((opcode == iCALL))
                     oper_stream<< "near";
                 else
                     oper_stream<< " far";
-                oper_stream<<" ptr "<<(_IcLL.src.proc.proc)->name;
+                oper_stream<<" ptr "<<(src.proc.proc)->name;
             }
-            else if (_IcLL.opcode == iCALLF)
+            else if (opcode == iCALLF)
             {
                 oper_stream<<"dword ptr ";
-                strSrc(oper_stream,_IcLL,true);
+                strSrc(oper_stream,true);
             }
             else
-                strDst(oper_stream,I, _IcLL.src);
+                strDst(oper_stream,I, src);
             break;
 
         case iENTER:
-            oper_stream<<strHex(_IcLL.dst.off)<<", ";
-            oper_stream<<strHex(_IcLL.src.op());
+            oper_stream<<strHex(dst.off)<<", ";
+            oper_stream<<strHex(src.op());
             break;
 
         case iRET:  case iRETF:  case iINT:
-            if (_IcLL.testFlags(I))
+            if (testFlags(I))
             {
-                oper_stream<<strHex(_IcLL.src.op());
+                oper_stream<<strHex(src.op());
             }
             break;
 
@@ -475,46 +477,46 @@ static void dis1Line(ICODE &icode_iter, int pass)
         case iMOVS:  case iREP_MOVS:
         case iINS:   case iREP_INS:
         case iOUTS:  case iREP_OUTS:
-            if (_IcLL.src.segOver)
+            if (src.segOver)
             {
-                bool is_dx_src=(_IcLL.opcode == iOUTS || _IcLL.opcode == iREP_OUTS);
+                bool is_dx_src=(opcode == iOUTS || opcode == iREP_OUTS);
                 if(is_dx_src)
-                    oper_stream<<"dx, "<<szPtr[_IcLL.getFlag() & B];
+                    oper_stream<<"dx, "<<szPtr[getFlag() & B];
                 else
-                    oper_stream<<szPtr[_IcLL.getFlag() & B];
-                if (_IcLL.opcode == iLODS ||
-                    _IcLL.opcode == iREP_LODS ||
-                    _IcLL.opcode == iOUTS ||
-                    _IcLL.opcode == iREP_OUTS)
+                    oper_stream<<szPtr[getFlag() & B];
+                if (opcode == iLODS ||
+                    opcode == iREP_LODS ||
+                    opcode == iOUTS ||
+                    opcode == iREP_OUTS)
                 {
-                    oper_stream<<szWreg[_IcLL.src.segOver-rAX];
+                    oper_stream<<szWreg[src.segOver-rAX];
                 }
                 else
                 {
-                    oper_stream<<"es:[di], "<<szWreg[_IcLL.src.segOver - rAX];
+                    oper_stream<<"es:[di], "<<szWreg[src.segOver - rAX];
                 }
                 oper_stream<<":[si]";
             }
             else
-                oper_stream<<(_IcLL.getFlag() & B)? "B": "W";
+                oper_stream<<(getFlag() & B)? "B": "W";
             break;
 
         case iXLAT:
-            if (_IcLL.src.segOver)
+            if (src.segOver)
             {
                 oper_stream<<" "<<szPtr[1];
-                oper_stream<<szWreg[_IcLL.src.segOver-rAX]<<":[bx]";
+                oper_stream<<szWreg[src.segOver-rAX]<<":[bx]";
             }
             break;
 
         case iIN:
-            oper_stream<<(_IcLL.getFlag() & B)?"al, ": "ax, ";
-            oper_stream<<(_IcLL.testFlags(I))? strHex(_IcLL.src.op()): "dx";
+            oper_stream<<(getFlag() & B)?"al, ": "ax, ";
+            oper_stream<<(testFlags(I))? strHex(src.op()): "dx";
             break;
 
         case iOUT:
-            oper_stream<<(_IcLL.testFlags(I))? strHex(_IcLL.src.op()): "dx";
-            oper_stream<<(_IcLL.getFlag() & B)?", al": ", ax";
+            oper_stream<<(testFlags(I))? strHex(src.op()): "dx";
+            oper_stream<<(getFlag() & B)?", al": ", ax";
             break;
 
         default:
@@ -522,13 +524,13 @@ static void dis1Line(ICODE &icode_iter, int pass)
     }
 
     /* Comments */
-    if (_IcLL.testFlags(SYNTHETIC))
+    if (testFlags(SYNTHETIC))
     {
         fImpure = FALSE;
     }
     else
     {
-        for (j = _IcLL.label, fImpure = 0; j > 0 && j < (int)nextInst; j++)
+        for (j = label, fImpure = 0; j > 0 && j < (int)nextInst; j++)
         {
             fImpure |= BITMAP(j, BM_DATA);
         }
@@ -538,17 +540,17 @@ static void dis1Line(ICODE &icode_iter, int pass)
     /* Check for user supplied comment */
     selectTable(Comment);
     ostringstream cbuf;
-    if (readVal(cbuf, _IcLL.label, 0))
+    if (readVal(cbuf, label, 0))
     {
         result_stream <<"; "<<cbuf.str();
     }
-    else if (fImpure || (_IcLL.testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
+    else if (fImpure || (testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
     {
-        if (_IcLL.testFlags(CASE))
+        if (testFlags(CASE))
         {
-            result_stream << ";Case l"<< _IcLL.caseTbl.numEntries;
+            result_stream << ";Case l"<< caseTbl.numEntries;
         }
-        if (_IcLL.testFlags(SWITCH))
+        if (testFlags(SWITCH))
         {
             result_stream << ";Switch ";
         }
@@ -556,29 +558,29 @@ static void dis1Line(ICODE &icode_iter, int pass)
         {
             result_stream << ";Accessed as data ";
         }
-        if (_IcLL.testFlags(IMPURE))
+        if (testFlags(IMPURE))
         {
             result_stream << ";Impure operand ";
         }
-        if (_IcLL.testFlags(SEG_IMMED))
+        if (testFlags(SEG_IMMED))
         {
             result_stream << ";Segment constant";
         }
-        if (_IcLL.testFlags(TERMINATES))
+        if (testFlags(TERMINATES))
         {
             result_stream << ";Exit to DOS";
         }
     }
 
     /* Comment on iINT icodes */
-    if (_IcLL.opcode == iINT)
-        icode_iter.writeIntComment(result_stream);
+    if (opcode == iINT)
+        writeIntComment(result_stream);
 
     /* Display output line */
     if(pass==3)
     {
         /* output to .b code buffer */
-        if (_IcLL.testFlags(SYNTHETIC))
+        if (testFlags(SYNTHETIC))
             result_stream<<";Synthetic inst";
         if (pass == 3)		/* output to .b code buffer */
             cCode.appendCode("%s\n", result_stream.str().c_str());
@@ -586,15 +588,15 @@ static void dis1Line(ICODE &icode_iter, int pass)
     }
     else
     {
-        if (not _IcLL.testFlags(SYNTHETIC) )
+        if (not testFlags(SYNTHETIC) )
         {
             /* output to .a1 or .a2 file */
-            fprintf (fp, "%03ld %06lX %s\n", icode_iter.loc_ip, _IcLL.label, result_stream.str().c_str());
+            fprintf (fp, "%03ld %06lX %s\n", loc_ip, label, result_stream.str().c_str());
         }
         else		/* SYNTHETIC instruction */
         {
             result_stream<<";Synthetic inst";
-            fprintf (fp, "%03ld        %s\n", icode_iter.loc_ip, result_stream.str().c_str());
+            fprintf (fp, "%03ld        %s\n", loc_ip, result_stream.str().c_str());
         }
     }
 }
@@ -665,17 +667,17 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, LLOperand &pm)
 /****************************************************************************
  * strSrc                                                                   *
  ****************************************************************************/
-static ostringstream &strSrc(ostringstream &os,const LLInst &l_ins,bool skip_comma)
+ostringstream &LLInst::strSrc(ostringstream &os,bool skip_comma)
 {
     static char buf[30] = {", "};
     if(false==skip_comma)
         os<<", ";
-    if (l_ins.testFlags(I))
-        os<<strHex(l_ins.src.op());
-    else if (l_ins.testFlags(IM_SRC))		/* level 2 */
+    if (testFlags(I))
+        os<<strHex(src.op());
+    else if (testFlags(IM_SRC))		/* level 2 */
         os<<"dx:ax";
     else
-        formatRM(os, l_ins.getFlag(), l_ins.src);
+        formatRM(os, getFlag(), src);
 
     return os;
 }
@@ -704,15 +706,15 @@ void interactDis(Function * initProc, int initIC)
 }
 
 /* Handle the floating point opcodes (icode iESC) */
-void flops(LLInst &pIcode,std::ostringstream &out)
+void LLInst::flops(std::ostringstream &out)
 {
     char bf[30];
-    uint8_t op = (uint8_t)pIcode.src.op();
+    uint8_t op = (uint8_t)src.op();
 
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */
 
-    if ((pIcode.dst.regi == 0) || (pIcode.dst.regi >= INDEXBASE))
+    if ((dst.regi == 0) || (dst.regi >= INDEXBASE))
     {
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
         out<<szFlops1[op]<<' ';
@@ -748,7 +750,7 @@ void flops(LLInst &pIcode,std::ostringstream &out)
                 }
         }
 
-        formatRM(out, pIcode.getFlag(), pIcode.dst);
+        formatRM(out, getFlag(), dst);
     }
     else
     {
@@ -757,7 +759,7 @@ void flops(LLInst &pIcode,std::ostringstream &out)
                    normal opcodes. Because the opcodes are slightly different for
                    this case (e.g. op=04 means FSUB if reg != 3, but FSUBR for
                    reg == 3), a separate table is used (szFlops2). */
-        int destRegIdx=pIcode.dst.regi - rAX;
+        int destRegIdx=dst.regi - rAX;
         switch (op)
         {
             case 0x0C:

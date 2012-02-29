@@ -163,7 +163,7 @@ int Idiom18::action() // action length
     lhs     = COND_EXPR::id (*m_icodes[0], SRC, m_func, m_icodes[1], *m_icodes[1], eUSE);
     lhs     = COND_EXPR::unary ( m_is_dec ? POST_DEC : POST_INC, lhs);
     rhs     = COND_EXPR::id (*m_icodes[2], SRC, m_func, m_icodes[1], *m_icodes[3], eUSE);
-    expr    = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ll()->opcode - iJB]);
+    expr    = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ll()->getOpcode() - iJB]);
     m_icodes[3]->setJCond(expr);
 
     m_icodes[0]->invalidate();
@@ -214,7 +214,7 @@ int Idiom19::action()
     lhs = COND_EXPR::id (*m_icodes[1], DST, m_func, m_icodes[0], *m_icodes[1], eUSE);
     lhs = COND_EXPR::unary (m_is_dec ? PRE_DEC : PRE_INC, lhs);
     rhs = COND_EXPR::idKte (0, 2);
-    expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[1]->ll()->opcode - iJB]);
+    expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[1]->ll()->getOpcode() - iJB]);
     m_icodes[1]->setJCond(expr);
     m_icodes[0]->invalidate();
     return 2;
@@ -303,7 +303,7 @@ int Idiom20::action()
     lhs  = COND_EXPR::id (*m_icodes[1], SRC, m_func, m_icodes[0], *m_icodes[0], eUSE);
     lhs  = COND_EXPR::unary (m_is_dec ? PRE_DEC : PRE_INC, lhs);
     rhs  = COND_EXPR::id (*m_icodes[2], SRC, m_func, m_icodes[0], *m_icodes[3], eUSE);
-    expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ll()->opcode - iJB]);
+    expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ll()->getOpcode() - iJB]);
     m_icodes[3]->setJCond(expr);
     for(int i=0; i<3; ++i)
         m_icodes[i]->invalidate();

@@ -11,17 +11,14 @@
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include "Enums.h"
+#include "state.h"			// State depends on INDEXBASE, but later need STATE
 //enum condId;
-struct LOCAL_ID;
 
-/* LOW_LEVEL icode, DU flag bits */
-enum eDuFlags
-{
-    Cf=1,
-    Sf=2,
-    Zf=4,
-    Df=8
-};
+struct LOCAL_ID;
+struct BB;
+struct Function;
+struct STKFRAME;
+struct CIcodeRec;
 
 /* uint8_t and uint16_t registers */
 static const char *const byteReg[9]  = {"al", "cl", "dl", "bl",
@@ -29,12 +26,6 @@ static const char *const byteReg[9]  = {"al", "cl", "dl", "bl",
 static const char *const wordReg[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
                                         "si", "di", "es", "cs", "ss", "ds",
                                         "", "", "", "", "", "", "", "", "tmp"};
-
-#include "state.h"			// State depends on INDEXBASE, but later need STATE
-
-struct BB;
-struct Function;
-struct STKFRAME;
 
 /* Def/use of flags - low 4 bits represent flags */
 struct DU
@@ -100,7 +91,7 @@ struct ExpType : public HlTypeSupport
 
 struct HLTYPE
 {
-    hlIcode              opcode;    /* hlIcode opcode           */
+    hlIcode         opcode;    /* hlIcode opcode           */
     ExpType         exp;      /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
     AssignType      asgn;
     CallType        call;
@@ -143,6 +134,7 @@ struct HLTYPE
     }
 public:
     std::string write1HlIcode(Function *pProc, int *numLoc);
+    void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs);
 } ;
 /* LOW_LEVEL icode operand record */
 struct LLOperand //: public llvm::MCOperand
@@ -166,9 +158,9 @@ struct LLInst : public llvm::ilist_node<LLInst>
 {
 protected:
     uint32_t     flg;            /* icode flags                  */
+    llIcode      opcode;         /* llIcode instruction          */
 public:
     int          codeIdx;    	/* Index into cCode.code            */
-    llIcode      opcode;         /* llIcode instruction          */
     uint8_t      numBytes;       /* Number of bytes this instr   */
     uint32_t     label;          /* offset in image (20-bit adr) */
     LLOperand    dst;            /* destination operand          */
@@ -189,7 +181,7 @@ public:
     void  clrFlags(uint32_t flag) {flg &= ~flag;}
 
     uint32_t getFlag() const {return flg;}
-    llIcode GetLlOpcode() const { return opcode; }
+    llIcode getOpcode() const { return opcode; }
 
     uint32_t  GetLlLabel() const { return label;}
 
@@ -229,7 +221,18 @@ public:
         opcode = op;
         flg =flags;
     }
+    void setOpcode(llIcode op)
+    {
+        opcode = op;
+    }
     void emitGotoLabel(int indLevel);
+    void findJumpTargets(CIcodeRec &pc);
+    void writeIntComment(std::ostringstream &s);
+    void dis1Line(int loc_ip, int pass);
+    std::ostringstream &strSrc(std::ostringstream &os,bool skip_comma=false);
+
+    void flops(std::ostringstream &out);
+    bool isJmpInst();
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
@@ -306,16 +309,21 @@ public:
     const HLTYPE *      hl() const { return &m_hl;}
     int loc_ip; // used by CICodeRec to number ICODEs
 
-    void writeIntComment(std::ostringstream &s);
     void setRegDU(uint8_t regi, operDu du_in);
     void invalidate();
     void newCallHl();
     void writeDU(int idx);
     condId idType(opLoc sd);
     // HLL setting functions
-    void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs); // set this icode to be an assign
+    // set this icode to be an assign
+    void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
+    {
+        type=HIGH_LEVEL;
+        hl()->setAsgn(lhs,rhs);
+    }
     void setUnary(hlIcode op, COND_EXPR *exp);
     void setJCond(COND_EXPR *cexp);
+
     void emitGotoLabel(int indLevel);
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
     bool valid() {return not invalid;}

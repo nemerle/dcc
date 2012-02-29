@@ -128,6 +128,7 @@ enum icodeType
 /* LOW_LEVEL icode opcodes */
 enum llIcode
 {
+    //iINVALID,
     iCBW,		/* 0 */
     iAAA,
     iAAD,
@@ -301,3 +302,11 @@ enum operDu
     NONE			/* No operation is required on this operand	*/
 };
 
+/* LOW_LEVEL icode, DU flag bits */
+enum eDuFlags
+{
+    Cf=1,
+    Sf=2,
+    Zf=4,
+    Df=8
+};

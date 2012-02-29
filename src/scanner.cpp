@@ -352,7 +352,7 @@ eErrorId scan(uint32_t ip, ICODE &p)
 
     } while (stateTable[op].state1 == prefix);	/* Loop if prefix */
 
-    if (p.ll()->opcode)
+    if (p.ll()->getOpcode())
     {
         /* Save bytes of image used */
         p.ll()->numBytes = (uint8_t)((pInst - prog.Image) - ip);
@@ -503,7 +503,7 @@ static void segrm(int i)
     int	reg = REG(*pInst) + rES;
 
     if (reg > rDS || (reg == rCS && (stateTable[i].flg & TO_REG)))
-        pIcode->ll()->opcode = (llIcode)0;
+        pIcode->ll()->setOpcode((llIcode)0); // setCBW because it has that index
     else {
         setAddress(i, FALSE, 0, (int16_t)reg, 0);
         rm(i);
@@ -566,7 +566,7 @@ static void memImp(int i)
 static void memOnly(int )
 {
     if ((*pInst & 0xC0) == 0xC0)
-        pIcode->ll()->opcode = (llIcode)0;
+        pIcode->ll()->setOpcode((llIcode)0);
 }
 
 
@@ -576,7 +576,7 @@ static void memOnly(int )
 static void memReg0(int i)
 {
     if (REG(*pInst) || (*pInst & 0xC0) == 0xC0)
-        pIcode->ll()->opcode = (llIcode)0;
+        pIcode->ll()->setOpcode((llIcode)0);
     else
         rm(i);
 }
@@ -590,12 +590,12 @@ static void immed(int i)
     static llIcode immedTable[8] = {iADD, iOR, iADC, iSBB, iAND, iSUB, iXOR, iCMP};
     static uint8_t uf[8] = { 0,  0,  Cf,  Cf,  0,   0,   0,   0  };
 
-    pIcode->ll()->opcode = immedTable[REG(*pInst)];
+    pIcode->ll()->setOpcode(immedTable[REG(*pInst)]) ;
     pIcode->ll()->flagDU.u = uf[REG(*pInst)];
     pIcode->ll()->flagDU.d = (Sf | Zf | Cf);
     rm(i);
 
-    if (pIcode->ll()->opcode == iADD || pIcode->ll()->opcode == iSUB)
+    if (pIcode->ll()->getOpcode() == iADD || pIcode->ll()->getOpcode() == iSUB)
         pIcode->ll()->clrFlags(NOT_HLL);	/* Allow ADD/SUB SP, immed */
 }
 
@@ -613,7 +613,7 @@ static void shift(int i)
     static uint8_t df[8]	  = {Cf,  Cf,  Cf,  Cf, Sf | Zf | Cf,
                              Sf | Zf | Cf, 0, Sf | Zf | Cf};
 
-    pIcode->ll()->opcode = shiftTable[REG(*pInst)];
+    pIcode->ll()->setOpcode(shiftTable[REG(*pInst)]);
     pIcode->ll()->flagDU.u = uf[REG(*pInst)];
     pIcode->ll()->flagDU.d = df[REG(*pInst)];
     rm(i);
@@ -634,13 +634,13 @@ static void trans(int i)
     static uint8_t df[8]	= {Sf | Zf, Sf | Zf, 0, 0, 0, 0, 0, 0};
     LLInst *ll = pIcode->ll();
     if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */
-        ll->opcode = transTable[REG(*pInst)];   /* valid on bytes */
+        ll->setOpcode(transTable[REG(*pInst)]);   /* valid on bytes */
         ll->flagDU.d = df[REG(*pInst)];
         rm(i);
         ll->src = pIcode->ll()->dst;
-        if (ll->opcode == iJMP || ll->opcode == iCALL || ll->opcode == iCALLF)
+        if (ll->match(iJMP) || ll->match(iCALL) || ll->match(iCALLF))
             ll->setFlags(NO_OPS);
-        else if (ll->opcode == iINC || ll->opcode == iPUSH || ll->opcode == iDEC)
+        else if (ll->match(iINC) || ll->match(iPUSH) || ll->match(iDEC))
             ll->setFlags(NO_SRC);
     }
 }
@@ -650,17 +650,18 @@ static void trans(int i)
  arith - Sets up dst and opcode from modrm uint8_t
  ****************************************************************************/
 static void arith(int i)
-{ uint8_t opcode;
+{
+    uint8_t opcode;
     static llIcode arithTable[8] =
     {
-        (llIcode)iTEST, (llIcode)0,		(llIcode)iNOT, (llIcode)iNEG,
-        (llIcode)iMUL,  (llIcode)iIMUL, (llIcode)iDIV, (llIcode)iIDIV
+        iTEST , (llIcode)0, iNOT, iNEG,
+        iMUL ,       iIMUL, iDIV, iIDIV
     };
     static uint8_t df[8]	  = {Sf | Zf | Cf, 0, 0, Sf | Zf | Cf,
                              Sf | Zf | Cf, Sf | Zf | Cf, Sf | Zf | Cf,
                              Sf | Zf | Cf};
-
-    opcode = pIcode->ll()->opcode = arithTable[REG(*pInst)];
+    opcode = arithTable[REG(*pInst)];
+    pIcode->ll()->setOpcode((llIcode)opcode);
     pIcode->ll()->flagDU.d = df[REG(*pInst)];
     rm(i);
     if (opcode == iTEST)
@@ -709,7 +710,7 @@ static void data2(int )
          * on the stack.  The procedure level is stored in the immediate
          * field.  There is no source operand; therefore, the flag flg is
          * set to NO_OPS.	*/
-    if (pIcode->ll()->opcode == iENTER)
+    if (pIcode->ll()->getOpcode() == iENTER)
     {
         pIcode->ll()->dst.off = getWord();
         pIcode->ll()->setFlags(NO_OPS);
@@ -776,15 +777,17 @@ static void dispF(int )
  ****************************************************************************/
 static void prefix(int )
 {
-    if (pIcode->ll()->opcode == iREPE || pIcode->ll()->opcode == iREPNE)
-        RepPrefix = pIcode->ll()->opcode;
+    if (pIcode->ll()->getOpcode() == iREPE || pIcode->ll()->getOpcode() == iREPNE)
+        RepPrefix = pIcode->ll()->getOpcode();
     else
-        SegPrefix = pIcode->ll()->opcode;
+        SegPrefix = pIcode->ll()->getOpcode();
 }
 
-inline void BumpOpcode(llIcode& ic)
+inline void BumpOpcode(LLInst &ll)
 {
+    llIcode ic = ll.getOpcode();
     ic = (llIcode)(((int)ic)+1);		// Bump this icode via the int type
+    ll.setOpcode(ic);
 }
 
 /*****************************************************************************
@@ -794,14 +797,13 @@ static void strop(int )
 {
     if (RepPrefix)
     {
-        //		pIcode->ll()->opcode += ((pIcode->ll()->opcode == iCMPS ||
-        //								  pIcode->ll()->opcode == iSCAS)
+        //		pIcode->ll()->getOpcode() += ((pIcode->ll()->getOpcode() == iCMPS ||
+        //								  pIcode->ll()->getOpcode() == iSCAS)
         //								&& RepPrefix == iREPE)? 2: 1;
-        if ((pIcode->ll()->opcode == iCMPS || pIcode->ll()->opcode == iSCAS)
-                && RepPrefix == iREPE)
-            BumpOpcode(pIcode->ll()->opcode);	// += 2
-        BumpOpcode(pIcode->ll()->opcode);		// else += 1
-        if (pIcode->ll()->opcode == iREP_LODS)
+        if ((pIcode->ll()->match(iCMPS) || pIcode->ll()->match(iSCAS) ) && RepPrefix == iREPE)
+            BumpOpcode(*pIcode->ll());	// += 2
+        BumpOpcode(*pIcode->ll());		// else += 1
+        if (pIcode->ll()->match(iREP_LODS) )
             pIcode->ll()->setFlags(NOT_HLL);
         RepPrefix = 0;
     }
@@ -867,8 +869,7 @@ static void checkInt(int )
         /* This is a Borland/Microsoft floating point emulation instruction.
             Treat as if it is an ESC opcode */
         pIcode->ll()->src.SetImmediateOp(wOp - 0x34);
-        pIcode->ll()->opcode = iESC;
-        pIcode->ll()->setFlags(FLOAT_OP);
+        pIcode->ll()->set(iESC,FLOAT_OP);
 
         escop(wOp - 0x34 + 0xD8);
 

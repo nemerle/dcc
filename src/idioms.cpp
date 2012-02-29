@@ -19,9 +19,10 @@
 /*****************************************************************************
  * JmpInst - Returns TRUE if opcode is a conditional or unconditional jump
  ****************************************************************************/
-bool JmpInst(llIcode opcode)
+bool LLInst::isJmpInst()
 {
-    switch (opcode) {
+    switch (opcode)
+    {
         case iJMP:  case iJMPF: case iJCXZ:
         case iLOOP: case iLOOPE:case iLOOPNE:
         case iJB:   case iJBE:  case iJAE:  case iJA:
@@ -77,7 +78,7 @@ void Function::findIdioms()
     typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
     while (pIcode != pEnd)
     {
-        switch (pIcode->ll()->opcode)
+        switch (pIcode->ll()->getOpcode())
         {
             case iDEC: case iINC:
             if (i18.match(pIcode))
@@ -231,7 +232,7 @@ void Function::bindIcodeOff()
     for(ICODE &c : Icode)
         {
         LLInst *ll=c.ll();
-        if (ll->testFlags(I) && JmpInst(ll->opcode))
+        if (ll->testFlags(I) && ll->isJmpInst())
         {
             iICODE loc=Icode.labelSrch(ll->src.op());
             if (loc!=Icode.end())
@@ -246,7 +247,7 @@ void Function::bindIcodeOff()
     for(ICODE &icode : Icode)
         {
         LLInst *ll=icode.ll();
-        if (not JmpInst(ll->opcode))
+        if (not ll->isJmpInst())
             continue;
         if (ll->testFlags(I) )
             {

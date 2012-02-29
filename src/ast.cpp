@@ -66,7 +66,7 @@ void ICODE::setRegDU (uint8_t regi, operDu du_in)
 /* Copies the def, use, or def and use fields of duIcode into pIcode */
 void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
 {
-    //    printf("%s %d,%d from %d to %d\n",__FUNCTION__,int(du),int(duDu),duIcode->ll()->opcode,pIcode->ll()->opcode);
+    //    printf("%s %d,%d from %d to %d\n",__FUNCTION__,int(du),int(duDu),duIcode->ll()->getOpcode(),pIcode->ll()->getOpcode());
     switch (_du)
     {
     case eDEF:

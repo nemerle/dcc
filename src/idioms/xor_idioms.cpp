@@ -126,9 +126,8 @@ bool Idiom10::match(iICODE pIcode)
 
 int Idiom10::action()
 {
-    m_icodes[0]->ll()->opcode = iCMP;
-    m_icodes[0]->ll()->setFlags(I);
-      m_icodes[0]->ll()->src.SetImmediateOp(0); // todo check if proc should be zeroed too
+    m_icodes[0]->ll()->set(iCMP,I);
+    m_icodes[0]->ll()->src.SetImmediateOp(0); // todo check if proc should be zeroed too
     m_icodes[0]->du.def = 0;
     m_icodes[0]->du1.numRegsDef = 0;
     return 2;
