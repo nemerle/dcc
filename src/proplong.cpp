@@ -366,7 +366,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, pIcode/*idx*/, eUSE, 1);
+                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, pIcode/*idx*/, eUSE, next1);
                 icode.setRegDU( pmH->regi, USE_DEF);
                 switch (icode.ll()->opcode)
                 {
@@ -414,7 +414,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                     pIcode->setRegDU( next1->ll()->src.regi, eUSE);
 
                     asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                    asgn.lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, 1);
+                    asgn.lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, next1);
 
                     pIcode->setAsgn(asgn.lhs, asgn.rhs);
                     next1->invalidate();
@@ -445,7 +445,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                     asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
                     pIcode->setRegDU( pmH->regi, USE_DEF);
                     asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode,
-                                                  LOW_FIRST, pIcode/*idx*/, eUSE, 1);
+                                                  LOW_FIRST, pIcode, eUSE, next1);
                     switch (pIcode->ll()->opcode) {
                     case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
                         break;

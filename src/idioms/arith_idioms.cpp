@@ -26,8 +26,8 @@ bool Idiom5::match(iICODE pIcode)
 int Idiom5::action()
 {
     COND_EXPR *rhs,*lhs,*expr;
-    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, 1);
-    rhs = COND_EXPR::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, 1);
+    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, m_icodes[1]);
+    rhs = COND_EXPR::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, m_icodes[1]);
     expr = COND_EXPR::boolOp (lhs, rhs, ADD);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
@@ -59,8 +59,8 @@ bool Idiom6::match(iICODE pIcode)
 int Idiom6::action()
 {
     COND_EXPR *rhs,*lhs,*expr;
-    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, 1);
-    rhs = COND_EXPR::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, 1);
+    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, m_icodes[1]);
+    rhs = COND_EXPR::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, m_icodes[1]);
     expr = COND_EXPR::boolOp (lhs, rhs, SUB);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();

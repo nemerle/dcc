@@ -326,8 +326,6 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, i
 boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, iICODE atOffset)
 {
     LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
-//    iICODE atOffset(pIcode);
-//    advance(atOffset,off);
 
     pmHdst = &pIcode->ll()->dst;
     pmLdst = &atOffset->ll()->dst;

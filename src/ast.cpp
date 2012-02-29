@@ -253,12 +253,6 @@ COND_EXPR *COND_EXPR::idLongIdx (int idx)
 
 
 /* Returns an identifier conditional expression node of type LONG_VAR */
-COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off)
-{
-    iICODE atOffset=pIcode;
-    advance(atOffset,off);
-    return idLong(localId,sd,pIcode,f,ix,du,atOffset);
-}
 COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset)
 {
     int idx;

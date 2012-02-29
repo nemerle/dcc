@@ -51,7 +51,7 @@ bool Idiom11::match (iICODE picode)
 int Idiom11::action()
 {
     COND_EXPR *lhs,*rhs;
-    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], HIGH_FIRST,m_icodes[0], USE_DEF, 1);
+    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], HIGH_FIRST,m_icodes[0], USE_DEF, m_icodes[1]);
     rhs = COND_EXPR::unary (NEGATION, lhs);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();

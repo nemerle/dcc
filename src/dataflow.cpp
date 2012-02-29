@@ -954,7 +954,7 @@ void Function::findExps()
                             case HLI_ASSIGN:
                                 exp = COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args);
                                 ticode->hl()->asgn.lhs =
-                                        COND_EXPR::idLong(&localId, DST, ticode,HIGH_FIRST, picode, eDEF, 1);
+                                        COND_EXPR::idLong(&localId, DST, ticode,HIGH_FIRST, picode, eDEF, ++iICODE(ticode));
                                 ticode->hl()->asgn.rhs = exp;
                                 picode->invalidate();
                                 numHlIcodes--;

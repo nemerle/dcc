@@ -40,7 +40,7 @@ bool Idiom21::match (iICODE picode)
 int Idiom21::action()
 {
     COND_EXPR *lhs,*rhs;
-    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, 1);
+    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, m_icodes[1]);
     rhs = COND_EXPR::idKte (m_icodes[1]->ll()->src.op() , 4);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[0]->du.use = 0;		/* clear register used in iXOR */
