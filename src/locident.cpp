@@ -339,7 +339,7 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i,
     {
         asgn.lhs = COND_EXPR::idLongIdx (i);
 
-        if ( not pIcode->ll()->isLlFlag(NO_SRC) )
+        if ( not pIcode->ll()->testFlags(NO_SRC) )
         {
             asgn.rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, off);
         }
@@ -379,7 +379,7 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
     if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
     {
         lhs = COND_EXPR::idLongIdx (i);
-        if ( not pIcode->ll()->isLlFlag(NO_SRC) )
+        if ( not pIcode->ll()->testFlags(NO_SRC) )
         {
             rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, off);
         }

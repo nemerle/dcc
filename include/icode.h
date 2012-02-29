@@ -184,11 +184,11 @@ public:
     {
         return (opcode >= iJB) && (opcode < iJCXZ);
     }
-    bool isLlFlag(uint32_t x) const { return (flg & x)!=0;}
-    void  SetLlFlag(uint32_t flag) {flg |= flag;}
-    void  ClrLlFlag(uint32_t flag) {flg &= ~flag;}
+    bool testFlags(uint32_t x) const { return (flg & x)!=0;}
+    void  setFlags(uint32_t flag) {flg |= flag;}
+    void  clrFlags(uint32_t flag) {flg &= ~flag;}
 
-    uint32_t GetLlFlag() const {return flg;}
+    uint32_t getFlag() const {return flg;}
     llIcode GetLlOpcode() const { return opcode; }
 
     uint32_t  GetLlLabel() const { return label;}
@@ -206,7 +206,7 @@ public:
     }
     bool match(llIcode op,eReg dest,uint32_t flgs)
     {
-        return (opcode==op) and (dst.regi==dest) and isLlFlag(flgs);
+        return (opcode==op) and (dst.regi==dest) and testFlags(flgs);
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
@@ -222,7 +222,7 @@ public:
     }
     bool match(llIcode op,uint32_t flgs)
     {
-        return (opcode==op) and isLlFlag(flgs);
+        return (opcode==op) and testFlags(flgs);
     }
     void set(llIcode op,uint32_t flags)
     {

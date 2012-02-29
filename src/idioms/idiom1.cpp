@@ -60,13 +60,13 @@ bool Idiom1::match(iICODE picode)
     m_icodes.clear();
     m_min_off = 0;
     /* PUSH BP as first instruction of procedure */
-    if ( (not picode->ll()->isLlFlag(I)) && picode->ll()->src.regi == rBP)
+    if ( (not picode->ll()->testFlags(I)) && picode->ll()->src.regi == rBP)
     {
         m_icodes.push_back( picode++ ); // insert iPUSH
         if(picode==m_end)
             return false;
         /* MOV BP, SP as next instruction */
-        if ( !picode->ll()->isLlFlag(I | TARGET | CASE) && picode->ll()->match(iMOV ,rBP,rSP) )
+        if ( !picode->ll()->testFlags(I | TARGET | CASE) && picode->ll()->match(iMOV ,rBP,rSP) )
         {
             m_icodes.push_back( picode++ ); // insert iMOV
             if(picode==m_end)
@@ -75,7 +75,7 @@ bool Idiom1::match(iICODE picode)
 
             /* Look for SUB SP, immed */
             if (
-                picode->ll()->isLlFlag(I | TARGET | CASE) && picode->ll()->match(iSUB,rSP)
+                picode->ll()->testFlags(I | TARGET | CASE) && picode->ll()->match(iSUB,rSP)
                 )
             {
                 m_icodes.push_back( picode++ ); // insert iSUB
@@ -99,7 +99,7 @@ bool Idiom1::match(iICODE picode)
                     return false;
                 /* Look for MOV BP, SP */
                 if ( picode != m_end &&
-                    !picode->ll()->isLlFlag(I | TARGET | CASE) &&
+                    !picode->ll()->testFlags(I | TARGET | CASE) &&
                      picode->ll()->match(iMOV,rBP,rSP))
                 {
                     m_icodes.push_back(picode);

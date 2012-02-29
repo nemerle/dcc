@@ -459,7 +459,7 @@ static void rm(int i)
         case 0:		/* No disp unless rm == 6 */
             if (rm == 6) {
                 setAddress(i, TRUE, SegPrefix, 0, getWord());
-                pIcode->ll()->SetLlFlag(WORD_OFF);
+                pIcode->ll()->setFlags(WORD_OFF);
             }
             else
                 setAddress(i, TRUE, SegPrefix, rm + INDEXBASE, 0);
@@ -471,7 +471,7 @@ static void rm(int i)
 
         case 2:		/* 2 uint8_t disp */
             setAddress(i, TRUE, SegPrefix, rm + INDEXBASE, getWord());
-            pIcode->ll()->SetLlFlag(WORD_OFF);
+            pIcode->ll()->setFlags(WORD_OFF);
             break;
 
         case 3:		/* reg */
@@ -481,7 +481,7 @@ static void rm(int i)
 
     if ((stateTable[i].flg & NSP) && (pIcode->ll()->src.regi==rSP ||
                                       pIcode->ll()->dst.regi==rSP))
-        pIcode->ll()->SetLlFlag(NOT_HLL);
+        pIcode->ll()->setFlags(NOT_HLL);
 }
 
 
@@ -596,7 +596,7 @@ static void immed(int i)
     rm(i);
 
     if (pIcode->ll()->opcode == iADD || pIcode->ll()->opcode == iSUB)
-        pIcode->ll()->ClrLlFlag(NOT_HLL);	/* Allow ADD/SUB SP, immed */
+        pIcode->ll()->clrFlags(NOT_HLL);	/* Allow ADD/SUB SP, immed */
 }
 
 
@@ -639,9 +639,9 @@ static void trans(int i)
         rm(i);
         ll->src = pIcode->ll()->dst;
         if (ll->opcode == iJMP || ll->opcode == iCALL || ll->opcode == iCALLF)
-            ll->SetLlFlag(NO_OPS);
+            ll->setFlags(NO_OPS);
         else if (ll->opcode == iINC || ll->opcode == iPUSH || ll->opcode == iDEC)
-            ll->SetLlFlag(NO_SRC);
+            ll->setFlags(NO_SRC);
     }
 }
 
@@ -676,12 +676,12 @@ static void arith(int i)
         setAddress(i, TRUE, 0, rAX, 0);			/* dst = AX  */
     }
     else if (opcode == iNEG || opcode == iNOT)
-        pIcode->ll()->SetLlFlag(NO_SRC);
+        pIcode->ll()->setFlags(NO_SRC);
 
     if ((opcode == iDIV) || (opcode == iIDIV))
     {
-        if ( not pIcode->ll()->isLlFlag(B) )
-            pIcode->ll()->SetLlFlag(IM_TMP_DST);
+        if ( not pIcode->ll()->testFlags(B) )
+            pIcode->ll()->setFlags(IM_TMP_DST);
     }
 }
 
@@ -692,7 +692,7 @@ static void arith(int i)
 static void data1(int i)
 {
     pIcode->ll()->src.SetImmediateOp( (stateTable[i].flg & S_EXT)? signex(*pInst++): *pInst++ );
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
 }
 
 
@@ -702,7 +702,7 @@ static void data1(int i)
 static void data2(int )
 {
     if (relocItem(pInst))
-        pIcode->ll()->SetLlFlag(SEG_IMMED);
+        pIcode->ll()->setFlags(SEG_IMMED);
 
     /* ENTER is a special case, it does not take a destination operand,
          * but this field is being used as the number of bytes to allocate
@@ -712,11 +712,11 @@ static void data2(int )
     if (pIcode->ll()->opcode == iENTER)
     {
         pIcode->ll()->dst.off = getWord();
-        pIcode->ll()->SetLlFlag(NO_OPS);
+        pIcode->ll()->setFlags(NO_OPS);
     }
     else
         pIcode->ll()->src.SetImmediateOp(getWord());
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
 }
 
 
@@ -741,7 +741,7 @@ static void dispN(int )
         still be positive; it is an offset from prog.Image. So this must be
         treated as unsigned */
     pIcode->ll()->src.SetImmediateOp((uint32_t)(off + (unsigned)(pInst - prog.Image)));
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
 }
 
 
@@ -753,7 +753,7 @@ static void dispS(int )
     long off = signex(*pInst++); 	/* Signed displacement */
 
     pIcode->ll()->src.SetImmediateOp((uint32_t)(off + (unsigned)(pInst - prog.Image)));
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
 }
 
 
@@ -766,7 +766,7 @@ static void dispF(int )
     uint32_t seg = (unsigned)getWord();
 
     pIcode->ll()->src.SetImmediateOp(off + ((uint32_t)(unsigned)seg << 4));
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
 }
 
 
@@ -802,7 +802,7 @@ static void strop(int )
             BumpOpcode(pIcode->ll()->opcode);	// += 2
         BumpOpcode(pIcode->ll()->opcode);		// else += 1
         if (pIcode->ll()->opcode == iREP_LODS)
-            pIcode->ll()->SetLlFlag(NOT_HLL);
+            pIcode->ll()->setFlags(NOT_HLL);
         RepPrefix = 0;
     }
 }
@@ -814,7 +814,7 @@ static void strop(int )
 static void escop(int i)
 {
     pIcode->ll()->src.SetImmediateOp(REG(*pInst) + (uint32_t)((i & 7) << 3));
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
     rm(i);
 }
 
@@ -825,7 +825,7 @@ static void escop(int i)
 static void const1(int )
 {
     pIcode->ll()->src.SetImmediateOp(1);
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
 }
 
 
@@ -835,7 +835,7 @@ static void const1(int )
 static void const3(int )
 {
     pIcode->ll()->src.SetImmediateOp(3);
-    pIcode->ll()->SetLlFlag(I);
+    pIcode->ll()->setFlags(I);
 }
 
 
@@ -852,8 +852,8 @@ static void none1(int )
  ****************************************************************************/
 static void none2(int )
 {
-    if ( pIcode->ll()->isLlFlag(I) )
-        pIcode->ll()->SetLlFlag(NO_OPS);
+    if ( pIcode->ll()->testFlags(I) )
+        pIcode->ll()->setFlags(NO_OPS);
 }
 
 /****************************************************************************
@@ -868,7 +868,7 @@ static void checkInt(int )
             Treat as if it is an ESC opcode */
         pIcode->ll()->src.SetImmediateOp(wOp - 0x34);
         pIcode->ll()->opcode = iESC;
-        pIcode->ll()->SetLlFlag(FLOAT_OP);
+        pIcode->ll()->setFlags(FLOAT_OP);
 
         escop(wOp - 0x34 + 0xD8);
 

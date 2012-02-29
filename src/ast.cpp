@@ -258,7 +258,7 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst
     int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
     /* Check for long constant and save it as a constant expression */
-    if ((sd == SRC) && pIcode->ll()->isLlFlag(I))  /* constant */
+    if ((sd == SRC) && pIcode->ll()->testFlags(I))  /* constant */
     {
         iICODE atOffset=pIcode;
         advance(atOffset,off);
@@ -348,8 +348,8 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE
 
     const LLOperand &pm((sd == SRC) ? pIcode.ll()->src : pIcode.ll()->dst);
 
-    if (    ((sd == DST) && pIcode.ll()->isLlFlag(IM_DST)) or
-            ((sd == SRC) && pIcode.ll()->isLlFlag(IM_SRC)) or
+    if (    ((sd == DST) && pIcode.ll()->testFlags(IM_DST)) or
+            ((sd == SRC) && pIcode.ll()->testFlags(IM_SRC)) or
             (sd == LHS_OP))             /* for MUL lhs */
     {                                                   /* implicit dx:ax */
         idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, rDX, rAX, ix_);
@@ -358,20 +358,20 @@ COND_EXPR *COND_EXPR::id(const ICODE &pIcode, opLoc sd, Function * pProc, iICODE
         duIcode.setRegDU (rAX, du);
     }
 
-    else if ((sd == DST) && pIcode.ll()->isLlFlag(IM_TMP_DST))
+    else if ((sd == DST) && pIcode.ll()->testFlags(IM_TMP_DST))
     {                                                   /* implicit tmp */
         newExp = COND_EXPR::idReg (rTMP, 0, &pProc->localId);
         duIcode.setRegDU(rTMP, (operDu)eUSE);
     }
 
-    else if ((sd == SRC) && pIcode.ll()->isLlFlag(I)) /* constant */
+    else if ((sd == SRC) && pIcode.ll()->testFlags(I)) /* constant */
         newExp = COND_EXPR::idKte (pIcode.ll()->src.op(), 2);
     else if (pm.regi == 0)                             /* global variable */
         newExp = COND_EXPR::idGlob(pm.segValue, pm.off);
     else if (pm.regi < INDEXBASE)                      /* register */
     {
-        newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? pIcode.ll()->GetLlFlag() :
-                                                           pIcode.ll()->GetLlFlag() & NO_SRC_B,
+        newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? pIcode.ll()->getFlag() :
+                                                           pIcode.ll()->getFlag() & NO_SRC_B,
                                    &pProc->localId);
         duIcode.setRegDU( pm.regi, du);
     }
@@ -433,7 +433,7 @@ condId ICODE::idType(opLoc sd)
 {
     LLOperand &pm((sd == SRC) ? ll()->src : ll()->dst);
 
-    if ((sd == SRC) && ll()->isLlFlag(I))
+    if ((sd == SRC) && ll()->testFlags(I))
         return (CONSTANT);
     else if (pm.regi == 0)
         return (GLOB_VAR);

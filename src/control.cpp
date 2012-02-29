@@ -180,7 +180,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                     head->loopFollow = latchNode->edges[ELSE].BBptr->dfsLastNum;
                 else
                     head->loopFollow = latchNode->edges[THEN].BBptr->dfsLastNum;
-                latchNode->back().ll()->SetLlFlag(JX_LOOP);
+                latchNode->back().ll()->setFlags(JX_LOOP);
             }
             else
             {
@@ -189,7 +189,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                     head->loopFollow = head->edges[ELSE].BBptr->dfsLastNum;
                 else
                     head->loopFollow = head->edges[THEN].BBptr->dfsLastNum;
-                head->back().ll()->SetLlFlag(JX_LOOP);
+                head->back().ll()->setFlags(JX_LOOP);
             }
         else /* head = anything besides 2-way, latch = 2-way */
         {
@@ -198,7 +198,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                 head->loopFollow = latchNode->edges[ELSE].BBptr->dfsLastNum;
             else
                 head->loopFollow = latchNode->edges[THEN].BBptr->dfsLastNum;
-            latchNode->back().ll()->SetLlFlag(JX_LOOP);
+            latchNode->back().ll()->setFlags(JX_LOOP);
         }
     else	/* latch = 1-way */
         if (latchNode->nodeType == LOOP_NODE)
@@ -237,7 +237,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
             }
             if (pbb->dfsLastNum > head->dfsLastNum)
                 pProc->m_dfsLast[head->loopFollow]->loopHead = NO_NODE;	/*****/
-            head->back().ll()->SetLlFlag(JX_LOOP);
+            head->back().ll()->setFlags(JX_LOOP);
         }
         else
         {
@@ -450,7 +450,7 @@ void Function::structIfs ()
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
 
-        if ((currNode->nodeType == TWO_BRANCH) && (!currNode->back().ll()->isLlFlag(JX_LOOP)))
+        if ((currNode->nodeType == TWO_BRANCH) && (!currNode->back().ll()->testFlags(JX_LOOP)))
         {
             followInEdges = 0;
             follow = 0;

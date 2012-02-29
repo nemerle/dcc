@@ -70,11 +70,11 @@ extern bundle cCode;
  *       onto code in cCode.code */
 void LLInst::emitGotoLabel (int indLevel)
 {
-    if ( not isLlFlag(HLL_LABEL) ) /* node hasn't got a lab */
+    if ( not testFlags(HLL_LABEL) ) /* node hasn't got a lab */
     {
         /* Generate new label */
         hllLabNum = getNextLabel();
-        SetLlFlag(HLL_LABEL);
+        setFlags(HLL_LABEL);
 
         /* Node has been traversed already, so backpatch this label into
                  * the code */

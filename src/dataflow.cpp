@@ -83,9 +83,9 @@ int STKFRAME::getLocVar(int off)
 /* Returns a string with the source operand of Icode */
 static COND_EXPR *srcIdent (const ICODE &Icode, Function * pProc, iICODE i, ICODE & duIcode, operDu du)
 {
-    if (Icode.ll()->isLlFlag(I))   /* immediate operand */
+    if (Icode.ll()->testFlags(I))   /* immediate operand */
     {
-        if (Icode.ll()->isLlFlag(B))
+        if (Icode.ll()->testFlags(B))
             return COND_EXPR::idKte (Icode.ll()->src.op(), 1);
         return COND_EXPR::idKte (Icode.ll()->src.op(), 2);
     }
@@ -149,7 +149,7 @@ void Function::elimCondCodes ()
                         case iOR:
                             lhs = defAt->hl()->asgn.lhs->clone();
                             useAt->copyDU(*defAt, eUSE, eDEF);
-                            if (defAt->ll()->isLlFlag(B))
+                            if (defAt->ll()->testFlags(B))
                                 rhs = COND_EXPR::idKte (0, 1);
                             else
                                 rhs = COND_EXPR::idKte (0, 2);
@@ -159,7 +159,7 @@ void Function::elimCondCodes ()
                             rhs = srcIdent (*defAt,this, befDefAt,*useAt, eUSE);
                             lhs = dstIdent (*defAt,this, befDefAt,*useAt, eUSE);
                             lhs = COND_EXPR::boolOp (lhs, rhs, AND);
-                            if (defAt->ll()->isLlFlag(B))
+                            if (defAt->ll()->testFlags(B))
                                 rhs = COND_EXPR::idKte (0, 1);
                             else
                                 rhs = COND_EXPR::idKte (0, 2);
@@ -1040,7 +1040,7 @@ void Function::findExps()
                         if (cb)
                             for (k = 0; k < cb; numArgs++)
                                 processCArg (pp, this, &(*picode), numArgs, &k);
-                        else if ((cb == 0) && picode->ll()->isLlFlag(REST_STK))
+                        else if ((cb == 0) && picode->ll()->testFlags(REST_STK))
                             while (! g_exp_stk.empty())
                             {
                                 processCArg (pp, this, &(*picode), numArgs, &k);

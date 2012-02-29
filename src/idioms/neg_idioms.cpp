@@ -93,7 +93,7 @@ bool Idiom16::match (iICODE picode)
 int Idiom16::action()
 {
     COND_EXPR *lhs,*rhs;
-    lhs = COND_EXPR::idReg (m_icodes[0]->ll()->dst.regi, m_icodes[0]->ll()->GetLlFlag(),&m_func->localId);
+    lhs = COND_EXPR::idReg (m_icodes[0]->ll()->dst.regi, m_icodes[0]->ll()->getFlag(),&m_func->localId);
     rhs = COND_EXPR::unary (NEGATION, lhs->clone());
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();

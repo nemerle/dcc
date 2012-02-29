@@ -46,7 +46,7 @@ bool Idiom2::match(iICODE pIcode)
     iICODE nicode;
     if(pIcode==m_func->Icode.begin()) // pIcode->loc_ip == 0
         return false;
-    if ( pIcode->ll()->isLlFlag(I) || (not pIcode->ll()->match(rSP,rBP)) )
+    if ( pIcode->ll()->testFlags(I) || (not pIcode->ll()->match(rSP,rBP)) )
         return false;
     if(distance(pIcode,m_end)<3)
         return false;
@@ -55,20 +55,20 @@ bool Idiom2::match(iICODE pIcode)
     m_icodes.push_back(pIcode);
     /* Get next icode, skip over holes in the icode array */
     nicode = ++iICODE(pIcode);
-    while (nicode->ll()->isLlFlag(NO_CODE) && (nicode != m_end))
+    while (nicode->ll()->testFlags(NO_CODE) && (nicode != m_end))
     {
         nicode++;
     }
     if(nicode == m_end)
         return false;
 
-    if (nicode->ll()->match(iPOP,rBP) && ! (nicode->ll()->isLlFlag(I | TARGET | CASE)) )
+    if (nicode->ll()->match(iPOP,rBP) && ! (nicode->ll()->testFlags(I | TARGET | CASE)) )
     {
         m_icodes.push_back(nicode++); // Matched POP BP
 
         /* Match RET(F) */
         if (    nicode != m_end &&
-                !(nicode->ll()->isLlFlag(I | TARGET | CASE)) &&
+                !(nicode->ll()->testFlags(I | TARGET | CASE)) &&
                 (nicode->ll()->match(iRET) || nicode->ll()->match(iRETF))
                 )
         {
@@ -118,7 +118,7 @@ bool Idiom4::match(iICODE pIcode)
     {
         iICODE prev1 = --iICODE(pIcode);
         /* Check for POP BP */
-        if (prev1->ll()->match(iPOP,rBP) && not prev1->ll()->isLlFlag(I) )
+        if (prev1->ll()->match(iPOP,rBP) && not prev1->ll()->testFlags(I) )
             m_icodes.push_back(prev1);
         else if(prev1!=m_func->Icode.begin())
         {
@@ -129,7 +129,7 @@ bool Idiom4::match(iICODE pIcode)
     }
 
     /* Check for RET(F) immed */
-    if (pIcode->ll()->isLlFlag(I) )
+    if (pIcode->ll()->testFlags(I) )
     {
         m_param_count = (int16_t)pIcode->ll()->src.op();
     }

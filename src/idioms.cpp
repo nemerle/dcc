@@ -231,11 +231,11 @@ void Function::bindIcodeOff()
     for(ICODE &c : Icode)
         {
         LLInst *ll=c.ll();
-        if (ll->isLlFlag(I) && JmpInst(ll->opcode))
+        if (ll->testFlags(I) && JmpInst(ll->opcode))
         {
             iICODE loc=Icode.labelSrch(ll->src.op());
             if (loc!=Icode.end())
-                loc->ll()->SetLlFlag(TARGET);
+                loc->ll()->setFlags(TARGET);
         }
     }
 
@@ -248,16 +248,16 @@ void Function::bindIcodeOff()
         LLInst *ll=icode.ll();
         if (not JmpInst(ll->opcode))
             continue;
-        if (ll->isLlFlag(I) )
+        if (ll->testFlags(I) )
             {
                 uint32_t found;
             if (! Icode.labelSrch(ll->src.op(), found))
-                ll->SetLlFlag( NO_LABEL );
+                ll->setFlags( NO_LABEL );
                 else
                 ll->src.SetImmediateOp(found);
 
             }
-        else if (ll->isLlFlag(SWITCH) )
+        else if (ll->testFlags(SWITCH) )
             {
             p = ll->caseTbl.entries;
             for (int j = 0; j < ll->caseTbl.numEntries; j++, p++)

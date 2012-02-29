@@ -18,7 +18,7 @@ bool Idiom8::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->isLlFlag(I) && (m_icodes[0]->ll()->src.op() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src.op() == 1))
         if ( m_icodes[1]->ll()->match(iRCR,I) &&
             (m_icodes[1]->ll()->src.op() == 1))
             return true;
@@ -63,7 +63,7 @@ bool Idiom15::match(iICODE pIcode)
     if(distance(pIcode,m_end)<2)
         return false;
     /* Match SHL reg, 1 */
-    if (not pIcode->ll()->isLlFlag(I) or (pIcode->ll()->src.op() != 1))
+    if (not pIcode->ll()->testFlags(I) or (pIcode->ll()->src.op() != 1))
         return false;
     m_icodes.clear();
     regi = pIcode->ll()->dst.regi;
@@ -82,7 +82,7 @@ int Idiom15::action()
 {
     COND_EXPR *lhs,*rhs,*exp;
     lhs = COND_EXPR::idReg (m_icodes[0]->ll()->dst.regi,
-                            m_icodes[0]->ll()->GetLlFlag() & NO_SRC_B,
+                            m_icodes[0]->ll()->getFlag() & NO_SRC_B,
                              &m_func->localId);
     rhs = COND_EXPR::idKte (m_icodes.size(), 2);
     exp = COND_EXPR::boolOp (lhs, rhs, SHL);
@@ -109,7 +109,7 @@ bool Idiom12::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->isLlFlag(I) && (m_icodes[0]->ll()->src.op() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src.op() == 1))
         if (m_icodes[1]->ll()->match(iRCL,I) && (m_icodes[1]->ll()->src.op() == 1))
             return true;
     return false;
@@ -148,7 +148,7 @@ bool Idiom9::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->isLlFlag(I) && (m_icodes[0]->ll()->src.op() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src.op() == 1))
         if (m_icodes[1]->ll()->match(iRCR,I) && (m_icodes[1]->ll()->src.op() == 1))
             return true;
     return false;

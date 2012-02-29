@@ -45,7 +45,7 @@ void Function::createCFG()
         /* Stick a NOWHERE_NODE on the end if we terminate
                  * with anything other than a ret, jump or terminate */
         if (ip + 1 == Icode.size() &&
-                (not ll->isLlFlag(TERMINATES)) &&
+                (not ll->testFlags(TERMINATES)) &&
                 ll->opcode != iJMP && ll->opcode != iJMPF &&
                 ll->opcode != iRET && ll->opcode != iRETF)
         {
@@ -53,7 +53,7 @@ void Function::createCFG()
         }
 
         /* Only process icodes that have valid instructions */
-        else if (not ll->isLlFlag(NO_CODE) )
+        else if (not ll->testFlags(NO_CODE) )
         {
             switch (ll->opcode) {
                 case iJB:  case iJBE:  case iJAE:  case iJA:
@@ -66,7 +66,7 @@ CondJumps:
                     start = ip + 1;
                     pBB->edges[0].ip = (uint32_t)start;
                     /* This is for jumps off into nowhere */
-                    if ( ll->isLlFlag(NO_LABEL) )
+                    if ( ll->testFlags(NO_LABEL) )
                     {
                         pBB->edges.pop_back();
                     }
@@ -79,14 +79,14 @@ CondJumps:
                     goto CondJumps;
 
                 case iJMPF: case iJMP:
-                    if (ll->isLlFlag(SWITCH))
+                    if (ll->testFlags(SWITCH))
                     {
                         pBB = BB::Create(start, ip, MULTI_BRANCH, ll->caseTbl.numEntries, this);
                         for (i = 0; i < ll->caseTbl.numEntries; i++)
                             pBB->edges[i].ip = ll->caseTbl.entries[i];
                         hasCase = TRUE;
                     }
-                    else if ((ll->GetLlFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
+                    else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
                     {
                         pBB = BB::Create(start, ip, ONE_BRANCH, 1, this);
                         pBB->edges[0].ip = ll->src.op();
@@ -118,7 +118,7 @@ CondJumps:
                 default:
                     /* Check for exit to DOS */
                     iICODE next1=++iICODE(pIcode);
-                    if ( ll->isLlFlag(TERMINATES) )
+                    if ( ll->testFlags(TERMINATES) )
                     {
                         pBB = BB::Create(start, ip, TERMINATE_NODE, 0, this);
                         start = ip + 1;
@@ -127,7 +127,7 @@ CondJumps:
                     else if (next1 != Icode.end())
                     {
                         assert(next1->loc_ip==ip+1);
-                        if (next1->ll()->isLlFlag(TARGET | CASE))
+                        if (next1->ll()->testFlags(TARGET | CASE))
                         {
                             pBB = BB::Create(start, ip, FALL_NODE, 1, this);
                             start = ip + 1;
@@ -167,14 +167,14 @@ void Function::markImpure()
     SYM * psym;
     for(ICODE &icod : Icode)
     {
-        if ( not icod.ll()->isLlFlag(SYM_USE | SYM_DEF))
+        if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
         psym = &symtab[icod.ll()->caseTbl.numEntries];
         for (int c = (int)psym->label; c < (int)psym->label+psym->size; c++)
         {
             if (BITMAP(c, BM_CODE))
             {
-                icod.ll()->SetLlFlag(IMPURE);
+                icod.ll()->setFlags(IMPURE);
                 flg |= IMPURE;
                 break;
             }
@@ -287,7 +287,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
             }
             else
             {
-                pBB->front().ll()->SetLlFlag(NO_CODE);
+                pBB->front().ll()->setFlags(NO_CODE);
                 pBB->front().invalidate(); //pProc->Icode.SetLlInvalid(pBB->begin(), TRUE);
             }
 
@@ -304,9 +304,9 @@ BB *BB::rmJMP(int marker, BB * pBB)
                 pBB->inEdges.pop_back(); // was --numInedges
                 if (! pBB->inEdges.empty())
                 {
-                    pBB->front().ll()->SetLlFlag(NO_CODE);
+                    pBB->front().ll()->setFlags(NO_CODE);
                     pBB->front().invalidate();
-//                    pProc->Icode.SetLlFlag(pBB->start, NO_CODE);
+//                    pProc->Icode.setFlags(pBB->start, NO_CODE);
 //                    pProc->Icode.SetLlInvalid(pBB->start, TRUE);
                 }
             } while (pBB->nodeType != NOWHERE_NODE);
@@ -340,11 +340,11 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             if(back().loc_ip>pChild->front().loc_ip) // back edege
                 break;
             auto iter=std::find_if(this->end2(),pChild->begin2(),[](ICODE &c)
-                {return not c.ll()->isLlFlag(NO_CODE);});
+                {return not c.ll()->testFlags(NO_CODE);});
 
             if (iter != pChild->begin2())
                 break;
-            back().ll()->SetLlFlag(NO_CODE);
+            back().ll()->setFlags(NO_CODE);
             back().invalidate();
             nodeType = FALL_NODE;
             length--;
@@ -356,7 +356,7 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
 
         nodeType = pChild->nodeType;
         length = (pChild->start - start) + pChild->length ;
-        pChild->front().ll()->ClrLlFlag(TARGET);
+        pChild->front().ll()->clrFlags(TARGET);
         edges.swap(pChild->edges);
 
         pChild->inEdges.clear();

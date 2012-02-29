@@ -142,11 +142,11 @@ void Function::highLevelGen()
         assert(numIcode==Icode.size());
         pIcode = i; //Icode.GetIcode(i)
         LLInst *ll = pIcode->ll();
-        if ( ll->isLlFlag(NOT_HLL) )
+        if ( ll->testFlags(NOT_HLL) )
             pIcode->invalidate();
         if ((pIcode->type == LOW_LEVEL) && pIcode->valid() )
         {
-            flg = ll->GetLlFlag();
+            flg = ll->getFlag();
             if ((flg & IM_OPS) != IM_OPS)   /* not processing IM_OPS yet */
                 if ((flg & NO_OPS) != NO_OPS)       /* if there are opers */
                 {
@@ -182,7 +182,7 @@ void Function::highLevelGen()
                 case iDIV:
                 case iIDIV:/* should be signed div */
                     rhs = COND_EXPR::boolOp (lhs, rhs, DIV);
-                    if ( ll->isLlFlag(B) )
+                    if ( ll->testFlags(B) )
                     {
                         lhs = COND_EXPR::idReg (rAL, 0, &localId);
                         pIcode->setRegDU( rAL, eDEF);
@@ -214,7 +214,7 @@ void Function::highLevelGen()
 
                 case iMOD:
                     rhs = COND_EXPR::boolOp (lhs, rhs, MOD);
-                    if ( ll->isLlFlag(B) )
+                    if ( ll->testFlags(B) )
                     {
                         lhs = COND_EXPR::idReg (rAH, 0, &localId);
                         pIcode->setRegDU( rAH, eDEF);

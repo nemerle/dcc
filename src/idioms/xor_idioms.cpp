@@ -23,7 +23,7 @@ bool Idiom21::match (iICODE picode)
     m_icodes[0]=picode++;
     m_icodes[1]=picode++;
 
-    if (not m_icodes[1]->ll()->isLlFlag(I))
+    if (not m_icodes[1]->ll()->testFlags(I))
         return false;
 
     dst = &m_icodes[0]->ll()->dst;
@@ -87,7 +87,7 @@ int Idiom7::action()
     rhs = COND_EXPR::idKte (0, 2);
     m_icode->setAsgn(lhs, rhs);
     m_icode->du.use = 0;    /* clear register used in iXOR */
-    m_icode->ll()->SetLlFlag(I);
+    m_icode->ll()->setFlags(I);
     return 1;
 }
 
@@ -113,7 +113,7 @@ bool Idiom10::match(iICODE pIcode)
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
     /* Check OR reg, reg */
-    if (not m_icodes[0]->ll()->isLlFlag(I)  &&
+    if (not m_icodes[0]->ll()->testFlags(I)  &&
             (m_icodes[0]->ll()->src.regi > 0) &&
             (m_icodes[0]->ll()->src.regi < INDEXBASE) &&
             (m_icodes[0]->ll()->src.regi == m_icodes[0]->ll()->dst.regi))
@@ -127,7 +127,7 @@ bool Idiom10::match(iICODE pIcode)
 int Idiom10::action()
 {
     m_icodes[0]->ll()->opcode = iCMP;
-    m_icodes[0]->ll()->SetLlFlag(I);
+    m_icodes[0]->ll()->setFlags(I);
       m_icodes[0]->ll()->src.SetImmediateOp(0); // todo check if proc should be zeroed too
     m_icodes[0]->du.def = 0;
     m_icodes[0]->du1.numRegsDef = 0;
