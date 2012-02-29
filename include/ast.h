@@ -56,6 +56,7 @@ public:
     static COND_EXPR *idParam(int off, const STKFRAME *argSymtab);
     static COND_EXPR *unary(condNodeType t, COND_EXPR *sub_expr);
     static COND_EXPR *idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off);
+    static COND_EXPR *idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset);
     static COND_EXPR *idFunc(Function *pproc, STKFRAME *args);
     static COND_EXPR *idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
     static COND_EXPR *id(const ICODE &pIcode, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);

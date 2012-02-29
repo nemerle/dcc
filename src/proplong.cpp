@@ -22,7 +22,7 @@ static boolT isJCond (llIcode opcode)
 
 
 /* Returns whether the conditions for a 2-3 long variable are satisfied */
-static boolT isLong23 (iICODE iter, BB * pbb, int *off, int *arc)
+static bool isLong23 (iICODE iter, BB * pbb, iICODE &off, int *arc)
 {
     BB * t, * e, * obb2;
 
@@ -37,7 +37,7 @@ static boolT isLong23 (iICODE iter, BB * pbb, int *off, int *arc)
         obb2 = t->edges[THEN].BBptr;
         if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ll()->opcode == iCMP))
         {
-            *off = std::distance(iter,obb2->begin2());
+            off = obb2->begin2();//std::distance(iter,obb2->begin2());
             *arc = THEN;
             return true;
         }
@@ -49,7 +49,7 @@ static boolT isLong23 (iICODE iter, BB * pbb, int *off, int *arc)
         obb2 = e->edges[THEN].BBptr;
         if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ll()->opcode == iCMP))
         {
-            *off = std::distance(iter,obb2->begin2());//obb2->front().loc_ip - i;
+            off = obb2->begin2();//std::distance(iter,obb2->begin2());//obb2->front().loc_ip - i;
             *arc = ELSE;
             return true;
         }
@@ -59,8 +59,9 @@ static boolT isLong23 (iICODE iter, BB * pbb, int *off, int *arc)
 
 
 /* Returns whether the conditions for a 2-2 long variable are satisfied */
-static boolT isLong22 (iICODE pIcode, iICODE pEnd, int *off)
+static boolT isLong22 (iICODE pIcode, iICODE pEnd, iICODE &off)
 {
+    iICODE initial_icode=pIcode;
     if(distance(pIcode,pEnd)<4)
         return false;
     // preincrement because pIcode is not checked here
@@ -69,12 +70,12 @@ static boolT isLong22 (iICODE pIcode, iICODE pEnd, int *off)
            (isJCond (icodes[0]->ll()->opcode)) &&
            (isJCond (icodes[2]->ll()->opcode)))
     {
-        *off = 2;
+        off = initial_icode;
+        advance(off,2);
         return true;
     }
     return false;
 }
-
 
 /** Creates a long conditional <=, >=, <, or > at (pIcode+1).
  * Removes excess nodes from the graph by flagging them, and updates
@@ -82,7 +83,7 @@ static boolT isLong22 (iICODE pIcode, iICODE pEnd, int *off)
  * @return number of ICODEs to skip
 
 */
-static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, int off)
+static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, iICODE atOffset)
 {
     BB * pbb, * obb1, * obb2, * tbb;
     int skipped_insn=0;
@@ -138,9 +139,8 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
         /* Update icode index */
         skipped_insn = 2;
     }
-    iICODE atOffset(pIcode),atOffset1(pIcode),next1(++iICODE(pIcode));
-    advance(atOffset,off);
-    advance(atOffset1,off+1);
+    iICODE atOffset1(atOffset),next1(++iICODE(pIcode));
+    advance(atOffset1,1);
     /* Create new HLI_JCOND and condition */
     lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[atOffset1->ll()->opcode-iJB]);
     next1->setJCond(lhs);
@@ -233,7 +233,7 @@ void Function::propLongStk (int i, const ID &pLocId)
     Assignment asgn;
     //COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
     iICODE next1, pEnd;
-
+    iICODE l23;
     /* Check all icodes for offHi:offLo */
     pEnd = Icode.end();
     int stat_size=Icode.size();
@@ -251,7 +251,7 @@ void Function::propLongStk (int i, const ID &pLocId)
             switch (pIcode->ll()->opcode)
             {
             case iMOV:
-                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
+                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, next1) == TRUE)
                 {
                     pIcode->setAsgn(asgn.lhs, asgn.rhs);
                     next1->invalidate();
@@ -259,7 +259,7 @@ void Function::propLongStk (int i, const ID &pLocId)
                 break;
 
             case iAND: case iOR: case iXOR:
-                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
+                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, next1) == TRUE)
                 {
                     switch (pIcode->ll()->opcode)
                     {
@@ -273,29 +273,35 @@ void Function::propLongStk (int i, const ID &pLocId)
                 break;
 
             case iPUSH:
-                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, 1) == TRUE)
+                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, next1) == TRUE)
                 {
                     pIcode->setUnary( HLI_PUSH, asgn.lhs);
                     next1->invalidate();
                 }
                 break;
+            default:
+                printf("Wild ass checkLongEq");
+//                if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, next1) == TRUE)
+//                {
+//                    printf("Wild ass checkLongEq success on opcode %d\n",pIcode->ll()->opcode);
+//                }
             } /*eos*/
         }
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ll()->opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
+        else if ((pIcode->ll()->opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, l23, &arc)))
         {
-            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, off) )
+            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, l23) )
             {
-                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off));
+                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, l23));
             }
         }
 
         /* Check for long conditional equality or inequality.  This requires
                  * 2 CMPs and 2 branches */
-        else if ((pIcode->ll()->opcode == iCMP) && isLong22 (pIcode, pEnd, &off))
+        else if ((pIcode->ll()->opcode == iCMP) && isLong22 (pIcode, pEnd, l23))
         {
-            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this,asgn, off) )
+            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this,asgn, l23) )
             {
                 advance(pIcode,longJCond22 (asgn.rhs, asgn.lhs, pIcode,pEnd));
             }
@@ -312,41 +318,41 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
     for (; not forced_finish and rev!=Icode.rend();rev++) //idx = pLocId_idx - 1; idx > 0 ; idx--
     {
         pIcode = (++riICODE(rev)).base();//forward iterator from rev
+        iICODE next1((++iICODE(pIcode))); // next instruction
         ICODE &icode(*pIcode);
-        ICODE &next1(*(++iICODE(pIcode))); // next instruction
 
 
         if ((icode.type == HIGH_LEVEL) || (icode.invalid == TRUE))
             continue;
-        if (icode.ll()->opcode != next1.ll()->opcode)
+        if (icode.ll()->opcode != next1->ll()->opcode)
             continue;
 
         switch (icode.ll()->opcode)
         {
         case iMOV:
             pmH = &icode.ll()->dst;
-            pmL = &next1.ll()->dst;
+            pmL = &next1->ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 localId.id_arr[loc_ident_idx].idx.push_back(pIcode);//idx-1//insert
                 icode.setRegDU( pmL->regi, eDEF);
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, 1);
+                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, next1);
                 icode.setAsgn(asgn.lhs, asgn.rhs);
-                next1.invalidate();
+                next1->invalidate();
                 forced_finish=true; /* to exit the loop */
             }
             break;
 
         case iPOP:
-            pmH = &next1.ll()->dst;
+            pmH = &next1->ll()->dst;
             pmL = &icode.ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
                 icode.setRegDU( pmH->regi, eDEF);
                 icode.setUnary(HLI_POP, asgn.lhs);
-                next1.invalidate();
+                next1->invalidate();
                 asgn.lhs=0;
                 forced_finish=true;        /* to exit the loop */
             }
@@ -356,7 +362,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
 
         case iAND: case iOR: case iXOR:
             pmL = &icode.ll()->dst;
-            pmH = &next1.ll()->dst;
+            pmH = &next1->ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
@@ -373,7 +379,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
                     break;
                 } /* eos */
                 icode.setAsgn(asgn.lhs, asgn.rhs);
-                next1.invalidate();
+                next1->invalidate();
                 forced_finish=true;        /* to exit the loop */
             }
             break;
@@ -385,6 +391,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
 {
     bool forced_finish=false;
     auto pEnd=Icode.end();
+    iICODE long_loc;
     Assignment asgn;
     for (auto pIcode=beg; not forced_finish; ++pIcode)
     {
@@ -458,20 +465,20 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             } /* eos */
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ll()->opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, &off, &arc)))
+        else if ((pIcode->ll()->opcode == iCMP) && (isLong23 (pIcode, pIcode->inBB, long_loc, &arc)))
         {
-            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, off) == TRUE)
+            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, long_loc))
             {
                                 // reduce the advance by 1 here (loop increases) ?
-                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, off));
+                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, long_loc));
             }
         }
 
         /* Check for long conditional equality or inequality.  This requires
              * 2 CMPs and 2 branches */
-        else if (pIcode->ll()->match(iCMP) && (isLong22 (pIcode, pEnd, &off)))
+        else if (pIcode->ll()->match(iCMP) && (isLong22 (pIcode, pEnd, long_loc)))
         {
-            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, off) == TRUE)
+            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn.rhs, asgn.lhs, long_loc) )
             {
                 advance(pIcode,longJCond22 (asgn.rhs, asgn.lhs, pIcode,pEnd) - 1);
             }

@@ -255,13 +255,17 @@ COND_EXPR *COND_EXPR::idLongIdx (int idx)
 /* Returns an identifier conditional expression node of type LONG_VAR */
 COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off)
 {
+    iICODE atOffset=pIcode;
+    advance(atOffset,off);
+    return idLong(localId,sd,pIcode,f,ix,du,atOffset);
+}
+COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset)
+{
     int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
     /* Check for long constant and save it as a constant expression */
     if ((sd == SRC) && pIcode->ll()->testFlags(I))  /* constant */
     {
-        iICODE atOffset=pIcode;
-        advance(atOffset,off);
         newExp->expr.ident.idType = CONSTANT;
         if (f == HIGH_FIRST)
             newExp->expr.ident.idNode.kte.kte = (pIcode->ll()->src.op() << 16) +
@@ -274,7 +278,7 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst
     /* Save it as a long expression (reg, stack or glob) */
     else
     {
-        idx = localId->newLong(sd, pIcode, f, ix, du, off);
+        idx = localId->newLong(sd, pIcode, f, ix, du, atOffset);
         newExp->expr.ident.idType = LONG_VAR;
         newExp->expr.ident.idNode.longIdx = idx;
     }

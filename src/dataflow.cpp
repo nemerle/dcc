@@ -952,9 +952,7 @@ void Function::findExps()
                             switch (ticode->hl()->opcode)
                             {
                             case HLI_ASSIGN:
-                                exp = COND_EXPR::idFunc (
-                                            picode->hl()->call.proc,
-                                            picode->hl()->call.args);
+                                exp = COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args);
                                 ticode->hl()->asgn.lhs =
                                         COND_EXPR::idLong(&localId, DST, ticode,HIGH_FIRST, picode, eDEF, 1);
                                 ticode->hl()->asgn.rhs = exp;
