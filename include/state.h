@@ -21,7 +21,9 @@ struct STATE
     void checkStartup();
     STATE() : IP(0)
     {
+        JCond.regi=0;
         JCond.immed=0;
+
         memset(r,0,sizeof(int16_t)*INDEXBASE);
         memset(f,0,sizeof(uint8_t)*INDEXBASE);
     }

@@ -9,6 +9,12 @@
 
 #include "dcc.h"
 #include "scanner.h"
+/*  Parser flags  */
+#define TO_REG      0x000100    /* rm is source  */
+#define S_EXT       0x000200    /* sign extend   */
+#define OP386       0x000400    /* 386 op-code   */
+#define NSP         0x000800    /* NOT_HLL if SP is src or dst */
+#define ICODEMASK   0xFF00FF    /* Masks off parser flags */
 
 static void rm(int i);
 static void modrm(int i);

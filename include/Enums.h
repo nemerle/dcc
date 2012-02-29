@@ -81,7 +81,165 @@ enum opLoc
     DST,						/* Destination operand	*/
     LHS_OP						/* Left-hand side operand (for HIGH_LEVEL) */
 };
+/* LOW_LEVEL icode flags */
+enum eLLFlags
+{
 
+    B           =0x0000001,    /* uint8_t operands (value implicitly used) */
+    I           =0x0000002,    /* Immed. source */
+    NOT_HLL     =0x0000004,    /* Not HLL inst. */
+    FLOAT_OP    =0x0000008,    /* ESC or WAIT   */
+    SEG_IMMED   =0x0000010,    /* Number is relocated segment value */
+    IMPURE      =0x0000020,    /* Instruction modifies code */
+    WORD_OFF    =0x0000040,    /* Inst has uint16_t offset ie.could be address */
+    TERMINATES  =0x0000080,    /* Instruction terminates program */
+    CASE        =0x0000100,    /* Label as case part of switch */
+    SWITCH      =0x0000200,    /* Treat indirect JMP as switch stmt */
+    TARGET      =0x0000400,    /* Jump target */
+    SYNTHETIC   =0x0000800,    /* Synthetic jump instruction */
+    NO_LABEL    =0x0001000,    /* Immed. jump cannot be linked to a label */
+    NO_CODE     =0x0002000,    /* Hole in Icode array */
+    SYM_USE     =0x0004000,    /* Instruction uses a symbol */
+    SYM_DEF     =0x0008000,    /* Instruction defines a symbol */
+
+    NO_SRC      =0x0010000,    /* Opcode takes no source */
+    NO_OPS      =0x0020000,    /* Opcode takes no operands */
+    IM_OPS      =0x0040000,    /* Opcode takes implicit operands */
+    SRC_B       =0x0080000,    /* Source operand is uint8_t (dest is uint16_t) */
+#define NO_SRC_B    0xF7FFFF    /* Masks off SRC_B */
+    HLL_LABEL   =0x0100000,    /* Icode has a high level language label */
+    IM_DST      =0x0200000,	/* Implicit DST for opcode (SIGNEX) */
+    IM_SRC      =0x0400000,	/* Implicit SRC for opcode (dx:ax)	*/
+    IM_TMP_DST  =0x0800000,	/* Implicit rTMP DST for opcode (DIV/IDIV) */
+
+    JMP_ICODE   =0x1000000,    /* Jmp dest immed.op converted to icode index */
+    JX_LOOP     =0x2000000,	/* Cond jump is part of loop conditional exp */
+    REST_STK    =0x4000000	/* Stack needs to be restored after CALL */
+};
+/* Types of icodes */
+enum icodeType
+{
+    NOT_SCANNED = 0,    /* not even scanned yet */
+    LOW_LEVEL,          /* low-level icode  */
+    HIGH_LEVEL          /* high-level icode */
+};
+
+
+/* LOW_LEVEL icode opcodes */
+enum llIcode
+{
+    iCBW,		/* 0 */
+    iAAA,
+    iAAD,
+    iAAM,
+    iAAS,
+    iADC,
+    iADD,
+    iAND,
+    iBOUND,
+    iCALL,
+    iCALLF,		/* 10 */
+    iCLC,
+    iCLD,
+    iCLI,
+    iCMC,
+    iCMP,
+    iCMPS,
+    iREPNE_CMPS,
+    iREPE_CMPS,
+    iDAA,
+    iDAS,		/* 20 */
+    iDEC,
+    iDIV,
+    iENTER,
+    iESC,
+    iHLT,
+    iIDIV,
+    iIMUL,
+    iIN,
+    iINC,
+    iINS,		/* 30 */
+    iREP_INS,
+    iINT,
+    iIRET,
+    iJB,
+    iJBE,
+    iJAE,
+    iJA,
+    iJE,
+    iJNE,
+    iJL,		/* 40 */
+    iJGE,
+    iJLE,
+    iJG,
+    iJS,
+    iJNS,
+    iJO,
+    iJNO,
+    iJP,
+    iJNP,
+    iJCXZ,		/* 50 */
+    iJMP,
+    iJMPF,
+    iLAHF,
+    iLDS,
+    iLEA,
+    iLEAVE,
+    iLES,
+    iLOCK,
+    iLODS,
+    iREP_LODS,	/* 60 */
+    iLOOP,
+    iLOOPE,
+    iLOOPNE,
+    iMOV,		/* 64 */
+    iMOVS,
+    iREP_MOVS,
+    iMUL,		/* 67 */
+    iNEG,
+    iNOT,
+    iOR,   		/* 70 */
+    iOUT,
+    iOUTS,
+    iREP_OUTS,
+    iPOP,
+    iPOPA,
+    iPOPF,
+    iPUSH,
+    iPUSHA,
+    iPUSHF,
+    iRCL,		/* 80 */
+    iRCR,
+    iROL,
+    iROR,
+    iRET,		/* 84 */
+    iRETF,
+    iSAHF,
+    iSAR,
+    iSHL,
+    iSHR,
+    iSBB,		/* 90 */
+    iSCAS,
+    iREPNE_SCAS,
+    iREPE_SCAS,
+    iSIGNEX,
+    iSTC,
+    iSTD,
+    iSTI,
+    iSTOS,
+    iREP_STOS,
+    iSUB,		/* 100 */
+    iTEST,
+    iWAIT,
+    iXCHG,
+    iXLAT,
+    iXOR,
+    iINTO,
+    iNOP,
+    iREPNE,
+    iREPE,
+    iMOD		/* 110 */
+};
 /* Conditional Expression enumeration nodes and operators               */
 enum condNodeType
 {

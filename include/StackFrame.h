@@ -17,7 +17,7 @@ struct STKSYM
     boolT       hasMacro;	/* This type needs a macro					*/
     char        macro[10];	/* Macro name								*/
     char        name[10];   /* Name for this symbol/argument            */
-    boolT       invalid;	/* Boolean: invalid entry in formal arg list*/
+    bool        invalid;	/* Boolean: invalid entry in formal arg list*/
     STKSYM()
     {
         memset(this,0,sizeof(STKSYM));

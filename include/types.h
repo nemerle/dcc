@@ -34,7 +34,7 @@ typedef unsigned char boolT; /* 8 bits   */
 /* Macro reads a LH word from the image regardless of host convention */
 /* Returns a 16 bit quantity, e.g. C000 is read into an Int as C000 */
 //#define LH(p)  ((int16)((byte *)(p))[0] + ((int16)((byte *)(p))[1] << 8))
-#define LH(p)    ((word)((byte *)(p))[0]  + ((word)((byte *)(p))[1] << 8))
+#define LH(p)    ((uint16_t)((uint8_t *)(p))[0]  + ((uint16_t)((uint8_t *)(p))[1] << 8))
 
 /* Macro reads a LH word from the image regardless of host convention */
 /* Returns a signed quantity, e.g. C000 is read into an Int as FFFFC000 */

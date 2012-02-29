@@ -160,7 +160,6 @@ void	placeStkArg (ICODE *, COND_EXPR *, int);
 void	adjustActArgType (COND_EXPR *, hlType, Function *);
 
 /* Exported functions from ast.c */
-void	  removeRegFromLong (uint8_t, LOCAL_ID *, COND_EXPR *);
 std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, int *);
 int       hlTypeSize (const COND_EXPR *, Function *);
 hlType	  expType (const COND_EXPR *, Function *);
@@ -178,6 +177,3 @@ int     power2 (int);
 boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, int);
 boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, COND_EXPR *&, COND_EXPR *&, int);
 uint8_t otherLongRegi (uint8_t, int, LOCAL_ID *);
-void insertIdx (IDX_ARRAY *, int);
-
-
