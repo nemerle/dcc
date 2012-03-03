@@ -133,7 +133,10 @@ COND_EXPR *COND_EXPR::idGlob (int16_t segValue, int16_t off)
         if (symtab[i].label == adr)
             break;
     if (i == symtab.size())
+    {
         printf ("Error, glob var not found in symtab\n");
+        return 0;
+    }
     newExp->expr.ident.idNode.globIdx = i;
     return (newExp);
 }
@@ -824,48 +827,48 @@ void COND_EXPR::changeBoolOp (condOp newOp)
     expr.boolExpr.op = newOp;
 }
 
-
 /* Inserts the expression exp into the tree at the location specified by the
  * register regi */
-bool insertSubTreeReg (COND_EXPR *expr, COND_EXPR **tree, uint8_t regi,LOCAL_ID *locsym)
+bool insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *expr, uint8_t regi,LOCAL_ID *locsym)
 {
+    HlTypeSupport *set_val;
     uint8_t treeReg;
 
-    if (*tree == NULL)
-        return FALSE;
+    if (tree == NULL)
+        return false;
 
-    switch ((*tree)->type) {
+    switch (tree->type) {
     case IDENTIFIER:
-        if ((*tree)->expr.ident.idType == REGISTER)
+        if (tree->expr.ident.idType == REGISTER)
         {
-            treeReg = locsym->id_arr[(*tree)->expr.ident.idNode.regiIdx].id.regi;
+            treeReg = locsym->id_arr[tree->expr.ident.idNode.regiIdx].id.regi;
             if (treeReg == regi)                        /* uint16_t reg */
             {
-                *tree = expr;
-                return TRUE;
+                tree = expr;
+                return true;
             }
             else if ((regi >= rAX) && (regi <= rBX))    /* uint16_t/uint8_t reg */
             {
                 if ((treeReg == (regi + rAL-1)) || (treeReg == (regi + rAH-1)))
                 {
-                    *tree = expr;
-                    return TRUE;
+                    tree = expr;
+                    return true;
                 }
             }
         }
         return FALSE;
 
     case BOOLEAN_OP:
-        if (insertSubTreeReg (expr, &(*tree)->expr.boolExpr.lhs, regi, locsym))
-            return TRUE;
-        if (insertSubTreeReg (expr, &(*tree)->expr.boolExpr.rhs, regi, locsym))
-            return TRUE;
-        return FALSE;
+        if (insertSubTreeReg (tree->expr.boolExpr.lhs, expr, regi, locsym))
+            return true;
+        if (insertSubTreeReg (tree->expr.boolExpr.rhs, expr, regi, locsym))
+            return true;
+        return false;
 
     case NEGATION:
     case ADDRESSOF:
     case DEREFERENCE:
-        if (insertSubTreeReg(expr, &(*tree)->expr.unaryExp,regi, locsym))
+        if (insertSubTreeReg(tree->expr.unaryExp, expr, regi, locsym))
             return TRUE;
         return FALSE;
     }

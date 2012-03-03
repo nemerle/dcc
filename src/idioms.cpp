@@ -15,6 +15,7 @@
 #include "shift_idioms.h"
 #include "arith_idioms.h"
 #include "dcc.h"
+#include <llvm/Support/PatternMatch.h>
 #include <boost/iterator/filter_iterator.hpp>
 /*****************************************************************************
  * JmpInst - Returns TRUE if opcode is a conditional or unconditional jump

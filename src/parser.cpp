@@ -187,7 +187,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             eIcode.ll()->set(iMOD,0);
             eIcode.ll()->src = _Icode.ll()->src;
             eIcode.du = _Icode.du;
-            eIcode.ll()->setFlags( ( ll->getFlag() | SYNTHETIC) );
+            eIcode.ll()->setFlags( ( ll->getFlag() | SYNTHETIC  | IM_TMP_DST) );
             eIcode.ll()->label = SynthLab++;
             pIcode = Icode.addIcode(&eIcode);
         }
@@ -196,19 +196,21 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             /* MOV rTMP, regDst */
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOV,0);
+            eIcode.ll()->set(iMOV,SYNTHETIC);
             eIcode.ll()->dst.regi = rTMP;
-            eIcode.ll()->src.regi = _Icode.ll()->dst.regi;
+            eIcode.ll()->src = _Icode.ll()->dst;
             eIcode.setRegDU( rTMP, eDEF);
-            eIcode.setRegDU( eIcode.ll()->src.regi, eUSE);
-            eIcode.ll()->setFlags( SYNTHETIC );
-            /* eIcode.ll()->label = SynthLab++; */
+            if(eIcode.ll()->src.regi)
+            {
+                eIcode.setRegDU( eIcode.ll()->src.regi, eUSE);
+                if((eIcode.ll()->src.regi>=rAL) && (eIcode.ll()->src.regi<=rBH))
+                    eIcode.ll()->setFlags( B );
+            }
             eIcode.ll()->label = _Icode.ll()->label;
             Icode.addIcode(&eIcode);
 
             /* MOV regDst, regSrc */
-            _Icode.ll()->set(iMOV,SYNTHETIC);
-            /* Icode.ll()->label = SynthLab++; */
+            _Icode.ll()->set(iMOV,SYNTHETIC|_Icode.ll()->getFlag());
             Icode.addIcode(&_Icode);
             ll->setOpcode(iXCHG); /* for next case */
 
@@ -216,9 +218,14 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
             eIcode.ll()->set(iMOV,SYNTHETIC);
-            eIcode.ll()->dst.regi = ll->src.regi;
+            eIcode.ll()->dst = ll->src;
+            if(eIcode.ll()->dst.regi)
+            {
+                if((eIcode.ll()->dst.regi>=rAL) && (eIcode.ll()->dst.regi<=rBH))
+                    eIcode.ll()->setFlags( B );
+                eIcode.setRegDU( eIcode.ll()->dst.regi, eDEF);
+            }
             eIcode.ll()->src.regi = rTMP;
-            eIcode.setRegDU( eIcode.ll()->dst.regi, eDEF);
             eIcode.setRegDU( rTMP, eUSE);
             eIcode.ll()->label = SynthLab++;
             pIcode = Icode.addIcode(&eIcode);
@@ -693,9 +700,9 @@ static hlType cbType[] = {TYPE_UNKNOWN, TYPE_BYTE_UNSIGN, TYPE_WORD_SIGN,
  * the maximum size is always saved).   */
 static SYM * updateGlobSym (uint32_t operand, int size, uint16_t duFlag)
 {
-        int i;
+    int i;
 
-        /* Check for symbol in symbol table */
+    /* Check for symbol in symbol table */
     for (i = 0; i < symtab.size(); i++)
         if (symtab[i].label == operand)
         {
@@ -704,7 +711,7 @@ static SYM * updateGlobSym (uint32_t operand, int size, uint16_t duFlag)
             break;
         }
 
-        /* New symbol, not in symbol table */
+    /* New symbol, not in symbol table */
     if (i == symtab.size())
     {
         SYM v;
@@ -712,17 +719,17 @@ static SYM * updateGlobSym (uint32_t operand, int size, uint16_t duFlag)
         v.label = operand;
         v.size  = size;
         v.type = cbType[size];
-            if (duFlag == eDuVal::USE)  /* must already have init value */
-            {
+        if (duFlag == eDuVal::USE)  /* must already have init value */
+        {
             v.duVal.use =1; // USEVAL;
             v.duVal.val =1;
-            }
-            else
-            {
-            v.duVal.setFlags(duFlag);
-            }
-        symtab.push_back(v);
         }
+        else
+        {
+            v.duVal.setFlags(duFlag);
+        }
+        symtab.push_back(v);
+    }
     return (&symtab[i]);
 }
 

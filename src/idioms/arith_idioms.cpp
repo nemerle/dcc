@@ -86,6 +86,8 @@ int Idiom6::action()
  ****************************************************************************/
 bool Idiom18::match(iICODE picode)
 {
+    if(picode==m_func->Icode.begin())
+        return false;
     if(std::distance(picode,m_end)<3)
         return false;
     --picode; //

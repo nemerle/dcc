@@ -163,7 +163,7 @@ void	adjustActArgType (COND_EXPR *, hlType, Function *);
 std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, int *);
 int       hlTypeSize (const COND_EXPR *, Function *);
 hlType	  expType (const COND_EXPR *, Function *);
-bool      insertSubTreeReg(COND_EXPR *, COND_EXPR **, uint8_t, LOCAL_ID *);
+bool      insertSubTreeReg(COND_EXPR *&, COND_EXPR *, uint8_t, LOCAL_ID *);
 bool	  insertSubTreeLongReg (COND_EXPR *, COND_EXPR **, int);
 
 

@@ -152,6 +152,8 @@ protected:
     void propLongReg(int loc_ident_idx, const ID &pLocId);
     void propLongStk(int i, const ID &pLocId);
     void propLongGlb(int i, const ID &pLocId);
+    void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong);
+    void processHliCall1(COND_EXPR *exp, iICODE picode);
 
     int     findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE iter);
     int     findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE beg);

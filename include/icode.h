@@ -19,6 +19,9 @@ struct BB;
 struct Function;
 struct STKFRAME;
 struct CIcodeRec;
+struct ICODE;
+typedef std::list<ICODE>::iterator iICODE;
+typedef std::list<ICODE>::reverse_iterator riICODE;
 
 /* uint8_t and uint16_t registers */
 static const char *const byteReg[9]  = {"al", "cl", "dl", "bl",
@@ -35,8 +38,7 @@ struct DU
 };
 
 /* Definition-use chain for level 1 (within a basic block) */
-#define MAX_REGS_DEF	2		/* 2 regs def'd for long-reg vars */
-//#define MAX_USES		5
+#define MAX_REGS_DEF	4		/* 2 regs def'd for long-reg vars */
 
 
 struct COND_EXPR;
@@ -91,8 +93,10 @@ struct ExpType : public HlTypeSupport
 
 struct HLTYPE
 {
-    hlIcode         opcode;    /* hlIcode opcode           */
+protected:
+public:
     ExpType         exp;      /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
+    hlIcode         opcode;    /* hlIcode opcode           */
     AssignType      asgn;
     CallType        call;
     HlTypeSupport *get()
@@ -102,6 +106,7 @@ struct HLTYPE
         case HLI_ASSIGN: return &asgn;
         case HLI_RET:
         case HLI_POP:
+        case HLI_JCOND:
         case HLI_PUSH:   return &exp;
         case HLI_CALL:   return &call;
         default:
@@ -178,7 +183,14 @@ public:
     }
     bool testFlags(uint32_t x) const { return (flg & x)!=0;}
     void  setFlags(uint32_t flag) {flg |= flag;}
-    void  clrFlags(uint32_t flag) {flg &= ~flag;}
+    void  clrFlags(uint32_t flag)
+    {
+        if(opcode==iMOD)
+        {
+            assert(false);
+        }
+        flg &= ~flag;
+    }
 
     uint32_t getFlag() const {return flg;}
     llIcode getOpcode() const { return opcode; }
@@ -273,8 +285,8 @@ public:
 
         };
         int     numRegsDef;             /* # registers defined by this inst */
-        uint8_t	regi[3];	/* registers defined by this inst   */
-        Use     idx[3];
+        uint8_t	regi[MAX_REGS_DEF+1];	/* registers defined by this inst   */
+        Use     idx[MAX_REGS_DEF+1];
         //int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
         bool    used(int regIdx)
         {
@@ -348,5 +360,3 @@ public:
     iterator    labelSrch(uint32_t target);
     ICODE *	GetIcode(int ip);
 };
-typedef CIcodeRec::iterator iICODE;
-typedef CIcodeRec::reverse_iterator riICODE;
