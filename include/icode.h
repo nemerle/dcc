@@ -137,6 +137,15 @@ public:
         asgn.lhs=l;
         asgn.rhs=r;
     }
+    HLTYPE(hlIcode op=HLI_INVALID) : opcode(op)
+    {}
+    HLTYPE & operator=(const HLTYPE &l)
+    {
+        exp=l.exp;
+        opcode=l.opcode;
+        asgn=l.asgn;
+        call=l.call;
+    }
 public:
     std::string write1HlIcode(Function *pProc, int *numLoc);
     void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs);
@@ -245,6 +254,8 @@ public:
 
     void flops(std::ostringstream &out);
     bool isJmpInst();
+    HLTYPE toHighLevel(COND_EXPR *lhs, COND_EXPR *rhs, Function *func);
+    HLTYPE createCall();
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
@@ -319,6 +330,7 @@ public:
     const LLInst *      ll() const { return &m_ll;}
     HLTYPE *            hl() { return &m_hl;}
     const HLTYPE *      hl() const { return &m_hl;}
+    void                hl(const HLTYPE &v) { m_hl=v;}
     int loc_ip; // used by CICodeRec to number ICODEs
 
     void setRegDU(uint8_t regi, operDu du_in);

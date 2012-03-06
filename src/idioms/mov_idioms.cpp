@@ -53,7 +53,7 @@ int Idiom14::action()
     idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, m_regH, m_regL, m_icodes[0]);
     lhs = COND_EXPR::idLongIdx (idx);
     m_icodes[0]->setRegDU( m_regH, eDEF);
-    rhs = COND_EXPR::id (*m_icodes[0], SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
+    rhs = COND_EXPR::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();
     return 2;
@@ -102,7 +102,7 @@ int Idiom13::action()
     lhs = COND_EXPR::idReg (m_loaded_reg, 0, &m_func->localId);
     m_icodes[0]->setRegDU( m_loaded_reg, eDEF);
     m_icodes[0]->du1.numRegsDef--;   	/* prev uint8_t reg def */
-    rhs = COND_EXPR::id (*m_icodes[0], SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
+    rhs = COND_EXPR::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();
     return 2;

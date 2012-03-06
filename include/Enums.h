@@ -52,7 +52,7 @@ enum condId
 enum condOp
 {
     /* For conditional expressions */
-    LESS_EQUAL = 0, /* <=   */
+    LESS_EQUAL, /* <=   */
     LESS,           /* <    */
     EQUAL,          /* ==   */
     NOT_EQUAL,      /* !=   */
@@ -267,6 +267,7 @@ enum hlFirst
 /* HIGH_LEVEL icodes opcodes */
 enum hlIcode
 {
+    HLI_INVALID,
     HLI_ASSIGN,         /* :=               		*/
     HLI_CALL,			/* Call procedure			*/
     HLI_JCOND,          /* Conditional jump 		*/

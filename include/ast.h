@@ -27,6 +27,7 @@ struct Function;
 struct STKFRAME;
 struct LOCAL_ID;
 struct ICODE;
+struct LLInst;
 struct ID;
 typedef std::list<ICODE>::iterator iICODE;
 #include "IdentType.h"
@@ -34,19 +35,42 @@ typedef std::list<ICODE>::iterator iICODE;
 /* Expression data type */
 struct COND_EXPR
 {
+protected:
+    struct /* for BOOLEAN_OP					*/
+    {
+        condOp           op;
+        COND_EXPR *lhs;
+        COND_EXPR *rhs;
+    } boolExpr;
+
+public:
     condNodeType            type;       /* Conditional Expression Node Type */
     union _exprNode {                   /* Different cond expr nodes        */
-        struct /* for BOOLEAN_OP					*/
-        {
-            condOp           op;
-            COND_EXPR *lhs;
-            COND_EXPR *rhs;
-        } boolExpr;
         COND_EXPR    *unaryExp;  /* for NEGATION,ADDRESSOF,DEREFERENCE*/
         IDENTTYPE   ident;     /* for IDENTIFIER                   */
     }   expr;
+    COND_EXPR *lhs()
+    {
+        assert(type==BOOLEAN_OP);
+        return boolExpr.lhs;
+    }
+    const COND_EXPR *lhs() const
+    {
+        assert(type==BOOLEAN_OP);
+        return boolExpr.lhs;
+    }
+    COND_EXPR *rhs()
+    {
+        assert(type==BOOLEAN_OP);
+        return boolExpr.rhs;
+    }
+    const COND_EXPR *rhs() const
+    {
+        assert(type==BOOLEAN_OP);
+        return boolExpr.rhs;
+    }
+    condOp op() const { return boolExpr.op;}
 public:
-    static COND_EXPR *idGlob(int16_t segValue, int16_t off);
     static COND_EXPR *idRegIdx(int idx, regType reg_type);
     static COND_EXPR *idKte(uint32_t kte, uint8_t size);
     static COND_EXPR *idLoc(int off, LOCAL_ID *localId);
@@ -58,23 +82,86 @@ public:
     static COND_EXPR *idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset);
     static COND_EXPR *idFunc(Function *pproc, STKFRAME *args);
     static COND_EXPR *idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
-    static COND_EXPR *id(const ICODE &pIcode, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
+    static COND_EXPR *  id(const LLInst &ll_insn, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
     static COND_EXPR *boolOp(COND_EXPR *lhs, COND_EXPR *rhs, condOp op);
+    static bool         insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR **tree, int longIdx);
+    static bool         insertSubTreeReg(COND_EXPR *&tree, COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym);
 public:
-    COND_EXPR *clone();
+    virtual COND_EXPR *clone();
     void release();
     void changeBoolOp(condOp newOp);
     COND_EXPR(COND_EXPR &other)
     {
         type=other.type;
         expr=other.expr;
+        boolExpr=other.boolExpr;
     }
     COND_EXPR(condNodeType t=UNKNOWN_OP) : type(t)
     {
         memset(&expr,0,sizeof(_exprNode));
+        memset(&boolExpr,0,sizeof(boolExpr));
+
     }
+    virtual ~COND_EXPR() {}
 public:
-    COND_EXPR *inverse(); // return new COND_EXPR that is invarse of this
+    virtual COND_EXPR *inverse(); // return new COND_EXPR that is invarse of this
+    virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
+};
+struct BinaryOperator : public COND_EXPR
+{
+    condOp      m_op;
+    COND_EXPR *m_lhs;
+    COND_EXPR *m_rhs;
+    BinaryOperator()
+    {
+        m_op = DUMMY;
+        m_lhs=m_rhs=nullptr;
+    }
+    static BinaryOperator *CreateAdd(COND_EXPR *l,COND_EXPR *r);
+    virtual COND_EXPR *inverse();
+    virtual COND_EXPR *clone();
+    virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
+    COND_EXPR *lhs()
+    {
+        assert(type==BOOLEAN_OP);
+        return m_lhs;
+    }
+    const COND_EXPR *lhs() const
+    {
+        assert(type==BOOLEAN_OP);
+        return m_lhs;
+    }
+    COND_EXPR *rhs()
+    {
+        assert(type==BOOLEAN_OP);
+        return m_rhs;
+    }
+    const COND_EXPR *rhs() const
+    {
+        assert(type==BOOLEAN_OP);
+        return m_rhs;
+    }
+    condOp op() const { return m_op;}
+};
+struct UnaryOperator : public COND_EXPR
+{
+    condOp      op;
+    COND_EXPR *unaryExp;
+    virtual COND_EXPR *inverse();
+    virtual COND_EXPR *clone();
+    virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
+    static UnaryOperator *Create(condNodeType t, COND_EXPR *sub_expr)
+    {
+        UnaryOperator *newExp = new UnaryOperator();
+        newExp->type=t;
+        newExp->unaryExp = sub_expr;
+        return (newExp);
+    }
 };
 
-
+struct GlobalVariable : public COND_EXPR
+{
+    static COND_EXPR *Create(int16_t segValue, int16_t off);
+};
+struct Constant : public COND_EXPR
+{};

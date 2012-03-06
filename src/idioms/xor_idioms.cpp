@@ -83,7 +83,7 @@ bool Idiom7::match(iICODE picode)
 int Idiom7::action()
 {
     COND_EXPR *lhs,*rhs;
-    lhs = COND_EXPR::id (*m_icode, DST, m_func, m_icode, *m_icode, NONE);
+    lhs = COND_EXPR::id (*m_icode->ll(), DST, m_func, m_icode, *m_icode, NONE);
     rhs = COND_EXPR::idKte (0, 2);
     m_icode->setAsgn(lhs, rhs);
     m_icode->du.use = 0;    /* clear register used in iXOR */
