@@ -27,7 +27,7 @@ struct IDX_ARRAY : public std::vector<iICODE>
     }
 };
 
-static constexpr const char *hlTypes[13] = {
+static constexpr const char * hlTypes[13] = {
     "", "char", "unsigned char", "int", "unsigned int",
     "long", "unsigned long", "record", "int *", "char *",
     "", "float", "double"

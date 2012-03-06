@@ -82,6 +82,7 @@ enum opLoc
     LHS_OP						/* Left-hand side operand (for HIGH_LEVEL) */
 };
 /* LOW_LEVEL icode flags */
+#define NO_SRC_B    0xF7FFFF    /* Masks off SRC_B */
 enum eLLFlags
 {
 
@@ -101,27 +102,24 @@ enum eLLFlags
     NO_CODE     =0x0002000,    /* Hole in Icode array */
     SYM_USE     =0x0004000,    /* Instruction uses a symbol */
     SYM_DEF     =0x0008000,    /* Instruction defines a symbol */
-
     NO_SRC      =0x0010000,    /* Opcode takes no source */
     NO_OPS      =0x0020000,    /* Opcode takes no operands */
     IM_OPS      =0x0040000,    /* Opcode takes implicit operands */
     SRC_B       =0x0080000,    /* Source operand is uint8_t (dest is uint16_t) */
-#define NO_SRC_B    0xF7FFFF    /* Masks off SRC_B */
-    HLL_LABEL   =0x0100000,    /* Icode has a high level language label */
-    IM_DST      =0x0200000,	/* Implicit DST for opcode (SIGNEX) */
-    IM_SRC      =0x0400000,	/* Implicit SRC for opcode (dx:ax)	*/
-    IM_TMP_DST  =0x0800000,	/* Implicit rTMP DST for opcode (DIV/IDIV) */
-
-    JMP_ICODE   =0x1000000,    /* Jmp dest immed.op converted to icode index */
-    JX_LOOP     =0x2000000,	/* Cond jump is part of loop conditional exp */
-    REST_STK    =0x4000000	/* Stack needs to be restored after CALL */
+    HLL_LABEL   =0x0100000, /* Icode has a high level language label */
+    IM_DST      =0x0200000, /* Implicit DST for opcode (SIGNEX) */
+    IM_SRC      =0x0400000, /* Implicit SRC for opcode (dx:ax)	*/
+    IM_TMP_DST  =0x0800000, /* Implicit rTMP DST for opcode (DIV/IDIV) */
+    JMP_ICODE   =0x1000000, /* Jmp dest immed.op converted to icode index */
+    JX_LOOP     =0x2000000, /* Cond jump is part of loop conditional exp */
+    REST_STK    =0x4000000  /* Stack needs to be restored after CALL */
 };
 /* Types of icodes */
 enum icodeType
 {
-    NOT_SCANNED = 0,    /* not even scanned yet */
-    LOW_LEVEL,          /* low-level icode  */
-    HIGH_LEVEL          /* high-level icode */
+    NOT_SCANNED = 0,    // not even scanned yet
+    LOW_LEVEL,          // low-level icode
+    HIGH_LEVEL          // high-level icode
 };
 
 

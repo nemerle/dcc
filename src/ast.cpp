@@ -5,7 +5,7 @@
  * (C) Cristina Cifuentes
  */
 #include <stdint.h>
-#include <malloc.h>		/* For free() */
+//#include <malloc.h>		// For free()
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -13,16 +13,16 @@
 #include "types.h"
 #include "dcc.h"
 using namespace std;
-/* Index registers **** temp solution */
-static const char *idxReg[8] = {"bx+si", "bx+di", "bp+si", "bp+di",
+// Index registers **** temp solution
+static const char * const idxReg[8] = {"bx+si", "bx+di", "bp+si", "bp+di",
                                 "si", "di", "bp", "bx" };
-/* Conditional operator symbols in C.  Index by condOp enumeration type */
-static const char *condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
+// Conditional operator symbols in C.  Index by condOp enumeration type
+static const char * const condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
                                    " & ", " | ", " ^ ", " ~ ",
                                    " + ", " - ", " * ", " / ",
                                    " >> ", " << ", " % ", " && ", " || " };
 
-#define EXP_SIZE 200		/* Size of the expression buffer */
+//#define EXP_SIZE 200		/* Size of the expression buffer */
 
 /* Local expression stack */
 //typedef struct _EXP_STK {
@@ -31,7 +31,7 @@ static const char *condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
 //} EXP_STK; - for local expression stack
 
 /* Returns the integer i in C hexadecimal format */
-static char *hexStr (uint16_t i)
+static const char *hexStr (uint16_t i)
 {
     static char buf[10];
     sprintf (buf, "%s%x", (i > 9) ? "0x" : "", i);
@@ -88,22 +88,20 @@ void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
         assert(false);
         break;
     }
-    printf("%s end: %x,%x\n",__FUNCTION__,du.def,du.use);
 }
 
 
 /* Creates a conditional boolean expression and returns it */
-COND_EXPR *COND_EXPR::boolOp(COND_EXPR *lhs, COND_EXPR *rhs, condOp op)
+COND_EXPR *COND_EXPR::boolOp(COND_EXPR *_lhs, COND_EXPR *_rhs, condOp _op)
 {
     COND_EXPR *newExp;
 
     newExp = new COND_EXPR(BOOLEAN_OP);
-    newExp->boolExpr.op = op;
-    newExp->boolExpr.lhs = lhs;
-    newExp->boolExpr.rhs = rhs;
+    newExp->boolExpr.op = _op;
+    newExp->boolExpr.lhs = _lhs;
+    newExp->boolExpr.rhs = _rhs;
     return (newExp);
 }
-
 
 /* Returns a unary conditional expression node.  This procedure should
  * only be used with the following conditional node types: NEGATION,
@@ -829,80 +827,158 @@ void COND_EXPR::changeBoolOp (condOp newOp)
  * register regi */
 bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, uint8_t regi,LOCAL_ID *locsym)
 {
-    HlTypeSupport *set_val;
-    uint8_t treeReg;
-
     if (tree == NULL)
         return false;
+    COND_EXPR *temp=tree->insertSubTreeReg(_expr,regi,locsym);
+    if(nullptr!=temp)
+    {
+        tree=temp;
+        return true;
+    }
+    return false;
+}
+COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, uint8_t regi,LOCAL_ID *locsym)
+{
+    HlTypeSupport *set_val;
+    uint8_t treeReg;
+    COND_EXPR *temp;
 
-    switch (tree->type) {
+    switch (type) {
     case IDENTIFIER:
-        if (tree->expr.ident.idType == REGISTER)
+        if (expr.ident.idType == REGISTER)
         {
-            treeReg = locsym->id_arr[tree->expr.ident.idNode.regiIdx].id.regi;
+            treeReg = locsym->id_arr[expr.ident.idNode.regiIdx].id.regi;
             if (treeReg == regi)                        /* uint16_t reg */
             {
-                tree = _expr;
-                return true;
+                return _expr;
             }
             else if ((regi >= rAX) && (regi <= rBX))    /* uint16_t/uint8_t reg */
             {
                 if ((treeReg == (regi + rAL-1)) || (treeReg == (regi + rAH-1)))
                 {
-                    tree = _expr;
-                    return true;
+                    return _expr;
                 }
             }
         }
         return FALSE;
 
     case BOOLEAN_OP:
-        if (insertSubTreeReg (tree->boolExpr.lhs, _expr, regi, locsym))
-            return true;
-        if (insertSubTreeReg (tree->boolExpr.rhs, _expr, regi, locsym))
-            return true;
-        return false;
+        temp = lhs()->insertSubTreeReg( _expr, regi, locsym);
+        if (nullptr!=temp)
+        {
+            boolExpr.lhs = temp;
+            return this;
+        }
+        temp = rhs()->insertSubTreeReg( _expr, regi, locsym);
+        if (nullptr!=temp)
+        {
+            boolExpr.rhs = temp;
+            return this;
+        }
+        return nullptr;
 
     case NEGATION:
     case ADDRESSOF:
     case DEREFERENCE:
-        if (insertSubTreeReg(tree->expr.unaryExp, _expr, regi, locsym))
-            return TRUE;
-        return FALSE;
-    }
-    return FALSE;
+        temp = expr.unaryExp->insertSubTreeReg( _expr, regi, locsym);
+        if (nullptr!=temp)
+        {
+            expr.unaryExp = temp;
+            return this;
+        }
+        return nullptr;
 }
-
+    return nullptr;
+}
+COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym)
+{
+    COND_EXPR *r;
+    r=m_lhs->insertSubTreeReg(_expr,regi,locsym);
+    if(r)
+    {
+        m_lhs = r;
+        return this;
+    }
+    r=m_rhs->insertSubTreeReg(_expr,regi,locsym);
+    if(r)
+    {
+        m_rhs = r;
+        return this;
+    }
+    return nullptr;
+}
 
 /* Inserts the expression exp into the tree at the location specified by the
  * long register index longIdx*/
 bool COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, COND_EXPR **tree, int longIdx)
 {
-    switch ((*tree)->type)
+    if (tree == NULL)
+        return false;
+    COND_EXPR *temp=(*tree)->insertSubTreeLongReg(_expr,longIdx);
+    if(nullptr!=temp)
+    {
+        *tree=temp;
+        return true;
+    }
+    return false;
+}
+COND_EXPR *COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
+{
+        COND_EXPR *temp;
+    switch (type)
     {
     case IDENTIFIER:
-        if ((*tree)->expr.ident.idNode.longIdx == longIdx)
+        if (expr.ident.idNode.longIdx == longIdx)
         {
-            *tree = _expr;
-            return true;
+            return _expr;
         }
-        return false;
+        return nullptr;
 
     case BOOLEAN_OP:
-        if (insertSubTreeLongReg (_expr, &(*tree)->boolExpr.lhs, longIdx))
-            return true;
-        if (insertSubTreeLongReg (_expr, &(*tree)->boolExpr.rhs, longIdx))
-            return true;
-        return false;
+        temp = lhs()->insertSubTreeLongReg( _expr,longIdx);
+        if (nullptr!=temp)
+        {
+            boolExpr.lhs = temp;
+            return this;
+        }
+        temp = rhs()->insertSubTreeLongReg( _expr,longIdx);
+        if (nullptr!=temp)
+        {
+            boolExpr.rhs = temp;
+            return this;
+        }
+        return nullptr;
 
     case NEGATION:
     case ADDRESSOF:
     case DEREFERENCE:
-        if (insertSubTreeLongReg (_expr, &(*tree)->expr.unaryExp, longIdx))
-            return true;
-        return false;
+        COND_EXPR *temp = expr.unaryExp->insertSubTreeLongReg(_expr,longIdx);
+        if (nullptr!=temp)
+        {
+            expr.unaryExp = temp;
+            return this;
     }
-    return false;
+        return nullptr;
+    }
+    return nullptr;
+}
+COND_EXPR *BinaryOperator::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
+{
+    COND_EXPR *r;
+    r=m_lhs->insertSubTreeLongReg(_expr,longIdx);
+    if(r)
+    {
+        m_lhs = r;
+        return this;
+    }
+    r=m_rhs->insertSubTreeLongReg(_expr,longIdx);
+    if(r)
+    {
+        m_rhs = r;
+        return this;
+    }
+    return nullptr;
+
 }
 
 
@@ -924,7 +1000,7 @@ void COND_EXPR::release()
     delete (this);
 }
 
-
+//
 COND_EXPR *BinaryOperator::inverse()
 {
     static condOp invCondOp[] = {GREATER, GREATER_EQUAL, NOT_EQUAL, EQUAL,
@@ -957,10 +1033,8 @@ COND_EXPR *BinaryOperator::inverse()
  * node.  Returns the copy. */
 COND_EXPR *BinaryOperator::clone()
 {
-    BinaryOperator* newExp=0;        /* Expression node copy */
-    newExp = new BinaryOperator();
-    newExp->m_op  = m_op;
+    BinaryOperator* newExp=new BinaryOperator(m_op);        /* Expression node copy */
     newExp->m_lhs = m_lhs->clone();
     newExp->m_rhs = m_rhs->clone();
-
+    return newExp;
 }

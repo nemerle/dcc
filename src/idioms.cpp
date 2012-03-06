@@ -16,7 +16,7 @@
 #include "arith_idioms.h"
 #include "dcc.h"
 #include <llvm/Support/PatternMatch.h>
-#include <boost/iterator/filter_iterator.hpp>
+//#include <boost/iterator/filter_iterator.hpp>
 /*****************************************************************************
  * JmpInst - Returns TRUE if opcode is a conditional or unconditional jump
  ****************************************************************************/
@@ -76,7 +76,7 @@ void Function::findIdioms()
     {
         bool operator()(ICODE &z) { return not z.invalid;}
     };
-    typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
+    //typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
     while (pIcode != pEnd)
     {
         switch (pIcode->ll()->getOpcode())

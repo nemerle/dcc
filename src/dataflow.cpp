@@ -6,14 +6,14 @@
  ****************************************************************************/
 
 #include "dcc.h"
-#include <boost/range.hpp>
-#include <boost/range/adaptors.hpp>
-#include <boost/range/algorithm.hpp>
+//#include <boost/range.hpp>
+//#include <boost/range/adaptors.hpp>
+//#include <boost/range/algorithm.hpp>
 #include <string.h>
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
-using namespace boost;
+//using namespace boost;
 struct ExpStack
 {
     typedef std::list<COND_EXPR *> EXP_STK;

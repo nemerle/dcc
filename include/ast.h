@@ -83,7 +83,7 @@ public:
     static COND_EXPR *idFunc(Function *pproc, STKFRAME *args);
     static COND_EXPR *idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
     static COND_EXPR *  id(const LLInst &ll_insn, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
-    static COND_EXPR *boolOp(COND_EXPR *lhs, COND_EXPR *rhs, condOp op);
+    static COND_EXPR *boolOp(COND_EXPR *_lhs, COND_EXPR *_rhs, condOp _op);
     static bool         insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR **tree, int longIdx);
     static bool         insertSubTreeReg(COND_EXPR *&tree, COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym);
 public:
@@ -106,21 +106,27 @@ public:
 public:
     virtual COND_EXPR *inverse(); // return new COND_EXPR that is invarse of this
     virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
+    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym);
+    virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
 };
 struct BinaryOperator : public COND_EXPR
 {
     condOp      m_op;
     COND_EXPR *m_lhs;
     COND_EXPR *m_rhs;
-    BinaryOperator()
+    BinaryOperator(condOp o)
     {
-        m_op = DUMMY;
+        m_op = o;
         m_lhs=m_rhs=nullptr;
     }
+    static BinaryOperator *Create(condOp o,COND_EXPR *l,COND_EXPR *r);
     static BinaryOperator *CreateAdd(COND_EXPR *l,COND_EXPR *r);
     virtual COND_EXPR *inverse();
     virtual COND_EXPR *clone();
     virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
+    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym);
+    virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
+
     COND_EXPR *lhs()
     {
         assert(type==BOOLEAN_OP);
@@ -142,6 +148,8 @@ struct BinaryOperator : public COND_EXPR
         return m_rhs;
     }
     condOp op() const { return m_op;}
+    /* Changes the boolean conditional operator at the root of this expression */
+    void op(condOp o) { m_op=o;}
 };
 struct UnaryOperator : public COND_EXPR
 {

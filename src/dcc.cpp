@@ -20,9 +20,8 @@ FunctionListType pProcList;
 CALL_GRAPH	*callGraph;		/* Call graph of the program			  */
 
 static char *initargs(int argc, char *argv[]);
-static void displayTotalStats();
+static void displayTotalStats(void);
 #include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Support/raw_ostream.h>
 
 /****************************************************************************
  * main
@@ -83,28 +82,29 @@ static char *initargs(int argc, char *argv[])
             {
                 case 'a':       /* Print assembler listing */
                     if (*(pc+1) == '2')
-                        option.asm2 = TRUE;
+                        option.asm2 = true;
                     else
-                        option.asm1 = TRUE;
+                        option.asm1 = true;
                     if (*(pc+1) == '1' || *(pc+1) == '2')
                         pc++;
                     break;
                 case 'c':
-                    option.Calls = TRUE;
+                    option.Calls = true;
                     break;
                 case 'i':
-                    option.Interact = TRUE;
+                    option.Interact = true;
                     break;
                 case 'm':       /* Print memory map */
-                    option.Map = TRUE;
+                    option.Map = true;
                     break;
                 case 's':       /* Print Stats */
-                    option.Stats = TRUE;
+                    option.Stats = true;
                     break;
                 case 'V':       /* Very verbose => verbose */
-                    option.VeryVerbose = TRUE;
-                case 'v':       /* Make everything verbose */
-                    option.verbose = TRUE;
+                    option.VeryVerbose = true;
+                //lint -fallthrough
+                case 'v':
+                    option.verbose = true; /* Make everything verbose */
                     break;
                 case 'o':       /* assembler output file */
                     if (*(pc+1)) {
@@ -115,6 +115,7 @@ static char *initargs(int argc, char *argv[])
                         asm1_name = asm2_name = *++argv;
                         goto NextArg;
                     }
+                //lint -fallthrough
                 default:
                     fatalError(INVALID_ARG, *pc);
                     return *argv;
