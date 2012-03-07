@@ -797,7 +797,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
 //lint -sem(COND_EXPR::clone, @p!=0)
-COND_EXPR *COND_EXPR::clone()
+COND_EXPR *COND_EXPR::clone() const
 {
     COND_EXPR* newExp=0;        /* Expression node copy */
 

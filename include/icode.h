@@ -78,6 +78,8 @@ struct AssignType : public HlTypeSupport
         return true;
     }
     std::string writeOut(Function *pProc, int *numLoc);
+    AssignType() : lhs(0),rhs(0)
+    {}
 };
 struct ExpType : public HlTypeSupport
 {
@@ -120,6 +122,7 @@ public:
         exp.v=e;
     }
     COND_EXPR * expr() { return exp.v;}
+    const COND_EXPR * const expr() const  { return exp.v;}
     void set(hlIcode i,COND_EXPR *e)
     {
         if(i!=HLI_RET)
@@ -337,7 +340,7 @@ public:
     void setRegDU(eReg regi, operDu du_in);
     void invalidate();
     void newCallHl();
-    void writeDU(int idx);
+    void writeDU();
     condId idType(opLoc sd);
     // HLL setting functions
     // set this icode to be an assign

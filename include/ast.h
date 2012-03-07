@@ -87,10 +87,10 @@ public:
     static bool         insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR **tree, int longIdx);
     static bool         insertSubTreeReg(COND_EXPR *&tree, COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
 public:
-    virtual COND_EXPR *clone();
+    virtual COND_EXPR *clone() const;
     void release();
     void changeBoolOp(condOp newOp);
-    COND_EXPR(COND_EXPR &other)
+    COND_EXPR(const COND_EXPR &other)
     {
         type=other.type;
         expr=other.expr;
@@ -104,7 +104,7 @@ public:
     }
     virtual ~COND_EXPR() {}
 public:
-    virtual COND_EXPR *inverse(); // return new COND_EXPR that is invarse of this
+    virtual COND_EXPR *inverse() const; // return new COND_EXPR that is invarse of this
     virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
     virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
     virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);

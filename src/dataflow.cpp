@@ -116,7 +116,7 @@ void Function::elimCondCodes ()
     boolT notSup;       /* Use/def combination not supported      */
     COND_EXPR *rhs;     /* Source operand                         */
     COND_EXPR *lhs;     /* Destination operand                    */
-    COND_EXPR *exp;     /* Boolean expression                     */
+    COND_EXPR *_expr;   /* Boolean expression                     */
     BB * pBB;           /* Pointer to BBs in dfs last ordering    */
     riICODE useAt;      /* Instruction that used flag    */
     riICODE defAt;      /* Instruction that defined flag */
@@ -128,25 +128,27 @@ void Function::elimCondCodes ()
         //        auto v(pBB | boost::adaptors::reversed);
         //        for (const ICODE &useAt : v)
         //        {}
-        for (useAt = pBB->rbegin2(); useAt != pBB->rend2(); useAt++)
+        assert(distance(pBB->rbegin(),pBB->rend())==pBB->size());
+        for (useAt = pBB->rbegin(); useAt != pBB->rend(); useAt++)
         {
             llIcode useAtOp = useAt->ll()->getOpcode();
-            if ((useAt->type == LOW_LEVEL) && (useAt->valid()) && (use = useAt->ll()->flagDU.u))
+            use = useAt->ll()->flagDU.u;
+            if ((useAt->type != LOW_LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
+                continue;
+            /* Find definition within the same basic block */
+            defAt=useAt;
+            ++defAt;
+            for (; defAt != pBB->rend(); defAt++)
             {
-                /* Find definition within the same basic block */
-                defAt=useAt;
-                ++defAt;
-                for (; defAt != pBB->rend2(); defAt++)
+                def = defAt->ll()->flagDU.d;
+                if ((use & def) != use)
+                    continue;
+                notSup = false;
+                if ((useAtOp >= iJB) && (useAtOp <= iJNS))
                 {
-                    def = defAt->ll()->flagDU.d;
-                    if ((use & def) != use)
-                        continue;
-                    notSup = FALSE;
-                    if ((useAtOp >= iJB) && (useAtOp <= iJNS))
+                    iICODE befDefAt = (++riICODE(defAt)).base();
+                    switch (defAt->ll()->getOpcode())
                     {
-                        iICODE befDefAt = (++riICODE(defAt)).base();
-                        switch (defAt->ll()->getOpcode())
-                        {
                         case iCMP:
                             rhs = srcIdent (*defAt->ll(), this, befDefAt,*useAt, eUSE);
                             lhs = dstIdent (*defAt->ll(), this, befDefAt,*useAt, eUSE);
@@ -172,57 +174,58 @@ void Function::elimCondCodes ()
                             break;
 
                         default:
-                            notSup = TRUE;
+                            notSup = true;
                             std::cout << hex<<defAt->loc_ip;
                             reportError (JX_NOT_DEF, defAt->ll()->getOpcode());
                             flg |= PROC_ASM;		/* generate asm */
-                        }
-                        if (! notSup)
-                        {
-                            exp = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAtOp-iJB]);
-                            useAt->setJCond(exp);
-                        }
                     }
-
-                    else if (useAtOp == iJCXZ)
+                    if (! notSup)
                     {
-                        lhs = COND_EXPR::idReg (rCX, 0, &localId);
-                        useAt->setRegDU (rCX, eUSE);
-                        rhs = COND_EXPR::idKte (0, 2);
-                        exp = COND_EXPR::boolOp (lhs, rhs, EQUAL);
-                        useAt->setJCond(exp);
+                        assert(lhs);
+                        assert(rhs);
+                        _expr = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAtOp-iJB]);
+                        useAt->setJCond(_expr);
                     }
-                    //                    else if (useAt->getOpcode() == iRCL)
-                    //                    {
-                    //                    }
-                    else
-                    {
-                        ICODE &a(*defAt);
-                        ICODE &b(*useAt);
-                        reportError (NOT_DEF_USE,a.ll()->getOpcode(),b.ll()->getOpcode());
-                        flg |= PROC_ASM;		/* generate asm */
-                    }
-                    break;
                 }
 
-                /* Check for extended basic block */
-                if ((pBB->size() == 1) &&(useAtOp >= iJB) && (useAtOp <= iJNS))
+                else if (useAtOp == iJCXZ)
                 {
-                    ICODE & prev(pBB->back()); /* For extended basic blocks - previous icode inst */
-                    if (prev.hl()->opcode == HLI_JCOND)
-                    {
-                        exp = prev.hl()->expr()->clone();
-                        exp->changeBoolOp (condOpJCond[useAtOp-iJB]);
-                        useAt->copyDU(prev, eUSE, eUSE);
-                        useAt->setJCond(exp);
-                    }
+                    lhs = COND_EXPR::idReg (rCX, 0, &localId);
+                    useAt->setRegDU (rCX, eUSE);
+                    rhs = COND_EXPR::idKte (0, 2);
+                    _expr = COND_EXPR::boolOp (lhs, rhs, EQUAL);
+                    useAt->setJCond(_expr);
                 }
-                /* Error - definition not found for use of a cond code */
-                else if (defAt == pBB->rend2())
+                //                    else if (useAt->getOpcode() == iRCL)
+                //                    {
+                //                    }
+                else
                 {
-                    reportError(DEF_NOT_FOUND,useAtOp);
-                    //fatalError (DEF_NOT_FOUND, Icode.getOpcode(useAt-1));
+                    ICODE &a(*defAt);
+                    ICODE &b(*useAt);
+                    reportError (NOT_DEF_USE,a.ll()->getOpcode(),b.ll()->getOpcode());
+                    flg |= PROC_ASM;		/* generate asm */
                 }
+                break;
+            }
+
+            /* Check for extended basic block */
+            if ((pBB->size() == 1) &&(useAtOp >= iJB) && (useAtOp <= iJNS))
+            {
+                ICODE & _prev(pBB->back()); /* For extended basic blocks - previous icode inst */
+                if (_prev.hl()->opcode == HLI_JCOND)
+                {
+                    _expr = _prev.hl()->expr()->clone();
+                    _expr->changeBoolOp (condOpJCond[useAtOp-iJB]);
+                    useAt->copyDU(_prev, eUSE, eUSE);
+                    useAt->setJCond(_expr);
+                }
+            }
+            /* Error - definition not found for use of a cond code */
+            else if (defAt == pBB->rend())
+            {
+                reportError(DEF_NOT_FOUND,useAtOp);
+                //fatalError (DEF_NOT_FOUND, Icode.getOpcode(useAt-1));
             }
         }
     }
@@ -248,7 +251,7 @@ void Function::genLiveKtes ()
         pbb = m_dfsLast[i];
         if (pbb->flg & INVALID_BB)
             continue;	// skip invalid BBs
-        for (auto j = pbb->begin2(); j != pbb->end2(); j++)
+        for (auto j = pbb->begin(); j != pbb->end(); j++)
         {
             if ((j->type == HIGH_LEVEL) && (j->invalid == FALSE))
             {
@@ -267,7 +270,6 @@ void Function::genLiveKtes ()
  * Propagates register usage information to the procedure call. */
 void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
 {
-    int i, j;
     BB * pbb=0;              /* pointer to current basic block   */
     Function * pcallee;        /* invoked subroutine               */
     //ICODE  *ticode        /* icode that invokes a subroutine  */
@@ -306,11 +308,11 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                 /* Get return expression of function */
                 if (flg & PROC_IS_FUNC)
                 {
-                    auto picode = pbb->rbegin2(); /* icode of function return */
+                    auto picode = pbb->rbegin(); /* icode of function return */
                     if (picode->hl()->opcode == HLI_RET)
                     {
                         //pbb->back().loc_ip
-                        picode->hl()->expr(COND_EXPR::idID (&retVal, &localId, (++pbb->rbegin2()).base()));
+                        picode->hl()->expr(COND_EXPR::idID (&retVal, &localId, (++pbb->rbegin()).base()));
                         picode->du.use = in_liveOut;
                     }
                 }
@@ -362,7 +364,8 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                             ticode.du1.numRegsDef = 1;
                             break;
                         default:
-                            fprintf(stderr,"Function::liveRegAnalysis : Unknown return type %d\n",pcallee->retVal.type);
+                            ticode.du1.numRegsDef = 0;
+                            fprintf(stderr,"Function::liveRegAnalysis : Unknown return type %d, assume 0\n",pcallee->retVal.type);
                         } /*eos*/
 
                         /* Propagate def/use results to calling icode */
@@ -411,8 +414,8 @@ void BB::genDU1()
      * Note that register variables should not be considered registers.
      */
     assert(0!=Parent);
-    lastInst = this->end2();
-    for (picode = this->begin2(); picode != lastInst; picode++)
+    lastInst = this->end();
+    for (picode = this->begin(); picode != lastInst; picode++)
     {
         if (picode->type != HIGH_LEVEL)
             continue;
@@ -470,7 +473,7 @@ void BB::genDU1()
                     (picode->hl()->call.proc->flg & PROC_IS_FUNC))
             {
                 tbb = this->edges[0].BBptr;
-                for (ticode = tbb->begin2(); ticode != tbb->end2(); ticode++)
+                for (ticode = tbb->begin(); ticode != tbb->end(); ticode++)
                 {
                     if (ticode->type != HIGH_LEVEL)
                         continue;
@@ -511,7 +514,7 @@ void BB::genDU1()
 
                     /* Backpatch any uses of this instruction, within
                      * the same BB, if the instruction was invalidated */
-                    for (auto ticode = riICODE(picode); ticode != this->rend2(); ticode++)
+                    for (auto ticode = riICODE(picode); ticode != this->rend(); ticode++)
                     {
                         ticode->du1.remove(0,picode);
                     }
@@ -835,9 +838,9 @@ void Function::findExps()
         pbb = m_dfsLast[i];
         if (pbb->flg & INVALID_BB)
             continue;
-        lastInst = pbb->end2();
+        lastInst = pbb->end();
         numHlIcodes = 0;
-        for (picode = pbb->begin2(); picode != lastInst; picode++)
+        for (picode = pbb->begin(); picode != lastInst; picode++)
         {
             if ((picode->type == HIGH_LEVEL) && (picode->invalid == FALSE))
             {
@@ -918,7 +921,7 @@ void Function::findExps()
                                 res = COND_EXPR::insertSubTreeReg (ti_hl->asgn.rhs,exp, retVal->id.regi, &localId);
                                 if (! res)
                                     COND_EXPR::insertSubTreeReg (ti_hl->asgn.lhs, exp,retVal->id.regi, &localId);
-                                /*** TODO: HERE missing: 2 regs ****/
+                                //TODO: HERE missing: 2 regs
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
@@ -1131,7 +1134,7 @@ void Function::dataFlow(std::bitset<32> &liveOut)
     }
 
     /* Data flow analysis */
-    liveAnal = TRUE;
+    liveAnal = true;
     elimCondCodes();
     genLiveKtes();
     liveRegAnalysis (liveOut);   /* calls dataFlow() recursively */

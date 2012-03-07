@@ -167,7 +167,7 @@ hlType	  expType (const COND_EXPR *, Function *);
 
 /* Exported functions from hlicode.c */
 std::string writeCall (Function *, STKFRAME *, Function *, int *);
-char 	*writeJcond (HLTYPE, Function *, int *);
+char 	*writeJcond (const HLTYPE &, Function *, int *);
 char 	*writeJcondInv (HLTYPE, Function *, int *);
 int     power2 (int);
 

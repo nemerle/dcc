@@ -8,11 +8,7 @@
 #include "dcc.h"
 #include <stdio.h>
 #include <string.h>
-#if __BORLAND__
-#include <alloc.h>
-#else
 #include <malloc.h>
-#endif
 
 //typedef struct list {
 //    int         nodeIdx;
@@ -69,7 +65,7 @@ static int commonDom (int currImmDom, int predImmDom, Function * pProc)
 void Function::findImmedDom ()
 {
     BB * currNode;
-    int currIdx, j, predIdx;
+    int currIdx, predIdx;
 
     for (currIdx = 0; currIdx < numBBs; currIdx++)
     {
@@ -525,11 +521,11 @@ void Function::structIfs ()
  * into one block with the appropriate condition */
 void Function::compoundCond()
 {
-    int i, j, k, numOutEdges;
-    BB * pbb, * t, * e, * obb,* pred;
+    int i; //j, k, numOutEdges
+    BB * pbb, * t, * e, * obb;//,* pred;
     ICODE * picode, * ticode;
-    COND_EXPR *exp;
-    TYPEADR_TYPE *edges;
+    //COND_EXPR *exp;
+    //TYPEADR_TYPE *edges;
     boolT change;
 
     change = TRUE;

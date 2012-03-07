@@ -20,12 +20,23 @@ BB *BB::Create(int start, int ip, uint8_t nodeType, int numOutEdges, Function *p
 
     pnewBB = new BB;
     pnewBB->nodeType = nodeType;	/* Initialise */
-    pnewBB->start = start;
-    pnewBB->length = ip - start + 1;
     pnewBB->immedDom = NO_DOM;
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
             pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
+    pnewBB->range_start = parent->Icode.begin();
+    pnewBB->range_end = parent->Icode.begin();
+    if(start!=-1)
+    {
+        advance(pnewBB->range_start,start);
+        advance(pnewBB->range_end,ip+1);
+    }
+    else
+    {
+        pnewBB->range_end = parent->Icode.end();
+        pnewBB->range_end = parent->Icode.end();
+    }
 
+    //    pnewBB->range_start = parent->Icode.begin();
     if (numOutEdges)
         pnewBB->edges.resize(numOutEdges);
 
@@ -55,10 +66,10 @@ static const char *const s_loopType[] = {"noLoop", "while", "repeat", "loop", "f
 void BB::display()
 {
     printf("\nnode type = %s, ", s_nodeType[nodeType]);
-    printf("start = %ld, length = %ld, #out edges = %ld\n", start, length, edges.size());
+    printf("start = %ld, length = %ld, #out edges = %ld\n", begin()->loc_ip, size(), edges.size());
 
     for (int i = 0; i < edges.size(); i++)
-        printf(" outEdge[%2d] = %ld\n",i, edges[i].BBptr->start);
+        printf(" outEdge[%2d] = %ld\n",i, edges[i].BBptr->begin()->loc_ip);
 }
 /*****************************************************************************
  * displayDfs - Displays the CFG using a depth first traversal
@@ -71,7 +82,7 @@ void BB::displayDfs()
 
     printf("node type = %s, ", s_nodeType[nodeType]);
     printf("start = %ld, length = %ld, #in-edges = %ld, #out-edges = %ld\n",
-           start, length, inEdges.size(), edges.size());
+           begin()->loc_ip, size(), inEdges.size(), edges.size());
     printf("dfsFirst = %ld, dfsLast = %ld, immed dom = %ld\n",
            dfsFirstNum, dfsLastNum,
            immedDom == MAX ? -1 : immedDom);
@@ -88,16 +99,33 @@ void BB::displayDfs()
     if (nodeType == INTERVAL_NODE)
         printf("corresponding interval = %ld\n", correspInt->numInt);
     else
-        for (i = 0; i < inEdges.size(); i++)
-        printf ("  inEdge[%ld] = %ld\n", i, inEdges[i]->begin());
+    {
+#ifdef _lint
+        for(auto iter=inEdges.begin(); iter!=inEdges.end(); ++iter)
+        {
+            BB *node(*iter);
+#else
+        for(BB *node : inEdges)
+        {
+#endif
+            printf ("  inEdge[%ld] = %ld\n", i, node->begin()->loc_ip);
+        }
+    }
 
     /* Display out edges information */
-    for (i = 0; i < edges.size(); i++)
+#ifdef _lint
+    for(auto iter=edges.begin(); iter!=edges.end(); ++iter)
+    {
+        TYPEADR_TYPE &edg(*iter);
+#else
+    for(TYPEADR_TYPE &edg : edges)
+    {
+#endif
         if (nodeType == INTERVAL_NODE)
-            printf(" outEdge[%ld] = %ld\n", i,
-                   edges[i].BBptr->correspInt->numInt);
+            printf(" outEdge[%ld] = %ld\n", i, edg.BBptr->correspInt->numInt);
         else
-            printf(" outEdge[%d] = %ld\n", i, edges[i].BBptr->begin());
+            printf(" outEdge[%d] = %ld\n", i, edg.BBptr->begin()->loc_ip);
+    }
     printf("----\n");
 
     /* Recursive call on successors of current node */
@@ -344,71 +372,62 @@ void BB::writeBB(int lev, Function * pProc, int *numLoc)
     //for (i = start, last = i + length; i < last; i++)
 
     /* Generate code for each hlicode that is not a HLI_JCOND */
-    int idx=start;
-    for(iICODE hli=begin2(); hli!=end2(); ++hli)
+    //for();
+#ifdef _lint
+    for(iICODE hli=begin(); hli!=end(); ++hli)
     {
-        if ((hli->type == HIGH_LEVEL) && (hli->invalid == FALSE))
+        ICODE &pHli(*hli);
+#else
+    for(ICODE &pHli : *this)
+    {
+#endif
+        if ((pHli.type == HIGH_LEVEL) && ( pHli.valid() )) //TODO: use filtering range here.
         {
-            std::string line = hli->hl()->write1HlIcode(pProc, numLoc);
+            std::string line = pHli.hl()->write1HlIcode(pProc, numLoc);
             if (!line.empty())
             {
                 cCode.appendCode( "%s%s", indent(lev), line.c_str());
                 stats.numHLIcode++;
             }
             if (option.verbose)
-                hli->writeDU(idx);
+                pHli.writeDU();
         }
-        idx++;
     }
 }
-int BB::begin()
+//int BB::beginIdx()
+//{
+//    return start;
+//}
+
+iICODE BB::begin()
 {
-    return start;
+    return range_start;
 }
 
-iICODE BB::begin2()
+iICODE BB::end()
 {
-    iICODE result(Parent->Icode.begin());
-    advance(result,start);
-    return result;
-}
-
-iICODE BB::end2()
-{
-    iICODE result(Parent->Icode.begin());
-    advance(result,start+length);
-    return result;
-}
-int BB::rbegin()
-{
-    return start+length-1;
-}
-int BB::end()
-{
-    return start+length;
+    return range_end;
 }
 ICODE &BB::back()
 {
-    return *rbegin2();
+    return *rbegin();
 }
 
 size_t BB::size()
 {
-    return length;
+    return distance(range_start,range_end);
 }
 
 ICODE &BB::front()
 {
-    return *begin2();
+    return *begin();
 }
 
-riICODE BB::rbegin2()
+riICODE BB::rbegin()
 {
-    riICODE res(end2());
-    assert(res->loc_ip==rbegin());
-    return res;
+    return riICODE(end());
 }
-riICODE BB::rend2()
+riICODE BB::rend()
 {
-    return riICODE(begin2());
+    return riICODE(begin());
 }

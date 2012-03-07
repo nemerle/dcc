@@ -132,12 +132,17 @@ bool Idiom4::match(iICODE pIcode)
     if (pIcode->ll()->testFlags(I) )
     {
         m_param_count = (int16_t)pIcode->ll()->src.op();
+        return true;
     }
+    return false;
 }
 int Idiom4::action()
 {
-    for(size_t idx=0; idx<m_icodes.size()-1; ++idx) // don't invalidate last entry
-        m_icodes[idx]->invalidate();
+    if( ! m_icodes.empty()) // if not an empty RET[F] N
+    {
+        for(size_t idx=0; idx<m_icodes.size()-1; ++idx) // invalidate all but the RET
+            m_icodes[idx]->invalidate();
+    }
     if(m_param_count)
     {
         m_func->cbParam = (int16_t)m_param_count;

@@ -37,7 +37,7 @@ static bool isLong23 (iICODE iter, BB * pbb, iICODE &off, int *arc)
         obb2 = t->edges[THEN].BBptr;
         if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) && (obb2->front().ll()->getOpcode() == iCMP))
         {
-            off = obb2->begin2();//std::distance(iter,obb2->begin2());
+            off = obb2->begin();//std::distance(iter,obb2->begin2());
             *arc = THEN;
             return true;
         }
@@ -49,7 +49,7 @@ static bool isLong23 (iICODE iter, BB * pbb, iICODE &off, int *arc)
         obb2 = e->edges[THEN].BBptr;
         if ((obb2->size() == 2) && (obb2->nodeType == TWO_BRANCH) &&  (obb2->front().ll()->getOpcode() == iCMP))
         {
-            off = obb2->begin2();//std::distance(iter,obb2->begin2());//obb2->front().loc_ip - i;
+            off = obb2->begin();//std::distance(iter,obb2->begin2());//obb2->front().loc_ip - i;
             *arc = ELSE;
             return true;
         }
@@ -155,7 +155,7 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
     pIcode->invalidate();
     obb1->front().invalidate();
     // invalidate 2 first instructions of BB 2
-    iICODE ibb2 = obb2->begin2();
+    iICODE ibb2 = obb2->begin();
     (ibb2++)->invalidate();
     (ibb2++)->invalidate();
     return skipped_insn;

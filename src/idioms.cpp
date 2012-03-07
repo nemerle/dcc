@@ -95,7 +95,7 @@ void Function::findIdioms()
         case iPUSH:
         {
             /* Idiom 1 */
-            // todo add other push idioms.
+            //TODO: add other push idioms.
             advance(pIcode,i01(pIcode));
             break;
         }

@@ -309,7 +309,7 @@ void Function::codeGen (std::ostream &fs)
             pBB = m_dfsLast[i];
             if (pBB->flg & INVALID_BB)	continue;	/* skip invalid BBs */
             printf ("BB %d\n", i);
-            printf ("  Start = %d, end = %d\n", pBB->begin(), pBB->end());
+            printf ("  Start = %d, end = %d\n", pBB->begin()->loc_ip, pBB->begin()->loc_ip+pBB->size());
             printf ("  LiveUse = ");
             writeBitVector (pBB->liveUse);
             printf ("\n  Def = ");

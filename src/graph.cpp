@@ -152,7 +152,7 @@ CondJumps:
                 return ;
             }
             auto iter2=std::find_if(heldBBs.begin(),heldBBs.end(),
-                         [ip](BB *psBB)->bool {return psBB->begin()==ip;});
+                         [ip](BB *psBB)->bool {return psBB->begin()->loc_ip==ip;});
             if(iter2==heldBBs.end())
                 fatalError(NO_BB, ip, name.c_str());
             psBB = *iter2;
@@ -223,23 +223,33 @@ void Function::compressCFG()
 
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
+#ifdef _lint
     auto iter=m_cfg.begin();
     for (;iter!=m_cfg.end(); ++iter)
     {
-        pBB = *iter;
+        BB *pBB(*iter);
+#else
+    for (BB *pBB : m_cfg)
+    {
+#endif
         if(pBB->inEdges.empty() || (pBB->nodeType != ONE_BRANCH && pBB->nodeType != TWO_BRANCH))
             continue;
-        for (i = 0; i < pBB->edges.size(); i++)
+#ifdef _lint
+        for (auto iter2=pBB->edges().begin(); iter2!=pBB->edges().end(); ++iter2)
         {
-            ip   = pBB->rbegin();
-            pNxt = pBB->edges[i].BBptr->rmJMP(ip, pBB->edges[i].BBptr);
+            TYPEADR_TYPE &edgeRef(*iter);
+#else
+        for (TYPEADR_TYPE &edgeRef : pBB->edges)
+        {
+#endif
+            ip   = pBB->rbegin()->loc_ip;
+            pNxt = edgeRef.BBptr->rmJMP(ip, edgeRef.BBptr);
 
             if (not pBB->edges.empty())   /* Might have been clobbered */
             {
-                pBB->edges[i].BBptr = pNxt;
+                edgeRef.BBptr = pNxt;
                 assert(pBB->back().loc_ip==ip);
-                pBB->back().ll()->SetImmediateOp((uint32_t)pNxt->begin());
-                //Icode[ip].SetImmediateOp((uint32_t)pNxt->begin());
+                pBB->back().ll()->SetImmediateOp((uint32_t)pNxt->begin()->loc_ip);
             }
         }
     }
@@ -353,15 +363,15 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             assert(Parent==pChild->Parent);
             if(back().loc_ip>pChild->front().loc_ip) // back edege
                 break;
-            auto iter=std::find_if(this->end2(),pChild->begin2(),[](ICODE &c)
+            auto iter=std::find_if(this->end(),pChild->begin(),[](ICODE &c)
                 {return not c.ll()->testFlags(NO_CODE);});
 
-            if (iter != pChild->begin2())
+            if (iter != pChild->begin())
                 break;
             back().ll()->setFlags(NO_CODE);
             back().invalidate();
             nodeType = FALL_NODE;
-            length--;
+            range_end--;
 
         }
         /* If there's no other edges into child can merge */
@@ -369,7 +379,7 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             break;
 
         nodeType = pChild->nodeType;
-        length = (pChild->start - start) + pChild->length ;
+        range_end = pChild->range_end;
         pChild->front().ll()->clrFlags(TARGET);
         edges.swap(pChild->edges);
 

@@ -35,6 +35,7 @@ static BB *firstOfQueue (queue &Q)
 
 /* Appends pointer to node at the end of the queue Q if node is not present
  * in this queue.  Returns the queue node just appended.        */
+//lint -sem(appendQueue,custodial(1))
 queue::iterator appendQueue (queue &Q, BB *node)
 {
     auto iter=std::find(Q.begin(),Q.end(),node);
@@ -173,19 +174,21 @@ void derSeq_Entry::findIntervals (Function *c)
 /* Displays the intervals of the graph Gi.              */
 static void displayIntervals (interval *pI)
 {
-    queue::iterator nodePtr;
-
     while (pI)
     {
-        nodePtr = pI->nodes.begin();
         printf ("  Interval #: %ld\t#OutEdges: %ld\n", pI->numInt, pI->numOutEdges);
-        while (nodePtr!=pI->nodes.end())
+#ifdef _lint
+        for(auto iter=pI->nodes.begin(); iter!=pI->nodes.end(); ++iter)
         {
-            if ((*nodePtr)->correspInt == NULL)    /* real BBs */
-                printf ("    Node: %ld\n", (*nodePtr)->begin());
+            BB *node(*iter);
+#else
+        for(BB *node : pI->nodes)
+        {
+#endif
+            if (node->correspInt == NULL)    /* real BBs */
+                printf ("    Node: %ld\n", node->begin()->loc_ip);
             else             // BBs represent intervals
-                printf ("   Node (corresp int): %d\n", (*nodePtr)->correspInt->numInt);
-            ++nodePtr;
+                printf ("   Node (corresp int): %d\n", node->correspInt->numInt);
         }
         pI = pI->next;
     }

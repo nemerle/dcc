@@ -27,7 +27,7 @@ struct BB : public llvm::ilist_node<BB>
 {
 private:
     BB(const BB&);
-    BB() : start(0),length(0),nodeType(0),traversed(0),
+    BB() : nodeType(0),traversed(0),
         numHlIcodes(0),flg(0),
         inEdges(0),
         edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
@@ -38,19 +38,13 @@ private:
 
     }
     //friend class SymbolTableListTraits<BB, Function>;
-    //int             numInEdges;     /* Number of in edges           */
-    int             start;          /* First instruction offset     */
-    int             length;         /* No. of instructions this BB  */
-
+    iICODE  range_start;
+    iICODE  range_end;
 public:
-    int    begin();
-    iICODE begin2();
-    iICODE end2();
-    int	   end();
-    int    rbegin();
-    int    rend();
-    riICODE rbegin2();
-    riICODE rend2();
+    iICODE begin();
+    iICODE end();
+    riICODE rbegin();
+    riICODE rend();
     ICODE &front();
     ICODE &back();
     size_t size();

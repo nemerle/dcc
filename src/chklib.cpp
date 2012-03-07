@@ -48,7 +48,7 @@ int numKeys;            				/* Number of hash table entries (keys) */
 int numVert;            				/* Number of vertices in the graph (also size of g[]) */
 unsigned PatLen;        				/* Size of the keys (pattern length) */
 unsigned SymLen;        				/* Max size of the symbols, including null */
-FILE *f;                				/* File being read */
+static FILE *g_file;                				/* File being read */
 static  char sSigName[100]; 			/* Full path name of .sig file */
 
 static  uint16_t    *T1base, *T2base;       /* Pointers to start of T1, T2 */
@@ -61,9 +61,9 @@ static  int     numArg;                 /* Number of param names actually stored
 #define DCCLIBS "dcclibs.dat"           /* Name of the prototypes data file */
 
 /* prototypes */
-void grab(int n, FILE *f);
-uint16_t readFileShort(FILE *f);
-void readFileSection(uint16_t* p, int len, FILE *f);
+void grab(int n, FILE *_file);
+uint16_t readFileShort(FILE *g_file);
+void readFileSection(uint16_t* p, int len, FILE *g_file);
 void cleanup(void);
 void checkStartup(STATE *state);
 void readProtoFile(void);
@@ -231,9 +231,9 @@ static uint8_t pattMainMedium[] =
     0xFF, 0x36, WILD, WILD,                 /* Push argv */
     0xFF, 0x36, WILD, WILD,                 /* Push argc */
     0x9A, WILD, WILD, WILD, WILD            /* call far _main */
-    /*  0x50                                    /* push ax */
-    /*  0x0E,                                   /* push cs NB not tested Borland */
-    /*  0xE8                                    /* call _exit */
+    /*  0x50                                /* push ax */
+    /*  0x0E,                               /* push cs NB not tested Borland */
+    /*  0xE8                                /* call _exit */
 };
 /* Num bytes from start pattern to the relative offset of main() */
 #define OFFMAINMEDIUM 13
@@ -300,7 +300,7 @@ void SetupLibCheck(void)
     uint16_t w, len;
     int i;
 
-    if ((f = fopen(sSigName, "rb")) == NULL)
+    if ((g_file = fopen(sSigName, "rb")) == NULL)
     {
         printf("Warning: cannot open signature file %s\n", sSigName);
         return;
@@ -311,16 +311,16 @@ void SetupLibCheck(void)
 
     prog.bSigs = FALSE;			/* False unless everything goes right */
     /* Read the parameters */
-    grab(4, f);
+    grab(4, g_file);
     if (memcmp("dccs", buf, 4) != 0)
     {
         printf("Not a dcc signature file!\n");
         exit(3);
     }
-    numKeys = readFileShort(f);
-    numVert = readFileShort(f);
-    PatLen = readFileShort(f);
-    SymLen = readFileShort(f);
+    numKeys = readFileShort(g_file);
+    numVert = readFileShort(g_file);
+    PatLen = readFileShort(g_file);
+    SymLen = readFileShort(g_file);
     if ((PatLen != PATLEN) || (SymLen != SYMLEN))
     {
         printf("Sorry! Compiled for sym and pattern lengths of %d and %d\n",
@@ -342,50 +342,50 @@ void SetupLibCheck(void)
     g       = g_pattern_hasher.readG();
 
     /* Read T1 and T2 tables */
-    grab(2, f);
+    grab(2, g_file);
     if (memcmp("T1", buf, 2) != 0)
     {
         printf("Expected 'T1'\n");
         exit(3);
     }
     len = (uint16_t) (PatLen * 256 * sizeof(uint16_t));
-    w = readFileShort(f);
+    w = readFileShort(g_file);
     if (w != len)
     {
         printf("Problem with size of T1: file %d, calc %d\n", w, len);
         exit(4);
     }
-    readFileSection(T1base, len, f);
+    readFileSection(T1base, len, g_file);
 
-    grab(2, f);
+    grab(2, g_file);
     if (memcmp("T2", buf, 2) != 0)
     {
         printf("Expected 'T2'\n");
         exit(3);
     }
-    w = readFileShort(f);
+    w = readFileShort(g_file);
     if (w != len)
     {
         printf("Problem with size of T2: file %d, calc %d\n", w, len);
         exit(4);
     }
-    readFileSection(T2base, len, f);
+    readFileSection(T2base, len, g_file);
 
     /* Now read the function g[] */
-    grab(2, f);
+    grab(2, g_file);
     if (memcmp("gg", buf, 2) != 0)
     {
         printf("Expected 'gg'\n");
         exit(3);
     }
     len = (uint16_t)(numVert * sizeof(uint16_t));
-    w = readFileShort(f);
+    w = readFileShort(g_file);
     if (w != len)
     {
         printf("Problem with size of g[]: file %d, calc %d\n", w, len);
         exit(4);
     }
-    readFileSection(g, len, f);
+    readFileSection(g, len, g_file);
 
 
     /* This is now the hash table */
@@ -396,13 +396,13 @@ void SetupLibCheck(void)
         printf("Could not allocate hash table\n");
         exit(1);
     }
-    grab(2, f);
+    grab(2, g_file);
     if (memcmp("ht", buf, 2) != 0)
     {
         printf("Expected 'ht'\n");
         exit(3);
     }
-    w = readFileShort(f);
+    w = readFileShort(g_file);
     if (w != numKeys * (SymLen + PatLen + sizeof(uint16_t)))
     {
         printf("Problem with size of hash table: file %d, calc %d\n", w, len);
@@ -412,13 +412,13 @@ void SetupLibCheck(void)
 
     for (i=0; i < numKeys; i++)
     {
-        if (fread(&ht[i], 1, SymLen + PatLen, f) != SymLen + PatLen)
+        if (fread(&ht[i], 1, SymLen + PatLen, g_file) != SymLen + PatLen)
         {
             printf("Could not read signature\n");
             exit(11);
         }
     }
-    fclose(f);
+    fclose(g_file);
     prog.bSigs = TRUE;
 }
 
@@ -528,9 +528,9 @@ bool LibCheck(Function & pProc)
 
 
 
-void grab(int n, FILE *f)
+void grab(int n, FILE *_file)
 {
-    if (fread(buf, 1, n, f) != (unsigned)n)
+    if (fread(buf, 1, n, _file) != (unsigned)n)
     {
         printf("Could not grab\n");
         exit(11);
@@ -981,37 +981,5 @@ searchPList(char *name)
         return NIL;
     }
 }
-
-#if DEBUG_HEAP
-void
-checkHeap(char *msg)
-
-/* HEAPCHK.C: This program checks the heap for
- * consistency and prints an appropriate message.
- */
-{
-    int  heapstatus;
-
-    printf("%s\n", msg);
-
-    /* Check heap status */
-    heapstatus = _heapchk();
-    switch( heapstatus )
-    {
-        case _HEAPOK:
-            printf(" OK - heap is fine\n" );
-            break;
-        case _HEAPEMPTY:
-            printf(" OK - heap is empty\n" );
-            break;
-        case _HEAPBADBEGIN:
-            printf( "ERROR - bad start of heap\n" );
-            break;
-        case _HEAPBADNODE:
-            printf( "ERROR - bad node in heap\n" );
-            break;
-    }
-}
-#endif
 
 
