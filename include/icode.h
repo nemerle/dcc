@@ -145,6 +145,7 @@ public:
         opcode=l.opcode;
         asgn=l.asgn;
         call=l.call;
+        return *this;
     }
 public:
     std::string write1HlIcode(Function *pProc, int *numLoc);
@@ -153,9 +154,9 @@ public:
 /* LOW_LEVEL icode operand record */
 struct LLOperand //: public llvm::MCOperand
 {
-    uint8_t     seg;               /* CS, DS, ES, SS                       */
+    eReg     seg;               /* CS, DS, ES, SS                       */
     int16_t    segValue;          /* Value of segment seg during analysis */
-    uint8_t     segOver;           /* CS, DS, ES, SS if segment override   */
+    eReg     segOver;           /* CS, DS, ES, SS if segment override   */
     eReg       regi;              /* 0 < regs < INDEXBASE <= index modes  */
     int16_t    off;               /* memory address offset                */
     uint32_t   opz;             /*   idx of immed src op        */
@@ -333,7 +334,7 @@ public:
     void                hl(const HLTYPE &v) { m_hl=v;}
     int loc_ip; // used by CICodeRec to number ICODEs
 
-    void setRegDU(uint8_t regi, operDu du_in);
+    void setRegDU(eReg regi, operDu du_in);
     void invalidate();
     void newCallHl();
     void writeDU(int idx);
@@ -372,11 +373,3 @@ public:
     iterator    labelSrch(uint32_t target);
     ICODE *	GetIcode(int ip);
 };
-constexpr eReg subRegH(eReg reg)
-{
-    return eReg((int)reg + (int)rAH-(int)rAX);
-}
-constexpr eReg subRegL(eReg reg)
-{
-    return eReg((int)reg + (int)rAL-(int)rAX);
-}

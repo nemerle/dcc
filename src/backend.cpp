@@ -9,6 +9,7 @@
 
 #include "dcc.h"
 #include <fstream>
+#include <sstream>
 #include <string.h>
 #include <stdio.h>
 
@@ -108,9 +109,9 @@ static void printGlobVar (SYM * psym)
 {
     int j;
     uint32_t relocOp = prog.fCOM ? psym->label : psym->label + 0x100;
-    char *strContents;		/* initial contents of variable */
 
-    switch (psym->size) {
+    switch (psym->size)
+    {
         case 1: cCode.appendDecl( "uint8_t\t%s = %ld;\n",
                                   psym->name, prog.Image[relocOp]);
             break;
@@ -128,13 +129,12 @@ static void printGlobVar (SYM * psym)
                             prog.Image[relocOp+3]);
             break;
         default:
-            strContents = (char *)malloc((psym->size*2+1) *sizeof(char));
-            strContents[0] = '\0';
+        {
+            ostringstream strContents;
             for (j=0; j < psym->size; j++)
-                strcat (strContents, cChar(prog.Image[relocOp + j]));
-            cCode.appendDecl( "char\t*%s = \"%s\";\n",
-                              psym->name, strContents);
-            free(strContents);
+                strContents << cChar(prog.Image[relocOp + j]);
+            cCode.appendDecl( "char\t*%s = \"%s\";\n", psym->name, strContents.str().c_str());
+        }
     }
 }
 
@@ -178,7 +178,7 @@ static void writeGlobSymTable()
 
 /* Writes the header information and global variables to the output C file
  * fp. */
-static void writeHeader (std::ostream &ios, char *fileName)
+static void writeHeader (std::ostream &_ios, char *fileName)
 {
     /* Write header information */
     newBundle (&cCode);
@@ -189,33 +189,22 @@ static void writeHeader (std::ostream &ios, char *fileName)
 
     /* Write global symbol table */
     /** writeGlobSymTable(); *** need to change them into locident fmt ***/
-    writeBundle (ios, cCode);
+    writeBundle (_ios, cCode);
     freeBundle (&cCode);
 }
 
 
 /* Writes the registers that are set in the bitvector */
-static void writeBitVector (uint32_t regi)
+static void writeBitVector (const std::bitset<32> &regi)
 {
     int j;
 
-    for (j = 0; j < INDEXBASE; j++)
-    {
-        if ((regi & power2(j)) != 0)
-            printf ("%s ", allRegs[j]);
-    }
-}
-static void writeBitVector (const std::bitset<32> &regi)
-{ int j;
-
-    for (j = 0; j < INDEXBASE; j++)
+    for (j = rAX; j < INDEXBASE; j++)
     {
         if (regi.test(j))
-            printf ("%s ", allRegs[j]);
+            printf ("%s ", allRegs[j-1]);
     }
 }
-
-
 
 // Note: Not currently called!
 /* Checks the given icode to determine whether it has a label associated

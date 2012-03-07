@@ -40,7 +40,7 @@ static const char *hexStr (uint16_t i)
 
 
 /* Sets the du record for registers according to the du flag    */
-void ICODE::setRegDU (uint8_t regi, operDu du_in)
+void ICODE::setRegDU (eReg regi, operDu du_in)
 {
     //    printf("%s %d %x\n",__FUNCTION__,regi,int(du_in));
     switch (du_in)
@@ -402,15 +402,19 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
         if ((pm.seg == rDS) && (pm.regi > INDEXBASE + 3)) /* dereference */
         {
             switch (pm.regi) {
-            case INDEXBASE + 4:   newExp = COND_EXPR::idReg(rSI, 0, &pProc->localId);
+            case INDEXBASE + 4:
+                newExp = COND_EXPR::idReg(rSI, 0, &pProc->localId);
                 duIcode.setRegDU( rSI, du);
                 break;
-            case INDEXBASE + 5:   newExp = COND_EXPR::idReg(rDI, 0, &pProc->localId);
+            case INDEXBASE + 5:
+                newExp = COND_EXPR::idReg(rDI, 0, &pProc->localId);
                 duIcode.setRegDU( rDI, du);
                 break;
-            case INDEXBASE + 6:   newExp = COND_EXPR::idReg(rBP, 0, &pProc->localId);
+            case INDEXBASE + 6:
+                newExp = COND_EXPR::idReg(rBP, 0, &pProc->localId);
                 break;
-            case INDEXBASE + 7:   newExp = COND_EXPR::idReg(rBX, 0, &pProc->localId);
+            case INDEXBASE + 7:
+                newExp = COND_EXPR::idReg(rBX, 0, &pProc->localId);
                 duIcode.setRegDU( rBX, du);
                 break;
             default:

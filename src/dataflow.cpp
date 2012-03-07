@@ -909,37 +909,29 @@ void Function::findExps()
 
                         case HLI_CALL:
                             ticode = picode->du1.idx[0].uses.front();
-                            switch (ticode->hl()->opcode) {
+                            HLTYPE *ti_hl(ticode->hl());
+                            retVal = &picode->hl()->call.proc->retVal;
+                            switch (ti_hl->opcode) {
                             case HLI_ASSIGN:
-                                exp = COND_EXPR::idFunc (
-                                            picode->hl()->call.proc,
-                                            picode->hl()->call.args);
-                                res = COND_EXPR::insertSubTreeReg (ticode->hl()->asgn.rhs,
-                                                        exp,
-                                                        picode->hl()->call.proc->retVal.id.regi,
-                                                        &localId);
+                                assert(ti_hl->asgn.rhs);
+                                exp = COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args);
+                                res = COND_EXPR::insertSubTreeReg (ti_hl->asgn.rhs,exp, retVal->id.regi, &localId);
                                 if (! res)
-                                    COND_EXPR::insertSubTreeReg (ticode->hl()->asgn.lhs,
-                                                      exp,
-                                                      picode->hl()->call.proc->retVal.id.regi,
-                                                      &localId);
+                                    COND_EXPR::insertSubTreeReg (ti_hl->asgn.lhs, exp,retVal->id.regi, &localId);
                                 /*** TODO: HERE missing: 2 regs ****/
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
 
                             case HLI_PUSH: case HLI_RET:
-                                ticode->hl()->expr( COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args) );
+                                ti_hl->expr( COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args) );
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
 
                             case HLI_JCOND:
                                 exp = COND_EXPR::idFunc ( picode->hl()->call.proc, picode->hl()->call.args);
-                                retVal = &picode->hl()->call.proc->retVal,
-                                        res = COND_EXPR::insertSubTreeReg (ticode->hl()->exp.v,
-                                                                exp,
-                                                                retVal->id.regi, &localId);
+                                res = COND_EXPR::insertSubTreeReg (ti_hl->exp.v, exp, retVal->id.regi, &localId);
                                 if (res)	/* was substituted */
                                 {
                                     picode->invalidate();

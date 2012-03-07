@@ -175,3 +175,7 @@ int     power2 (int);
 boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE atOffset);
 boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE);
 eReg otherLongRegi(eReg, int, LOCAL_ID *);
+
+
+extern eReg subRegH(eReg reg);
+extern eReg subRegL(eReg reg);

@@ -418,7 +418,7 @@ static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t of
          * provide the value of this segment in the field segValue.  */
     if (seg)  		/* segment override */
     {
-        pm->seg = pm->segOver = (uint8_t)seg;
+        pm->seg = pm->segOver = (eReg)seg;
     }
     else
     {	/* no override, check indexed register */
