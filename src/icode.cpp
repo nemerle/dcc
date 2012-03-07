@@ -29,10 +29,18 @@ ICODE * CIcodeRec::addIcode(ICODE *pIcode)
 
 void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
 {
+#ifdef _lint
+    for (auto ik=this->begin(); ik!=this->end(); ++ik)
+    {
+        ICODE &icode(*ik);
+#else
     for(ICODE &icode : *this)
+    {
+#endif
         if((icode.loc_ip>=start) and (icode.loc_ip<=end))
             icode.inBB = pnewBB;
-//    for (int i = start; i <= end; i++)
+    }
+    //    for (int i = start; i <= end; i++)
 //        at(i).inBB = pnewBB;
 }
 

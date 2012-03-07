@@ -55,8 +55,8 @@ typedef struct
 }	LONG_STKID_TYPE;
 typedef struct
 {		/* For TYPE_LONG_(UN)SIGN registers			 */
-    uint8_t	h;		/*   high register							 */
-    uint8_t	l;		/*   low register							 */
+    eReg	h;		/*   high register							 */
+    eReg	l;		/*   low register							 */
 } LONGID_TYPE;
 
 
@@ -72,7 +72,7 @@ struct ID
     char                macro[10];  /* Macro for this identifier                */
     char                name[20];   /* Identifier's name                        */
     union {                         /* Different types of identifiers           */
-        uint8_t		regi;       /* For TYPE_BYTE(uint16_t)_(UN)SIGN registers   */
+        eReg		regi;       /* For TYPE_BYTE(uint16_t)_(UN)SIGN registers   */
         struct {                    /* For TYPE_BYTE(uint16_t)_(UN)SIGN on the stack */
             uint8_t	regOff;     /*    register offset (if any)              */
             int		off;        /*    offset from BP            		*/
@@ -113,10 +113,10 @@ public:
     {
         id_arr.reserve(256);
     }
-    int newByteWordReg(hlType t, uint8_t regi);
+    int newByteWordReg(hlType t, eReg regi);
     int newByteWordStk(hlType t, int off, uint8_t regOff);
     int newIntIdx(int16_t seg, int16_t off, uint8_t regi, int ix, hlType t);
-    int newLongReg(hlType t, uint8_t regH, uint8_t regL, iICODE ix_);
+    int newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset);
     void newIdent(hlType t, frameType f);

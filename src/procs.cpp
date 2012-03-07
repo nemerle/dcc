@@ -103,7 +103,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     boolT regExist;
     condId type;
     Function * tproc;
-    uint8_t regL, regH;		/* Registers involved in arguments */
+    eReg regL, regH;		/* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
     tproc = ticode->hl()->call.proc;

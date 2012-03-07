@@ -13,7 +13,7 @@ using namespace std;
 #define ICODE_DELTA 25
 
 /* Masks off bits set by duReg[] */
-uint32_t maskDuReg[] = { 0x00,
+std::bitset<32> maskDuReg[] = { 0x00,
                          0xFEEFFE, 0xFDDFFD, 0xFBB00B, 0xF77007, /* uint16_t regs */
                          0xFFFFEF, 0xFFFFDF, 0xFFFFBF, 0xFFFF7F,
                          0xFFFEFF, 0xFFFDFF, 0xFFFBFF, 0xFFF7FF, /* seg regs  */
@@ -86,7 +86,7 @@ void ICODE ::invalidate()
  * If all registers
  * of this instruction are unused, the instruction is invalidated (ie. removed)
  */
-bool ICODE::removeDefRegi (uint8_t regi, int thisDefIdx, LOCAL_ID *locId)
+bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
 {
     int numDefs;
 
@@ -634,8 +634,14 @@ void ICODE::writeDU(int idx)
         if (du1.used(i))
         {
             printf ("%d: du1[%d][] = ", idx, i);
-            for(std::list<ICODE>::iterator j : du1.idx[i].uses)
+#ifdef _lint
+            for (auto ik=du1.idx[i].uses.begin(); ik!=du1.idx[i].uses.end(); ++ik)
             {
+                auto j(*ik);
+#else
+            for(auto j : du1.idx[i].uses)
+            {
+#endif
                 printf ("%d ", j->loc_ip);
             }
             printf ("\n");

@@ -68,8 +68,8 @@ private:
     unordered_map<SYMTABLE,string> z2;
 };
 
-TABLEINFO_TYPE tableInfo[NUM_TABLE_TYPES];   /* Array of info about tables */
-TABLEINFO_TYPE currentTabInfo;
+static TABLEINFO_TYPE tableInfo[NUM_TABLE_TYPES];   /* Array of info about tables */
+static TABLEINFO_TYPE currentTabInfo;
 
 /* Create a new symbol table. Returns "handle" */
 void TABLEINFO_TYPE::create(tableType type)

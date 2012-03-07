@@ -399,7 +399,6 @@ static int signex(uint8_t b)
     return ((b & 0x80)? (int)(0xFFFFFF00 | s): (int)s);
 }
 
-
 /****************************************************************************
  * setAddress - Updates the source or destination field for the current
  *	icode, based on fdst and the TO_REG flag.
@@ -433,11 +432,12 @@ static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t of
             pm->seg = rDS;		/* any other indexed reg */
         }
     }
-    pm->regi = (uint8_t)reg;
+
+    pm->regi = (eReg)reg;
     pm->off = (int16_t)off;
     if (reg && reg < INDEXBASE && (stateTable[i].flg & B))
     {
-        pm->regi += rAL - rAX;
+        pm->regi = subRegL(pm->regi);
     }
 
     if (seg)	/* So we can catch invalid use of segment overrides */

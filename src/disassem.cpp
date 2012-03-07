@@ -229,8 +229,14 @@ void disassem(int pass, Function * ppProc)
     {
         /* Bind jump offsets to labels */
         //for (i = 0; i < numIcode; i++)
+#ifdef _lint
+        for (auto i=pc.begin(); i!=pc.end(); ++i)
+        {
+            ICODE &icode(*i);
+#else
         for( ICODE &icode : pc)
         {
+#endif
             LLInst *ll=icode.ll();
             ll->findJumpTargets(pc);
         }
@@ -245,8 +251,14 @@ void disassem(int pass, Function * ppProc)
 
     /* Loop over array printing each record */
     nextInst = 0;
+#ifdef _lint
+    for (auto i=pc.begin(); i!=pc.end(); ++i)
+    {
+        ICODE &icode(*i);
+#else
     for( ICODE &icode : pc)
     {
+#endif
         icode.ll()->dis1Line(icode.loc_ip,pass);
     }
 

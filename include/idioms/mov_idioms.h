@@ -8,11 +8,11 @@ struct Idiom14 : public Idiom
 {
 protected:
     iICODE m_icodes[2];
-    uint8_t m_regL;
-    uint8_t m_regH;
+    eReg m_regL;
+    eReg m_regH;
 public:
     virtual ~Idiom14() {}
-    Idiom14(Function *f) : Idiom(f),m_regL(0),m_regH(0)
+    Idiom14(Function *f) : Idiom(f),m_regL(rUNDEF),m_regH(rUNDEF)
     {
     }
     uint8_t minimum_match_length() {return 2;}
@@ -24,7 +24,7 @@ struct Idiom13 : public Idiom
 {
 protected:
     iICODE m_icodes[2];
-    uint8_t m_loaded_reg;
+    eReg m_loaded_reg;
 public:
     virtual ~Idiom13() {}
     Idiom13(Function *f) : Idiom(f)

@@ -101,7 +101,7 @@ extern PROG prog;   		/* Loaded program image parameters  */
 extern std::bitset<32> duReg[30];   /* def/use bits for registers		*/
 
 //extern uint32_t duReg[30];		/* def/use bits for registers		*/
-extern uint32_t maskDuReg[30];	/* masks off du bits for regs		*/
+extern std::bitset<32> maskDuReg[30];	/* masks off du bits for regs		*/
 
 /* Registers used by icode instructions */
 static constexpr const char *allRegs[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
@@ -174,4 +174,4 @@ int     power2 (int);
 /* Exported funcions from locident.c */
 boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE atOffset);
 boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE);
-uint8_t otherLongRegi (uint8_t, int, LOCAL_ID *);
+eReg otherLongRegi(eReg, int, LOCAL_ID *);

@@ -225,7 +225,7 @@ static void writeBitVector (const std::bitset<32> &regi)
  *		 the code; that is, the target code has not been traversed yet. */
 static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 {
-    if ( not pt->ll()->testFlags(HLL_LABEL)) /* node hasn't got a lab */
+    if ( ! pt->ll()->testFlags(HLL_LABEL) ) /* node hasn't got a lab */
     {
         /* Generate new label */
         pt->ll()->hllLabNum = getNextLabel();

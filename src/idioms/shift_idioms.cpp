@@ -29,7 +29,7 @@ int Idiom8::action()
 {
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
-    uint8_t regH,regL;
+    eReg regH,regL;
     regH=m_icodes[0]->ll()->dst.regi;
     regL=m_icodes[1]->ll()->dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, regH, regL, m_icodes[0]);
@@ -119,7 +119,7 @@ int Idiom12::action()
 {
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
-    uint8_t regH,regL;
+    eReg regH,regL;
     regL=m_icodes[0]->ll()->dst.regi;
     regH=m_icodes[1]->ll()->dst.regi;
 
@@ -158,7 +158,7 @@ int Idiom9::action()
 {
     int idx;
     COND_EXPR *rhs,*lhs,*expr;
-    uint8_t regH,regL;
+    eReg regH,regL;
     regL=m_icodes[1]->ll()->dst.regi;
     regH=m_icodes[0]->ll()->dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN,regH,regL,m_icodes[0]);

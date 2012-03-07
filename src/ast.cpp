@@ -15,12 +15,12 @@
 using namespace std;
 // Index registers **** temp solution
 static const char * const idxReg[8] = {"bx+si", "bx+di", "bp+si", "bp+di",
-                                "si", "di", "bp", "bx" };
+                                       "si", "di", "bp", "bx" };
 // Conditional operator symbols in C.  Index by condOp enumeration type
 static const char * const condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
-                                   " & ", " | ", " ^ ", " ~ ",
-                                   " + ", " - ", " * ", " / ",
-                                   " >> ", " << ", " % ", " && ", " || " };
+                                          " & ", " | ", " ^ ", " ~ ",
+                                          " + ", " - ", " * ", " / ",
+                                          " >> ", " << ", " % ", " && ", " || " };
 
 //#define EXP_SIZE 200		/* Size of the expression buffer */
 
@@ -132,6 +132,7 @@ COND_EXPR *GlobalVariable::Create(int16_t segValue, int16_t off)
     if (i == symtab.size())
     {
         printf ("Error, glob var not found in symtab\n");
+        delete newExp;
         return 0;
     }
     newExp->expr.ident.idNode.globIdx = i;
@@ -140,7 +141,7 @@ COND_EXPR *GlobalVariable::Create(int16_t segValue, int16_t off)
 
 
 /* Returns an identifier conditional expression node of type REGISTER */
-COND_EXPR *COND_EXPR::idReg(uint8_t regi, uint32_t icodeFlg, LOCAL_ID *locsym)
+COND_EXPR *COND_EXPR::idReg(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym)
 {
     COND_EXPR *newExp;
 
@@ -369,7 +370,7 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
     else if (pm.regi < INDEXBASE)                      /* register */
     {
         newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? ll_insn.getFlag() :
-                                                           ll_insn.getFlag() & NO_SRC_B,
+                                                          ll_insn.getFlag() & NO_SRC_B,
                                    &pProc->localId);
         duIcode.setRegDU( pm.regi, du);
     }
@@ -576,10 +577,10 @@ hlType expType (const COND_EXPR *expr, Function * pproc)
 /* Removes the register from the tree.  If the register was part of a long
  * register (eg. dx:ax), the node gets transformed into an integer register
  * node.        */
-void HlTypeSupport::performLongRemoval (uint8_t regi, LOCAL_ID *locId, COND_EXPR *tree)
+void HlTypeSupport::performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *tree)
 {
     IDENTTYPE* ident;     	/* ptr to an identifier */
-    uint8_t otherRegi;         /* high or low part of long register */
+    eReg otherRegi;         /* high or low part of long register */
 
     switch (tree->type) {
     case BOOLEAN_OP:
@@ -791,6 +792,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
 
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
+//lint -sem(COND_EXPR::clone, @p!=0)
 COND_EXPR *COND_EXPR::clone()
 {
     COND_EXPR* newExp=0;        /* Expression node copy */
@@ -825,7 +827,7 @@ void COND_EXPR::changeBoolOp (condOp newOp)
 
 /* Inserts the expression exp into the tree at the location specified by the
  * register regi */
-bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, uint8_t regi,LOCAL_ID *locsym)
+bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,LOCAL_ID *locsym)
 {
     if (tree == NULL)
         return false;
@@ -837,10 +839,16 @@ bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, uint8_t re
     }
     return false;
 }
-COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, uint8_t regi,LOCAL_ID *locsym)
+bool isSubRegisterOf(eReg reg,eReg parent)
 {
-    HlTypeSupport *set_val;
-    uint8_t treeReg;
+    if ((parent < rAX) || (parent > rBX))
+        return false; // only AX -> BX are coverede by subregisters
+    return ((reg==subRegH(parent)) || (reg == subRegL(parent)));
+}
+COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,LOCAL_ID *locsym)
+{
+    //HlTypeSupport *set_val;
+    eReg treeReg;
     COND_EXPR *temp;
 
     switch (type) {
@@ -852,12 +860,9 @@ COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, uint8_t regi,LOCAL_ID 
             {
                 return _expr;
             }
-            else if ((regi >= rAX) && (regi <= rBX))    /* uint16_t/uint8_t reg */
+            else if(isSubRegisterOf(treeReg,regi))    /* uint16_t/uint8_t reg */
             {
-                if ((treeReg == (regi + rAL-1)) || (treeReg == (regi + rAH-1)))
-                {
-                    return _expr;
-                }
+                return _expr;
             }
         }
         return FALSE;
@@ -887,10 +892,10 @@ COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, uint8_t regi,LOCAL_ID 
             return this;
         }
         return nullptr;
-}
+    }
     return nullptr;
 }
-COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym)
+COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym)
 {
     COND_EXPR *r;
     r=m_lhs->insertSubTreeReg(_expr,regi,locsym);
@@ -924,7 +929,7 @@ bool COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, COND_EXPR **tree, int lon
 }
 COND_EXPR *COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
 {
-        COND_EXPR *temp;
+    COND_EXPR *temp;
     switch (type)
     {
     case IDENTIFIER:
@@ -952,12 +957,12 @@ COND_EXPR *COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
     case NEGATION:
     case ADDRESSOF:
     case DEREFERENCE:
-        COND_EXPR *temp = expr.unaryExp->insertSubTreeLongReg(_expr,longIdx);
+        temp = expr.unaryExp->insertSubTreeLongReg(_expr,longIdx);
         if (nullptr!=temp)
         {
             expr.unaryExp = temp;
             return this;
-    }
+        }
         return nullptr;
     }
     return nullptr;
@@ -999,42 +1004,41 @@ void COND_EXPR::release()
     }
     delete (this);
 }
-
-//
-COND_EXPR *BinaryOperator::inverse()
-{
-    static condOp invCondOp[] = {GREATER, GREATER_EQUAL, NOT_EQUAL, EQUAL,
-                                 LESS_EQUAL, LESS, DUMMY,DUMMY,DUMMY,DUMMY,
-                                 DUMMY, DUMMY, DUMMY, DUMMY, DUMMY, DUMMY,
-                                 DUMMY, DBL_OR, DBL_AND};
-    BinaryOperator *res=0;
-    switch (m_op)
-    {
-    case LESS_EQUAL: case LESS: case EQUAL:
-    case NOT_EQUAL: case GREATER: case GREATER_EQUAL:
-        res = static_cast<BinaryOperator *>(clone());
-        res->m_op = invCondOp[m_op];
-        return res;
-
-    case AND: case OR: case XOR: case NOT: case ADD:
-    case SUB: case MUL: case DIV: case SHR: case SHL: case MOD:
-        return COND_EXPR::unary (NEGATION, clone());
-
-    case DBL_AND: case DBL_OR:
-        res = static_cast<BinaryOperator *>(clone());
-        res->m_op = invCondOp[m_op];
-        res->m_lhs=m_lhs->inverse ();
-        res->m_rhs=m_rhs->inverse ();
-        return res;
-    } /* eos */
-    assert(false);
-}
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
+//lint -sem(BinaryOperator::clone, @p!=0)
 COND_EXPR *BinaryOperator::clone()
 {
     BinaryOperator* newExp=new BinaryOperator(m_op);        /* Expression node copy */
     newExp->m_lhs = m_lhs->clone();
     newExp->m_rhs = m_rhs->clone();
     return newExp;
+}
+
+COND_EXPR *BinaryOperator::inverse()
+{
+    static condOp invCondOp[] = {GREATER, GREATER_EQUAL, NOT_EQUAL, EQUAL,
+                                 LESS_EQUAL, LESS, DUMMY,DUMMY,DUMMY,DUMMY,
+                                 DUMMY, DUMMY, DUMMY, DUMMY, DUMMY, DUMMY,
+                                 DUMMY, DBL_OR, DBL_AND};
+    BinaryOperator *res=reinterpret_cast<BinaryOperator *>(this->clone());
+    switch (m_op)
+    {
+    case LESS_EQUAL: case LESS: case EQUAL:
+    case NOT_EQUAL: case GREATER: case GREATER_EQUAL:
+        res->m_op = invCondOp[m_op];
+        return res;
+
+    case AND: case OR: case XOR: case NOT: case ADD:
+    case SUB: case MUL: case DIV: case SHR: case SHL: case MOD:
+        return COND_EXPR::unary (NEGATION, res);
+
+    case DBL_AND: case DBL_OR:
+        res->m_op = invCondOp[m_op];
+        res->m_lhs=m_lhs->inverse ();
+        res->m_rhs=m_rhs->inverse ();
+        return res;
+    } /* eos */
+    assert(false);
+    return res;
 }

@@ -157,7 +157,7 @@ CondJumps:
                 fatalError(NO_BB, ip, name.c_str());
             psBB = *iter2;
             pBB->edges[i].BBptr = psBB;
-            psBB->inEdges.push_back(0);
+            psBB->inEdges.push_back((BB *)nullptr);
         }
     }
 }
@@ -165,8 +165,14 @@ CondJumps:
 void Function::markImpure()
 {
     SYM * psym;
+#ifdef _lint
+    for (auto i=Icode.begin(); i!=Icode.end(); ++i)
+    {
+        ICODE &icod(*i);
+#else
     for(ICODE &icod : Icode)
     {
+#endif
         if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
         psym = &symtab[icod.ll()->caseTbl.numEntries];
@@ -194,8 +200,16 @@ void Function::markImpure()
  ****************************************************************************/
 void Function::freeCFG()
 {
+#ifdef _lint
+    for (auto i=heldBBs.begin(); i!=heldBBs.end(); ++i)
+    {
+        BB *p(*i);
+#else
     for(BB *p : heldBBs)
+    {
+#endif
         delete p;
+    }
 }
 
 
@@ -283,7 +297,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
             pBB->inEdges.pop_back();
             if (not pBB->inEdges.empty())
             {
-                pBB->edges[0].BBptr->inEdges.push_back(0);
+                pBB->edges[0].BBptr->inEdges.push_back((BB *)nullptr);
             }
             else
             {
@@ -383,8 +397,14 @@ void BB::dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last)
 
     /* index is being used as an index to inEdges[]. */
 //    for (i = 0; i < edges.size(); i++)
-    for (auto edge : edges)
+#ifdef _lint
+    for (auto i=edges.begin(); i!=edges.end(); ++i)
     {
+        auto edge(*i);
+#else
+    for(auto edge : edges)
+    {
+#endif
         pChild = edge.BBptr;
         pChild->inEdges[pChild->index++] = this;
 

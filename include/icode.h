@@ -45,10 +45,10 @@ struct COND_EXPR;
 struct HlTypeSupport
 {
     //hlIcode              opcode;    /* hlIcode opcode           */
-    virtual bool        removeRegFromLong(uint8_t regi, LOCAL_ID *locId)=0;
+    virtual bool        removeRegFromLong(eReg regi, LOCAL_ID *locId)=0;
     virtual std::string writeOut(Function *pProc, int *numLoc)=0;
 protected:
-    void performLongRemoval (uint8_t regi, LOCAL_ID *locId, COND_EXPR *tree);
+    void performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *tree);
 };
 
 struct CallType : public HlTypeSupport
@@ -60,7 +60,7 @@ struct CallType : public HlTypeSupport
     bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc);
     void placeStkArg(COND_EXPR *exp, int pos);
 public:
-    bool removeRegFromLong(uint8_t regi, LOCAL_ID *locId)
+    bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
         printf("CallType : removeRegFromLong not supproted");
         return false;
@@ -72,7 +72,7 @@ struct AssignType : public HlTypeSupport
     /* for HLI_ASSIGN */
     COND_EXPR    *lhs;
     COND_EXPR    *rhs;
-    bool removeRegFromLong(uint8_t regi, LOCAL_ID *locId)
+    bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
         performLongRemoval(regi,locId,lhs);
         return true;
@@ -83,7 +83,7 @@ struct ExpType : public HlTypeSupport
 {
     /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
     COND_EXPR    *v;
-    bool removeRegFromLong(uint8_t regi, LOCAL_ID *locId)
+    bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
         performLongRemoval(regi,locId,v);
         return true;
@@ -156,7 +156,7 @@ struct LLOperand //: public llvm::MCOperand
     uint8_t     seg;               /* CS, DS, ES, SS                       */
     int16_t    segValue;          /* Value of segment seg during analysis */
     uint8_t     segOver;           /* CS, DS, ES, SS if segment override   */
-    uint8_t     regi;              /* 0 < regs < INDEXBASE <= index modes  */
+    eReg       regi;              /* 0 < regs < INDEXBASE <= index modes  */
     int16_t    off;               /* memory address offset                */
     uint32_t   opz;             /*   idx of immed src op        */
     //union {/* Source operand if (flg & I)  */
@@ -352,7 +352,7 @@ public:
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
     bool valid() {return not invalid;}
 public:
-    bool removeDefRegi(uint8_t regi, int thisDefIdx, LOCAL_ID *locId);
+    bool removeDefRegi(eReg regi, int thisDefIdx, LOCAL_ID *locId);
     void checkHlCall();
     bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc)
     {
@@ -372,3 +372,11 @@ public:
     iterator    labelSrch(uint32_t target);
     ICODE *	GetIcode(int ip);
 };
+constexpr eReg subRegH(eReg reg)
+{
+    return eReg((int)reg + (int)rAH-(int)rAX);
+}
+constexpr eReg subRegL(eReg reg)
+{
+    return eReg((int)reg + (int)rAL-(int)rAX);
+}

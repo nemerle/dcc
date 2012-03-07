@@ -74,7 +74,7 @@ public:
     static COND_EXPR *idRegIdx(int idx, regType reg_type);
     static COND_EXPR *idKte(uint32_t kte, uint8_t size);
     static COND_EXPR *idLoc(int off, LOCAL_ID *localId);
-    static COND_EXPR *idReg(uint8_t regi, uint32_t icodeFlg, LOCAL_ID *locsym);
+    static COND_EXPR *idReg(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
     static COND_EXPR *idLongIdx(int idx);
     static COND_EXPR *idOther(uint8_t seg, uint8_t regi, int16_t off);
     static COND_EXPR *idParam(int off, const STKFRAME *argSymtab);
@@ -85,7 +85,7 @@ public:
     static COND_EXPR *  id(const LLInst &ll_insn, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
     static COND_EXPR *boolOp(COND_EXPR *_lhs, COND_EXPR *_rhs, condOp _op);
     static bool         insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR **tree, int longIdx);
-    static bool         insertSubTreeReg(COND_EXPR *&tree, COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym);
+    static bool         insertSubTreeReg(COND_EXPR *&tree, COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
 public:
     virtual COND_EXPR *clone();
     void release();
@@ -106,7 +106,7 @@ public:
 public:
     virtual COND_EXPR *inverse(); // return new COND_EXPR that is invarse of this
     virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
-    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym);
+    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
     virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
 };
 struct BinaryOperator : public COND_EXPR
@@ -124,7 +124,7 @@ struct BinaryOperator : public COND_EXPR
     virtual COND_EXPR *inverse();
     virtual COND_EXPR *clone();
     virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
-    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, uint8_t regi, LOCAL_ID *locsym);
+    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
     virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
 
     COND_EXPR *lhs()

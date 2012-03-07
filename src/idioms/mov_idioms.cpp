@@ -76,8 +76,8 @@ bool Idiom13::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    m_loaded_reg = 0;
-    uint8_t regi;
+    m_loaded_reg = rUNDEF;
+    eReg regi;
 
     /* Check for regL */
     regi = m_icodes[0]->ll()->dst.regi;
@@ -88,7 +88,7 @@ bool Idiom13::match(iICODE pIcode)
         {
             if (m_icodes[1]->ll()->dst.regi == (regi + 4)) //TODO: based on distance between AH-AL,BH-BL etc.
             {
-                m_loaded_reg=(regi - rAL + rAX);
+                m_loaded_reg=(eReg)(regi - rAL + rAX);
                 return true;
             }
         }

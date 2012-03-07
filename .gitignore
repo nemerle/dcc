@@ -1,2 +1,7 @@
+coverage
+tests/inputs
+tests/prev
 tests/outputs/*
-bld
+tests/errors
+*.autosave
+bld*

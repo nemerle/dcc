@@ -165,6 +165,6 @@ protected:
     void    findIdioms();
     void    propLong();
     void    genLiveKtes();
-    uint8_t    findDerivedSeq (derSeq *derivedGi);
-    bool    nextOrderGraph(derSeq *derivedGi);
+    uint8_t    findDerivedSeq (derSeq &derivedGi);
+    bool    nextOrderGraph(derSeq &derivedGi);
 };

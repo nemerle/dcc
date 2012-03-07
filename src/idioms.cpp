@@ -24,13 +24,13 @@ bool LLInst::isJmpInst()
 {
     switch (opcode)
     {
-        case iJMP:  case iJMPF: case iJCXZ:
-        case iLOOP: case iLOOPE:case iLOOPNE:
-        case iJB:   case iJBE:  case iJAE:  case iJA:
-        case iJL:   case iJLE:  case iJGE:  case iJG:
-        case iJE:   case iJNE:  case iJS:   case iJNS:
-        case iJO:   case iJNO:  case iJP:   case iJNP:
-            return true;
+    case iJMP:  case iJMPF: case iJCXZ:
+    case iLOOP: case iLOOPE:case iLOOPNE:
+    case iJB:   case iJBE:  case iJAE:  case iJA:
+    case iJL:   case iJLE:  case iJGE:  case iJG:
+    case iJE:   case iJNE:  case iJS:   case iJNS:
+    case iJO:   case iJNO:  case iJP:   case iJNP:
+        return true;
     }
     return false;
 }
@@ -40,7 +40,7 @@ bool LLInst::isJmpInst()
  ****************************************************************************/
 void Function::findIdioms()
 {
-//    int     ip;             /* Index to current icode                   */
+    //    int     ip;             /* Index to current icode                   */
     iICODE  pEnd, pIcode;   /* Pointers to end of BB and current icodes */
     int16_t   delta;
 
@@ -81,7 +81,7 @@ void Function::findIdioms()
     {
         switch (pIcode->ll()->getOpcode())
         {
-            case iDEC: case iINC:
+        case iDEC: case iINC:
             if (i18.match(pIcode))
                 advance(pIcode,i18.action());
             else if (i19.match(pIcode))
@@ -96,8 +96,8 @@ void Function::findIdioms()
         {
             /* Idiom 1 */
             // todo add other push idioms.
-                advance(pIcode,i01(pIcode));
-                break;
+            advance(pIcode,i01(pIcode));
+            break;
         }
 
         case iMOV:
@@ -113,93 +113,93 @@ void Function::findIdioms()
             break;
         }
 
-            case iCALL:  case iCALLF:
-                /* Check for library functions that return a long register.
+        case iCALL:  case iCALLF:
+            /* Check for library functions that return a long register.
                          * Propagate this result */
-                if (pIcode->ll()->src.proc.proc != 0)
-                    if ((pIcode->ll()->src.proc.proc->flg & PROC_ISLIB) &&
+            if (pIcode->ll()->src.proc.proc != 0)
+                if ((pIcode->ll()->src.proc.proc->flg & PROC_ISLIB) &&
                         (pIcode->ll()->src.proc.proc->flg & PROC_IS_FUNC))
-                    {
-                        if ((pIcode->ll()->src.proc.proc->retVal.type==TYPE_LONG_SIGN)
-                            || (pIcode->ll()->src.proc.proc->retVal.type == TYPE_LONG_UNSIGN))
-                            localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, pIcode/*ip*/);
-                    }
-
-                /* Check for idioms */
-                if (i03.match(pIcode))         /* idiom 3 */
-                    advance(pIcode,i03.action());
-                else if (i17.match(pIcode))  /* idiom 17 */
-                    advance(pIcode,i17.action());
-                else
-                    pIcode++;
-                break;
-
-            case iRET:          /* Idiom 4 */
-            case iRETF:
-                advance(pIcode,i04(pIcode));
-                break;
-
-            case iADD:          /* Idiom 5 */
-                advance(pIcode,i05(pIcode));
-                break;
-
-            case iSAR:          /* Idiom 8 */
-                advance(pIcode,i08(pIcode));
-                break;
-
-            case iSHL:
-                if (i15.match(pIcode))       /* idiom 15 */
-                    advance(pIcode,i15.action());
-                else if (i12.match(pIcode))        /* idiom 12 */
-                    advance(pIcode,i12.action());
-                else
-                    pIcode++;
-                break;
-
-            case iSHR:          /* Idiom 9 */
-                advance(pIcode,i09(pIcode));
-                break;
-
-            case iSUB:          /* Idiom 6 */
-                advance(pIcode,i06(pIcode));
-                break;
-
-            case iOR:           /* Idiom 10 */
-            advance(pIcode,i10(pIcode));
-                break;
-
-            case iNEG:          /* Idiom 11 */
-                if (i11.match(pIcode))
-                    advance(pIcode,i11.action());
-                else if (i16.match(pIcode))
-                    advance(pIcode,i16.action());
-                else
-                    pIcode++;
-                break;
-
-            case iNOP:
-                (pIcode++)->invalidate();
-                break;
-
-            case iENTER:		/* ENTER is equivalent to init PUSH bp */
-                if (pIcode == Icode.begin()) //ip == 0
                 {
-                    flg |= (PROC_HLL | PROC_IS_HLL);
+                    if ((pIcode->ll()->src.proc.proc->retVal.type==TYPE_LONG_SIGN)
+                            || (pIcode->ll()->src.proc.proc->retVal.type == TYPE_LONG_UNSIGN))
+                        localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, pIcode/*ip*/);
                 }
-                pIcode++;
-                break;
 
-            case iXOR:          /* Idiom 7 */
-                if (i21.match(pIcode))
-                    advance(pIcode,i21.action());
-                else if (i07.match(pIcode))
-                    advance(pIcode,i07.action());
-                else
-                    ++pIcode;
-                break;
-
-            default:
+            /* Check for idioms */
+            if (i03.match(pIcode))         /* idiom 3 */
+                advance(pIcode,i03.action());
+            else if (i17.match(pIcode))  /* idiom 17 */
+                advance(pIcode,i17.action());
+            else
                 pIcode++;
+            break;
+
+        case iRET:          /* Idiom 4 */
+        case iRETF:
+            advance(pIcode,i04(pIcode));
+            break;
+
+        case iADD:          /* Idiom 5 */
+            advance(pIcode,i05(pIcode));
+            break;
+
+        case iSAR:          /* Idiom 8 */
+            advance(pIcode,i08(pIcode));
+            break;
+
+        case iSHL:
+            if (i15.match(pIcode))       /* idiom 15 */
+                advance(pIcode,i15.action());
+            else if (i12.match(pIcode))        /* idiom 12 */
+                advance(pIcode,i12.action());
+            else
+                pIcode++;
+            break;
+
+        case iSHR:          /* Idiom 9 */
+            advance(pIcode,i09(pIcode));
+            break;
+
+        case iSUB:          /* Idiom 6 */
+            advance(pIcode,i06(pIcode));
+            break;
+
+        case iOR:           /* Idiom 10 */
+            advance(pIcode,i10(pIcode));
+            break;
+
+        case iNEG:          /* Idiom 11 */
+            if (i11.match(pIcode))
+                advance(pIcode,i11.action());
+            else if (i16.match(pIcode))
+                advance(pIcode,i16.action());
+            else
+                pIcode++;
+            break;
+
+        case iNOP:
+            (pIcode++)->invalidate();
+            break;
+
+        case iENTER:		/* ENTER is equivalent to init PUSH bp */
+            if (pIcode == Icode.begin()) //ip == 0
+            {
+                flg |= (PROC_HLL | PROC_IS_HLL);
+            }
+            pIcode++;
+            break;
+
+        case iXOR:          /* Idiom 7 */
+            if (i21.match(pIcode))
+                advance(pIcode,i21.action());
+            else if (i07.match(pIcode))
+                advance(pIcode,i07.action());
+            else
+                ++pIcode;
+            break;
+
+        default:
+            pIcode++;
         }
     }
 
@@ -230,8 +230,14 @@ void Function::bindIcodeOff()
     pIcode = Icode.begin();
 
     /* Flag all jump targets for BB construction and disassembly stage 2 */
+#ifdef _lint
+    for (auto ik=Icode.begin(); ik!=Icode.end(); ++ik)
+    {
+        ICODE &c(*ik);
+#else
     for(ICODE &c : Icode)
-        {
+    {
+#endif
         LLInst *ll=c.ll();
         if (ll->testFlags(I) && ll->isJmpInst())
         {
@@ -245,27 +251,33 @@ void Function::bindIcodeOff()
      * is found (no code at dest. of jump) are simply left unlinked and
      * flagged as going nowhere.  */
     //for (pIcode = Icode.begin(); pIcode!= Icode.end(); pIcode++)
+#ifdef _lint
+    for (auto ik=Icode.begin(); ik!=Icode.end(); ++ik)
+    {
+        ICODE &icode(*ik);
+#else
     for(ICODE &icode : Icode)
-        {
+    {
+#endif
         LLInst *ll=icode.ll();
         if (not ll->isJmpInst())
             continue;
         if (ll->testFlags(I) )
-            {
-                uint32_t found;
+        {
+            uint32_t found;
             if (! Icode.labelSrch(ll->src.op(), found))
                 ll->setFlags( NO_LABEL );
-                else
+            else
                 ll->src.SetImmediateOp(found);
 
-            }
+        }
         else if (ll->testFlags(SWITCH) )
-            {
+        {
             p = ll->caseTbl.entries;
             for (int j = 0; j < ll->caseTbl.numEntries; j++, p++)
-                    Icode.labelSrch(*p, *p);
-            }
+                Icode.labelSrch(*p, *p);
         }
+    }
 }
 
 /** Performs idioms analysis, and propagates long operands, if any */

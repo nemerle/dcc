@@ -75,8 +75,14 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
     }
 
     /* Search through code looking for impure references and flag them */
+#ifdef _lint
+    for (auto i=pProcList.begin(); i!=pProcList.end(); ++i)
+    {
+        Function &f(*i);
+#else
     for(Function &f : pProcList)
     {
+#endif
         f.markImpure();
         if (option.asm1)
             disassem(1, &f);
@@ -87,9 +93,16 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
     }
 
     /* Converts jump target addresses to icode offsets */
+#ifdef _lint
+    for (auto i=pProcList.begin(); i!=pProcList.end(); ++i)
+    {
+        Function &f(*i);
+#else
     for(Function &f : pProcList)
+    {
+#endif
         f.bindIcodeOff();
-
+    }
     /* Print memory bitmap */
     if (option.Map)
         displayMemMap();

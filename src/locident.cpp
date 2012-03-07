@@ -41,7 +41,7 @@ void LOCAL_ID::newIdent(hlType t, frameType f)
 
 /* Creates a new register identifier node of TYPE_BYTE_(UN)SIGN or
  * TYPE_WORD_(UN)SIGN type.  Returns the index to this new entry.       */
-int LOCAL_ID::newByteWordReg(hlType t, uint8_t regi)
+int LOCAL_ID::newByteWordReg(hlType t, eReg regi)
 {
     int idx;
 
@@ -143,7 +143,7 @@ int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, uint8_t regi, int ix, hlType t
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new register identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-int LOCAL_ID::newLongReg(hlType t, uint8_t regH, uint8_t regL, iICODE ix_)
+int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
 {
     int idx;
     //iICODE ix_;
@@ -396,7 +396,7 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
 /* Given an index into the local identifier table for a long register
  * variable, determines whether regi is the high or low part, and returns
  * the other part   */
-uint8_t otherLongRegi (uint8_t regi, int idx, LOCAL_ID *locTbl)
+eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
 {
     ID *id;
 
@@ -409,7 +409,7 @@ uint8_t otherLongRegi (uint8_t regi, int idx, LOCAL_ID *locTbl)
         else if (id->id.longId.l == regi)
             return (id->id.longId.h);
     }
-    return 0;			// Cristina: please check this!
+    return rUNDEF;	// Cristina: please check this!
 }
 
 

@@ -317,8 +317,16 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
             }
             else                            /* Check successors */
             {
+#ifdef _lint
+                for (auto i=pbb->edges.begin(); i!=pbb->edges.end(); ++i)
+                {
+                    TYPEADR_TYPE &e(*i);
+#else
                 for(TYPEADR_TYPE &e : pbb->edges)
+                {
+#endif
                     pbb->liveOut |= e.BBptr->liveIn;
+                }
 
                 /* propagate to invoked procedure */
                 if (pbb->nodeType == CALL_NODE)
@@ -392,7 +400,8 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
 
 void BB::genDU1()
 {
-    uint8_t regi;            /* Register that was defined */
+    eReg regi;            /* Register that was defined */
+
     int k, defRegIdx, useIdx;
     iICODE picode, ticode,lastInst;
     BB *tbb;         /* Target basic block */
@@ -407,7 +416,7 @@ void BB::genDU1()
     {
         if (picode->type != HIGH_LEVEL)
             continue;
-        regi = 0;
+        regi = rUNDEF;
         defRegIdx = 0;
         // foreach defined register
         bitset<32> processed=0;
@@ -417,7 +426,7 @@ void BB::genDU1()
                 continue;
             //printf("Processing reg")
             processed |= duReg[k];
-            regi = (uint8_t)(k + 1);       /* defined register */
+            regi = (eReg)(k + 1);       /* defined register */
             picode->du1.regi[defRegIdx] = regi;
 
             /* Check remaining instructions of the BB for all uses
@@ -486,9 +495,9 @@ void BB::genDU1()
              * from a library function (routines such as printf
              * return an integer, which is normally not taken into
              * account by the programmer). 	*/
-            if (picode->valid() and not picode->du1.used(defRegIdx) and
-                    (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
-                    (not ((picode->hl()->opcode == HLI_CALL) &&
+            if (picode->valid() && ! picode->du1.used(defRegIdx) &&
+                    ( ! (picode->du.lastDefRegi & duReg[regi]).any()) &&
+                    ( ! ((picode->hl()->opcode == HLI_CALL) &&
                           (picode->hl()->call.proc->flg & PROC_ISLIB))))
             {
                 if (! (this->liveOut & duReg[regi]).any())	/* not liveOut */
@@ -521,17 +530,16 @@ void BB::genDU1()
 /* Generates the du chain of each instruction in a basic block */
 void Function::genDU1 ()
 {
-    uint8_t regi;            /* Register that was defined */
-    int i,  k, defRegIdx, useIdx;
-    iICODE picode, ticode,lastInst;/* Current and target bb    */
-    BB * pbb, *tbb;         /* Current and target basic block */
-    bool res;
-    //COND_EXPR *exp, *lhs;
-
     /* Traverse tree in dfsLast order */
     assert(m_dfsLast.size()==numBBs);
+#ifdef _lint
+    for (auto i=m_dfsLast.begin(); i!=m_dfsLast.end(); ++i)
+    {
+        BB *pbb(*i);
+#else
     for(BB *pbb : m_dfsLast)
     {
+#endif
         if (pbb->flg & INVALID_BB)
             continue;
         pbb->genDU1();
@@ -665,7 +673,7 @@ bool BinaryOperator::xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *ppr
 {
     if(0==m_rhs)
         return false;
-    if ( not m_rhs->xClear (f, t, lastBBinst, pproc) )
+    if ( ! m_rhs->xClear (f, t, lastBBinst, pproc) )
         return false;
     if(0==m_lhs)
         return false;

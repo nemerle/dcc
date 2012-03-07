@@ -200,7 +200,7 @@ static derSeq_Entry *newDerivedSeq()
 
 
 /* Frees the storage allocated for the queue q*/
-void freeQueue (queue &q)
+static void freeQueue (queue &q)
 {
     q.clear();
 }
@@ -236,7 +236,7 @@ derSeq_Entry::~derSeq_Entry()
 
 /* Finds the next order graph of derivedGi->Gi according to its intervals
  * (derivedGi->Ii), and places it in derivedGi->next->Gi.       */
-bool Function::nextOrderGraph (derSeq *derivedGi)
+bool Function::nextOrderGraph (derSeq &derivedGi)
 {
     interval *Ii;   /* Interval being processed         */
     BB *BBnode,     /* New basic block of intervals         */
@@ -249,9 +249,9 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
     boolT   sameGraph; /* Boolean, isomorphic graphs           */
 
     /* Process Gi's intervals */
-    derSeq_Entry &prev_entry(derivedGi->back());
-    derivedGi->push_back(derSeq_Entry());
-    derSeq_Entry &new_entry(derivedGi->back());
+    derSeq_Entry &prev_entry(derivedGi.back());
+    derivedGi.push_back(derSeq_Entry());
+    derSeq_Entry &new_entry(derivedGi.back());
     Ii = prev_entry.Ii;
     sameGraph = TRUE;
     BBnode = 0;
@@ -272,8 +272,14 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
 
         if (BBnode->edges.size() > 0)
         {
+#ifdef _lint
+            for (auto ik=listIi.begin(); ik!=listIi.end(); ++ik)
+            {
+                BB *curr(*ik);
+#else
             for(BB *curr :  listIi)
             {
+#endif
                 for (j = 0; j < curr->edges.size(); j++)
                 {
                     succ = curr->edges[j].BBptr;
@@ -291,21 +297,33 @@ bool Function::nextOrderGraph (derSeq *derivedGi)
      * Determines the number of in edges to each new BB, and places it
      * in numInEdges and inEdgeCount for later interval processing. */
     curr = new_entry.Gi = bbs.front();
+#ifdef _lint
+    for (auto ik=bbs.begin(); ik!=bbs.end(); ++ik)
+    {
+        BB *curr(*ik);
+#else
     for(BB *curr : bbs)
     {
+#endif
+#ifdef _lint
+        for (auto il=curr->edges.begin(); il!=curr->edges.end(); ++il)
+        {
+            TYPEADR_TYPE &edge(*il);
+#else
         for(TYPEADR_TYPE &edge : curr->edges)
         {
+#endif
             BBnode = new_entry.Gi;    /* BB of an interval */
             auto iter= std::find_if(bbs.begin(),bbs.end(),
                                     [&edge](BB *node)->bool { return edge.intPtr==node->correspInt;});
-        if(iter==bbs.end())
-            fatalError (INVALID_INT_BB);
-        edge.BBptr = *iter;
-        (*iter)->inEdges.push_back(0);
-        (*iter)->inEdgeCount++;
+            if(iter==bbs.end())
+                fatalError (INVALID_INT_BB);
+            edge.BBptr = *iter;
+            (*iter)->inEdges.push_back((BB *)nullptr);
+            (*iter)->inEdgeCount++;
+        }
     }
-}
-return (boolT)(! sameGraph);
+    return (boolT)(! sameGraph);
 }
 
 
@@ -313,11 +331,11 @@ return (boolT)(! sameGraph);
 /* Finds the derived sequence of the graph derivedG->Gi (ie. cfg).
  * Constructs the n-th order graph and places all the intermediate graphs
  * in the derivedG list sequence.                   */
-uint8_t Function::findDerivedSeq (derSeq *derivedGi)
+uint8_t Function::findDerivedSeq (derSeq &derivedGi)
 {
     BB *Gi;      /* Current derived sequence graph       */
 
-    derSeq::iterator iter=derivedGi->begin();
+    derSeq::iterator iter=derivedGi.begin();
     Gi = iter->Gi;
     while (! trivialGraph (Gi))
     {
@@ -335,12 +353,12 @@ uint8_t Function::findDerivedSeq (derSeq *derivedGi)
     if (! trivialGraph (Gi))
     {
         ++iter;
-        derivedGi->erase(iter,derivedGi->end()); /* remove Gi+1 */
+        derivedGi.erase(iter,derivedGi.end()); /* remove Gi+1 */
         //        freeDerivedSeq(derivedGi->next);
         //        derivedGi->next = NULL;
         return FALSE;
     }
-    derivedGi->back().findIntervals (this);
+    derivedGi.back().findIntervals (this);
     return TRUE;
 }
 
@@ -381,7 +399,7 @@ derSeq * Function::checkReducibility()
     der_seq = new derSeq;
     der_seq->resize(1);
     der_seq->back().Gi = m_cfg.front();
-    reducible = findDerivedSeq(der_seq);
+    reducible = findDerivedSeq(*der_seq);
 
     if (! reducible)
     {

@@ -91,8 +91,14 @@ void udm(void)
 void Function::displayCFG()
 {
     printf("\nBasic Block List - Proc %s", name.c_str());
+#ifdef _lint
+    for (auto ik=m_cfg.begin(); ik!=m_cfg.end(); ++ik)
+    {
+        BB *pBB(*ik);
+#else
     for (BB *pBB : m_cfg)
     {
+#endif
         pBB->display();
     }
 }

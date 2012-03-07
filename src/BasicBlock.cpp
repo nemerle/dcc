@@ -101,8 +101,14 @@ void BB::displayDfs()
     printf("----\n");
 
     /* Recursive call on successors of current node */
+#ifdef _lint
+    for (auto ik=edges.begin(); ik!=edges.end(); ++ik)
+    {
+        TYPEADR_TYPE &pb(*ik);
+#else
     for(TYPEADR_TYPE &pb : edges)
     {
+#endif
         if (pb.BBptr->traversed != DFS_DISP)
             pb.BBptr->displayDfs();
     }

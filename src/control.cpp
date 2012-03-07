@@ -76,8 +76,16 @@ void Function::findImmedDom ()
         currNode = m_dfsLast[currIdx];
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
+#ifdef _lint
+        BB * inedge=0;
+        for (auto i=currNode->inEdges.begin(); i!=currNode->inEdges.end(); ++i)
+        {
+            inedge=*i;
+
+#else
         for (BB * inedge : currNode->inEdges)
         {
+#endif
             predIdx = inedge->dfsLastNum;
             if (predIdx < currIdx)
                 currNode->immedDom = commonDom (currNode->immedDom, predIdx, this);
@@ -255,12 +263,32 @@ static void findNodesInInt (queue &intNodes, int level, interval *Ii)
 {
     if (level == 1)
     {
+#ifdef _lint
+        BB * en=0;
+        for (auto i=Ii->nodes.begin(); i!=Ii->nodes.end(); ++i)
+        {
+            en=*i;
+
+#else
         for(BB *en : Ii->nodes)
+        {
+#endif
             appendQueue(intNodes,en);
+        }
     }
     else
+#ifdef _lint
+        BB * en=0;
+        for (auto i=Ii->nodes.begin(); i!=Ii->nodes.end(); ++i)
+        {
+            en=*i;
+
+#else
         for(BB *en : Ii->nodes)
+        {
+#endif
             findNodesInInt(intNodes,level-1,en->correspInt);
+        }
 }
 
 
@@ -403,8 +431,14 @@ void Function::structCases()
                          * header field with caseHeader.           */
             insertList (caseNodes, i);
             m_dfsLast[i]->caseHead = i;
+#ifdef _lint
+            for (auto ki=caseHeader->edges.begin(); ki!=caseHeader->edges.end(); ++ki)
+            {
+                TYPEADR_TYPE &pb(*ki);
+#else
             for(TYPEADR_TYPE &pb : caseHeader->edges)
             {
+#endif
                 tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);
             }
             //for (j = 0; j < caseHeader->edges[j]; j++)

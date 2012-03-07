@@ -2,6 +2,7 @@
 /* Machine registers */
 enum eReg
 {
+    rUNDEF =     0,
     rAX =        1,  /* These are numbered relative to real 8086 */
     rCX =        2,
     rDX =        3,
