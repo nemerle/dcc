@@ -5,11 +5,7 @@
 
 #include "dcc.h"
 #include <string.h>
-#if __BORLAND__
-#include <alloc.h>
-#else
 #include <malloc.h>		/* For free() */
-#endif
 #include "graph.h"
 
 //static BB *  rmJMP(Function * pProc, int marker, BB * pBB);
@@ -134,7 +130,7 @@ CondJumps:
                             pBB->edges[0].ip = (uint32_t)start;
                         }
                     }
-                break;
+                    break;
             }
         }
     }
@@ -143,20 +139,20 @@ CondJumps:
     for (; iter!=heldBBs.end(); ++iter)
     {
         pBB = *iter;
-        for (i = 0; i < pBB->edges.size(); i++)
+        for (size_t edeg_idx = 0; edeg_idx < pBB->edges.size(); edeg_idx++)
         {
-            ip = pBB->edges[i].ip;
+            ip = pBB->edges[edeg_idx].ip;
             if (ip >= SYNTHESIZED_MIN)
             {
                 fatalError (INVALID_SYNTHETIC_BB);
-                return ;
+                return;
             }
             auto iter2=std::find_if(heldBBs.begin(),heldBBs.end(),
-                         [ip](BB *psBB)->bool {return psBB->begin()->loc_ip==ip;});
+                                    [ip](BB *psBB)->bool {return psBB->begin()->loc_ip==ip;});
             if(iter2==heldBBs.end())
                 fatalError(NO_BB, ip, name.c_str());
             psBB = *iter2;
-            pBB->edges[i].BBptr = psBB;
+            pBB->edges[edeg_idx].BBptr = psBB;
             psBB->inEdges.push_back((BB *)nullptr);
         }
     }
@@ -218,14 +214,14 @@ void Function::freeCFG()
  ****************************************************************************/
 void Function::compressCFG()
 {
-    BB * pBB, *pNxt;
-    int	ip, first=0, last, i;
+    BB *pNxt;
+    int	ip, first=0, last;
 
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
 #ifdef _lint
-    auto iter=m_cfg.begin();
-    for (;iter!=m_cfg.end(); ++iter)
+
+    for (auto iter=m_cfg.begin(); iter!=m_cfg.end(); ++iter)
     {
         BB *pBB(*iter);
 #else
@@ -235,9 +231,9 @@ void Function::compressCFG()
         if(pBB->inEdges.empty() || (pBB->nodeType != ONE_BRANCH && pBB->nodeType != TWO_BRANCH))
             continue;
 #ifdef _lint
-        for (auto iter2=pBB->edges().begin(); iter2!=pBB->edges().end(); ++iter2)
+        for (auto iter2=pBB->edges.begin(); iter2!=pBB->edges.end(); ++iter2)
         {
-            TYPEADR_TYPE &edgeRef(*iter);
+            TYPEADR_TYPE &edgeRef(*iter2);
 #else
         for (TYPEADR_TYPE &edgeRef : pBB->edges)
         {
@@ -265,7 +261,7 @@ void Function::compressCFG()
 
     for(auto iter=m_cfg.begin(); iter!=m_cfg.end(); ++iter)
     {
-        pBB = *iter;
+        BB * pBB = *iter;
         if (pBB->inEdges.empty())
         {
             if (iter == m_cfg.begin())	/* Init it misses out on */
@@ -330,8 +326,8 @@ BB *BB::rmJMP(int marker, BB * pBB)
                 {
                     pBB->front().ll()->setFlags(NO_CODE);
                     pBB->front().invalidate();
-//                    pProc->Icode.setFlags(pBB->start, NO_CODE);
-//                    pProc->Icode.SetLlInvalid(pBB->start, TRUE);
+                    //                    pProc->Icode.setFlags(pBB->start, NO_CODE);
+                    //                    pProc->Icode.SetLlInvalid(pBB->start, TRUE);
                 }
             } while (pBB->nodeType != NOWHERE_NODE);
 
@@ -364,7 +360,7 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             if(back().loc_ip>pChild->front().loc_ip) // back edege
                 break;
             auto iter=std::find_if(this->end(),pChild->begin(),[](ICODE &c)
-                {return not c.ll()->testFlags(NO_CODE);});
+            {return not c.ll()->testFlags(NO_CODE);});
 
             if (iter != pChild->begin())
                 break;
@@ -390,8 +386,8 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
 
     /* Process all out edges recursively */
     for (i = 0; i < edges.size(); i++)
-        if (edges[i].BBptr->traversed != DFS_MERGE)
-            edges[i].BBptr->mergeFallThrough(Icode);
+    if (edges[i].BBptr->traversed != DFS_MERGE)
+    edges[i].BBptr->mergeFallThrough(Icode);
 }
 
 
@@ -406,7 +402,7 @@ void BB::dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last)
     dfsFirstNum = (*first)++;
 
     /* index is being used as an index to inEdges[]. */
-//    for (i = 0; i < edges.size(); i++)
+    //    for (i = 0; i < edges.size(); i++)
 #ifdef _lint
     for (auto i=edges.begin(); i!=edges.end(); ++i)
     {

@@ -23,13 +23,6 @@ struct ICODE;
 typedef std::list<ICODE>::iterator iICODE;
 typedef std::list<ICODE>::reverse_iterator riICODE;
 
-/* uint8_t and uint16_t registers */
-static const char *const byteReg[9]  = {"al", "cl", "dl", "bl",
-                                        "ah", "ch", "dh", "bh", "tmp" };
-static const char *const wordReg[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
-                                        "si", "di", "es", "cs", "ss", "ds",
-                                        "", "", "", "", "", "", "", "", "tmp"};
-
 /* Def/use of flags - low 4 bits represent flags */
 struct DU
 {
@@ -251,7 +244,7 @@ public:
         opcode = op;
     }
     void emitGotoLabel(int indLevel);
-    void findJumpTargets(CIcodeRec &pc);
+    void findJumpTargets(CIcodeRec &_pc);
     void writeIntComment(std::ostringstream &s);
     void dis1Line(int loc_ip, int pass);
     std::ostringstream &strSrc(std::ostringstream &os,bool skip_comma=false);
@@ -349,7 +342,7 @@ public:
         type=HIGH_LEVEL;
         hl()->setAsgn(lhs,rhs);
     }
-    void setUnary(hlIcode op, COND_EXPR *exp);
+    void setUnary(hlIcode op, COND_EXPR *_exp);
     void setJCond(COND_EXPR *cexp);
 
     void emitGotoLabel(int indLevel);

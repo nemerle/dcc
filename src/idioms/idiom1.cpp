@@ -50,13 +50,13 @@ int Idiom1::checkStkVars (iICODE pIcode)
  ****************************************************************************/
 bool Idiom1::match(iICODE picode)
 {
-    uint8_t type = 0;	/* type of variable: 1 = reg-var, 2 = local */
-    uint8_t regi;		/* register of the MOV */
+    //uint8_t type = 0;	/* type of variable: 1 = reg-var, 2 = local */
+    //uint8_t regi;		/* register of the MOV */
     if(m_func->flg & PROC_HLL)
         return false;
     if(picode==m_end)
         return false;
-    int n;
+    //int n;
     m_icodes.clear();
     m_min_off = 0;
     /* PUSH BP as first instruction of procedure */
@@ -114,7 +114,7 @@ bool Idiom1::match(iICODE picode)
     }
     else // push di [push si] / push si [push di]
     {
-        n = checkStkVars (picode);
+        size_t n = checkStkVars (picode);
         for(int i=0; i<n; ++i)
             m_icodes.push_back(picode++);
 

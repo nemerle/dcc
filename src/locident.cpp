@@ -116,7 +116,7 @@ int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
  *            regi: indexed register into global variable
  *            ix: index into icode array
  *            t: HIGH_LEVEL type            */
-int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, uint8_t regi, int ix, hlType t)
+int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, int ix, hlType t)
 {
     int idx;
 
@@ -145,7 +145,7 @@ int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, uint8_t regi, int ix, hlType t
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
 int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
 {
-    int idx;
+    size_t idx;
     //iICODE ix_;
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -183,7 +183,7 @@ int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
 int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
 {
-    int idx;
+    size_t idx;
 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -209,7 +209,8 @@ int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
  * entry; otherwise creates a new global identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
 int LOCAL_ID::newLongIdx( int16_t seg, int16_t offH, int16_t offL,uint8_t regi, hlType t)
-{ int idx;
+{
+    size_t idx;
 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -237,7 +238,7 @@ int LOCAL_ID::newLongIdx( int16_t seg, int16_t offH, int16_t offL,uint8_t regi, 
  * Returns the index to this entry. */
 int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
 {
-    int idx;
+    size_t idx;
 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
@@ -266,7 +267,7 @@ int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
  *       number in an expression record.    */
 int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, iICODE atOffset)
 {
-    int idx;
+    size_t idx;
   LLOperand *pmH, *pmL;
 //  iICODE atOffset(pIcode);
 //  advance(atOffset,off);
@@ -285,7 +286,7 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, i
     if (pmL->regi == 0)                                 /* global variable */
         idx = newLongGlb(pmH->segValue, pmH->off, pmL->off, TYPE_LONG_SIGN);
 
-    else if (pmL->regi < INDEXBASE)                     /* register */
+    else if (pmL->regi < INDEX_BX_SI)                     /* register */
     {
         idx = newLongReg(TYPE_LONG_SIGN, pmH->regi, pmL->regi, ix);
         if (f == HIGH_FIRST)
@@ -295,9 +296,9 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, i
     }
 
     else if (pmL->off) {                                /* offset */
-        if ((pmL->seg == rSS) && (pmL->regi == INDEXBASE + 6)) /* idx on bp */
+        if ((pmL->seg == rSS) && (pmL->regi == INDEX_BP)) /* idx on bp */
             idx = newLongStk(TYPE_LONG_SIGN, pmH->off, pmL->off);
-        else if ((pmL->seg == rDS) && (pmL->regi == INDEXBASE + 7))   /* bx */
+        else if ((pmL->seg == rDS) && (pmL->regi == INDEX_BX))   /* bx */
         {                                       /* glb var indexed on bx */
             printf("Bx indexed global, BX is an unused parameter to newLongIdx\n");
             idx = newLongIdx(pmH->segValue, pmH->off, pmL->off,rBX,TYPE_LONG_SIGN);

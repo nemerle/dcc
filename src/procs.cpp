@@ -11,22 +11,23 @@
 
 
 /* Static indentation buffer */
-#define indSize     61          /* size of indentation buffer; max 20 */
+static constexpr int indSize=81;          /* size of indentation buffer; max 20 */
 static char indentBuf[indSize] =
-        "                                                            ";
-
-static char *indent (int indLevel) // Indentation according to the depth of the statement
+        "                                                                                ";
+// not static, used in icode.cpp at emitGotoLabel
+const char *indentStr(int indLevel) // Indentation according to the depth of the statement
 {
-    return (&indentBuf[indSize-(indLevel*3)-1]);
+    return (&indentBuf[indSize-(indLevel*4)-1]);
 }
 
 
 /* Inserts an outEdge at the current callGraph pointer if the newProc does
  * not exist.  */
+//lint -sem(vector<CALL_GRAPH *>::push,custodial(1))
 void CALL_GRAPH::insertArc (ilFunction newProc)
 {
     CALL_GRAPH *pcg;
-    int i;
+
 
     /* Check if procedure already exists */
     auto res=std::find_if(outEdges.begin(),outEdges.end(),[newProc](CALL_GRAPH *e) {return e->proc==newProc;});
@@ -73,7 +74,7 @@ void CALL_GRAPH::writeNodeCallGraph(int indIdx)
 {
     int i;
 
-    printf ("%s%s\n", indent(indIdx), proc->name.c_str());
+    printf ("%s%s\n", indentStr(indIdx), proc->name.c_str());
     for (i = 0; i < outEdges.size(); i++)
         outEdges[i]->writeNodeCallGraph (indIdx + 1);
 }
@@ -108,7 +109,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     /* Flag ticode as having register arguments */
     tproc = ticode->hl()->call.proc;
     tproc->flg |= REG_ARGS;
-
+    tidx = 0;
     /* Get registers and index into target procedure's local list */
     ps = ticode->hl()->call.args;
     ts = &tproc->args;
@@ -336,7 +337,8 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
             return;
     }
     /* If formal argument does not exist, do not create new ones, just
-         * ignore actual argument */
+     * ignore actual argument
+     */
     else
         return;
 

@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #include "Enums.h"
+#include "machine_x86.h"
 
 /* Type definition */
 // this array has to stay in-order of addition i.e. not std::set<iICODE,std::less<iICODE> >
@@ -44,7 +45,7 @@ typedef struct
 {
     int16_t	seg;			/*   segment value							 */
     int16_t	off;			/*   offset									 */
-    uint8_t 	regi;			/*   optional indexed register				 */
+    eReg 	regi;			/*   optional indexed register				 */
 } BWGLB_TYPE;
 
 
@@ -100,6 +101,8 @@ struct ID
         {
             case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
             return 16;
+            case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
+            return 8;
         }
         return ~0;
     }
@@ -113,9 +116,12 @@ public:
     {
         id_arr.reserve(256);
     }
+    // interface to allow range based iteration
+    std::vector<ID>::iterator begin() {return id_arr.begin();}
+    std::vector<ID>::iterator end() {return id_arr.end();}
     int newByteWordReg(hlType t, eReg regi);
     int newByteWordStk(hlType t, int off, uint8_t regOff);
-    int newIntIdx(int16_t seg, int16_t off, uint8_t regi, int ix, hlType t);
+    int newIntIdx(int16_t seg, int16_t off, eReg regi, int ix, hlType t);
     int newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset);

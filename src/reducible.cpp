@@ -100,7 +100,7 @@ static void appendNodeInt (queue &pqH, BB *node, interval *pI)
 void derSeq_Entry::findIntervals (Function *c)
 {
     interval *pI,        /* Interval being processed         */
-            *J;         /* ^ last interval in derivedGi->Ii */
+            *J=0;         /* ^ last interval in derivedGi->Ii */
     BB *h,           /* Node being processed         */
             *header,          /* Current interval's header node   */
             *succ;            /* Successor basic block        */

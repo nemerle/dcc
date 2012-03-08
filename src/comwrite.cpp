@@ -7,6 +7,7 @@
  ****************************************************************************/
 
 #include "dcc.h"
+#include "machine_x86.h"
 #include <string.h>
 #include <sstream>
 using namespace std;
@@ -200,19 +201,15 @@ void Function::writeProcComments()
             if (psym->regs->expr.ident.idType == REGISTER)
             {
                 id = &this->localId.id_arr[psym->regs->expr.ident.idNode.regiIdx];
-                if (psym->regs->expr.ident.regiType == WORD_REG)
-                    cCode.appendDecl(" *     %s = %s.\n", psym->name,
-                                     wordReg[id->id.regi - rAX]);
-                else		/* BYTE_REG */
-                    cCode.appendDecl(" *     %s = %s.\n", psym->name,
-                                     byteReg[id->id.regi - rAL]);
+                cCode.appendDecl(" *     %s = %s.\n", psym->name,
+                                 Machine_X86::regName(id->id.regi).c_str());
             }
             else		/* long register */
             {
                 id = &this->localId.id_arr[psym->regs->expr.ident.idNode.longIdx];
                 cCode.appendDecl(" *     %s = %s:%s.\n", psym->name,
-                                 wordReg[id->id.longId.h - rAX],
-                                 wordReg[id->id.longId.l - rAX]);
+                                 Machine_X86::regName(id->id.longId.h).c_str(),
+                                 Machine_X86::regName(id->id.longId.l).c_str());
             }
 
         }

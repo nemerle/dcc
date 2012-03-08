@@ -12,10 +12,8 @@
 #include <cassert>
 #include "types.h"
 #include "dcc.h"
+#include "machine_x86.h"
 using namespace std;
-// Index registers **** temp solution
-static const char * const idxReg[8] = {"bx+si", "bx+di", "bp+si", "bp+di",
-                                       "si", "di", "bp", "bx" };
 // Conditional operator symbols in C.  Index by condOp enumeration type
 static const char * const condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
                                           " & ", " | ", " ^ ", " ~ ",
@@ -297,7 +295,7 @@ COND_EXPR *COND_EXPR::idFunc(Function * pproc, STKFRAME * args)
 /* Returns an identifier conditional expression node of type OTHER.
  * Temporary solution, should really be encoded as an indexed type (eg.
  * arrays). */
-COND_EXPR *COND_EXPR::idOther(uint8_t seg, uint8_t regi, int16_t off)
+COND_EXPR *COND_EXPR::idOther(eReg seg, eReg regi, int16_t off)
 {
     COND_EXPR *newExp;
 
@@ -367,7 +365,7 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
         newExp = COND_EXPR::idKte (ll_insn.src.op(), 2);
     else if (pm.regi == 0)                             /* global variable */
         newExp = GlobalVariable::Create(pm.segValue, pm.off);
-    else if (pm.regi < INDEXBASE)                      /* register */
+    else if (pm.regi < INDEX_BX_SI)                      /* register */
     {
         newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? ll_insn.getFlag() :
                                                           ll_insn.getFlag() & NO_SRC_B,
@@ -377,14 +375,14 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
 
     else if (pm.off)                                   /* offset */
     {
-        if ((pm.seg == rSS) && (pm.regi == INDEXBASE + 6)) /* idx on bp */
+        if ((pm.seg == rSS) && (pm.regi == INDEX_BP)) /* idx on bp */
         {
             if (pm.off >= 0)                           /* argument */
                 newExp = COND_EXPR::idParam (pm.off, &pProc->args);
             else                                        /* local variable */
                 newExp = COND_EXPR::idLoc (pm.off, &pProc->localId);
         }
-        else if ((pm.seg == rDS) && (pm.regi == INDEXBASE + 7)) /* bx */
+        else if ((pm.seg == rDS) && (pm.regi == INDEX_BX)) /* bx */
         {
             if (pm.off > 0)        /* global variable */
                 newExp = idCondExpIdxGlob (pm.segValue, pm.off, rBX,&pProc->localId);
@@ -399,21 +397,21 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
 
     else  /* (pm->regi >= INDEXBASE && pm->off = 0) => indexed && no off */
     {
-        if ((pm.seg == rDS) && (pm.regi > INDEXBASE + 3)) /* dereference */
+        if ((pm.seg == rDS) && (pm.regi > INDEX_BP_DI)) /* dereference */
         {
             switch (pm.regi) {
-            case INDEXBASE + 4:
+            case INDEX_SI:
                 newExp = COND_EXPR::idReg(rSI, 0, &pProc->localId);
                 duIcode.setRegDU( rSI, du);
                 break;
-            case INDEXBASE + 5:
+            case INDEX_DI:
                 newExp = COND_EXPR::idReg(rDI, 0, &pProc->localId);
                 duIcode.setRegDU( rDI, du);
                 break;
-            case INDEXBASE + 6:
+            case INDEX_BP:
                 newExp = COND_EXPR::idReg(rBP, 0, &pProc->localId);
                 break;
-            case INDEXBASE + 7:
+            case INDEX_BX:
                 newExp = COND_EXPR::idReg(rBX, 0, &pProc->localId);
                 duIcode.setRegDU( rBX, du);
                 break;
@@ -440,9 +438,9 @@ condId ICODE::idType(opLoc sd)
         return (CONSTANT);
     else if (pm.regi == 0)
         return (GLOB_VAR);
-    else if (pm.regi < INDEXBASE)
+    else if (pm.regi < INDEX_BX_SI)
         return (REGISTER);
-    else if ((pm.seg == rSS) && (pm.regi == INDEXBASE))
+    else if ((pm.seg == rSS) && (pm.regi == INDEX_BX_SI))
     {
         if (pm.off >= 0)
             return (PARAM);
@@ -713,10 +711,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
             if (id->name[0] == '\0')	/* no name */
             {
                 sprintf (id->name, "loc%ld", ++(*numLoc));
-                if (id->id.regi < rAL)
-                    cCode.appendDecl("%s %s; /* %s */\n",hlTypes[id->type], id->name,wordReg[id->id.regi - rAX]);
-                else
-                    cCode.appendDecl("%s %s; /* %s */\n",hlTypes[id->type], id->name,byteReg[id->id.regi - rAL]);
+                cCode.appendDecl("%s %s; /* %s */\n",hlTypes[id->type], id->name,Machine_X86::regName(id->id.regi).c_str());
             }
             if (id->hasMacro)
                 o << id->macro << "("<<id->name<<")";
@@ -738,7 +733,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
 
         case GLOB_VAR_IDX:
             bwGlb = &pProc->localId.id_arr[expr->expr.ident.idNode.idxGlbIdx].id.bwGlb;
-            o << (bwGlb->seg << 4) + bwGlb->off <<  "["<<wordReg[bwGlb->regi - rAX]<<"]";
+            o << (bwGlb->seg << 4) + bwGlb->off <<  "["<<Machine_X86::regName(bwGlb->regi)<<"]";
             break;
 
         case CONSTANT:
@@ -759,7 +754,9 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
             else if (id->loc == REG_FRAME)
             {
                 sprintf (id->name, "loc%ld", ++(*numLoc));
-                cCode.appendDecl("%s %s; /* %s:%s */\n",hlTypes[id->type], id->name,wordReg[id->id.longId.h - rAX],wordReg[id->id.longId.l - rAX]);
+                cCode.appendDecl("%s %s; /* %s:%s */\n",hlTypes[id->type], id->name,
+                                 Machine_X86::regName(id->id.longId.h).c_str(),
+                                 Machine_X86::regName(id->id.longId.l).c_str());
                 o << id->name;
                 pProc->localId.propLongId (id->id.longId.l,id->id.longId.h, id->name);
             }
@@ -778,8 +775,8 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
 
         case OTHER:
             off = expr->expr.ident.idNode.other.off;
-            o << wordReg[expr->expr.ident.idNode.other.seg - rAX]<< "[";
-            o << idxReg[expr->expr.ident.idNode.other.regi - INDEXBASE];
+            o << Machine_X86::regName(expr->expr.ident.idNode.other.seg)<< "[";
+            o << Machine_X86::regName(expr->expr.ident.idNode.other.regi);
             if (off < 0)
                 o << "-"<< hexStr (-off);
             else if (off>0)

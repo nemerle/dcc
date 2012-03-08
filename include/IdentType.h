@@ -1,6 +1,7 @@
 #pragma once
 #include "ast.h"
 #include "types.h"
+#include "machine_x86.h"
 struct IDENTTYPE
 {
     condId           idType;
@@ -23,8 +24,8 @@ struct IDENTTYPE
             STKFRAME *args;
         }			 call;
         struct {                /* for OTHER; tmp struct            */
-            uint8_t     seg;       /*   segment                        */
-            uint8_t     regi;      /*   index mode                     */
+            eReg     seg;       /*   segment                        */
+            eReg     regi;      /*   index mode                     */
             int16_t    off;       /*   offset                         */
         }            other;
     }                idNode;

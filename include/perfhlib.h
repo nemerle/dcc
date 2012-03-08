@@ -1,11 +1,9 @@
+#pragma once
 /* Perfect hashing function library. Contains functions to generate perfect
     hashing functions
  * (C) Mike van Emmerik
  */
 
-
-#define TRUE 1
-#define FALSE 0
 //#define bool unsigned char
 #define uint8_t unsigned char
 #define uint16_t unsigned short

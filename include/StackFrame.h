@@ -37,5 +37,5 @@ struct STKFRAME
     {
 
     }
-    int getLocVar(int off);
+    size_t getLocVar(int off);
 };

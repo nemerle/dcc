@@ -43,7 +43,7 @@ struct ph_func_tag
 #define NUM_PLIST   64              	/* Number of entries to increase allocation by */
 
 /* statics */
-char buf[100];          				/* A general purpose buffer */
+static char buf[100];          				/* A general purpose buffer */
 int numKeys;            				/* Number of hash table entries (keys) */
 int numVert;            				/* Number of vertices in the graph (also size of g[]) */
 unsigned PatLen;        				/* Size of the keys (pattern length) */

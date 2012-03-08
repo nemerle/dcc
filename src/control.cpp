@@ -123,13 +123,13 @@ static boolT inInt(BB * n, queue &q)
  * The follow node is the closest node to the loop. */
 static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
 {
-    int j, succ;
+    int succ;
 
     head->loopFollow = MAX;
     nodeList::iterator p = loopNodes.begin();
     for( ;p != loopNodes.end();++p)
     {
-        for (j = 0; j < pProc->m_dfsLast[*p]->edges.size(); j++)
+        for (size_t j = 0; j < pProc->m_dfsLast[*p]->edges.size(); j++)
         {
             succ = pProc->m_dfsLast[*p]->edges[j].BBptr->dfsLastNum;
             if ((! inList(loopNodes, succ)) && (succ < head->loopFollow))
@@ -264,7 +264,6 @@ static void findNodesInInt (queue &intNodes, int level, interval *Ii)
         for (auto i=Ii->nodes.begin(); i!=Ii->nodes.end(); ++i)
         {
             en=*i;
-
 #else
         for(BB *en : Ii->nodes)
         {
@@ -273,6 +272,7 @@ static void findNodesInInt (queue &intNodes, int level, interval *Ii)
         }
     }
     else
+    {
 #ifdef _lint
         BB * en=0;
         for (auto i=Ii->nodes.begin(); i!=Ii->nodes.end(); ++i)
@@ -285,6 +285,7 @@ static void findNodesInInt (queue &intNodes, int level, interval *Ii)
 #endif
             findNodesInInt(intNodes,level-1,en->correspInt);
         }
+    }
 }
 
 
@@ -295,7 +296,7 @@ void Function::structLoops(derSeq *derivedG)
     BB * intHead,      	/* interval header node         	*/
             * pred,     /* predecessor node         		*/
             * latchNode;/* latching node (in case of loops) */
-    int i,              /* counter              			*/
+    int
             level = 0;  /* derived sequence level       	*/
     interval *initInt;  /* initial interval         		*/
     queue intNodes;  	/* list of interval nodes       	*/
@@ -314,7 +315,7 @@ void Function::structLoops(derSeq *derivedG)
             /* Find interval head (original BB node in G1) and create
            * list of nodes of interval Ii.              */
             initInt = Ii;
-            for (i = 1; i < level; i++)
+            for (size_t i = 1; i < level; i++)
                 initInt = (*initInt->nodes.begin())->correspInt;
             intHead = *initInt->nodes.begin();
 
@@ -322,7 +323,7 @@ void Function::structLoops(derSeq *derivedG)
             findNodesInInt (intNodes, level, Ii);
 
             /* Find greatest enclosing back edge (if any) */
-            for (i = 0; i < intHead->inEdges.size(); i++)
+            for (size_t i = 0; i < intHead->inEdges.size(); i++)
             {
                 pred = intHead->inEdges[i];
                 if (inInt(pred, intNodes) && isBackEdge(pred, intHead))

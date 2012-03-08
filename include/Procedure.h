@@ -102,8 +102,8 @@ public:
     std::list<BB*> heldBBs;
     //BB *         *dfsLast;  /* Array of pointers to BBs in dfsLast
 //                           * (reverse postorder) order            	 */
-    int          numBBs;    /* Number of BBs in the graph cfg       	 */
-    boolT        hasCase;   /* Procedure has a case node            	 */
+    size_t        numBBs;    /* Number of BBs in the graph cfg       	 */
+    bool         hasCase;   /* Procedure has a case node            	 */
 
     /* For interprocedural live analysis */
     std::bitset<32>     liveIn;	/* Registers used before defined                 */

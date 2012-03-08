@@ -42,7 +42,7 @@ private:
     iICODE  range_end;
 public:
     iICODE begin();
-    iICODE end();
+    iICODE end() const;
     riICODE rbegin();
     riICODE rend();
     ICODE &front();

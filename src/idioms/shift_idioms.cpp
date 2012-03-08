@@ -57,7 +57,7 @@ int Idiom8::action()
  ****************************************************************************/
 bool Idiom15::match(iICODE pIcode)
 {
-    int n = 1;
+
     uint8_t regi;
 
     if(distance(pIcode,m_end)<2)
@@ -72,7 +72,7 @@ bool Idiom15::match(iICODE pIcode)
             pIcode->ll()->match(iSHL,(eReg)regi,I) and
             (pIcode->ll()->src.op() == 1) )
     {
-        n++;
+
         m_icodes.push_back(pIcode++);
     }
     return m_icodes.size()>1;
@@ -80,13 +80,13 @@ bool Idiom15::match(iICODE pIcode)
 
 int Idiom15::action()
 {
-    COND_EXPR *lhs,*rhs,*exp;
+    COND_EXPR *lhs,*rhs,*_exp;
     lhs = COND_EXPR::idReg (m_icodes[0]->ll()->dst.regi,
                             m_icodes[0]->ll()->getFlag() & NO_SRC_B,
                              &m_func->localId);
     rhs = COND_EXPR::idKte (m_icodes.size(), 2);
-    exp = COND_EXPR::boolOp (lhs, rhs, SHL);
-    m_icodes[0]->setAsgn(lhs, exp);
+    _exp = COND_EXPR::boolOp (lhs, rhs, SHL);
+    m_icodes[0]->setAsgn(lhs, _exp);
     for (size_t i=1; i<m_icodes.size()-1; ++i)
     {
         m_icodes[i]->invalidate();

@@ -80,7 +80,7 @@ bool Idiom16::match (iICODE picode)
         m_icodes[i]=picode++;
 
     uint8_t regi = m_icodes[0]->ll()->dst.regi;
-    if ((regi >= rAX) && (regi < INDEXBASE))
+    if ((regi >= rAX) && (regi < INDEX_BX_SI))
     {
         if (m_icodes[1]->ll()->match(iSBB) && m_icodes[2]->ll()->match(iINC))
             if ((m_icodes[1]->ll()->dst.regi == (m_icodes[1]->ll()->src.regi)) &&

@@ -59,10 +59,10 @@ void ICODE::newCallHl()
 
 /* Places the new HLI_POP/HLI_PUSH/HLI_RET high-level operand in the high-level icode
  * array */
-void ICODE::setUnary(hlIcode op, COND_EXPR *exp)
+void ICODE::setUnary(hlIcode op, COND_EXPR *_exp)
 {
     type = HIGH_LEVEL;
-    hl()->set(op,exp);
+    hl()->set(op,_exp);
 }
 
 
@@ -285,8 +285,9 @@ void Function::highLevelGen()
     int numIcode;         /* number of icode instructions */
     iICODE pIcode;        /* ptr to current icode node */
     COND_EXPR *lhs, *rhs; /* left- and right-hand side of expression */
-    uint32_t flg;          /* icode flags */
+    uint32_t _flg;          /* icode flags */
     numIcode = Icode.size();
+    lhs=rhs=0;
     for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
     {
         assert(numIcode==Icode.size());
@@ -296,9 +297,9 @@ void Function::highLevelGen()
             pIcode->invalidate();
         if ((pIcode->type != LOW_LEVEL) or not pIcode->valid() )
             continue;
-        flg = ll->getFlag();
-        if ((flg & IM_OPS) != IM_OPS)   /* not processing IM_OPS yet */
-            if ((flg & NO_OPS) != NO_OPS)       /* if there are opers */
+        _flg = ll->getFlag();
+        if ((_flg & IM_OPS) != IM_OPS)   /* not processing IM_OPS yet */
+            if ((_flg & NO_OPS) != NO_OPS)       /* if there are opers */
             {
                 if ( not ll->testFlags(NO_SRC) )   /* if there is src op */
                     rhs = COND_EXPR::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
@@ -606,7 +607,7 @@ void ICODE::writeDU()
     int my_idx = loc_ip;
     {
         ostringstream ostr;
-        for (int i = 0; i < (INDEXBASE-1); i++)
+        for (int i = 0; i < (INDEX_BX_SI-1); i++)
             if (du.def[i])
                 ostr << allRegs[i] << " ";
         if (!ostr.str().empty())
@@ -614,12 +615,12 @@ void ICODE::writeDU()
     }
     {
         ostringstream ostr;
-        for (int i = 0; i < (INDEXBASE-1); i++)
+        for (int i = 0; i < (INDEX_BX_SI-1); i++)
             if (du.def[i])
                 ostr << allRegs[i] << " ";
         if (!ostr.str().empty())
             printf ("Def (reg) = %s\n", ostr.str().c_str());
-        for (int i = 0; i < INDEXBASE; i++)
+        for (int i = 0; i < INDEX_BX_SI; i++)
         {
             if (du.use[i])
                 ostr << allRegs[i] << " ";

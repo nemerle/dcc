@@ -55,7 +55,7 @@ struct TABLEINFO_TYPE
     {
         symTab=valTab=0;
     }
-    void    deleteVal(uint32_t symOff, Function *symProc, boolT bSymToo);
+    //void deleteVal(uint32_t symOff, Function *symProc, boolT bSymToo);
     void create(tableType type);
     void destroy();
 private:

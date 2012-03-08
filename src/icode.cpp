@@ -27,7 +27,7 @@ ICODE * CIcodeRec::addIcode(ICODE *pIcode)
     return &back();
 }
 
-void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
+void CIcodeRec::SetInBB(int start, int _end, BB *pnewBB)
 {
 #ifdef _lint
     for (auto ik=this->begin(); ik!=this->end(); ++ik)
@@ -37,18 +37,16 @@ void CIcodeRec::SetInBB(int start, int end, BB *pnewBB)
     for(ICODE &icode : *this)
     {
 #endif
-        if((icode.loc_ip>=start) and (icode.loc_ip<=end))
+        if((icode.loc_ip>=start) and (icode.loc_ip<=_end))
             icode.inBB = pnewBB;
     }
-    //    for (int i = start; i <= end; i++)
-//        at(i).inBB = pnewBB;
 }
 
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and
    replaces *pIndex with an icode index */
 bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
 {
-    int  i;
+
     iICODE location=labelSrch(target);
     if(end()==location)
             return false;
@@ -57,7 +55,7 @@ bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
 }
 CIcodeRec::iterator CIcodeRec::labelSrch(uint32_t target)
 {
-    int  i;
+
     return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ll()->label==target;});
 }
 ICODE * CIcodeRec::GetIcode(int ip)
@@ -68,7 +66,7 @@ ICODE * CIcodeRec::GetIcode(int ip)
     return &(*res);
 }
 
-extern char *indent(int level);
+
 extern int getNextLabel();
 extern bundle cCode;
 /* Checks the given icode to determine whether it has a label associated
@@ -88,7 +86,7 @@ void LLInst::emitGotoLabel (int indLevel)
                  * the code */
         addLabelBundle (cCode.code, codeIdx, hllLabNum);
     }
-    cCode.appendCode( "%sgoto L%ld;\n", indent(indLevel), hllLabNum);
+    cCode.appendCode( "%sgoto L%ld;\n", indentStr(indLevel), hllLabNum);
     stats.numHLIcode++;
 }
 

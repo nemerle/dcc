@@ -221,7 +221,7 @@ void Function::findIdioms()
  * binds jump target addresses to icode offsets.    */
 void Function::bindIcodeOff()
 {
-    int i;                 /* idx into icode array */
+
     iICODE pIcode;            /* ptr icode array      */
     uint32_t *p;                 /* for case table       */
 

@@ -422,8 +422,8 @@ static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t of
     }
     else
     {	/* no override, check indexed register */
-        if ((reg >= INDEXBASE) && (reg == INDEXBASE + 2 ||
-                                   reg == INDEXBASE + 3 || reg == INDEXBASE + 6))
+        if ((reg >= INDEX_BX_SI) && (reg == INDEX_BP_SI ||
+                                   reg == INDEX_BP_DI || reg == INDEX_BP))
         {
             pm->seg = rSS;		/* indexed on bp */
         }
@@ -435,7 +435,7 @@ static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t of
 
     pm->regi = (eReg)reg;
     pm->off = (int16_t)off;
-    if (reg && reg < INDEXBASE && (stateTable[i].flg & B))
+    if (reg && reg < INDEX_BX_SI && (stateTable[i].flg & B))
     {
         pm->regi = subRegL(pm->regi);
     }
@@ -462,15 +462,15 @@ static void rm(int i)
                 pIcode->ll()->setFlags(WORD_OFF);
             }
             else
-                setAddress(i, TRUE, SegPrefix, rm + INDEXBASE, 0);
+                setAddress(i, TRUE, SegPrefix, rm + INDEX_BX_SI, 0);
             break;
 
         case 1:		/* 1 uint8_t disp */
-            setAddress(i, TRUE, SegPrefix, rm+INDEXBASE, (uint16_t)signex(*pInst++));
+            setAddress(i, TRUE, SegPrefix, rm+INDEX_BX_SI, (uint16_t)signex(*pInst++));
             break;
 
         case 2:		/* 2 uint8_t disp */
-            setAddress(i, TRUE, SegPrefix, rm + INDEXBASE, getWord());
+            setAddress(i, TRUE, SegPrefix, rm + INDEX_BX_SI, getWord());
             pIcode->ll()->setFlags(WORD_OFF);
             break;
 

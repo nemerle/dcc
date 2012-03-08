@@ -169,7 +169,7 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
 */
 static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEnd)
 {
-    int j;
+
     BB * pbb, * obb1, * tbb;
     if(distance(pIcode,pEnd)<4)
         return false;
@@ -229,7 +229,7 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEn
  *            pProc : ptr to current procedure's record.        */
 void Function::propLongStk (int i, const ID &pLocId)
 {
-    int off, arc;
+    int arc;
     Assignment asgn;
     //COND_EXPR *lhs, *rhs;     /* Pointers to left and right hand expression */
     iICODE next1, pEnd;
@@ -389,7 +389,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         if(next1==pEnd)
             break;
         LLOperand * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
-        int off,arc;
+        int arc;
 
         if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
             continue;

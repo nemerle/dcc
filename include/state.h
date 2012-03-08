@@ -5,13 +5,14 @@
 #pragma once
 #include <stdint.h>
 #include <cstring>
-#include "Enums.h"
+#include "machine_x86.h"
+
 /* STATE TABLE */
 struct STATE
 {
     uint32_t       IP;             /* Offset into Image                    */
-    int16_t       r[INDEXBASE];   /* Value of segs and AX                 */
-    uint8_t        f[INDEXBASE];   /* True if r[.] has a value             */
+    int16_t       r[INDEX_BX_SI];   /* Value of segs and AX                 */
+    uint8_t        f[INDEX_BX_SI];   /* True if r[.] has a value             */
     struct
     {                           /* For case stmt indexed reg            */
         uint8_t    regi;           /*   Last conditional jump              */
@@ -24,8 +25,8 @@ struct STATE
         JCond.regi=0;
         JCond.immed=0;
 
-        memset(r,0,sizeof(int16_t)*INDEXBASE);
-        memset(f,0,sizeof(uint8_t)*INDEXBASE);
+        memset(r,0,sizeof(int16_t)*INDEX_BX_SI);
+        memset(f,0,sizeof(uint8_t)*INDEX_BX_SI);
     }
 };
 

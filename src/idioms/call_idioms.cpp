@@ -101,7 +101,7 @@ int Idiom17::action()
         m_icodes[0]->ll()->src.proc.proc->cbParam = (int16_t)m_param_count;
         m_icodes[0]->ll()->src.proc.cb = m_param_count;
         m_icodes[0]->ll()->src.proc.proc->flg |= CALL_C;
-        for(int idx=1; idx<m_icodes.size(); ++idx)
+        for(size_t idx=1; idx<m_icodes.size(); ++idx)
         {
             m_icodes[idx]->invalidate();
         }

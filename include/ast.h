@@ -76,7 +76,7 @@ public:
     static COND_EXPR *idLoc(int off, LOCAL_ID *localId);
     static COND_EXPR *idReg(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
     static COND_EXPR *idLongIdx(int idx);
-    static COND_EXPR *idOther(uint8_t seg, uint8_t regi, int16_t off);
+    static COND_EXPR *idOther(eReg seg, eReg regi, int16_t off);
     static COND_EXPR *idParam(int off, const STKFRAME *argSymtab);
     static COND_EXPR *unary(condNodeType t, COND_EXPR *sub_expr);
     static COND_EXPR *idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset);

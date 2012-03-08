@@ -47,11 +47,6 @@ PatternHasher::init(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin,
     g = new short [NumVert + 1];
 //    visited = new bool [NumVert + 1];
     return;
-
-BadAlloc:
-    printf("Could not allocate memory\n");
-    cleanup();
-    exit(1);
 }
 
 void PatternHasher::cleanup(void)

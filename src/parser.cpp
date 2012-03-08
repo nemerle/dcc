@@ -425,9 +425,9 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
     /* Ensure we have a uint16_t offset & valid seg */
     if (pIcode.ll()->match(iJMP) and (pIcode.ll()->testFlags(WORD_OFF)) &&
             pstate->f[seg] &&
-            (pIcode.ll()->src.regi == INDEXBASE + 4 ||
-             pIcode.ll()->src.regi == INDEXBASE + 5 || /* Idx reg. BX, SI, DI */
-             pIcode.ll()->src.regi == INDEXBASE + 7))
+            (pIcode.ll()->src.regi == INDEX_SI ||
+             pIcode.ll()->src.regi == INDEX_DI || /* Idx reg. BX, SI, DI */
+             pIcode.ll()->src.regi == INDEX_BX))
     {
 
         offTable = ((uint32_t)(uint16_t)pstate->r[seg] << 4) + pIcode.ll()->src.off;
@@ -438,7 +438,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
          * This is stored in the current state as if we had just
          * followed a JBE branch (i.e. [reg] lies between 0 - immed).
         */
-        if (pstate->JCond.regi == i2r[pIcode.ll()->src.regi-(INDEXBASE+4)])
+        if (pstate->JCond.regi == i2r[pIcode.ll()->src.regi-(INDEX_BX_SI+4)])
             endTable = offTable + pstate->JCond.immed;
         else
             endTable = (uint32_t)prog.cbImage;
@@ -488,7 +488,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
 
             for (i = offTable, k = 0; i < endTable; i += 2)
             {
-                memcpy(&StCopy, pstate, sizeof(STATE));
+                StCopy = *pstate;
                 StCopy.IP = cs + LH(&prog.Image[i]);
                 iICODE last_current_insn = (++Icode.rbegin()).base();
                 ip = Icode.size();
@@ -643,7 +643,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
     SYM *  psym, *psym2;        /* Pointer to symbol in global symbol table */
     uint8_t  dstReg = ll.dst.regi;
     uint8_t  srcReg = ll.src.regi;
-    if (dstReg > 0 && dstReg < INDEXBASE)
+    if (dstReg > 0 && dstReg < INDEX_BX_SI)
     {
         if (ll.testFlags(I))
             pstate->setState( dstReg, (int16_t)ll.src.op());
@@ -653,7 +653,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
             if (psym && ((psym->flg & SEG_IMMED) || psym->duVal.val))
                 pstate->setState( dstReg, LH(&prog.Image[psym->label]));
         }
-        else if (srcReg < INDEXBASE && pstate->f[srcReg])  /* reg */
+        else if (srcReg < INDEX_BX_SI && pstate->f[srcReg])  /* reg */
         {
             pstate->setState( dstReg, pstate->r[srcReg]);
 
@@ -682,12 +682,12 @@ static void process_MOV(LLInst & ll, STATE * pstate)
                 {
                     prog.Image[psym->label] = (uint8_t)prog.Image[psym2->label];
                     if(psym->size>1)
-                        prog.Image[psym->label+1] = (uint8_t)(prog.Image[psym2->label+1] >> 8);
+                        prog.Image[psym->label+1] = prog.Image[psym2->label+1];//(uint8_t)(prog.Image[psym2->label+1] >> 8);
                     psym->duVal.setFlags(eDuVal::DEF);
                     psym2->duVal.setFlags(eDuVal::USE);
                 }
             }
-            else if (srcReg < INDEXBASE && pstate->f[srcReg])  /* reg */
+            else if (srcReg < INDEX_BX_SI && pstate->f[srcReg])  /* reg */
             {
                 prog.Image[psym->label] = (uint8_t)pstate->r[srcReg];
                 if(psym->size>1)
@@ -917,9 +917,9 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     LLOperand * pm   = (d == SRC)? &pIcode.ll()->src: &pIcode.ll()->dst;
     SYM *  psym;
 
-    if (pm->regi == 0 || pm->regi >= INDEXBASE)
+    if (pm->regi == 0 || pm->regi >= INDEX_BX_SI)
     {
-        if (pm->regi == INDEXBASE + 6)      /* indexed on bp */
+        if (pm->regi == INDEX_BP)      /* indexed on bp */
         {
             if (pm->off >= 2)
                 updateFrameOff (&pProc->args, pm->off, size, eDuVal::USE);
@@ -927,13 +927,13 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
                 pProc->localId.newByteWordStk (TYPE_WORD_SIGN, pm->off, 0);
         }
 
-        else if (pm->regi == INDEXBASE + 2 || pm->regi == INDEXBASE + 3)
+        else if (pm->regi == INDEX_BP_SI || pm->regi == INDEX_BP_DI)
             pProc->localId.newByteWordStk (TYPE_WORD_SIGN, pm->off,
-                                           (uint8_t)((pm->regi == INDEXBASE + 2) ? rSI : rDI));
+                                           (uint8_t)((pm->regi == INDEX_BP_SI) ? rSI : rDI));
 
-        else if ((pm->regi >= INDEXBASE + 4) && (pm->regi <= INDEXBASE + 7))
+        else if ((pm->regi >= INDEX_SI) && (pm->regi <= INDEX_BX))
         {
-            if ((pm->seg == rDS) && (pm->regi == INDEXBASE + 7))    /* bx */
+            if ((pm->seg == rDS) && (pm->regi == INDEX_BX))    /* bx */
             {
                 if (pm->off > 0)    /* global indexed variable */
                     pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,ix, TYPE_WORD_SIGN);
@@ -964,9 +964,9 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     LLOperand *pm   = (d == SRC)? &pIcode.ll()->src: &pIcode.ll()->dst;
     SYM *  psym;
 
-    if (pm->regi == 0 || pm->regi >= INDEXBASE)
+    if (pm->regi == 0 || pm->regi >= INDEX_BX_SI)
     {
-        if (pm->regi == INDEXBASE + 6)      /* indexed on bp */
+        if (pm->regi == INDEX_BP)      /* indexed on bp */
         {
             if (pm->off >= 2)
                 updateFrameOff (&pProc->args, pm->off, size, eDEF);
@@ -974,15 +974,15 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
                 pProc->localId.newByteWordStk (TYPE_WORD_SIGN, pm->off, 0);
         }
 
-        else if (pm->regi == INDEXBASE + 2 || pm->regi == INDEXBASE + 3)
+        else if (pm->regi == INDEX_BP_SI || pm->regi == INDEX_BP_DI)
         {
             pProc->localId.newByteWordStk(TYPE_WORD_SIGN, pm->off,
-                                          (uint8_t)((pm->regi == INDEXBASE + 2) ? rSI : rDI));
+                                          (uint8_t)((pm->regi == INDEX_BP_SI) ? rSI : rDI));
         }
 
-        else if ((pm->regi >= INDEXBASE + 4) && (pm->regi <= INDEXBASE + 7))
+        else if ((pm->regi >= INDEX_SI) && (pm->regi <= INDEX_BX))
         {
-            if ((pm->seg == rDS) && (pm->regi == INDEXBASE + 7))    /* bx */
+            if ((pm->seg == rDS) && (pm->regi == INDEX_BX))    /* bx */
             {
                 if (pm->off > 0)        /* global var */
                     pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,ix, TYPE_WORD_SIGN);
@@ -1017,7 +1017,7 @@ static void use_def(opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, i
 
     use (d, pIcode, pProc, pstate, cb, ix);
 
-    if (pm->regi < INDEXBASE)                   /* register */
+    if (pm->regi < INDEX_BX_SI)                   /* register */
     {
         pIcode.du.def |= duReg[pm->regi];
         pIcode.du1.numRegsDef++;
@@ -1043,6 +1043,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             if (! Imm) {
                 use(SRC, pIcode, this, pstate, cb, ix);
             }
+            //lint -fallthrough
         case iINC:  case iDEC:  case iNEG:  case iNOT:
         case iAAA:  case iAAD:  case iAAM:  case iAAS:
         case iDAA:  case iDAS:

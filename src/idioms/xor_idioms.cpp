@@ -28,7 +28,7 @@ bool Idiom21::match (iICODE picode)
 
     dst = &m_icodes[0]->ll()->dst;
     src = &m_icodes[0]->ll()->src;
-    if ((dst->regi == src->regi) && (dst->regi > 0) && (dst->regi < INDEXBASE))
+    if ((dst->regi == src->regi) && (dst->regi > 0) && (dst->regi < INDEX_BX_SI))
     {
         if ((dst->regi == rDX) && m_icodes[1]->ll()->match(rAX))
             return true;
@@ -68,12 +68,12 @@ bool Idiom7::match(iICODE picode)
         if ((dst->segValue == src->segValue) && (dst->off == src->off))
             return true;
     }
-    else if (dst->regi < INDEXBASE)     /* register */
+    else if (dst->regi < INDEX_BX_SI)     /* register */
     {
         if (dst->regi == src->regi)
             return true;
     }
-    else if ((dst->off) && (dst->seg == rSS) && (dst->regi == INDEXBASE + 6)) /* offset from BP */
+    else if ((dst->off) && (dst->seg == rSS) && (dst->regi == INDEX_BP)) /* offset from BP */
     {
         if ((dst->off == src->off) && (dst->seg == src->seg) && (dst->regi == src->regi))
             return true;
@@ -115,7 +115,7 @@ bool Idiom10::match(iICODE pIcode)
     /* Check OR reg, reg */
     if (not m_icodes[0]->ll()->testFlags(I)  &&
             (m_icodes[0]->ll()->src.regi > 0) &&
-            (m_icodes[0]->ll()->src.regi < INDEXBASE) &&
+            (m_icodes[0]->ll()->src.regi < INDEX_BX_SI) &&
             (m_icodes[0]->ll()->src.regi == m_icodes[0]->ll()->dst.regi))
         if (m_icodes[1]->ll()->match(iJNE)) //.conditionalJump()
         {

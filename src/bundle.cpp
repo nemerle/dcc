@@ -40,9 +40,7 @@ void addLabelBundle (strTable &strTab, int idx, int label)
 /* Writes the contents of the string table on the file fp.  */
 static void writeStrTab (std::ostream &ios, strTable &strTab)
 {
-    int i;
-
-    for (i = 0; i < strTab.size(); i++)
+    for (size_t i = 0; i < strTab.size(); i++)
         ios << strTab[i];
 }
 

@@ -5,7 +5,7 @@
 #include "Procedure.h"
 #include "dcc.h"
 using namespace std;
-extern char *indent (int indLevel);
+
 BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
 {
     BB *pnewBB = new BB;
@@ -13,13 +13,13 @@ BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
     return pnewBB;
 }
 
-BB *BB::Create(int start, int ip, uint8_t nodeType, int numOutEdges, Function *parent)
+BB *BB::Create(int start, int ip, uint8_t _nodeType, int numOutEdges, Function *parent)
 {
-    parent->m_cfg;
+    //parent->m_cfg;
     BB* pnewBB;
 
     pnewBB = new BB;
-    pnewBB->nodeType = nodeType;	/* Initialise */
+    pnewBB->nodeType = _nodeType;	/* Initialise */
     pnewBB->immedDom = NO_DOM;
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
             pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
@@ -68,7 +68,7 @@ void BB::display()
     printf("\nnode type = %s, ", s_nodeType[nodeType]);
     printf("start = %ld, length = %ld, #out edges = %ld\n", begin()->loc_ip, size(), edges.size());
 
-    for (int i = 0; i < edges.size(); i++)
+    for (size_t i = 0; i < edges.size(); i++)
         printf(" outEdge[%2d] = %ld\n",i, edges[i].BBptr->begin()->loc_ip);
 }
 /*****************************************************************************
@@ -100,6 +100,7 @@ void BB::displayDfs()
         printf("corresponding interval = %ld\n", correspInt->numInt);
     else
     {
+        int edge_idx=0;
 #ifdef _lint
         for(auto iter=inEdges.begin(); iter!=inEdges.end(); ++iter)
         {
@@ -108,7 +109,8 @@ void BB::displayDfs()
         for(BB *node : inEdges)
         {
 #endif
-            printf ("  inEdge[%ld] = %ld\n", i, node->begin()->loc_ip);
+            printf ("  inEdge[%ld] = %ld\n", edge_idx, node->begin()->loc_ip);
+            edge_idx++;
         }
     }
 
@@ -148,14 +150,14 @@ void BB::displayDfs()
  *						current procedure.
  *				indLevel: indentation level - used for formatting.
  *				numLoc: last # assigned to local variables 				*/
-void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, int _ifFollow)
+void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode, int _ifFollow)
 {
-    int follow,						/* ifFollow						*/
-            _loopType, 					/* Type of loop, if any 		*/
-            _nodeType;						/* Type of node 				*/
+    int follow,						/* ifFollow                 	*/
+        _loopType, 					/* Type of loop, if any         */
+        _nodeType;                                      /* Type of node                 */
     BB * succ, *latch;					/* Successor and latching node 	*/
     ICODE * picode;					/* Pointer to HLI_JCOND instruction	*/
-    char *l;							/* Pointer to HLI_JCOND expression	*/
+    char *l;                                            /* Pointer to HLI_JCOND expression	*/
     boolT emptyThen,					/* THEN clause is empty			*/
             repCond;					/* Repeat condition for while() */
 
@@ -202,19 +204,19 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                 }
                 {
                     string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
-                    cCode.appendCode( "\n%swhile (%s) {\n", indent(indLevel),e.c_str());
+                    cCode.appendCode( "\n%swhile (%s) {\n", indentStr(indLevel),e.c_str());
                 }
                 picode->invalidate();
                 break;
 
             case REPEAT_TYPE:
-                cCode.appendCode( "\n%sdo {\n", indent(indLevel));
+                cCode.appendCode( "\n%sdo {\n", indentStr(indLevel));
                 picode = &latch->back();
                 picode->invalidate();
                 break;
 
             case ENDLESS_TYPE:
-                cCode.appendCode( "\n%sfor (;;) {\n", indent(indLevel));
+                cCode.appendCode( "\n%sfor (;;) {\n", indentStr(indLevel));
         }
         stats.numHLIcode += 1;
         indLevel++;
@@ -227,7 +229,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
     /* Check for end of path */
     _nodeType = nodeType;
     if (_nodeType == RETURN_NODE || _nodeType == TERMINATE_NODE ||
-        _nodeType == NOWHERE_NODE || (dfsLastNum == latchNode))
+        _nodeType == NOWHERE_NODE || (dfsLastNum == _latchNode))
         return;
 
     /* Check type of loop/node and process code */
@@ -258,17 +260,17 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                          * in while condition, then, emit the loop trailer */
             if (repCond)
                 writeBB (indLevel+1, pProc, numLoc);
-            cCode.appendCode( "%s}	/* end of while */\n",indent(indLevel));
+            cCode.appendCode( "%s}	/* end of while */\n",indentStr(indLevel));
         }
         else if (_loopType == ENDLESS_TYPE)
-            cCode.appendCode( "%s}	/* end of loop */\n",indent(indLevel));
+            cCode.appendCode( "%s}	/* end of loop */\n",indentStr(indLevel));
         else if (_loopType == REPEAT_TYPE)
         {
             if (picode->hl()->opcode != HLI_JCOND)
                 reportError (REPEAT_FAIL);
             {
                 string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
-                cCode.appendCode( "%s} while (%s);\n", indent(indLevel),e.c_str());
+                cCode.appendCode( "%s} while (%s);\n", indentStr(indLevel),e.c_str());
             }
         }
 
@@ -277,7 +279,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
         {
             succ = pProc->m_dfsLast[loopFollow];
             if (succ->traversed != DFS_ALPHA)
-                succ->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
+                succ->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);
             else		/* has been traversed so we need a goto */
                 succ->front().ll()->emitGotoLabel (indLevel);
         }
@@ -301,14 +303,14 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                     if (succ->dfsLastNum != follow)	/* THEN part */
                     {
                         l = writeJcond ( *back().hl(), pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indent(indLevel-1), l);
-                        succ->writeCode (indLevel, pProc, numLoc, latchNode,follow);
+                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l);
+                        succ->writeCode (indLevel, pProc, numLoc, _latchNode,follow);
                     }
                     else		/* empty THEN part => negate ELSE part */
                     {
                         l = writeJcondInv ( *back().hl(), pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indent(indLevel-1), l);
-                        edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, follow);
+                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l);
+                        edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, follow);
                         emptyThen = true;
                     }
                 }
@@ -322,32 +324,32 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
                     if (succ->dfsLastNum != follow)		/* ELSE part */
                     {
                         cCode.appendCode( "%s}\n%selse {\n",
-                                          indent(indLevel-1), indent(indLevel - 1));
-                        succ->writeCode (indLevel, pProc, numLoc, latchNode, follow);
+                                          indentStr(indLevel-1), indentStr(indLevel - 1));
+                        succ->writeCode (indLevel, pProc, numLoc, _latchNode, follow);
                     }
                     /* else (empty ELSE part) */
                 }
                 else if (! emptyThen) 	/* already visited => emit label */
                 {
                     cCode.appendCode( "%s}\n%selse {\n",
-                                      indent(indLevel-1), indent(indLevel - 1));
+                                      indentStr(indLevel-1), indentStr(indLevel - 1));
                     succ->front().ll()->emitGotoLabel (indLevel);
                 }
-                cCode.appendCode( "%s}\n", indent(--indLevel));
+                cCode.appendCode( "%s}\n", indentStr(--indLevel));
 
                 /* Continue with the follow */
                 succ = pProc->m_dfsLast[follow];
                 if (succ->traversed != DFS_ALPHA)
-                    succ->writeCode (indLevel, pProc, numLoc, latchNode,_ifFollow);
+                    succ->writeCode (indLevel, pProc, numLoc, _latchNode,_ifFollow);
             }
             else		/* no follow => if..then..else */
             {
                 l = writeJcond ( *back().hl(), pProc, numLoc);
-                cCode.appendCode( "%s%s", indent(indLevel-1), l);
-                edges[THEN].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
-                cCode.appendCode( "%s}\n%selse {\n", indent(indLevel-1), indent(indLevel - 1));
-                edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, latchNode, _ifFollow);
-                cCode.appendCode( "%s}\n", indent(--indLevel));
+                cCode.appendCode( "%s%s", indentStr(indLevel-1), l);
+                edges[THEN].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);
+                cCode.appendCode( "%s}\n%selse {\n", indentStr(indLevel-1), indentStr(indLevel - 1));
+                edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);
+                cCode.appendCode( "%s}\n", indentStr(--indLevel));
             }
         }
 
@@ -355,7 +357,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int latchNode, 
         {
             succ = edges[0].BBptr;		/* fall-through edge */
             if (succ->traversed != DFS_ALPHA)
-                succ->writeCode (indLevel, pProc,numLoc, latchNode,_ifFollow);
+                succ->writeCode (indLevel, pProc,numLoc, _latchNode,_ifFollow);
         }
     }
 }
@@ -386,7 +388,7 @@ void BB::writeBB(int lev, Function * pProc, int *numLoc)
             std::string line = pHli.hl()->write1HlIcode(pProc, numLoc);
             if (!line.empty())
             {
-                cCode.appendCode( "%s%s", indent(lev), line.c_str());
+                cCode.appendCode( "%s%s", indentStr(lev), line.c_str());
                 stats.numHLIcode++;
             }
             if (option.verbose)
@@ -404,7 +406,7 @@ iICODE BB::begin()
     return range_start;
 }
 
-iICODE BB::end()
+iICODE BB::end() const
 {
     return range_end;
 }

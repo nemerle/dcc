@@ -139,12 +139,12 @@ boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 static  FILE   *fp;
 static  CIcodeRec pc;
-static std::ostringstream buf;
-static  int     cb, j, numIcode, allocIcode, eop;
+
+static  int     cb, j, numIcode, allocIcode;
 static  map<int,int> pl;
 static  uint32_t   nextInst;
 static  boolT    fImpure;
-static  int     lab, prevPass;
+static  int     g_lab, prevPass;
 static  Function *   pProc;          /* Points to current proc struct */
 
 struct POSSTACK_ENTRY
@@ -165,13 +165,13 @@ uint8_t              iPS;          /* Index into the stack */
 #define dis_show()					// Nothing to do unless using Curses
 
 
-void LLInst::findJumpTargets(CIcodeRec &pc)
+void LLInst::findJumpTargets(CIcodeRec &_pc)
 {
     if (testFlags(I) && ! testFlags(JMP_ICODE) && isJmpInst())
     {
         /* Replace the immediate operand with an icode index */
-        iICODE labTgt=pc.labelSrch(src.op());
-        if (labTgt!=pc.end())
+        iICODE labTgt=_pc.labelSrch(src.op());
+        if (labTgt!=_pc.end())
         {
             src.SetImmediateOp(labTgt->loc_ip);
             /* This icode is the target of a jump */
@@ -194,13 +194,13 @@ void LLInst::findJumpTargets(CIcodeRec &pc)
  ****************************************************************************/
 void disassem(int pass, Function * ppProc)
 {
-    int         i;
+
 
     pProc = ppProc;             /* Save the passes pProc */
     if (pass != prevPass)
     {
         prevPass = pass;
-        lab = 0; 	/* Restart label numbers */
+        g_lab = 0; 	/* Restart label numbers */
     }
     createSymTables();
     allocIcode = numIcode = pProc->Icode.size();
@@ -342,7 +342,7 @@ void LLInst::dis1Line(int loc_ip, int pass)
             /* Print label */
             if (pl.count(loc_ip)==0)
             {
-                pl[loc_ip] = ++lab;
+                pl[loc_ip] = ++g_lab;
             }
             lab_contents<< "L"<<pl[loc_ip]<<':';
         }
@@ -435,7 +435,7 @@ void LLInst::dis1Line(int loc_ip, int pass)
                 j = src.op();
                 if (pl.count(j)==0)       /* Forward jump */
                 {
-                    pl[j] = ++lab;
+                    pl[j] = ++g_lab;
                 }
                 if (opcode == iJMPF)
                 {
@@ -641,12 +641,12 @@ static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
         p<<seg<<"["<<strHex((uint32_t)pm.off)<<"]";
     }
 
-    else if (pm.regi == (INDEXBASE - 1))
+    else if (pm.regi == (INDEX_BX_SI - 1))
     {
         p<<"tmp";
     }
 
-    else if (pm.regi < INDEXBASE)
+    else if (pm.regi < INDEX_BX_SI)
     {
         if(flg & B)
             p << szBreg[pm.regi - rAL];
@@ -658,15 +658,15 @@ static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
     {
         if (pm.off < 0)
         {
-            p <<seg<<"["<<szIndex[pm.regi - INDEXBASE]<<"-"<<strHex((uint32_t)(- pm.off))<<"]";
+            p <<seg<<"["<<szIndex[pm.regi - INDEX_BX_SI]<<"-"<<strHex((uint32_t)(- pm.off))<<"]";
         }
         else
         {
-            p <<seg<<"["<<szIndex[pm.regi - INDEXBASE]<<"+"<<strHex((uint32_t)(pm.off))<<"]";
+            p <<seg<<"["<<szIndex[pm.regi - INDEX_BX_SI]<<"+"<<strHex((uint32_t)(pm.off))<<"]";
         }
     }
     else
-        p <<seg<<"["<<szIndex[pm.regi - INDEXBASE]<<"]";
+        p <<seg<<"["<<szIndex[pm.regi - INDEX_BX_SI]<<"]";
 }
 
 
@@ -677,7 +677,7 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, LLOperand &pm)
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);
-    if ((flg & I) && (pm.regi == 0 || pm.regi >= INDEXBASE))
+    if ((flg & I) && (pm.regi == 0 || pm.regi >= INDEX_BX_SI))
         os << szPtr[flg & B];
     formatRM(os, flg, pm);
     return os;
@@ -689,7 +689,7 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, LLOperand &pm)
  ****************************************************************************/
 ostringstream &LLInst::strSrc(ostringstream &os,bool skip_comma)
 {
-    static char buf[30] = {", "};
+
     if(false==skip_comma)
         os<<", ";
     if (testFlags(I))
@@ -734,7 +734,7 @@ void LLInst::flops(std::ostringstream &out)
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */
 
-    if ((dst.regi == 0) || (dst.regi >= INDEXBASE))
+    if ((dst.regi == 0) || (dst.regi >= INDEX_BX_SI))
     {
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
         out<<szFlops1[op]<<' ';

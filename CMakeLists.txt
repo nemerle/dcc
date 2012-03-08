@@ -35,6 +35,7 @@ set(dcc_SOURCES
     src/frontend.cpp
     src/graph.cpp
     src/hlicode.cpp
+    src/machine_x86.cpp
     src/icode.cpp
     src/idioms.cpp
     src/idioms/idiom1.cpp
@@ -65,6 +66,7 @@ set(dcc_HEADERS
     include/error.h
     include/graph.h
     include/hlicode.h
+    include/machine_x86.h
     include/icode.h
     include/idioms/idiom.h
     include/idioms/idiom1.h

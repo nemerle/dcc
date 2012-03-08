@@ -15,19 +15,6 @@
 
 bundle cCode;			/* Procedure declaration and code */
 using namespace std;
-/* Indentation buffer */
-#define indSize	81		/* size of the indentation buffer.  Each indentation
-    * is of 4 spaces => max. 20 indentation levels */
-static char indentBuf[indSize] =
-        "                                                                                ";
-
-
-/* Indentation according to the depth of the statement */
-char *indent (int indLevel)
-{
-    return (&indentBuf[indSize-(indLevel*4)-1]);
-}
-
 
 /* Returns a unique index to the next label */
 int getNextLabel()
@@ -144,23 +131,27 @@ static void printGlobVar (SYM * psym)
  * initialization. */
 static void writeGlobSymTable()
 {
-    int idx;
     char type[10];
-    SYM * pSym;
 
     if (not symtab.empty())
     {
         cCode.appendDecl( "/* Global variables */\n");
-        for (idx = 0; idx < symtab.size(); idx++)
+#ifdef _lint
+        for (auto iter=symtab.begin(); iter!=symtab.end(); ++iter)
         {
-            pSym = &symtab[idx];
-            if (symtab[idx].duVal.isUSE_VAL())	/* first used */
-                printGlobVar (&symtab[idx]);
+            SYM &sym(*iter);
+#else
+        for (SYM &sym : symtab)
+        {
+#endif
+//            pSym = &symtab[idx];
+            if (sym.duVal.isUSE_VAL())	/* first used */
+                printGlobVar (&sym);
             else {					/* first defined */
-                switch (pSym->size) {
+                switch (sym.size) {
                     case 1:  strcpy (type, "uint8_t\t"); break;
                     case 2:  strcpy (type, "int\t"); break;
-                    case 4:  if (pSym->type == TYPE_PTR)
+                    case 4:  if (sym.type == TYPE_PTR)
                             strcpy (type, "int\t*");
                         else
                             strcpy (type, "char\t*");
@@ -168,7 +159,7 @@ static void writeGlobSymTable()
                     default: strcpy (type, "char\t*");
                 }
                 cCode.appendDecl( "%s%s;\t/* size = %ld */\n",
-                                  type, pSym->name, pSym->size);
+                                  type, sym.name, sym.size);
             }
         }
         cCode.appendDecl( "\n");
@@ -199,7 +190,7 @@ static void writeBitVector (const std::bitset<32> &regi)
 {
     int j;
 
-    for (j = rAX; j < INDEXBASE; j++)
+    for (j = rAX; j < INDEX_BX_SI; j++)
     {
         if (regi.test(j))
             printf ("%s ", allRegs[j-1]);
@@ -220,7 +211,7 @@ static void emitFwdGotoLabel (ICODE * pt, int indLevel)
         pt->ll()->hllLabNum = getNextLabel();
         pt->ll()->setFlags(HLL_LABEL);
     }
-    cCode.appendCode( "%sgoto l%ld;\n", indent(indLevel), pt->ll()->hllLabNum);
+    cCode.appendCode( "%sgoto l%ld;\n", indentStr(indLevel), pt->ll()->hllLabNum);
 }
 
 
@@ -228,11 +219,9 @@ static void emitFwdGotoLabel (ICODE * pt, int indLevel)
  * and invokes the procedure that writes the code of the given record *hli */
 void Function::codeGen (std::ostream &fs)
 {
-    int i, numLoc;
-    //STKFRAME * args;       /* Procedure arguments              */
+    int numLoc;
     char buf[200],        /* Procedure's definition           */
-            arg[30];         /* One argument                     */
-    ID *locid;            /* Pointer to one local identifier  */
+         arg[30];         /* One argument                     */
     BB *pBB;              /* Pointer to basic block           */
 
     /* Write procedure/function header */
@@ -244,7 +233,7 @@ void Function::codeGen (std::ostream &fs)
 
     /* Write arguments */
     memset (buf, 0, sizeof(buf));
-    for (i = 0; i < args.sym.size(); i++)
+    for (size_t i = 0; i < args.sym.size(); i++)
     {
         if (args.sym[i].invalid == FALSE)
         {
@@ -264,30 +253,35 @@ void Function::codeGen (std::ostream &fs)
     if (! (flg & PROC_ASM))
     {
         numLoc = 0;
-        for (i = 0; i < localId.csym(); i++)
+#ifdef _lint
+        for (size_t i = 0; i < localId.csym(); i++)
         {
-            locid = &localId.id_arr[i];
+            ID &refId(localId.id_arr[i]);
+#else
+        for (ID &refId : localId )
+        {
+#endif
             /* Output only non-invalidated entries */
-            if (locid->illegal == FALSE)
+            if (refId.illegal == FALSE)
             {
-                if (locid->loc == REG_FRAME)
+                if (refId.loc == REG_FRAME)
                 {
                     /* Register variables are assigned to a local variable */
-                    if (((flg & SI_REGVAR) && (locid->id.regi == rSI)) ||
-                        ((flg & DI_REGVAR) && (locid->id.regi == rDI)))
+                    if (((flg & SI_REGVAR) && (refId.id.regi == rSI)) ||
+                        ((flg & DI_REGVAR) && (refId.id.regi == rDI)))
                     {
-                        sprintf (locid->name, "loc%ld", ++numLoc);
-                        cCode.appendDecl( "int %s;\n", locid->name);
+                        sprintf (refId.name, "loc%ld", ++numLoc);
+                        cCode.appendDecl( "int %s;\n", refId.name);
                     }
                     /* Other registers are named when they are first used in
                      * the output C code, and appended to the proc decl. */
                 }
 
-                else if (locid->loc == STK_FRAME)
+                else if (refId.loc == STK_FRAME)
                 {
                     /* Name local variables and output appropriate type */
-                    sprintf (locid->name, "loc%ld", ++numLoc);
-                    cCode.appendDecl( "%s %s;\n",hlTypes[locid->type], locid->name);
+                    sprintf (refId.name, "loc%ld", ++numLoc);
+                    cCode.appendDecl( "%s %s;\n",hlTypes[refId.type], refId.name);
                 }
             }
         }
@@ -304,7 +298,7 @@ void Function::codeGen (std::ostream &fs)
 
     /* Write Live register analysis information */
     if (option.verbose)
-        for (i = 0; i < numBBs; i++)
+        for (size_t i = 0; i < numBBs; i++)
         {
             pBB = m_dfsLast[i];
             if (pBB->flg & INVALID_BB)	continue;	/* skip invalid BBs */
@@ -325,10 +319,8 @@ void Function::codeGen (std::ostream &fs)
 
 /* Recursive procedure. Displays the procedure's code in depth-first order
  * of the call graph.	*/
-static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &ios)
+static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &_ios)
 {
-    int i;
-
     //	IFace.Yield();			/* This is a good place to yield to other apps */
 
     /* Check if this procedure has been processed already */
@@ -338,15 +330,15 @@ static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &
     pcallGraph->proc->flg |= PROC_OUTPUT;
 
     /* Dfs if this procedure has any successors */
-    for (i = 0; i < pcallGraph->outEdges.size(); i++)
+    for (size_t i = 0; i < pcallGraph->outEdges.size(); i++)
     {
-        backBackEnd (filename, pcallGraph->outEdges[i], ios);
+        backBackEnd (filename, pcallGraph->outEdges[i], _ios);
     }
 
     /* Generate code for this procedure */
     stats.numLLIcode = pcallGraph->proc->Icode.size();
     stats.numHLIcode = 0;
-    pcallGraph->proc->codeGen (ios);
+    pcallGraph->proc->codeGen (_ios);
 
     /* Generate statistics */
     if (option.Stats)

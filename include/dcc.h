@@ -83,7 +83,7 @@ struct PROG /* Loaded program image parameters  */
     int16_t     initCS;
     int16_t     initIP;     /* These are initial load values    */
     int16_t     initSS;     /* Probably not of great interest   */
-    int16_t     initSP;
+    uint16_t    initSP;
     bool        fCOM;       /* Flag set if COM program (else EXE)*/
     int         cReloc;     /* No. of relocation table entries  */
     uint32_t *  relocTable; /* Ptr. to relocation table         */
@@ -179,3 +179,4 @@ eReg otherLongRegi(eReg, int, LOCAL_ID *);
 
 extern eReg subRegH(eReg reg);
 extern eReg subRegL(eReg reg);
+extern const char *indentStr(int level);
