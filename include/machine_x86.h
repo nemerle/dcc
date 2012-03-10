@@ -1,5 +1,8 @@
 #pragma once
+#include <stdint.h>
 #include <string>
+#include <sstream>
+#include <bitset>
 /* Machine registers */
 enum eReg
 {
@@ -45,4 +48,18 @@ class Machine_X86
 public:
     Machine_X86();
     static const std::string &regName(eReg r);
+    static const std::string &opcodeName(unsigned r);
+    static bool physicalReg(eReg r);
+    /* Writes the registers that are set in the bitvector */
+    //TODO: move this into Machine_X86 ?
+    static void writeBitVector (std::ostream &ostr,const std::bitset<32> &regi)
+    {
+        int j;
+        for (j = rAX; j < INDEX_BX_SI; j++)
+        {
+            if (regi.test(j-1))
+                ostr << regName(eReg(j));
+        }
+    }
+
 };

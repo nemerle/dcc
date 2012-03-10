@@ -65,24 +65,14 @@ static int commonDom (int currImmDom, int predImmDom, Function * pProc)
 void Function::findImmedDom ()
 {
     BB * currNode;
-    int currIdx, predIdx;
-
-    for (currIdx = 0; currIdx < numBBs; currIdx++)
+    for (size_t currIdx = 0; currIdx < numBBs; currIdx++)
     {
         currNode = m_dfsLast[currIdx];
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
-#ifdef _lint
-        BB * inedge=0;
-        for (auto i=currNode->inEdges.begin(); i!=currNode->inEdges.end(); ++i)
-        {
-            inedge=*i;
-
-#else
         for (BB * inedge : currNode->inEdges)
         {
-#endif
-            predIdx = inedge->dfsLastNum;
+            size_t predIdx = inedge->dfsLastNum;
             if (predIdx < currIdx)
                 currNode->immedDom = commonDom (currNode->immedDom, predIdx, this);
         }
@@ -259,30 +249,15 @@ static void findNodesInInt (queue &intNodes, int level, interval *Ii)
 {
     if (level == 1)
     {
-#ifdef _lint
-        BB * en=0;
-        for (auto i=Ii->nodes.begin(); i!=Ii->nodes.end(); ++i)
-        {
-            en=*i;
-#else
         for(BB *en : Ii->nodes)
         {
-#endif
             appendQueue(intNodes,en);
         }
     }
     else
     {
-#ifdef _lint
-        BB * en=0;
-        for (auto i=Ii->nodes.begin(); i!=Ii->nodes.end(); ++i)
-        {
-            en=*i;
-
-#else
         for(BB *en : Ii->nodes)
         {
-#endif
             findNodesInInt(intNodes,level-1,en->correspInt);
         }
     }
@@ -296,8 +271,7 @@ void Function::structLoops(derSeq *derivedG)
     BB * intHead,      	/* interval header node         	*/
             * pred,     /* predecessor node         		*/
             * latchNode;/* latching node (in case of loops) */
-    int
-            level = 0;  /* derived sequence level       	*/
+    size_t  level = 0;  /* derived sequence level       	*/
     interval *initInt;  /* initial interval         		*/
     queue intNodes;  	/* list of interval nodes       	*/
 
@@ -362,16 +336,15 @@ void Function::structLoops(derSeq *derivedG)
 
 /* Returns whether the BB indexed by s is a successor of the BB indexed by
  * h.  Note that h is a case node.                  */
-static boolT successor (int s, int h, Function * pProc)
+static bool successor (int s, int h, Function * pProc)
 {
-    int i;
     BB * header;
 
     header = pProc->m_dfsLast[h];
-    for (i = 0; i < header->edges.size(); i++)
-        if (header->edges[i].BBptr->dfsLastNum == s)
-            return true;
-    return false;
+    auto iter = std::find_if(header->edges.begin(),
+                             header->edges.end(),
+                             [s](const TYPEADR_TYPE &te)->bool{ return te.BBptr->dfsLastNum == s;});
+    return iter!=header->edges.end();
 }
 
 
@@ -428,14 +401,8 @@ void Function::structCases()
                          * header field with caseHeader.           */
             insertList (caseNodes, i);
             m_dfsLast[i]->caseHead = i;
-#ifdef _lint
-            for (auto ki=caseHeader->edges.begin(); ki!=caseHeader->edges.end(); ++ki)
-            {
-                TYPEADR_TYPE &pb(*ki);
-#else
             for(TYPEADR_TYPE &pb : caseHeader->edges)
             {
-#endif
                 tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);
             }
             //for (j = 0; j < caseHeader->edges[j]; j++)
@@ -525,8 +492,6 @@ void Function::compoundCond()
     int i; //j, k, numOutEdges
     BB * pbb, * t, * e, * obb;//,* pred;
     ICODE * picode, * ticode;
-    //COND_EXPR *exp;
-    //TYPEADR_TYPE *edges;
     boolT change;
 
     change = TRUE;

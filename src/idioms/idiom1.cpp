@@ -123,14 +123,8 @@ bool Idiom1::match(iICODE picode)
 }
 int Idiom1::action()
 {
-#ifdef _lint
-    for (auto ik=m_icodes.begin(); ik!=m_icodes.end(); ++ik)
-    {
-        iICODE ic(*ik);
-#else
     for(iICODE ic : m_icodes)
     {
-#endif
         ic->invalidate();
     }
     m_func->flg |= PROC_HLL;

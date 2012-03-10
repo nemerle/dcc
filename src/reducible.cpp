@@ -35,7 +35,6 @@ static BB *firstOfQueue (queue &Q)
 
 /* Appends pointer to node at the end of the queue Q if node is not present
  * in this queue.  Returns the queue node just appended.        */
-//lint -sem(appendQueue,custodial(1))
 queue::iterator appendQueue (queue &Q, BB *node)
 {
     auto iter=std::find(Q.begin(),Q.end(),node);
@@ -100,7 +99,7 @@ static void appendNodeInt (queue &pqH, BB *node, interval *pI)
 void derSeq_Entry::findIntervals (Function *c)
 {
     interval *pI,        /* Interval being processed         */
-            *J=0;         /* ^ last interval in derivedGi->Ii */
+            *J;         /* ^ last interval in derivedGi->Ii */
     BB *h,           /* Node being processed         */
             *header,          /* Current interval's header node   */
             *succ;            /* Successor basic block        */
@@ -174,17 +173,12 @@ void derSeq_Entry::findIntervals (Function *c)
 /* Displays the intervals of the graph Gi.              */
 static void displayIntervals (interval *pI)
 {
+
     while (pI)
     {
         printf ("  Interval #: %ld\t#OutEdges: %ld\n", pI->numInt, pI->numOutEdges);
-#ifdef _lint
-        for(auto iter=pI->nodes.begin(); iter!=pI->nodes.end(); ++iter)
-        {
-            BB *node(*iter);
-#else
         for(BB *node : pI->nodes)
         {
-#endif
             if (node->correspInt == NULL)    /* real BBs */
                 printf ("    Node: %ld\n", node->begin()->loc_ip);
             else             // BBs represent intervals
@@ -275,14 +269,8 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
 
         if (BBnode->edges.size() > 0)
         {
-#ifdef _lint
-            for (auto ik=listIi.begin(); ik!=listIi.end(); ++ik)
-            {
-                BB *curr(*ik);
-#else
             for(BB *curr :  listIi)
             {
-#endif
                 for (j = 0; j < curr->edges.size(); j++)
                 {
                     succ = curr->edges[j].BBptr;
@@ -300,22 +288,10 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
      * Determines the number of in edges to each new BB, and places it
      * in numInEdges and inEdgeCount for later interval processing. */
     curr = new_entry.Gi = bbs.front();
-#ifdef _lint
-    for (auto ik=bbs.begin(); ik!=bbs.end(); ++ik)
-    {
-        BB *curr(*ik);
-#else
     for(BB *curr : bbs)
     {
-#endif
-#ifdef _lint
-        for (auto il=curr->edges.begin(); il!=curr->edges.end(); ++il)
-        {
-            TYPEADR_TYPE &edge(*il);
-#else
         for(TYPEADR_TYPE &edge : curr->edges)
         {
-#endif
             BBnode = new_entry.Gi;    /* BB of an interval */
             auto iter= std::find_if(bbs.begin(),bbs.end(),
                                     [&edge](BB *node)->bool { return edge.intPtr==node->correspInt;});

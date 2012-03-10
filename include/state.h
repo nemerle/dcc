@@ -25,7 +25,7 @@ struct STATE
         JCond.regi=0;
         JCond.immed=0;
 
-        memset(r,0,sizeof(int16_t)*INDEX_BX_SI);
+        memset(r,0,sizeof(int16_t)*INDEX_BX_SI); //TODO: move this to machine_x86
         memset(f,0,sizeof(uint8_t)*INDEX_BX_SI);
     }
 };

@@ -30,7 +30,7 @@ enum eErrorId
     WHILE_FAIL
 };
 
-//lint -function(exit,fatalError)
+
 void fatalError(eErrorId errId, ...);
 void reportError(eErrorId errId, ...);
 

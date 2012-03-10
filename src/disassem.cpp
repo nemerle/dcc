@@ -33,24 +33,6 @@ using namespace std;
 
 #define DELTA_ICODE 16              /* Number of icodes to realloc by each time */
 
-static const char *szOps[] =
-{
-    "CBW",  "AAA",      "AAD",      "AAM",      "AAS",      "ADC",  "ADD",  "AND",
-    "BOUND","CALL",     "CALL",     "CLC",      "CLD",      "CLI",  "CMC",  "CMP",
-    "CMPS", "REPNE CMPS","REPE CMPS","DAA",     "DAS",      "DEC",  "DIV",  "ENTER",
-    "ESC",  "HLT",      "IDIV",     "IMUL",     "IN",       "INC",  "INS",  "REP INS",
-    "INT",  "IRET",     "JB",       "JBE",      "JAE",      "JA",   "JE",   "JNE",
-    "JL",   "JGE",      "JLE",      "JG",       "JS",       "JNS",  "JO",   "JNO",
-    "JP",   "JNP",      "JCXZ",     "JMP",      "JMP",      "LAHF", "LDS",  "LEA",
-    "LEAVE","LES",      "LOCK",     "LODS",     "REP LODS", "LOOP", "LOOPE","LOOPNE",
-    "MOV",  "MOVS",     "REP MOVS", "MUL",      "NEG",      "NOT",  "OR",   "OUT",
-    "OUTS", "REP OUTS", "POP",      "POPA",     "POPF",     "PUSH", "PUSHA","PUSHF",
-    "RCL",  "RCR",      "ROL",      "ROR",      "RET",      "RETF", "SAHF", "SAR",
-    "SHL",  "SHR",      "SBB",      "SCAS",     "REPNE SCAS","REPE SCAS",   "CWD",  "STC",
-    "STD",  "STI",      "STOS",     "REP STOS", "SUB",      "TEST", "WAIT", "XCHG",
-    "XLAT", "XOR",      "INTO",     "NOP",		"REPNE",	"REPE",	"MOD"
-};
-
 /* The following opcodes are for mod != 3 */
 static const char *szFlops1[] =
 {
@@ -120,10 +102,10 @@ static const char *szFlops3C[] =
 };
 
 
-static const char *szIndex[8] = {"bx+si", "bx+di", "bp+si", "bp+di", "si", "di","bp","bx" };
-static const char *szBreg[8]  = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
-static const char *szWreg[12] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di",
-                                  "es", "cs", "ss", "ds" };
+//static const char *szIndex[8] = {"bx+si", "bx+di", "bp+si", "bp+di", "si", "di","bp","bx" };
+//static const char *szBreg[8]  = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
+//static const char *szWreg[12] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di",
+//                                  "es", "cs", "ss", "ds" };
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 
@@ -139,7 +121,6 @@ boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 static  FILE   *fp;
 static  CIcodeRec pc;
-
 static  int     cb, j, numIcode, allocIcode;
 static  map<int,int> pl;
 static  uint32_t   nextInst;
@@ -229,14 +210,8 @@ void disassem(int pass, Function * ppProc)
     {
         /* Bind jump offsets to labels */
         //for (i = 0; i < numIcode; i++)
-#ifdef _lint
-        for (auto i=pc.begin(); i!=pc.end(); ++i)
-        {
-            ICODE &icode(*i);
-#else
         for( ICODE &icode : pc)
         {
-#endif
             LLInst *ll=icode.ll();
             ll->findJumpTargets(pc);
         }
@@ -251,14 +226,8 @@ void disassem(int pass, Function * ppProc)
 
     /* Loop over array printing each record */
     nextInst = 0;
-#ifdef _lint
-    for (auto i=pc.begin(); i!=pc.end(); ++i)
-    {
-        ICODE &icode(*i);
-#else
     for( ICODE &icode : pc)
     {
-#endif
         icode.ll()->dis1Line(icode.loc_ip,pass);
     }
 
@@ -272,7 +241,6 @@ void disassem(int pass, Function * ppProc)
     pc.clear();
     destroySymTables();
 }
-
 /****************************************************************************
  * dis1Line() - disassemble one line to stream fp                           *                                   *
  * i is index into Icode for this proc                                      *
@@ -292,16 +260,16 @@ void LLInst::dis1Line(int loc_ip, int pass)
          * Do not try to display NO_CODE entries or synthetic instructions,
          * other than JMPs, that have been introduced for def/use analysis. */
     if ((option.asm1) &&
-            ( testFlags(NO_CODE) ||
-             (testFlags(SYNTHETIC) && (opcode != iJMP))))
+            ( this->testFlags(NO_CODE) ||
+             (this->testFlags(SYNTHETIC) && (this->getOpcode() != iJMP))))
     {
         return;
     }
-    else if (testFlags(NO_CODE))
+    else if (this->testFlags(NO_CODE))
     {
         return;
     }
-    if (testFlags(TARGET | CASE))
+    if (this->testFlags(TARGET | CASE))
     {
         if (pass == 3)
             cCode.appendCode("\n"); /* Print to c code buffer */
@@ -310,19 +278,19 @@ void LLInst::dis1Line(int loc_ip, int pass)
     }
 
     /* Find next instruction label and print hex bytes */
-    if (testFlags(SYNTHETIC))
-        nextInst = label;
+    if (this->testFlags(SYNTHETIC))
+        nextInst = this->label;
     else
     {
-        cb = (uint32_t) numBytes;
-        nextInst = label + cb;
+        cb = (uint32_t) this->numBytes;
+        nextInst = this->label + cb;
 
         /* Output hexa code in program image */
         if (pass != 3)
         {
             for (j = 0; j < cb; j++)
             {
-                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[label + j]);
+                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[this->label + j]);
             }
             hex_bytes << ' ';
         }
@@ -333,11 +301,11 @@ void LLInst::dis1Line(int loc_ip, int pass)
     oper_stream << setw(5)<<left; // align for the labels
     {
         ostringstream lab_contents;
-        if (readVal(lab_contents, label, 0))
+        if (readVal(lab_contents, this->label, 0))
         {
             lab_contents << ':';             /* Also removes the null */
         }
-        else if (testFlags(TARGET))    /* Symbols override Lnn labels */
+        else if (this->testFlags(TARGET))    /* Symbols override Lnn labels */
         {
             /* Print label */
             if (pl.count(loc_ip)==0)
@@ -348,13 +316,13 @@ void LLInst::dis1Line(int loc_ip, int pass)
         }
         oper_stream<< lab_contents.str();
     }
-    if (opcode == iSIGNEX && testFlags(B))
+    if ((this->getOpcode()==iSIGNEX )&& this->testFlags(B))
     {
-        opcode = iCBW;
+        setOpcode(iCBW);
     }
-    opcode_with_mods<<szOps[opcode];
+    opcode_with_mods<<Machine_X86::opcodeName(this->getOpcode());
 
-    switch (opcode)
+    switch ( this->getOpcode() )
     {
         case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
         case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
@@ -383,7 +351,6 @@ void LLInst::dis1Line(int loc_ip, int pass)
             if (testFlags(I))
             {
                 operands_s<<strHex(src.op());
-//                strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
             }
             else
             {
@@ -437,13 +404,13 @@ void LLInst::dis1Line(int loc_ip, int pass)
                 {
                     pl[j] = ++g_lab;
                 }
-                if (opcode == iJMPF)
+                if (getOpcode() == iJMPF)
                 {
                     operands_s<<" far ptr ";
                 }
                 operands_s<<"L"<<pl[j];
             }
-            else if (opcode == iJMPF)
+            else if (getOpcode() == iJMPF)
             {
                 operands_s<<"dword ptr";
                 strSrc(operands_s,true);
@@ -457,13 +424,13 @@ void LLInst::dis1Line(int loc_ip, int pass)
         case iCALL: case iCALLF:
             if (testFlags(I))
             {
-                if((opcode == iCALL))
+                if((getOpcode() == iCALL))
                     operands_s<< "near";
                 else
                     operands_s<< " far";
                 operands_s<<" ptr "<<(src.proc.proc)->name;
             }
-            else if (opcode == iCALLF)
+            else if (getOpcode() == iCALLF)
             {
                 operands_s<<"dword ptr ";
                 strSrc(operands_s,true);
@@ -493,21 +460,21 @@ void LLInst::dis1Line(int loc_ip, int pass)
         case iOUTS:  case iREP_OUTS:
             if (src.segOver)
             {
-                bool is_dx_src=(opcode == iOUTS || opcode == iREP_OUTS);
+                bool is_dx_src=(getOpcode() == iOUTS || getOpcode() == iREP_OUTS);
                 if(is_dx_src)
                     operands_s<<"dx, "<<szPtr[getFlag() & B];
                 else
                     operands_s<<szPtr[getFlag() & B];
-                if (opcode == iLODS ||
-                    opcode == iREP_LODS ||
-                    opcode == iOUTS ||
-                    opcode == iREP_OUTS)
+                if (getOpcode() == iLODS ||
+                    getOpcode() == iREP_LODS ||
+                    getOpcode() == iOUTS ||
+                    getOpcode() == iREP_OUTS)
                 {
-                    operands_s<<szWreg[src.segOver-rAX];
+                    operands_s<<Machine_X86::regName(src.segOver); // szWreg[src.segOver-rAX]
                 }
                 else
                 {
-                    operands_s<<"es:[di], "<<szWreg[src.segOver - rAX];
+                    operands_s<<"es:[di], "<<Machine_X86::regName(src.segOver);
                 }
                 operands_s<<":[si]";
             }
@@ -521,7 +488,7 @@ void LLInst::dis1Line(int loc_ip, int pass)
             if (src.segOver)
             {
                 operands_s<<" "<<szPtr[1];
-                operands_s<<szWreg[src.segOver-rAX]<<":[bx]";
+                operands_s<<Machine_X86::regName(src.segOver)<<":[bx]";
             }
             break;
 
@@ -593,7 +560,7 @@ void LLInst::dis1Line(int loc_ip, int pass)
     }
 
     /* Comment on iINT icodes */
-    if (opcode == iINT)
+    if (getOpcode() == iINT)
         writeIntComment(result_stream);
 
     /* Display output line */
@@ -628,45 +595,41 @@ void LLInst::dis1Line(int loc_ip, int pass)
  ***************************************************************************/
 static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
 {
-    char    seg[4];
+    //char    seg[4];
 
     if (pm.segOver)
     {
-        strcat(strcpy(seg, szWreg[pm.segOver - rAX]), ":");
+        p <<Machine_X86::regName(pm.segOver)<<':';
+        //strcat(strcpy(seg, szWreg[pm.segOver - rAX]), ":");
     }
-    else    *seg = '\0';
+    //else    *seg = '\0';
 
-    if (pm.regi == 0)
+    if (pm.regi == rUNDEF)
     {
-        p<<seg<<"["<<strHex((uint32_t)pm.off)<<"]";
+        p<<"["<<strHex((uint32_t)pm.off)<<"]";
     }
-
-    else if (pm.regi == (INDEX_BX_SI - 1))
+    else if (pm.isReg())
     {
-        p<<"tmp";
-    }
-
-    else if (pm.regi < INDEX_BX_SI)
-    {
-        if(flg & B)
-            p << szBreg[pm.regi - rAL];
-        else
-            p << szWreg[pm.regi - rAX];
+        p<<Machine_X86::regName(pm.regi);
+//        if(flg & B)
+//            p << szBreg[pm.regi - rAL];
+//        else
+//            p << szWreg[pm.regi - rAX];
     }
 
     else if (pm.off)
     {
         if (pm.off < 0)
         {
-            p <<seg<<"["<<szIndex[pm.regi - INDEX_BX_SI]<<"-"<<strHex((uint32_t)(- pm.off))<<"]";
+            p <<"["<<Machine_X86::regName(pm.regi)<<"-"<<strHex((uint32_t)(- pm.off))<<"]";
         }
         else
         {
-            p <<seg<<"["<<szIndex[pm.regi - INDEX_BX_SI]<<"+"<<strHex((uint32_t)(pm.off))<<"]";
+            p <<"["<<Machine_X86::regName(pm.regi)<<"+"<<strHex((uint32_t)(pm.off))<<"]";
         }
     }
     else
-        p <<seg<<"["<<szIndex[pm.regi - INDEX_BX_SI]<<"]";
+        p <<"["<<Machine_X86::regName(pm.regi)<<"]";
 }
 
 
@@ -677,7 +640,7 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, LLOperand &pm)
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);
-    if ((flg & I) && (pm.regi == 0 || pm.regi >= INDEX_BX_SI))
+    if ((flg & I) and not pm.isReg())
         os << szPtr[flg & B];
     formatRM(os, flg, pm);
     return os;
@@ -689,7 +652,6 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, LLOperand &pm)
  ****************************************************************************/
 ostringstream &LLInst::strSrc(ostringstream &os,bool skip_comma)
 {
-
     if(false==skip_comma)
         os<<", ";
     if (testFlags(I))
@@ -734,7 +696,7 @@ void LLInst::flops(std::ostringstream &out)
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */
 
-    if ((dst.regi == 0) || (dst.regi >= INDEX_BX_SI))
+    if ( not dst.isReg() )
     {
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
         out<<szFlops1[op]<<' ';

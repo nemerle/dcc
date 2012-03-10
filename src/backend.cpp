@@ -8,7 +8,9 @@
 #include <string>
 
 #include "dcc.h"
+#include "disassem.h"
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string.h>
 #include <stdio.h>
@@ -136,15 +138,8 @@ static void writeGlobSymTable()
     if (not symtab.empty())
     {
         cCode.appendDecl( "/* Global variables */\n");
-#ifdef _lint
-        for (auto iter=symtab.begin(); iter!=symtab.end(); ++iter)
-        {
-            SYM &sym(*iter);
-#else
         for (SYM &sym : symtab)
         {
-#endif
-//            pSym = &symtab[idx];
             if (sym.duVal.isUSE_VAL())	/* first used */
                 printGlobVar (&sym);
             else {					/* first defined */
@@ -184,19 +179,6 @@ static void writeHeader (std::ostream &_ios, char *fileName)
     freeBundle (&cCode);
 }
 
-
-/* Writes the registers that are set in the bitvector */
-static void writeBitVector (const std::bitset<32> &regi)
-{
-    int j;
-
-    for (j = rAX; j < INDEX_BX_SI; j++)
-    {
-        if (regi.test(j))
-            printf ("%s ", allRegs[j-1]);
-    }
-}
-
 // Note: Not currently called!
 /* Checks the given icode to determine whether it has a label associated
  * to it.  If so, a goto is emitted to this label; otherwise, a new label
@@ -205,7 +187,7 @@ static void writeBitVector (const std::bitset<32> &regi)
  *		 the code; that is, the target code has not been traversed yet. */
 static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 {
-    if ( ! pt->ll()->testFlags(HLL_LABEL) ) /* node hasn't got a lab */
+    if ( not pt->ll()->testFlags(HLL_LABEL)) /* node hasn't got a lab */
     {
         /* Generate new label */
         pt->ll()->hllLabNum = getNextLabel();
@@ -220,8 +202,10 @@ static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 void Function::codeGen (std::ostream &fs)
 {
     int numLoc;
-    char buf[200],        /* Procedure's definition           */
-         arg[30];         /* One argument                     */
+    ostringstream buf;
+    //STKFRAME * args;       /* Procedure arguments              */
+    //char buf[200],        /* Procedure's definition           */
+    //        arg[30];         /* One argument                     */
     BB *pBB;              /* Pointer to basic block           */
 
     /* Write procedure/function header */
@@ -232,19 +216,17 @@ void Function::codeGen (std::ostream &fs)
         cCode.appendDecl( "\nvoid %s (", name.c_str());
 
     /* Write arguments */
-    memset (buf, 0, sizeof(buf));
     for (size_t i = 0; i < args.sym.size(); i++)
     {
         if (args.sym[i].invalid == FALSE)
         {
-            sprintf (arg,"%s %s",hlTypes[args.sym[i].type], args.sym[i].name);
-            strcat (buf, arg);
+            buf<<hlTypes[args.sym[i].type]<<" "<<args.sym[i].name;
             if (i < (args.sym.size() - 1))
-                strcat (buf, ", ");
+                buf<<", ";
         }
     }
-    strcat (buf, ")\n");
-    cCode.appendDecl( "%s", buf);
+    buf<<")\n";
+    cCode.appendDecl( buf.str() );
 
     /* Write comments */
     writeProcComments();
@@ -253,14 +235,8 @@ void Function::codeGen (std::ostream &fs)
     if (! (flg & PROC_ASM))
     {
         numLoc = 0;
-#ifdef _lint
-        for (size_t i = 0; i < localId.csym(); i++)
-        {
-            ID &refId(localId.id_arr[i]);
-#else
         for (ID &refId : localId )
         {
-#endif
             /* Output only non-invalidated entries */
             if (refId.illegal == FALSE)
             {
@@ -290,7 +266,9 @@ void Function::codeGen (std::ostream &fs)
     if (flg & PROC_ASM)		/* generate assembler */
         disassem (3, this);
     else							/* generate C */
+    {
         m_cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);
+    }
 
     cCode.appendCode( "}\n\n");
     writeBundle (fs, cCode);
@@ -302,17 +280,18 @@ void Function::codeGen (std::ostream &fs)
         {
             pBB = m_dfsLast[i];
             if (pBB->flg & INVALID_BB)	continue;	/* skip invalid BBs */
-            printf ("BB %d\n", i);
-            printf ("  Start = %d, end = %d\n", pBB->begin()->loc_ip, pBB->begin()->loc_ip+pBB->size());
-            printf ("  LiveUse = ");
-            writeBitVector (pBB->liveUse);
-            printf ("\n  Def = ");
-            writeBitVector (pBB->def);
-            printf ("\n  LiveOut = ");
-            writeBitVector (pBB->liveOut);
-            printf ("\n  LiveIn = ");
-            writeBitVector (pBB->liveIn);
-            printf ("\n\n");
+            cout << "BB "<<i<<"\n";
+            cout << "  Start = "<<pBB->begin()->loc_ip;
+            cout << ", end = "<<pBB->begin()->loc_ip+pBB->size()<<"\n";
+            cout << "  LiveUse = ";
+            Machine_X86::writeBitVector(cout,pBB->liveUse);
+            cout << "\n  Def = ";
+            Machine_X86::writeBitVector(cout,pBB->def);
+            cout << "\n  LiveOut = ";
+            Machine_X86::writeBitVector(cout,pBB->liveOut);
+            cout << "\n  LiveIn = ";
+            Machine_X86::writeBitVector(cout,pBB->liveIn);
+            cout <<"\n\n";
         }
 }
 
@@ -321,6 +300,7 @@ void Function::codeGen (std::ostream &fs)
  * of the call graph.	*/
 static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &_ios)
 {
+
     //	IFace.Yield();			/* This is a good place to yield to other apps */
 
     /* Check if this procedure has been processed already */

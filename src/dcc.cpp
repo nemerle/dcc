@@ -8,7 +8,6 @@
 #include <string.h>
 
 /* Global variables - extern to other modules */
-//char    *progname;          /* argv[0] - for error msgs 			  */
 char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
 SYMTAB  symtab;             /* Global symbol table      			  */
 STATS   stats;              /* cfg statistics       				  */
@@ -73,7 +72,6 @@ int main(int argc, char *argv[])
 static char *initargs(int argc, char *argv[])
 {
     char *pc;
-    //progname = *argv;   /* Save invocation name for error messages */
 
     while (--argc > 0 && (*++argv)[0] == '-')
     {
@@ -102,7 +100,6 @@ static char *initargs(int argc, char *argv[])
                     break;
                 case 'V':       /* Very verbose => verbose */
                     option.VeryVerbose = true;
-                //lint -fallthrough
                 case 'v':
                     option.verbose = true; /* Make everything verbose */
                     break;
@@ -115,10 +112,9 @@ static char *initargs(int argc, char *argv[])
                         asm1_name = asm2_name = *++argv;
                         goto NextArg;
                     }
-                //lint -fallthrough
                 default:
-                    fatalError(INVALID_ARG, *pc); // does not return
-
+                    fatalError(INVALID_ARG, *pc);
+                    return *argv;
             }
 NextArg:;
     }

@@ -161,14 +161,8 @@ CondJumps:
 void Function::markImpure()
 {
     SYM * psym;
-#ifdef _lint
-    for (auto i=Icode.begin(); i!=Icode.end(); ++i)
-    {
-        ICODE &icod(*i);
-#else
     for(ICODE &icod : Icode)
     {
-#endif
         if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
         psym = &symtab[icod.ll()->caseTbl.numEntries];
@@ -196,14 +190,8 @@ void Function::markImpure()
  ****************************************************************************/
 void Function::freeCFG()
 {
-#ifdef _lint
-    for (auto i=heldBBs.begin(); i!=heldBBs.end(); ++i)
-    {
-        BB *p(*i);
-#else
     for(BB *p : heldBBs)
     {
-#endif
         delete p;
     }
 }
@@ -219,25 +207,12 @@ void Function::compressCFG()
 
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
-#ifdef _lint
-
-    for (auto iter=m_cfg.begin(); iter!=m_cfg.end(); ++iter)
-    {
-        BB *pBB(*iter);
-#else
     for (BB *pBB : m_cfg)
     {
-#endif
         if(pBB->inEdges.empty() || (pBB->nodeType != ONE_BRANCH && pBB->nodeType != TWO_BRANCH))
             continue;
-#ifdef _lint
-        for (auto iter2=pBB->edges.begin(); iter2!=pBB->edges.end(); ++iter2)
-        {
-            TYPEADR_TYPE &edgeRef(*iter2);
-#else
         for (TYPEADR_TYPE &edgeRef : pBB->edges)
         {
-#endif
             ip   = pBB->rbegin()->loc_ip;
             pNxt = edgeRef.BBptr->rmJMP(ip, edgeRef.BBptr);
 
@@ -246,6 +221,7 @@ void Function::compressCFG()
                 edgeRef.BBptr = pNxt;
                 assert(pBB->back().loc_ip==ip);
                 pBB->back().ll()->SetImmediateOp((uint32_t)pNxt->begin()->loc_ip);
+                //Icode[ip].SetImmediateOp((uint32_t)pNxt->begin());
             }
         }
     }
@@ -403,14 +379,8 @@ void BB::dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last)
 
     /* index is being used as an index to inEdges[]. */
     //    for (i = 0; i < edges.size(); i++)
-#ifdef _lint
-    for (auto i=edges.begin(); i!=edges.end(); ++i)
-    {
-        auto edge(*i);
-#else
     for(auto edge : edges)
     {
-#endif
         pChild = edge.BBptr;
         pChild->inEdges[pChild->index++] = this;
 

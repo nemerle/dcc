@@ -3,11 +3,13 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 #pragma once
+#include <memory>
 #include <vector>
 #include <list>
 #include <bitset>
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
+#include <llvm/CodeGen/MachineInstr.h>
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include "Enums.h"
@@ -20,8 +22,11 @@ struct Function;
 struct STKFRAME;
 struct CIcodeRec;
 struct ICODE;
+struct bundle;
 typedef std::list<ICODE>::iterator iICODE;
 typedef std::list<ICODE>::reverse_iterator riICODE;
+
+/* uint8_t and uint16_t registers */
 
 /* Def/use of flags - low 4 bits represent flags */
 struct DU
@@ -65,19 +70,19 @@ struct AssignType : public HlTypeSupport
     /* for HLI_ASSIGN */
     COND_EXPR    *lhs;
     COND_EXPR    *rhs;
+    AssignType() : lhs(0),rhs(0) {}
     bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
         performLongRemoval(regi,locId,lhs);
         return true;
     }
     std::string writeOut(Function *pProc, int *numLoc);
-    AssignType() : lhs(0),rhs(0)
-    {}
 };
 struct ExpType : public HlTypeSupport
 {
     /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
     COND_EXPR    *v;
+    ExpType() : v(0) {}
     bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
         performLongRemoval(regi,locId,v);
@@ -148,7 +153,7 @@ public:
     void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs);
 } ;
 /* LOW_LEVEL icode operand record */
-struct LLOperand //: public llvm::MCOperand
+struct LLOperand : public llvm::MCOperand
 {
     eReg     seg;               /* CS, DS, ES, SS                       */
     int16_t    segValue;          /* Value of segment seg during analysis */
@@ -161,15 +166,22 @@ struct LLOperand //: public llvm::MCOperand
         Function *proc;     /*   pointer to target proc (for CALL(F))*/
         int     cb;		/*   # actual arg bytes			*/
     } proc;
+    LLOperand() : seg(rUNDEF),segValue(0),segOver(rUNDEF),regi(rUNDEF),off(0),opz(0)
+    {
+        proc.proc=0;
+        proc.cb=0;
+    }
     uint32_t op() const {return opz;}
     void SetImmediateOp(uint32_t dw) {opz=dw;}
+    bool isReg() const;
+
 
 };
-struct LLInst : public llvm::ilist_node<LLInst>
+struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
 protected:
     uint32_t     flg;            /* icode flags                  */
-    llIcode      opcode;         /* llIcode instruction          */
+//    llIcode      opcode;         /* llIcode instruction          */
 public:
     int          codeIdx;    	/* Index into cCode.code            */
     uint8_t      numBytes;       /* Number of bytes this instr   */
@@ -185,13 +197,13 @@ public:
     int         hllLabNum;      /* label # for hll codegen      */
     bool conditionalJump()
     {
-        return (opcode >= iJB) && (opcode < iJCXZ);
+        return (getOpcode() >= iJB) && (getOpcode() < iJCXZ);
     }
     bool testFlags(uint32_t x) const { return (flg & x)!=0;}
     void  setFlags(uint32_t flag) {flg |= flag;}
     void  clrFlags(uint32_t flag)
     {
-        if(opcode==iMOD)
+        if(getOpcode()==iMOD)
         {
             assert(false);
         }
@@ -199,7 +211,7 @@ public:
     }
 
     uint32_t getFlag() const {return flg;}
-    llIcode getOpcode() const { return opcode; }
+    //llIcode getOpcode() const { return opcode; }
 
     uint32_t  GetLlLabel() const { return label;}
 
@@ -208,19 +220,19 @@ public:
 
     bool match(llIcode op)
     {
-        return (opcode==op);
+        return (getOpcode()==op);
     }
     bool match(llIcode op,eReg dest)
     {
-        return (opcode==op)&&dst.regi==dest;
+        return (getOpcode()==op)&&dst.regi==dest;
     }
     bool match(llIcode op,eReg dest,uint32_t flgs)
     {
-        return (opcode==op) and (dst.regi==dest) and testFlags(flgs);
+        return (getOpcode()==op) and (dst.regi==dest) and testFlags(flgs);
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
-        return (opcode==op)&&(dst.regi==dest)&&(src.regi==src_reg);
+        return (getOpcode()==op)&&(dst.regi==dest)&&(src.regi==src_reg);
     }
     bool match(eReg dest,eReg src_reg)
     {
@@ -232,16 +244,12 @@ public:
     }
     bool match(llIcode op,uint32_t flgs)
     {
-        return (opcode==op) and testFlags(flgs);
+        return (getOpcode()==op) and testFlags(flgs);
     }
     void set(llIcode op,uint32_t flags)
     {
-        opcode = op;
+        setOpcode(op);
         flg =flags;
-    }
-    void setOpcode(llIcode op)
-    {
-        opcode = op;
     }
     void emitGotoLabel(int indLevel);
     void findJumpTargets(CIcodeRec &_pc);
@@ -253,6 +261,11 @@ public:
     bool isJmpInst();
     HLTYPE toHighLevel(COND_EXPR *lhs, COND_EXPR *rhs, Function *func);
     HLTYPE createCall();
+    LLInst(ICODE *container) : m_link(container),flg(0)
+    {
+
+    }
+    ICODE *m_link;
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
@@ -261,6 +274,7 @@ struct ICODE
 protected:
     LLInst m_ll;
     HLTYPE m_hl;
+    bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
 public:
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
@@ -317,18 +331,20 @@ public:
             Use &u(idx[regIdx]);
             u.removeUser(ic);
         }
+        DU1() : numRegsDef(0) {}
     };
     icodeType           type;           /* Icode type                       */
-    bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
     BB			*inBB;      	/* BB to which this icode belongs   */
     DU_ICODE		du;             /* Def/use regs/vars                */
     DU1			du1;        	/* du chain 1                       */
+    int                 loc_ip; // used by CICodeRec to number ICODEs
+
     LLInst *            ll() { return &m_ll;}
     const LLInst *      ll() const { return &m_ll;}
+
     HLTYPE *            hl() { return &m_hl;}
     const HLTYPE *      hl() const { return &m_hl;}
     void                hl(const HLTYPE &v) { m_hl=v;}
-    int loc_ip; // used by CICodeRec to number ICODEs
 
     void setRegDU(eReg regi, operDu du_in);
     void invalidate();
@@ -355,8 +371,15 @@ public:
     {
         return hl()->call.newStkArg(exp,opcode,pproc);
     }
+    ICODE() : m_ll(this),type(NOT_SCANNED),inBB(0),loc_ip(0),invalid(false)
+    {
+    }
 };
-
+struct MappingLLtoML
+{
+    std::list<std::shared_ptr<LLInst> > m_low_level;
+    std::list<std::shared_ptr<HLTYPE> > m_middle_level;
+};
 // This is the icode array object.
 class CIcodeRec : public std::list<ICODE>
 {

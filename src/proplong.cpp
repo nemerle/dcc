@@ -67,8 +67,8 @@ static boolT isLong22 (iICODE pIcode, iICODE pEnd, iICODE &off)
     // preincrement because pIcode is not checked here
     iICODE icodes[] = { ++pIcode,++pIcode,++pIcode };
     if (   icodes[1]->ll()->match(iCMP) &&
-           (isJCond (icodes[0]->ll()->getOpcode())) &&
-           (isJCond (icodes[2]->ll()->getOpcode())))
+           (isJCond ((llIcode)icodes[0]->ll()->getOpcode())) &&
+           (isJCond ((llIcode)icodes[2]->ll()->getOpcode())))
     {
         off = initial_icode;
         advance(off,2);
@@ -244,7 +244,7 @@ void Function::propLongStk (int i, const ID &pLocId)
         next1 = ++iICODE(pIcode);
         if(next1==pEnd)
             break;
-        if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
+        if ((pIcode->type == HIGH_LEVEL) || ( not pIcode->valid() ))
             continue;
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
         {
@@ -312,7 +312,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
         ICODE &icode(*pIcode);
 
 
-        if ((icode.type == HIGH_LEVEL) || (icode.invalid == TRUE))
+        if ((icode.type == HIGH_LEVEL) || ( not icode.valid() ))
             continue;
         if (icode.ll()->getOpcode() != next1->ll()->getOpcode())
             continue;
@@ -391,7 +391,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         LLOperand * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
         int arc;
 
-        if ((pIcode->type == HIGH_LEVEL) || (pIcode->invalid == TRUE))
+        if ((pIcode->type == HIGH_LEVEL) || ( not pIcode->valid() ))
             continue;
 
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
@@ -478,7 +478,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
              *			 JX lab
              *		=> HLI_JCOND (regH:regL X 0) lab
              * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
-        else if (pIcode->ll()->match(iOR) && (next1 != pEnd) && (isJCond (next1->ll()->getOpcode())))
+        else if (pIcode->ll()->match(iOR) && (next1 != pEnd) && (isJCond ((llIcode)next1->ll()->getOpcode())))
         {
             if ((pIcode->ll()->dst.regi == pLocId.id.longId.h) && (pIcode->ll()->src.regi == pLocId.id.longId.l))
             {

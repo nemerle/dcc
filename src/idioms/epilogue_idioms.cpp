@@ -140,7 +140,7 @@ int Idiom4::action()
 {
     if( ! m_icodes.empty()) // if not an empty RET[F] N
     {
-        for(size_t idx=0; idx<m_icodes.size()-1; ++idx) // invalidate all but the RET
+    for(size_t idx=0; idx<m_icodes.size()-1; ++idx) // don't invalidate last entry
             m_icodes[idx]->invalidate();
     }
     if(m_param_count)

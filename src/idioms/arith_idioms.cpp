@@ -105,7 +105,7 @@ bool Idiom18::match(iICODE picode)
         /* not supported yet */
         type = 0;
     }
-    else if (m_icodes[1]->ll()->dst.regi < INDEX_BX_SI)	/* register */
+    else if ( m_icodes[1]->ll()->dst.isReg() )	/* register */
     {
         if ((m_icodes[1]->ll()->dst.regi == rSI) && (m_func->flg & SI_REGVAR))
             type = 1;
@@ -131,7 +131,7 @@ bool Idiom18::match(iICODE picode)
         if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src.regi == m_icodes[1]->ll()->dst.regi))
         {
             regi = m_icodes[0]->ll()->dst.regi;
-            if ((regi > 0) && (regi < INDEX_BX_SI))
+            if ( m_icodes[0]->ll()->dst.isReg() )
             {
                 if ( m_icodes[2]->ll()->match(iCMP) && (m_icodes[2]->ll()->dst.regi == regi) &&
                      m_icodes[3]->ll()->conditionalJump() )
@@ -143,7 +143,7 @@ bool Idiom18::match(iICODE picode)
         if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src.off == m_icodes[1]->ll()->dst.off))
         {
             regi = m_icodes[0]->ll()->dst.regi;
-            if ((regi > 0) && (regi < INDEX_BX_SI))
+            if ( m_icodes[0]->ll()->dst.isReg() )
             {
                 if ( m_icodes[2]->ll()->match(iCMP) && (m_icodes[2]->ll()->dst.regi == regi) &&
                      m_icodes[3]->ll()->conditionalJump() )
@@ -194,7 +194,7 @@ bool Idiom19::match(iICODE picode)
     m_is_dec = m_icodes[0]->ll()->match(iDEC);
     if (m_icodes[0]->ll()->dst.regi == 0)	/* global variable */
         /* not supported yet */ ;
-    else if (m_icodes[0]->ll()->dst.regi < INDEX_BX_SI) /* register */
+    else if ( m_icodes[0]->ll()->dst.isReg() ) /* register */
     {
         //        if (((picode->ll()->dst.regi == rSI) && (pproc->flg & SI_REGVAR)) ||
         //            ((picode->ll()->dst.regi == rDI) && (pproc->flg & DI_REGVAR)))
@@ -248,23 +248,24 @@ bool Idiom20::match(iICODE picode)
 
     m_is_dec = m_icodes[0]->ll()->match(iDEC);
 
+    LLOperand &ll_dest(m_icodes[0]->ll()->dst);
     /* Get variable */
-    if (m_icodes[0]->ll()->dst.regi == 0)	/* global variable */
+    if (ll_dest.regi == 0)	/* global variable */
     {
         /* not supported yet */ ;
     }
-    else if (m_icodes[0]->ll()->dst.regi < INDEX_BX_SI)	/* register */
+    else if ( ll_dest.isReg() )	/* register */
     {
-        if ((m_icodes[0]->ll()->dst.regi == rSI) && (m_func->flg & SI_REGVAR))
+        if ((ll_dest.regi == rSI) && (m_func->flg & SI_REGVAR))
             type = 1;
-        else if ((m_icodes[0]->ll()->dst.regi == rDI) && (m_func->flg & DI_REGVAR))
+        else if ((ll_dest.regi == rDI) && (m_func->flg & DI_REGVAR))
             type = 1;
     }
-    else if (m_icodes[0]->ll()->dst.off)		/* local variable */
+    else if (ll_dest.off)		/* local variable */
         type = 2;
     else		/* indexed */
     {
-        printf("idiom20 : Unsupported type\n");
+        printf("idiom20 : Unsupported type [indexed]\n");
         /* not supported yet */ ;
     }
 
@@ -272,10 +273,10 @@ bool Idiom20::match(iICODE picode)
     if (type == 1)			/* register variable */
     {
         if (m_icodes[1]->ll()->match(iMOV) &&
-                (m_icodes[1]->ll()->src.regi == m_icodes[0]->ll()->dst.regi))
+                (m_icodes[1]->ll()->src.regi == ll_dest.regi))
         {
             regi = m_icodes[1]->ll()->dst.regi;
-            if ((regi > 0) && (regi < INDEX_BX_SI))
+            if ( m_icodes[1]->ll()->dst.isReg() )
             {
                 if (m_icodes[2]->ll()->match(iCMP,(eReg)regi) &&
                         m_icodes[3]->ll()->conditionalJump())
@@ -286,10 +287,10 @@ bool Idiom20::match(iICODE picode)
     else if (type == 2)		/* local */
     {
         if ( m_icodes[0]->ll()->match(iMOV) &&
-             (m_icodes[1]->ll()->src.off == m_icodes[0]->ll()->dst.off))
+             (m_icodes[1]->ll()->src.off == ll_dest.off))
         {
             regi = m_icodes[1]->ll()->dst.regi;
-            if ((regi > 0) && (regi < INDEX_BX_SI))
+            if ( m_icodes[1]->ll()->dst.isReg() )
             {
                 if (m_icodes[2]->ll()->match(iCMP,(eReg)regi) &&
                         m_icodes[3]->ll()->conditionalJump())

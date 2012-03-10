@@ -47,6 +47,7 @@ PatternHasher::init(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin,
     g = new short [NumVert + 1];
 //    visited = new bool [NumVert + 1];
     return;
+
 }
 
 void PatternHasher::cleanup(void)

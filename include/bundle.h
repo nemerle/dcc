@@ -15,6 +15,7 @@ struct bundle
 public:
     void appendCode(const char *format, ...);
     void appendDecl(const char *format, ...);
+    void appendDecl(const std::string &);
     strTable    decl;   /* Declarations */
     strTable    code;   /* C code       */
 };

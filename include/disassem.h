@@ -2,6 +2,11 @@
  *  dcc project disassembler header
  * (C) Mike van Emmerik
  ****************************************************************************/
+#pragma once
+#include <sstream>
+#include <vector>
+#include "bundle.h"
+struct LLInst;
 
 /* Definitions for extended keys (first key is zero) */
 

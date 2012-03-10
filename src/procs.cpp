@@ -23,7 +23,6 @@ const char *indentStr(int indLevel) // Indentation according to the depth of the
 
 /* Inserts an outEdge at the current callGraph pointer if the newProc does
  * not exist.  */
-//lint -sem(vector<CALL_GRAPH *>::push,custodial(1))
 void CALL_GRAPH::insertArc (ilFunction newProc)
 {
     CALL_GRAPH *pcg;
@@ -109,7 +108,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     /* Flag ticode as having register arguments */
     tproc = ticode->hl()->call.proc;
     tproc->flg |= REG_ARGS;
-    tidx = 0;
+
     /* Get registers and index into target procedure's local list */
     ps = ticode->hl()->call.args;
     ts = &tproc->args;

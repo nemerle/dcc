@@ -63,8 +63,8 @@ static void freeStrTab (strTable &strTab)
 }
 
 
-void freeBundle (bundle *procCode)
 /* Deallocates the space taken by the bundle procCode */
+void freeBundle (bundle *procCode)
 {
     freeStrTab (procCode->decl);
     freeStrTab (procCode->code);
@@ -89,5 +89,11 @@ void bundle::appendDecl(const char *format,...)
     decl.push_back(buf);
     va_end (args);
 }
+
+void bundle::appendDecl(const std::string &v)
+{
+    decl.push_back(v);
+}
+
 
 

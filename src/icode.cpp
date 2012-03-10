@@ -29,14 +29,8 @@ ICODE * CIcodeRec::addIcode(ICODE *pIcode)
 
 void CIcodeRec::SetInBB(int start, int _end, BB *pnewBB)
 {
-#ifdef _lint
-    for (auto ik=this->begin(); ik!=this->end(); ++ik)
-    {
-        ICODE &icode(*ik);
-#else
     for(ICODE &icode : *this)
     {
-#endif
         if((icode.loc_ip>=start) and (icode.loc_ip<=_end))
             icode.inBB = pnewBB;
     }
@@ -46,7 +40,6 @@ void CIcodeRec::SetInBB(int start, int _end, BB *pnewBB)
    replaces *pIndex with an icode index */
 bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
 {
-
     iICODE location=labelSrch(target);
     if(end()==location)
             return false;
@@ -55,7 +48,6 @@ bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
 }
 CIcodeRec::iterator CIcodeRec::labelSrch(uint32_t target)
 {
-
     return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ll()->label==target;});
 }
 ICODE * CIcodeRec::GetIcode(int ip)
@@ -65,7 +57,6 @@ ICODE * CIcodeRec::GetIcode(int ip)
     advance(res,ip);
     return &(*res);
 }
-
 
 extern int getNextLabel();
 extern bundle cCode;
@@ -90,3 +81,9 @@ void LLInst::emitGotoLabel (int indLevel)
     stats.numHLIcode++;
 }
 
+
+
+bool LLOperand::isReg() const
+{
+    return (regi>=rAX) && (regi<=rTMP);
+}

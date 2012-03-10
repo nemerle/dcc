@@ -10,9 +10,7 @@
 #include <stdarg.h>
 
 #include "dcc.h"
-#ifdef _lint
-    static std::map<eErrorId,std::string> errorMessage;
-#else
+
     static std::map<eErrorId,std::string> errorMessage =
     {
       {INVALID_ARG      ,"Invalid option -%c\n"},
@@ -34,8 +32,6 @@
       {REPEAT_FAIL      ,"Failed to construct repeat..until() condition.\n"},
       {WHILE_FAIL       ,"Failed to construct while() condition.\n"},
     };
-#endif
-
 
 /****************************************************************************
  fatalError: displays error message and exits the program.

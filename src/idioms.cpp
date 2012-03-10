@@ -16,13 +16,13 @@
 #include "arith_idioms.h"
 #include "dcc.h"
 #include <llvm/Support/PatternMatch.h>
-//#include <boost/iterator/filter_iterator.hpp>
+#include <boost/iterator/filter_iterator.hpp>
 /*****************************************************************************
  * JmpInst - Returns TRUE if opcode is a conditional or unconditional jump
  ****************************************************************************/
 bool LLInst::isJmpInst()
 {
-    switch (opcode)
+    switch (getOpcode())
     {
     case iJMP:  case iJMPF: case iJCXZ:
     case iLOOP: case iLOOPE:case iLOOPNE:
@@ -74,9 +74,9 @@ void Function::findIdioms()
     Idiom20 i20(this);
     struct is_valid
     {
-        bool operator()(ICODE &z) { return not z.invalid;}
+        bool operator()(ICODE &z) { return z.valid();}
     };
-    //typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
+    typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
     while (pIcode != pEnd)
     {
         switch (pIcode->ll()->getOpcode())
@@ -230,14 +230,8 @@ void Function::bindIcodeOff()
     pIcode = Icode.begin();
 
     /* Flag all jump targets for BB construction and disassembly stage 2 */
-#ifdef _lint
-    for (auto ik=Icode.begin(); ik!=Icode.end(); ++ik)
-    {
-        ICODE &c(*ik);
-#else
     for(ICODE &c : Icode)
     {
-#endif
         LLInst *ll=c.ll();
         if (ll->testFlags(I) && ll->isJmpInst())
         {
@@ -251,14 +245,8 @@ void Function::bindIcodeOff()
      * is found (no code at dest. of jump) are simply left unlinked and
      * flagged as going nowhere.  */
     //for (pIcode = Icode.begin(); pIcode!= Icode.end(); pIcode++)
-#ifdef _lint
-    for (auto ik=Icode.begin(); ik!=Icode.end(); ++ik)
-    {
-        ICODE &icode(*ik);
-#else
     for(ICODE &icode : Icode)
     {
-#endif
         LLInst *ll=icode.ll();
         if (not ll->isJmpInst())
             continue;

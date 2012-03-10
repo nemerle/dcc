@@ -785,7 +785,7 @@ static void prefix(int )
 
 inline void BumpOpcode(LLInst &ll)
 {
-    llIcode ic = ll.getOpcode();
+    llIcode ic((llIcode)ll.getOpcode());
     ic = (llIcode)(((int)ic)+1);		// Bump this icode via the int type
     ll.setOpcode(ic);
 }

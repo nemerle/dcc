@@ -15,7 +15,6 @@ BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
 
 BB *BB::Create(int start, int ip, uint8_t _nodeType, int numOutEdges, Function *parent)
 {
-    //parent->m_cfg;
     BB* pnewBB;
 
     pnewBB = new BB;
@@ -36,7 +35,6 @@ BB *BB::Create(int start, int ip, uint8_t _nodeType, int numOutEdges, Function *
         pnewBB->range_end = parent->Icode.end();
     }
 
-    //    pnewBB->range_start = parent->Icode.begin();
     if (numOutEdges)
         pnewBB->edges.resize(numOutEdges);
 
@@ -101,28 +99,15 @@ void BB::displayDfs()
     else
     {
         int edge_idx=0;
-#ifdef _lint
-        for(auto iter=inEdges.begin(); iter!=inEdges.end(); ++iter)
-        {
-            BB *node(*iter);
-#else
         for(BB *node : inEdges)
         {
-#endif
             printf ("  inEdge[%ld] = %ld\n", edge_idx, node->begin()->loc_ip);
             edge_idx++;
         }
     }
-
     /* Display out edges information */
-#ifdef _lint
-    for(auto iter=edges.begin(); iter!=edges.end(); ++iter)
-    {
-        TYPEADR_TYPE &edg(*iter);
-#else
     for(TYPEADR_TYPE &edg : edges)
     {
-#endif
         if (nodeType == INTERVAL_NODE)
             printf(" outEdge[%ld] = %ld\n", i, edg.BBptr->correspInt->numInt);
         else
@@ -131,14 +116,8 @@ void BB::displayDfs()
     printf("----\n");
 
     /* Recursive call on successors of current node */
-#ifdef _lint
-    for (auto ik=edges.begin(); ik!=edges.end(); ++ik)
-    {
-        TYPEADR_TYPE &pb(*ik);
-#else
     for(TYPEADR_TYPE &pb : edges)
     {
-#endif
         if (pb.BBptr->traversed != DFS_DISP)
             pb.BBptr->displayDfs();
     }
@@ -374,15 +353,9 @@ void BB::writeBB(int lev, Function * pProc, int *numLoc)
     //for (i = start, last = i + length; i < last; i++)
 
     /* Generate code for each hlicode that is not a HLI_JCOND */
-    //for();
-#ifdef _lint
-    for(iICODE hli=begin(); hli!=end(); ++hli)
-    {
-        ICODE &pHli(*hli);
-#else
+
     for(ICODE &pHli : *this)
     {
-#endif
         if ((pHli.type == HIGH_LEVEL) && ( pHli.valid() )) //TODO: use filtering range here.
         {
             std::string line = pHli.hl()->write1HlIcode(pProc, numLoc);
@@ -396,10 +369,6 @@ void BB::writeBB(int lev, Function * pProc, int *numLoc)
         }
     }
 }
-//int BB::beginIdx()
-//{
-//    return start;
-//}
 
 iICODE BB::begin()
 {

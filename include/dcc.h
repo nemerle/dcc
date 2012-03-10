@@ -104,10 +104,6 @@ extern std::bitset<32> duReg[30];   /* def/use bits for registers		*/
 extern std::bitset<32> maskDuReg[30];	/* masks off du bits for regs		*/
 
 /* Registers used by icode instructions */
-static constexpr const char *allRegs[21] = {"ax", "cx", "dx", "bx", "sp", "bp",
-                                    "si", "di", "es", "cs", "ss", "ds",
-                                    "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh",
-                                    "tmp"};
 
 /* Memory map states */
 #define BM_UNKNOWN  0   /* Unscanned memory     */
@@ -169,7 +165,7 @@ hlType	  expType (const COND_EXPR *, Function *);
 std::string writeCall (Function *, STKFRAME *, Function *, int *);
 char 	*writeJcond (const HLTYPE &, Function *, int *);
 char 	*writeJcondInv (HLTYPE, Function *, int *);
-int     power2 (int);
+
 
 /* Exported funcions from locident.c */
 boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE atOffset);
@@ -177,6 +173,6 @@ boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, iI
 eReg otherLongRegi(eReg, int, LOCAL_ID *);
 
 
-extern eReg subRegH(eReg reg);
+extern eReg subRegH(eReg reg); //TODO: move these into machine_x86
 extern eReg subRegL(eReg reg);
 extern const char *indentStr(int level);

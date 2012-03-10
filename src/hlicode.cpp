@@ -78,7 +78,7 @@ void ICODE::setJCond(COND_EXPR *cexp)
  * it has been replaced by a high-level icode. */
 void ICODE ::invalidate()
 {
-    invalid = TRUE;
+    invalid = true;
 }
 
 
@@ -287,7 +287,6 @@ void Function::highLevelGen()
     COND_EXPR *lhs, *rhs; /* left- and right-hand side of expression */
     uint32_t _flg;          /* icode flags */
     numIcode = Icode.size();
-    lhs=rhs=0;
     for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
     {
         assert(numIcode==Icode.size());
@@ -469,6 +468,7 @@ COND_EXPR *COND_EXPR::inverse () const
                 return COND_EXPR::unary (NEGATION, this->clone());
 
             case DBL_AND: case DBL_OR:
+            // Binary::Create(invertop,lhs->inverse(),rhs->inverse());
                 res = this->clone();
                 res->boolExpr.op = invCondOp[op()];
                 res->boolExpr.lhs=lhs()->inverse ();
@@ -591,13 +591,9 @@ string HLTYPE::write1HlIcode (Function * pProc, int *numLoc)
 }
 
 
-int power2 (int i)
-/* Returns the value of 2 to the power of i */
-{
-    if (i == 0)
-        return (1);
-    return (2 << (i-1));
-}
+//TODO: replace  all "< (INDEX_BX_SI-1)" with machine_x86::lastReg
+
+//TODO: replace all >= INDEX_BX_SI with machine_x86::isRegExpression
 
 
 /* Writes the registers/stack variables that are used and defined by this
@@ -607,48 +603,29 @@ void ICODE::writeDU()
     int my_idx = loc_ip;
     {
         ostringstream ostr;
-        for (int i = 0; i < (INDEX_BX_SI-1); i++)
-            if (du.def[i])
-                ostr << allRegs[i] << " ";
+        Machine_X86::writeBitVector(ostr,du.def);
         if (!ostr.str().empty())
             printf ("Def (reg) = %s\n", ostr.str().c_str());
     }
     {
         ostringstream ostr;
-        for (int i = 0; i < (INDEX_BX_SI-1); i++)
-            if (du.def[i])
-                ostr << allRegs[i] << " ";
-        if (!ostr.str().empty())
-            printf ("Def (reg) = %s\n", ostr.str().c_str());
-        for (int i = 0; i < INDEX_BX_SI; i++)
-        {
-            if (du.use[i])
-                ostr << allRegs[i] << " ";
-        }
+        Machine_X86::writeBitVector(ostr,du.use);
         if (!ostr.str().empty())
             printf ("Use (reg) = %s\n", ostr.str().c_str());
-
     }
 
     /* Print du1 chain */
     printf ("# regs defined = %d\n", du1.numRegsDef);
     for (int i = 0; i < MAX_REGS_DEF; i++)
     {
-        if (du1.used(i))
-        {
+        if (not du1.used(i))
+            continue;
             printf ("%d: du1[%d][] = ", my_idx, i);
-#ifdef _lint
-            for (auto ik=du1.idx[i].uses.begin(); ik!=du1.idx[i].uses.end(); ++ik)
-            {
-                auto j(*ik);
-#else
             for(auto j : du1.idx[i].uses)
             {
-#endif
                 printf ("%d ", j->loc_ip);
             }
             printf ("\n");
-        }
     }
 
     /* For HLI_CALL, print # parameter bytes */
@@ -656,7 +633,3 @@ void ICODE::writeDU()
         printf ("# param bytes = %d\n", hl()->call.args->cb);
     printf ("\n");
 }
-
-
-
-

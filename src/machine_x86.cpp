@@ -1,4 +1,4 @@
-
+#include <cassert>
 #include "machine_x86.h"
 // Index registers **** temp solution
 static const std::string regNames[] = {
@@ -22,5 +22,35 @@ Machine_X86::Machine_X86()
 
 const std::string &Machine_X86::regName(eReg r)
 {
+    assert(r<(sizeof(regNames)/sizeof(std::string)));
     return regNames[r];
+}
+
+static const std::string szOps[] =
+{
+    "CBW",  "AAA",      "AAD",      "AAM",      "AAS",      "ADC",  "ADD",  "AND",
+    "BOUND","CALL",     "CALL",     "CLC",      "CLD",      "CLI",  "CMC",  "CMP",
+    "CMPS", "REPNE CMPS","REPE CMPS","DAA",     "DAS",      "DEC",  "DIV",  "ENTER",
+    "ESC",  "HLT",      "IDIV",     "IMUL",     "IN",       "INC",  "INS",  "REP INS",
+    "INT",  "IRET",     "JB",       "JBE",      "JAE",      "JA",   "JE",   "JNE",
+    "JL",   "JGE",      "JLE",      "JG",       "JS",       "JNS",  "JO",   "JNO",
+    "JP",   "JNP",      "JCXZ",     "JMP",      "JMP",      "LAHF", "LDS",  "LEA",
+    "LEAVE","LES",      "LOCK",     "LODS",     "REP LODS", "LOOP", "LOOPE","LOOPNE",
+    "MOV",  "MOVS",     "REP MOVS", "MUL",      "NEG",      "NOT",  "OR",   "OUT",
+    "OUTS", "REP OUTS", "POP",      "POPA",     "POPF",     "PUSH", "PUSHA","PUSHF",
+    "RCL",  "RCR",      "ROL",      "ROR",      "RET",      "RETF", "SAHF", "SAR",
+    "SHL",  "SHR",      "SBB",      "SCAS",     "REPNE SCAS","REPE SCAS",   "CWD",  "STC",
+    "STD",  "STI",      "STOS",     "REP STOS", "SUB",      "TEST", "WAIT", "XCHG",
+    "XLAT", "XOR",      "INTO",     "NOP",      "REPNE",    "REPE",	"MOD"
+};
+
+const std::string &Machine_X86::opcodeName(unsigned r)
+{
+    assert(r<(sizeof(szOps)/sizeof(std::string)));
+    return szOps[r];
+}
+
+bool Machine_X86::physicalReg(eReg r)
+{
+    return (r>=rAX) && (r<rTMP);
 }

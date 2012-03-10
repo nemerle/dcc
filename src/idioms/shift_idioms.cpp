@@ -57,7 +57,6 @@ int Idiom8::action()
  ****************************************************************************/
 bool Idiom15::match(iICODE pIcode)
 {
-
     uint8_t regi;
 
     if(distance(pIcode,m_end)<2)
@@ -72,7 +71,6 @@ bool Idiom15::match(iICODE pIcode)
             pIcode->ll()->match(iSHL,(eReg)regi,I) and
             (pIcode->ll()->src.op() == 1) )
     {
-
         m_icodes.push_back(pIcode++);
     }
     return m_icodes.size()>1;

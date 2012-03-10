@@ -5,7 +5,6 @@
  * (C) Cristina Cifuentes
  */
 #include <stdint.h>
-//#include <malloc.h>		// For free()
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -20,7 +19,6 @@ static const char * const condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", 
                                           " + ", " - ", " * ", " / ",
                                           " >> ", " << ", " % ", " && ", " || " };
 
-//#define EXP_SIZE 200		/* Size of the expression buffer */
 
 /* Local expression stack */
 //typedef struct _EXP_STK {
@@ -64,7 +62,6 @@ void ICODE::setRegDU (eReg regi, operDu du_in)
 /* Copies the def, use, or def and use fields of duIcode into pIcode */
 void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
 {
-    //    printf("%s %d,%d from %d to %d\n",__FUNCTION__,int(du),int(duDu),duIcode->ll()->getOpcode(),pIcode->ll()->getOpcode());
     switch (_du)
     {
     case eDEF:
@@ -363,9 +360,9 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
 
     else if ((sd == SRC) && ll_insn.testFlags(I)) /* constant */
         newExp = COND_EXPR::idKte (ll_insn.src.op(), 2);
-    else if (pm.regi == 0)                             /* global variable */
+    else if (pm.regi == rUNDEF) /* global variable */
         newExp = GlobalVariable::Create(pm.segValue, pm.off);
-    else if (pm.regi < INDEX_BX_SI)                      /* register */
+    else if ( pm.isReg() )      /* register */
     {
         newExp = COND_EXPR::idReg (pm.regi, (sd == SRC) ? ll_insn.getFlag() :
                                                           ll_insn.getFlag() & NO_SRC_B,
@@ -438,10 +435,11 @@ condId ICODE::idType(opLoc sd)
         return (CONSTANT);
     else if (pm.regi == 0)
         return (GLOB_VAR);
-    else if (pm.regi < INDEX_BX_SI)
+    else if ( pm.isReg() )
         return (REGISTER);
-    else if ((pm.seg == rSS) && (pm.regi == INDEX_BX_SI))
+    else if ((pm.seg == rSS) && (pm.regi == INDEX_BP))
     {
+        //TODO: which pm.seg/pm.regi pairs should produce PARAM/LOCAL_VAR ?
         if (pm.off >= 0)
             return (PARAM);
         else
@@ -793,7 +791,6 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
 
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
-//lint -sem(COND_EXPR::clone, @p!=0)
 COND_EXPR *COND_EXPR::clone() const
 {
     COND_EXPR* newExp=0;        /* Expression node copy */
@@ -830,6 +827,7 @@ void COND_EXPR::changeBoolOp (condOp newOp)
  * register regi */
 bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,LOCAL_ID *locsym)
 {
+
     if (tree == NULL)
         return false;
     COND_EXPR *temp=tree->insertSubTreeReg(_expr,regi,locsym);
@@ -848,7 +846,7 @@ bool isSubRegisterOf(eReg reg,eReg parent)
 }
 COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,LOCAL_ID *locsym)
 {
-    //HlTypeSupport *set_val;
+
     eReg treeReg;
     COND_EXPR *temp;
 
@@ -894,6 +892,7 @@ COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,LOCAL_ID *lo
         }
         return nullptr;
     }
+
     return nullptr;
 }
 COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym)
@@ -984,7 +983,6 @@ COND_EXPR *BinaryOperator::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
         return this;
     }
     return nullptr;
-
 }
 
 
@@ -1007,7 +1005,7 @@ void COND_EXPR::release()
 }
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
-//lint -sem(BinaryOperator::clone, @p!=0)
+
 COND_EXPR *BinaryOperator::clone()
 {
     BinaryOperator* newExp=new BinaryOperator(m_op);        /* Expression node copy */
@@ -1042,4 +1040,5 @@ COND_EXPR *BinaryOperator::inverse()
     } /* eos */
     assert(false);
     return res;
+
 }

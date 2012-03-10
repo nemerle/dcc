@@ -19,7 +19,7 @@ static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 void    interactDis(Function * initProc, int ic);
 static uint32_t    SynthLab;
-
+//TODO: Move these to Machine_X86
 /*constexpr */eReg subRegH(eReg reg)
 {
     return eReg((int)reg + (int)rAH-(int)rAX);
@@ -798,7 +798,9 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
     SYM *    psym;
     uint32_t   operand;
 
-    if (pm->regi == 0)  {       /* Global var */
+    if (pm->regi == 0)
+    {
+        /* Global var */
         if (pm->segValue) { /* there is a value in the seg field */
             operand = opAdr (pm->segValue, pm->off);
             psym = updateGlobSym (operand, size, duFlag);
@@ -1043,7 +1045,6 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             if (! Imm) {
                 use(SRC, pIcode, this, pstate, cb, ix);
             }
-            //lint -fallthrough
         case iINC:  case iDEC:  case iNEG:  case iNOT:
         case iAAA:  case iAAD:  case iAAM:  case iAAS:
         case iDAA:  case iDAS:

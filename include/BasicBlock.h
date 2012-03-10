@@ -40,6 +40,7 @@ private:
     //friend class SymbolTableListTraits<BB, Function>;
     iICODE  range_start;
     iICODE  range_end;
+
 public:
     iICODE begin();
     iICODE end() const;

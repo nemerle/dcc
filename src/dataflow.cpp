@@ -6,14 +6,14 @@
  ****************************************************************************/
 
 #include "dcc.h"
-//#include <boost/range.hpp>
-//#include <boost/range/adaptors.hpp>
-//#include <boost/range/algorithm.hpp>
+#include <boost/range.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm.hpp>
 #include <string.h>
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
-//using namespace boost;
+using namespace boost;
 struct ExpStack
 {
     typedef std::list<COND_EXPR *> EXP_STK;
@@ -120,7 +120,7 @@ void Function::elimCondCodes ()
     BB * pBB;           /* Pointer to BBs in dfs last ordering    */
     riICODE useAt;      /* Instruction that used flag    */
     riICODE defAt;      /* Instruction that defined flag */
-    lhs=rhs=_expr=0;
+        //lhs=rhs=_expr=0;
     for (i = 0; i < numBBs; i++)
     {
         pBB = m_dfsLast[i];
@@ -129,10 +129,9 @@ void Function::elimCondCodes ()
         //        auto v(pBB | boost::adaptors::reversed);
         //        for (const ICODE &useAt : v)
         //        {}
-        assert(distance(pBB->rbegin(),pBB->rend())==pBB->size());
         for (useAt = pBB->rbegin(); useAt != pBB->rend(); useAt++)
         {
-            llIcode useAtOp = useAt->ll()->getOpcode();
+            llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
             if ((useAt->type != LOW_LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
                 continue;
@@ -252,14 +251,8 @@ void Function::genLiveKtes ()
         pbb = m_dfsLast[i];
         if (pbb->flg & INVALID_BB)
             continue;	// skip invalid BBs
-#ifdef _lint
-        for (auto j = pbb->begin(); j != pbb->end(); j++)
-        {
-            ICODE &insn(*j);
-#else
         for(ICODE &insn : *pbb)
         {
-#endif
             if ((insn.type == HIGH_LEVEL) && ( insn.valid() ))
             {
                 liveUse |= (insn.du.use & ~def);
@@ -326,14 +319,8 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
             }
             else                            /* Check successors */
             {
-#ifdef _lint
-                for (auto i=pbb->edges.begin(); i!=pbb->edges.end(); ++i)
-                {
-                    TYPEADR_TYPE &e(*i);
-#else
                 for(TYPEADR_TYPE &e : pbb->edges)
                 {
-#endif
                     pbb->liveOut |= e.BBptr->liveIn;
                 }
 
@@ -411,7 +398,6 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
 void BB::genDU1()
 {
     eReg regi;            /* Register that was defined */
-
     int k, defRegIdx, useIdx;
     iICODE picode, ticode,lastInst;
     BB *tbb;         /* Target basic block */
@@ -505,9 +491,9 @@ void BB::genDU1()
              * from a library function (routines such as printf
              * return an integer, which is normally not taken into
              * account by the programmer). 	*/
-            if (picode->valid() && ! picode->du1.used(defRegIdx) &&
-                    ( ! (picode->du.lastDefRegi & duReg[regi]).any()) &&
-                    ( ! ((picode->hl()->opcode == HLI_CALL) &&
+            if (picode->valid() and not picode->du1.used(defRegIdx) and
+                    (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
+                    (not ((picode->hl()->opcode == HLI_CALL) &&
                           (picode->hl()->call.proc->flg & PROC_ISLIB))))
             {
                 if (! (this->liveOut & duReg[regi]).any())	/* not liveOut */
@@ -542,14 +528,8 @@ void Function::genDU1 ()
 {
     /* Traverse tree in dfsLast order */
     assert(m_dfsLast.size()==numBBs);
-#ifdef _lint
-    for (auto i=m_dfsLast.begin(); i!=m_dfsLast.end(); ++i)
-    {
-        BB *pbb(*i);
-#else
     for(BB *pbb : m_dfsLast)
     {
-#endif
         if (pbb->flg & INVALID_BB)
             continue;
         pbb->genDU1();
@@ -636,7 +616,7 @@ bool COND_EXPR::xClear (iICODE f, iICODE t, iICODE lastBBinst, Function * pproc)
         {
             regi= pproc->localId.id_arr[expr.ident.idNode.regiIdx].id.regi;
             for (i = ++iICODE(f); (i != lastBBinst) && (i!=t); i++)
-                if ((i->type == HIGH_LEVEL) && ( not i->invalid ))
+                if ((i->type == HIGH_LEVEL) && ( i->valid() ))
                 {
                     if ((i->du.def & duReg[regi]).any())
                         return false;
@@ -711,13 +691,13 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, int num
             }
             else
                 adjustActArgType (_exp, pp->args.sym[numArgs].type, pProc);
-        res = picode->newStkArg (_exp, picode->ll()->getOpcode(), pProc);
+        res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), pProc);
     }
     else			/* user function */
     {
         if (pp->args.numArgs > 0)
             pp->args.adjustForArgType (numArgs, expType (_exp, pProc));
-        res = picode->newStkArg (_exp, picode->ll()->getOpcode(), pProc);
+        res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), pProc);
     }
 
     /* Do not update the size of k if the expression was a segment register
@@ -796,13 +776,13 @@ void Function::processHliCall1(COND_EXPR *_exp, iICODE picode)
             {
                 if (pp->args.numArgs > 0)
                     adjustActArgType(_exp, pp->args.sym[numArgs].type, this);
-                res = picode->newStkArg (_exp, picode->ll()->getOpcode(), this);
+                res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), this);
             }
             else			/* user function */
             {
                 if (pp->args.numArgs >0)
                     pp->args.adjustForArgType (numArgs,expType (_exp, this));
-                res = picode->newStkArg (_exp,picode->ll()->getOpcode(), this);
+                res = picode->newStkArg (_exp,(llIcode)picode->ll()->getOpcode(), this);
             }
             if (res == FALSE)
                 k += hlTypeSize (_exp, this);
@@ -849,6 +829,7 @@ void Function::findExps()
 
     /* Initialize expression stack */
     g_exp_stk.init();
+
     _exp = 0;
     /* Traverse tree in dfsLast order */
     for (i = 0; i < numBBs; i++)
@@ -1125,9 +1106,11 @@ void Function::dataFlow(std::bitset<32> &_liveOut)
         isCx = _liveOut.test(rCX - rAX);
         isDx = _liveOut.test(rDX - rAX);
         bool isAL = !isAx && _liveOut.test(rAL - rAX);
-        bool isBL = !isBx && _liveOut.test(rBL - rAX);
-        bool isCL = !isCx && _liveOut.test(rCL - rAX);
         bool isAH = !isAx && _liveOut.test(rAH - rAX);
+        bool isBL = !isBx && _liveOut.test(rBL - rAX);
+        bool isBH = !isBx && _liveOut.test(rBH - rAX);
+        bool isCL = !isCx && _liveOut.test(rCL - rAX);
+        bool isCH = !isCx && _liveOut.test(rCH - rAX);
         bool isDL = !isDx && _liveOut.test(rDL - rAX);
         bool isDH = !isDx && _liveOut.test(rDH - rAX);
         if(isAL && isAH)
@@ -1142,6 +1125,19 @@ void Function::dataFlow(std::bitset<32> &_liveOut)
             printf("**************************************************************************** dataFlow Join discovered Dx\n");
             isDH=isDL=false;
         }
+        if(isBL && isBH)
+        {
+            isBx = true;
+            printf("**************************************************************************** dataFlow Join discovered Dx\n");
+            isBH=isBL=false;
+        }
+        if(isCL && isCH)
+        {
+            isCx = true;
+            printf("**************************************************************************** dataFlow Join discovered Dx\n");
+            isCH=isCL=false;
+        }
+
         if (isAx && isDx)       /* long or pointer */
         {
             retVal.type = TYPE_LONG_SIGN;

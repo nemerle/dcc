@@ -62,8 +62,8 @@ static  int     numArg;                 /* Number of param names actually stored
 
 /* prototypes */
 void grab(int n, FILE *_file);
-uint16_t readFileShort(FILE *g_file);
-void readFileSection(uint16_t* p, int len, FILE *g_file);
+uint16_t readFileShort(FILE *_file);
+void readFileSection(uint16_t* p, int len, FILE *_file);
 void cleanup(void);
 void checkStartup(STATE *state);
 void readProtoFile(void);
@@ -908,11 +908,17 @@ readProtoFile(void)
 
     for (i=0; i < numFunc; i++)
     {
-        fread(&pFunc[i], 1, SYMLEN, fProto);
+        size_t read_size=fread(&pFunc[i], 1, SYMLEN, fProto);
+        assert(read_size==SYMLEN);
+        if(read_size!=SYMLEN)
+            break;
         pFunc[i].typ      = (hlType)readFileShort(fProto);
         pFunc[i].numArg   = readFileShort(fProto);
         pFunc[i].firstArg = readFileShort(fProto);
-        fread(&pFunc[i].bVararg, 1, 1, fProto);
+        if(feof(fProto))
+            break;
+        int c = fgetc(fProto);
+        pFunc[i].bVararg = (c!=0); //fread(&pFunc[i].bVararg, 1, 1, fProto);
     }
 
     grab(2, fProto);
