@@ -333,7 +333,7 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                     /* user/runtime routine */
                     if (! (pcallee->flg & PROC_ISLIB))
                     {
-                        if (pcallee->liveAnal == FALSE) /* hasn't been processed */
+                        if (pcallee->liveAnal == false) /* hasn't been processed */
                             pcallee->dataFlow (pbb->liveOut);
                         pbb->liveOut = pcallee->liveIn;
                     }
@@ -691,14 +691,13 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, int num
             }
             else
                 adjustActArgType (_exp, pp->args.sym[numArgs].type, pProc);
-        res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), pProc);
     }
     else			/* user function */
     {
         if (pp->args.numArgs > 0)
             pp->args.adjustForArgType (numArgs, expType (_exp, pProc));
-        res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), pProc);
     }
+    res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), pProc);
 
     /* Do not update the size of k if the expression was a segment register
          * in a near call */
@@ -757,7 +756,7 @@ void Function::processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode
     }
 }
 
-void Function::processHliCall1(COND_EXPR *_exp, iICODE picode)
+void Function::processHliCall(COND_EXPR *_exp, iICODE picode)
 {
     Function * pp;
     int cb, numArgs;
@@ -957,10 +956,12 @@ void Function::findExps()
                 /* Check for only one use of these registers */
                 if ((picode->du1.numUses(0) == 1) and (picode->du1.numUses(1) == 1))
                 {
+                    regi = picode->du1.regi[0]; //TODO: verify that regi actually should be assigned this
+
                     switch (picode->hl()->opcode) {
                         case HLI_ASSIGN:
                             /* Replace rhs of current icode into target
-                         * icode expression */
+                             * icode expression */
                             if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                             {
                                 ticode = picode->du1.idx[0].uses.front();
@@ -1061,7 +1062,7 @@ void Function::findExps()
 
             if ((picode->hl()->opcode == HLI_CALL) &&  ! (picode->hl()->call.proc->flg & REG_ARGS))
             {
-                processHliCall1(_exp, picode);
+                processHliCall(_exp, picode);
             }
 
             /* If we could not substitute the result of a function,

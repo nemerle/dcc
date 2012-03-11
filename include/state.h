@@ -10,9 +10,9 @@
 /* STATE TABLE */
 struct STATE
 {
-    uint32_t       IP;             /* Offset into Image                    */
+    uint32_t      IP;             /* Offset into Image                    */
     int16_t       r[INDEX_BX_SI];   /* Value of segs and AX                 */
-    uint8_t        f[INDEX_BX_SI];   /* True if r[.] has a value             */
+    bool          f[INDEX_BX_SI];   /* True if r[.] has a value             */
     struct
     {                           /* For case stmt indexed reg            */
         uint8_t    regi;           /*   Last conditional jump              */
@@ -20,6 +20,8 @@ struct STATE
     }           JCond;
     void setState(uint16_t reg, int16_t value);
     void checkStartup();
+    bool isKnown(eReg v) {return f[v];}
+    void kill(eReg v) { f[v]=false;}
     STATE() : IP(0)
     {
         JCond.regi=0;

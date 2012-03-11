@@ -76,11 +76,14 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
     }
 
     /* Search through code looking for impure references and flag them */
+    Disassembler ds(1);
     for(Function &f : pProcList)
     {
         f.markImpure();
         if (option.asm1)
-            disassem(1, &f);
+        {
+            ds.disassem(&f);
+        }
     }
     if (option.Interact)
     {

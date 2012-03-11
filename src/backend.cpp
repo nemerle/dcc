@@ -264,7 +264,10 @@ void Function::codeGen (std::ostream &fs)
     }
     /* Write procedure's code */
     if (flg & PROC_ASM)		/* generate assembler */
-        disassem (3, this);
+    {
+        Disassembler ds(3);
+        ds.disassem(this);
+    }
     else							/* generate C */
     {
         m_cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);

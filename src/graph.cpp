@@ -165,6 +165,7 @@ void Function::markImpure()
     {
         if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
+        assert(icod.ll()->caseTbl.numEntries<symtab.size());
         psym = &symtab[icod.ll()->caseTbl.numEntries];
         for (int c = (int)psym->label; c < (int)psym->label+psym->size; c++)
         {

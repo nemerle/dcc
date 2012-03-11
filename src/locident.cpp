@@ -70,17 +70,17 @@ void LOCAL_ID::flagByteWordId (int off)
     int idx;
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off](ID &en)->bool {
      //if (((en.type == TYPE_WORD_SIGN) || (en.type == TYPE_BYTE_SIGN)) &&
-     if ((en.isSigned()) &&
+     if ((en.typeBitsize()<=16) &&
          (en.id.bwId.off == off) && (en.id.bwId.regOff == 0))
         return true;
      return false;
     });
     if(found==id_arr.end())
     {
-        printf("Entry not found in LOCAL_ID::flagByteWordId \n");
+        printf("No entry to flag as invalid in LOCAL_ID::flagByteWordId \n");
         return;
     }
-    found->illegal = TRUE;
+    found->illegal = true;
 }
 
 /* Creates a new stack identifier node of TYPE_BYTE_(UN)SIGN or

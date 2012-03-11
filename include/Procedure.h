@@ -6,15 +6,11 @@
 #include "locident.h"
 #include "state.h"
 #include "icode.h"
-//#include "types.h"
-//#include "ast.h"
-//#include "error.h"
-//#include "graph.h"
-//#include "bundle.h"
 #include "StackFrame.h"
 /* PROCEDURE NODE */
 struct CALL_GRAPH;
 struct COND_EXPR;
+struct Disassembler;
 namespace llvm
 {
 // Traits for intrusive list of basic blocks...
@@ -144,7 +140,7 @@ public:
     void mergeFallThrough(BB *pBB);
     void structIfs();
     void structLoops(derSeq *derivedG);
-    void buildCFG();
+    void buildCFG(Disassembler &ds);
     void controlFlowAnalysis();
     void newRegArg(iICODE picode, iICODE ticode);
 protected:
@@ -153,7 +149,7 @@ protected:
     void propLongStk(int i, const ID &pLocId);
     void propLongGlb(int i, const ID &pLocId);
     void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong);
-    void processHliCall1(COND_EXPR *exp, iICODE picode);
+    void processHliCall(COND_EXPR *exp, iICODE picode);
 
     int     findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE iter);
     int     findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE beg);

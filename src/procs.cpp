@@ -126,7 +126,8 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     {
         regL = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.l;
         regH = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.h;
-        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, Icode.begin() /*0*/);
+        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, tproc->Icode.begin() /*0*/);
+        //tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, Icode.begin() /*0*/);
     }
 
     /* Check if register argument already on the formal argument list */
@@ -320,20 +321,24 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
     /* Find stack offset for this argument */
     off = m_minOff;
     for (i = 0; i < numArg_; i++)
+    {
+        if(i>=sym.size())
+        {
+            break; //TODO: verify
+        }
         off += sym[i].size;
+    }
 
     /* Find formal argument */
     if (numArg_ < sym.size())
     {
         psym = &sym[numArg_];
         i = numArg_;
-        while ((i < sym.size()) && (psym->off != off))
-        {
-            psym++;
-            i++;
-        }
-        if (numArg_ == sym.size())
+        //auto iter=std::find_if(sym.begin(),sym.end(),[off](STKSYM &s)->bool {s.off==off;});
+        auto iter=std::find_if(sym.begin()+numArg_,sym.end(),[off](STKSYM &s)->bool {s.off==off;});
+        if(iter==sym.end()) // symbol not found
             return;
+        psym = &(*iter);
     }
     /* If formal argument does not exist, do not create new ones, just
      * ignore actual argument

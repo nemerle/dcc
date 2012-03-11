@@ -455,8 +455,8 @@ bool LibCheck(Function & pProc)
         pProc.name = "main";
         return false;
     }
-
-    memmove(pat, &prog.Image[fileOffset], PATLEN);
+    memcpy(pat, &prog.Image[fileOffset], PATLEN);
+    //memmove(pat, &prog.Image[fileOffset], PATLEN);
     fixWildCards(pat);                  /* Fix wild cards in the copy */
     h = g_pattern_hasher.hash(pat);                      /* Hash the found proc */
     /* We always have to compare keys, because the hash function will
@@ -856,8 +856,7 @@ gotVendor:
     by dcc, rather than considered as known functions. When a prototype is
     found (in searchPList()), the parameter info is written to the proc struct.
 */
-void
-readProtoFile(void)
+void readProtoFile(void)
 {
     FILE *fProto;
     char *pPath;                /* Point to the environment string */

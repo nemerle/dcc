@@ -294,6 +294,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iCALL:
             case iCALLF:
                 done = process_CALL (*pIcode, pcallGraph, pstate);
+                pstate->kill(rBX);
+                pstate->kill(rCX);
                 break;
 
                 /*** Returns ***/
@@ -483,6 +485,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
 
             pIcode.ll()->setFlags(SWITCH);
             pIcode.ll()->caseTbl.numEntries = (endTable - offTable) / 2;
+            assert(pIcode.ll()->caseTbl.numEntries<512);
             psw = (uint32_t*)allocMem(pIcode.ll()->caseTbl.numEntries*sizeof(uint32_t));
             pIcode.ll()->caseTbl.entries = psw;
 
@@ -543,7 +546,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
                 So we just exit this function, and ignore the call.
                 We probably should not have parsed this deep, anyway.
                         */
-            return FALSE;
+            return false;
         }
 
         /* Offset into program image is seg:off of read input */
@@ -551,9 +554,26 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
                         es:0 where es:0 is the start of the image. This is
                         usually wrong! Consider also CALL [BP+0E] in which the
                         segment for the pointer is in SS! - Mike */
+        if(pIcode.ll()->dst.isReg())
+        {
+            if( not  pstate->isKnown(pIcode.ll()->dst.regi)
+                or
+                not  pstate->isKnown(pIcode.ll()->dst.seg)
+              )
+            {
+                fprintf(stderr,"Indirect call with unkown register values\n");
+                return false;
+            }
+            off = pstate->r[pIcode.ll()->dst.seg];
+            off <<=4;
+            off += pstate->r[pIcode.ll()->dst.regi];
 
-        off = (uint32_t)(uint16_t)pIcode.ll()->dst.off +
-                ((uint32_t)(uint16_t)pIcode.ll()->dst.segValue << 4);
+        }
+        else
+        {
+            off = (uint32_t)(uint16_t)pIcode.ll()->dst.off +
+                    ((uint32_t)(uint16_t)pIcode.ll()->dst.segValue << 4);
+        }
 
         /* Address of function is given by 4 (CALLF) or 2 (CALL) bytes at
                  * previous offset into the program image */
@@ -564,7 +584,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
             tgtAddr= LH(&prog.Image[off]) + (uint32_t)(uint16_t)state.r[rCS] << 4;
         pIcode.ll()->src.SetImmediateOp( tgtAddr );
         pIcode.ll()->setFlags(I);
-        indirect = TRUE;
+        indirect = true;
     }
 
     /* Process CALL.  Function address is located in pIcode.ll()->immed.op */

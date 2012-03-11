@@ -8,6 +8,7 @@
 #include <cassert>
 #include <stdio.h>
 #include "dcc.h"
+#include "disassem.h"
 
 static void displayCFG(Function * pProc);
 static void displayDfs(BB * pBB);
@@ -15,7 +16,7 @@ static void displayDfs(BB * pBB);
 /****************************************************************************
  * udm
  ****************************************************************************/
-void Function::buildCFG()
+void Function::buildCFG(Disassembler &ds)
 {
     if(flg & PROC_ISLIB)
         return; // Ignore library functions
@@ -26,7 +27,9 @@ void Function::buildCFG()
     compressCFG(); // Remove redundancies and add in-edge information
 
     if (option.asm2)
-        disassem(2, this); // Print 2nd pass assembler listing
+    {
+        ds.disassem(this); // Print 2nd pass assembler listing
+    }
 
     /* Idiom analysis and propagation of long type */
     lowLevelAnalysis();
@@ -67,10 +70,12 @@ void udm(void)
 
     /* Build the control flow graph, find idioms, and convert low-level
      * icodes to high-level ones */
+    Disassembler ds(2);
     for (auto iter = pProcList.rbegin(); iter!=pProcList.rend(); ++iter)
     {
-        iter->buildCFG();
+        iter->buildCFG(ds);
     }
+
 
     /* Data flow analysis - eliminate condition codes, extraneous registers
      * and intermediate instructions.  Find expressions by forward

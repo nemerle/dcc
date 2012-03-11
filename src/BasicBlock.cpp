@@ -106,12 +106,14 @@ void BB::displayDfs()
         }
     }
     /* Display out edges information */
+    i=0;
     for(TYPEADR_TYPE &edg : edges)
     {
         if (nodeType == INTERVAL_NODE)
             printf(" outEdge[%ld] = %ld\n", i, edg.BBptr->correspInt->numInt);
         else
             printf(" outEdge[%d] = %ld\n", i, edg.BBptr->begin()->loc_ip);
+        ++i;
     }
     printf("----\n");
 

@@ -261,9 +261,11 @@ public:
     bool isJmpInst();
     HLTYPE toHighLevel(COND_EXPR *lhs, COND_EXPR *rhs, Function *func);
     HLTYPE createCall();
-    LLInst(ICODE *container) : m_link(container),flg(0)
+    LLInst(ICODE *container) : flg(0),codeIdx(0),numBytes(0),m_link(container)
     {
-
+        caseTbl.entries=0;
+        caseTbl.numEntries=0;
+        setOpcode(0);
     }
     ICODE *m_link;
 };
@@ -331,7 +333,9 @@ public:
             Use &u(idx[regIdx]);
             u.removeUser(ic);
         }
-        DU1() : numRegsDef(0) {}
+        DU1() : numRegsDef(0)
+        {
+        }
     };
     icodeType           type;           /* Icode type                       */
     BB			*inBB;      	/* BB to which this icode belongs   */

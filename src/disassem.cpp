@@ -109,7 +109,7 @@ static const char *szFlops3C[] =
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 
-void  dis1LineOp(int i, boolT fWin, char attr, uint16_t *len, Function * pProc);
+//void  dis1LineOp(int i, boolT fWin, char attr, uint16_t *len, Function * pProc);
 static void  formatRM(ostringstream &p, uint32_t flg, const LLOperand &pm);
 static ostringstream &strDst(ostringstream &os, uint32_t flg, LLOperand &pm);
 
@@ -119,13 +119,13 @@ static void  setProc(Function * proc);
 static void  dispData(uint16_t dataSeg);
 boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
-static  FILE   *fp;
+//static  FILE   *dis_g_fp;
 static  CIcodeRec pc;
 static  int     cb, j, numIcode, allocIcode;
 static  map<int,int> pl;
 static  uint32_t   nextInst;
 static  boolT    fImpure;
-static  int     g_lab, prevPass;
+//static  int     g_lab;
 static  Function *   pProc;          /* Points to current proc struct */
 
 struct POSSTACK_ENTRY
@@ -173,16 +173,12 @@ void LLInst::findJumpTargets(CIcodeRec &_pc)
  *			  pass == 2 generates output on file .a2
  *			  pass == 3 generates output on file .b
  ****************************************************************************/
-void disassem(int pass, Function * ppProc)
+
+void Disassembler::disassem(Function * ppProc)
 {
 
 
     pProc = ppProc;             /* Save the passes pProc */
-    if (pass != prevPass)
-    {
-        prevPass = pass;
-        g_lab = 0; 	/* Restart label numbers */
-    }
     createSymTables();
     allocIcode = numIcode = pProc->Icode.size();
     cb = allocIcode * sizeof(ICODE);
@@ -195,8 +191,8 @@ void disassem(int pass, Function * ppProc)
     if (pass != 3)
     {
         auto p = (pass == 1)? asm1_name: asm2_name;
-        fp = fopen(p, "a+");
-        if (!fp)
+        m_fp.open(p,ios_base::app);
+        if (!m_fp.is_open())
         {
             fatalError(CANNOT_OPEN, p);
         }
@@ -222,20 +218,23 @@ void disassem(int pass, Function * ppProc)
 
     /* Write procedure header */
     if (pass != 3)
-        fprintf(fp, "\t\t%s  PROC  %s\n", pProc->name.c_str(), (pProc->flg & PROC_FAR)? "FAR": "NEAR");
+    {
+        std::string near_far=(pProc->flg & PROC_FAR)? "FAR": "NEAR";
+        m_fp << "\t\t"<<pProc->name<<"  PROC  "<< near_far<<"\n";
+    }
 
     /* Loop over array printing each record */
     nextInst = 0;
     for( ICODE &icode : pc)
     {
-        icode.ll()->dis1Line(icode.loc_ip,pass);
+        this->dis1Line(*icode.ll(),icode.loc_ip,pass);
     }
 
     /* Write procedure epilogue */
     if (pass != 3)
     {
-        fprintf(fp, "\n\t\t%s  ENDP\n\n", pProc->name.c_str());
-        fclose(fp);
+        m_fp << "\n\t\t"<<pProc->name<<"  ENDP\n\n";
+        m_fp.close();
     }
 
     pc.clear();
@@ -246,51 +245,50 @@ void disassem(int pass, Function * ppProc)
  * i is index into Icode for this proc                                      *
  * It is assumed that icode i is already scanned                            *
  ****************************************************************************/
-void LLInst::dis1Line(int loc_ip, int pass)
+void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 {
     ostringstream oper_stream;
     ostringstream hex_bytes;
     ostringstream result_stream;
     ostringstream opcode_with_mods;
     ostringstream operands_s;
-
     oper_stream << uppercase;
     hex_bytes << uppercase;
     /* Disassembly stage 1 --
          * Do not try to display NO_CODE entries or synthetic instructions,
          * other than JMPs, that have been introduced for def/use analysis. */
     if ((option.asm1) &&
-            ( this->testFlags(NO_CODE) ||
-             (this->testFlags(SYNTHETIC) && (this->getOpcode() != iJMP))))
+            ( inst.testFlags(NO_CODE) ||
+             (inst.testFlags(SYNTHETIC) && (inst.getOpcode() != iJMP))))
     {
         return;
     }
-    else if (this->testFlags(NO_CODE))
+    else if (inst.testFlags(NO_CODE))
     {
         return;
     }
-    if (this->testFlags(TARGET | CASE))
+    if (inst.testFlags(TARGET | CASE))
     {
         if (pass == 3)
             cCode.appendCode("\n"); /* Print to c code buffer */
         else
-            fprintf(fp, "\n");              /* No, print to the stream */
+            m_fp<< "\n";              /* No, print to the stream */
     }
 
     /* Find next instruction label and print hex bytes */
-    if (this->testFlags(SYNTHETIC))
-        nextInst = this->label;
+    if (inst.testFlags(SYNTHETIC))
+        nextInst = inst.label;
     else
     {
-        cb = (uint32_t) this->numBytes;
-        nextInst = this->label + cb;
+        cb = (uint32_t) inst.numBytes;
+        nextInst = inst.label + cb;
 
         /* Output hexa code in program image */
         if (pass != 3)
         {
             for (j = 0; j < cb; j++)
             {
-                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[this->label + j]);
+                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[inst.label + j]);
             }
             hex_bytes << ' ';
         }
@@ -301,11 +299,11 @@ void LLInst::dis1Line(int loc_ip, int pass)
     oper_stream << setw(5)<<left; // align for the labels
     {
         ostringstream lab_contents;
-        if (readVal(lab_contents, this->label, 0))
+        if (readVal(lab_contents, inst.label, 0))
         {
             lab_contents << ':';             /* Also removes the null */
         }
-        else if (this->testFlags(TARGET))    /* Symbols override Lnn labels */
+        else if (inst.testFlags(TARGET))    /* Symbols override Lnn labels */
         {
             /* Print label */
             if (pl.count(loc_ip)==0)
@@ -316,62 +314,62 @@ void LLInst::dis1Line(int loc_ip, int pass)
         }
         oper_stream<< lab_contents.str();
     }
-    if ((this->getOpcode()==iSIGNEX )&& this->testFlags(B))
+    if ((inst.getOpcode()==iSIGNEX )&& inst.testFlags(B))
     {
-        setOpcode(iCBW);
+        inst.setOpcode(iCBW);
     }
-    opcode_with_mods<<Machine_X86::opcodeName(this->getOpcode());
+    opcode_with_mods<<Machine_X86::opcodeName(inst.getOpcode());
 
-    switch ( this->getOpcode() )
+    switch ( inst.getOpcode() )
     {
         case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
         case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-            strDst(operands_s,getFlag(), dst);
-            strSrc(operands_s);
+            strDst(operands_s,inst.getFlag(), inst.dst);
+            inst.strSrc(operands_s);
             break;
 
         case iESC:
-            flops(operands_s);
+            inst.flops(operands_s);
             break;
 
         case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
         case iROR:
-            strDst(operands_s,getFlag() | I, dst);
-            if(testFlags(I))
-                strSrc(operands_s);
+            strDst(operands_s,inst.getFlag() | I, inst.dst);
+            if(inst.testFlags(I))
+                inst.strSrc(operands_s);
             else
                 operands_s<<", cl";
             break;
 
         case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-            strDst(operands_s,getFlag() | I, dst);
+            strDst(operands_s,inst.getFlag() | I, inst.dst);
             break;
 
         case iPUSH:
-            if (testFlags(I))
+            if (inst.testFlags(I))
             {
-                operands_s<<strHex(src.op());
+                operands_s<<strHex(inst.src.op());
             }
             else
             {
-                strDst(operands_s,getFlag() | I, dst);
+                strDst(operands_s,inst.getFlag() | I, inst.dst);
             }
             break;
 
         case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
-            if (testFlags(I))
+            if (inst.testFlags(I))
             {
-                strDst(operands_s,getFlag(), dst) <<", ";
-                formatRM(operands_s, getFlag(), src);
-                strSrc(operands_s);
+                strDst(operands_s,inst.getFlag(), inst.dst) <<", ";
+                formatRM(operands_s, inst.getFlag(), inst.src);
+                inst.strSrc(operands_s);
             }
             else
-                strDst(operands_s,getFlag() | I, src);
+                strDst(operands_s,inst.getFlag() | I, inst.src);
             break;
 
         case iLDS:  case iLES:  case iBOUND:
-            strDst(operands_s,getFlag(), dst)<<", dword ptr";
-            strSrc(operands_s,true);
+            strDst(operands_s,inst.getFlag(), inst.dst)<<", dword ptr";
+            inst.strSrc(operands_s,true);
             break;
 
         case iJB:  case iJBE:  case iJAE:  case iJA:
@@ -383,71 +381,71 @@ void LLInst::dis1Line(int loc_ip, int pass)
 
             /* Check if there is a symbol here */
     {
-        ICODE *lab=pc.GetIcode(src.op());
+        ICODE *lab=pc.GetIcode(inst.src.op());
             selectTable(Label);
-        if ((src.op() < (uint32_t)numIcode) &&  /* Ensure in range */
+        if ((inst.src.op() < (uint32_t)numIcode) &&  /* Ensure in range */
                 readVal(operands_s, lab->ll()->label, 0))
             {
                 break;                          /* Symbolic label. Done */
         }
             }
 
-            if (testFlags(NO_LABEL))
+            if (inst.testFlags(NO_LABEL))
             {
                 //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
-                operands_s<<strHex(src.op());
+                operands_s<<strHex(inst.src.op());
             }
-            else if (testFlags(I) )
+            else if (inst.testFlags(I) )
             {
-                j = src.op();
+                j = inst.src.op();
                 if (pl.count(j)==0)       /* Forward jump */
                 {
                     pl[j] = ++g_lab;
                 }
-                if (getOpcode() == iJMPF)
+                if (inst.getOpcode() == iJMPF)
                 {
                     operands_s<<" far ptr ";
                 }
                 operands_s<<"L"<<pl[j];
             }
-            else if (getOpcode() == iJMPF)
+            else if (inst.getOpcode() == iJMPF)
             {
                 operands_s<<"dword ptr";
-                strSrc(operands_s,true);
+                inst.strSrc(operands_s,true);
             }
             else
             {
-                strDst(operands_s,I, src);
+                strDst(operands_s,I, inst.src);
             }
             break;
 
         case iCALL: case iCALLF:
-            if (testFlags(I))
+            if (inst.testFlags(I))
             {
-                if((getOpcode() == iCALL))
+                if((inst.getOpcode() == iCALL))
                     operands_s<< "near";
                 else
                     operands_s<< " far";
-                operands_s<<" ptr "<<(src.proc.proc)->name;
+                operands_s<<" ptr "<<(inst.src.proc.proc)->name;
             }
-            else if (getOpcode() == iCALLF)
+            else if (inst.getOpcode() == iCALLF)
             {
                 operands_s<<"dword ptr ";
-                strSrc(operands_s,true);
+                inst.strSrc(operands_s,true);
             }
             else
-                strDst(operands_s,I, src);
+                strDst(operands_s,I, inst.src);
             break;
 
         case iENTER:
-            operands_s<<strHex(dst.off)<<", ";
-            operands_s<<strHex(src.op());
+            operands_s<<strHex(inst.dst.off)<<", ";
+            operands_s<<strHex(inst.src.op());
             break;
 
         case iRET:  case iRETF:  case iINT:
-            if (testFlags(I))
+            if (inst.testFlags(I))
             {
-                operands_s<<strHex(src.op());
+                operands_s<<strHex(inst.src.op());
             }
             break;
 
@@ -458,49 +456,49 @@ void LLInst::dis1Line(int loc_ip, int pass)
         case iMOVS:  case iREP_MOVS:
         case iINS:   case iREP_INS:
         case iOUTS:  case iREP_OUTS:
-            if (src.segOver)
+            if (inst.src.segOver)
             {
-                bool is_dx_src=(getOpcode() == iOUTS || getOpcode() == iREP_OUTS);
+                bool is_dx_src=(inst.getOpcode() == iOUTS || inst.getOpcode() == iREP_OUTS);
                 if(is_dx_src)
-                    operands_s<<"dx, "<<szPtr[getFlag() & B];
+                    operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
                 else
-                    operands_s<<szPtr[getFlag() & B];
-                if (getOpcode() == iLODS ||
-                    getOpcode() == iREP_LODS ||
-                    getOpcode() == iOUTS ||
-                    getOpcode() == iREP_OUTS)
+                    operands_s<<szPtr[inst.getFlag() & B];
+                if (inst.getOpcode() == iLODS ||
+                    inst.getOpcode() == iREP_LODS ||
+                    inst.getOpcode() == iOUTS ||
+                    inst.getOpcode() == iREP_OUTS)
                 {
-                    operands_s<<Machine_X86::regName(src.segOver); // szWreg[src.segOver-rAX]
+                    operands_s<<Machine_X86::regName(inst.src.segOver); // szWreg[src.segOver-rAX]
                 }
                 else
                 {
-                    operands_s<<"es:[di], "<<Machine_X86::regName(src.segOver);
+                    operands_s<<"es:[di], "<<Machine_X86::regName(inst.src.segOver);
                 }
                 operands_s<<":[si]";
             }
             else
             {
-                (getFlag() & B)? opcode_with_mods<< "B": opcode_with_mods<< "W";
+                (inst.getFlag() & B)? opcode_with_mods<< "B": opcode_with_mods<< "W";
             }
         break;
 
         case iXLAT:
-            if (src.segOver)
+            if (inst.src.segOver)
             {
                 operands_s<<" "<<szPtr[1];
-                operands_s<<Machine_X86::regName(src.segOver)<<":[bx]";
+                operands_s<<Machine_X86::regName(inst.src.segOver)<<":[bx]";
             }
             break;
 
         case iIN:
-            (getFlag() & B)? operands_s<<"al, " : operands_s<< "ax, ";
-            (testFlags(I))? operands_s << strHex(src.op()) : operands_s<< "dx";
+            (inst.getFlag() & B)? operands_s<<"al, " : operands_s<< "ax, ";
+            (inst.testFlags(I))? operands_s << strHex(inst.src.op()) : operands_s<< "dx";
             break;
 
         case iOUT:
         {
-            std::string d1=((testFlags(I))? strHex(src.op()): "dx");
-            std::string d2=((getFlag() & B) ? ", al": ", ax");
+            std::string d1=((inst.testFlags(I))? strHex(inst.src.op()): "dx");
+            std::string d2=((inst.getFlag() & B) ? ", al": ", ax");
             operands_s<<d1 << d2;
         }
         break;
@@ -511,13 +509,13 @@ void LLInst::dis1Line(int loc_ip, int pass)
     oper_stream << setw(15) << left <<opcode_with_mods.str();
     oper_stream << operands_s.str();
     /* Comments */
-    if (testFlags(SYNTHETIC))
+    if (inst.testFlags(SYNTHETIC))
     {
         fImpure = FALSE;
     }
     else
     {
-        for (j = label, fImpure = 0; j > 0 && j < (int)nextInst; j++)
+        for (j = inst.label, fImpure = 0; j > 0 && j < (int)nextInst; j++)
         {
             fImpure |= BITMAP(j, BM_DATA);
         }
@@ -527,17 +525,17 @@ void LLInst::dis1Line(int loc_ip, int pass)
     /* Check for user supplied comment */
     selectTable(Comment);
     ostringstream cbuf;
-    if (readVal(cbuf, label, 0))
+    if (readVal(cbuf, inst.label, 0))
     {
         result_stream <<"; "<<cbuf.str();
     }
-    else if (fImpure || (testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
+    else if (fImpure || (inst.testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
     {
-        if (testFlags(CASE))
+        if (inst.testFlags(CASE))
         {
-            result_stream << ";Case l"<< caseTbl.numEntries;
+            result_stream << ";Case l"<< inst.caseTbl.numEntries;
         }
-        if (testFlags(SWITCH))
+        if (inst.testFlags(SWITCH))
         {
             result_stream << ";Switch ";
         }
@@ -545,29 +543,29 @@ void LLInst::dis1Line(int loc_ip, int pass)
         {
             result_stream << ";Accessed as data ";
         }
-        if (testFlags(IMPURE))
+        if (inst.testFlags(IMPURE))
         {
             result_stream << ";Impure operand ";
         }
-        if (testFlags(SEG_IMMED))
+        if (inst.testFlags(SEG_IMMED))
         {
             result_stream << ";Segment constant";
         }
-        if (testFlags(TERMINATES))
+        if (inst.testFlags(TERMINATES))
         {
             result_stream << ";Exit to DOS";
         }
     }
 
     /* Comment on iINT icodes */
-    if (getOpcode() == iINT)
-        writeIntComment(result_stream);
+    if (inst.getOpcode() == iINT)
+        inst.writeIntComment(result_stream);
 
     /* Display output line */
     if(pass==3)
     {
         /* output to .b code buffer */
-        if (testFlags(SYNTHETIC))
+        if (inst.testFlags(SYNTHETIC))
             result_stream<<";Synthetic inst";
         if (pass == 3)		/* output to .b code buffer */
             cCode.appendCode("%s\n", result_stream.str().c_str());
@@ -575,16 +573,18 @@ void LLInst::dis1Line(int loc_ip, int pass)
     }
     else
     {
-        if (not testFlags(SYNTHETIC) )
+        char buf[12];
+        /* output to .a1 or .a2 file */
+        if (not inst.testFlags(SYNTHETIC) )
         {
-            /* output to .a1 or .a2 file */
-            fprintf (fp, "%03ld %06lX %s\n", loc_ip, label, result_stream.str().c_str());
+            sprintf(buf,"%03ld %06lX",loc_ip, inst.label);
         }
         else		/* SYNTHETIC instruction */
         {
+            sprintf(buf,"%03ld       ",loc_ip);
             result_stream<<";Synthetic inst";
-            fprintf (fp, "%03ld        %s\n", loc_ip, result_stream.str().c_str());
         }
+        m_fp<<buf<< " " << result_stream.str() << "\n";
     }
 }
 
