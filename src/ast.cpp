@@ -628,7 +628,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
     bool needBracket;       /* Determine whether parenthesis is needed */
     BWGLB_TYPE* bwGlb;      /* Ptr to BWGLB_TYPE (global indexed var) */
     STKSYM * psym;          /* Pointer to argument in the stack */
-    std::ostringstream outStr;
+    std::ostringstream outStr,codeOut;
 
     if (expr == NULL)
         return "";
@@ -709,7 +709,8 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
             if (id->name[0] == '\0')	/* no name */
             {
                 sprintf (id->name, "loc%ld", ++(*numLoc));
-                cCode.appendDecl("%s %s; /* %s */\n",hlTypes[id->type], id->name,Machine_X86::regName(id->id.regi).c_str());
+                codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
+                codeOut <<"/* "<<Machine_X86::regName(id->id.regi)<<" */\n";
             }
             if (id->hasMacro)
                 o << id->macro << "("<<id->name<<")";
@@ -752,9 +753,9 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
             else if (id->loc == REG_FRAME)
             {
                 sprintf (id->name, "loc%ld", ++(*numLoc));
-                cCode.appendDecl("%s %s; /* %s:%s */\n",hlTypes[id->type], id->name,
-                                 Machine_X86::regName(id->id.longId.h).c_str(),
-                                 Machine_X86::regName(id->id.longId.l).c_str());
+                codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
+                codeOut <<"/* "<<Machine_X86::regName(id->id.longId.h) << ":" <<
+                            Machine_X86::regName(id->id.longId.l) << " */\n";
                 o << id->name;
                 pProc->localId.propLongId (id->id.longId.l,id->id.longId.h, id->name);
             }
@@ -784,6 +785,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
         outStr << o.str();
         break;
     }
+    cCode.appendDecl(codeOut.str());
 
     return outStr.str();
 }

@@ -218,7 +218,7 @@ void Function::codeGen (std::ostream &fs)
     /* Write arguments */
     for (size_t i = 0; i < args.sym.size(); i++)
     {
-        if (args.sym[i].invalid == FALSE)
+        if (args.sym[i].invalid == false)
         {
             buf<<hlTypes[args.sym[i].type]<<" "<<args.sym[i].name;
             if (i < (args.sym.size() - 1))
@@ -238,7 +238,7 @@ void Function::codeGen (std::ostream &fs)
         for (ID &refId : localId )
         {
             /* Output only non-invalidated entries */
-            if (refId.illegal == FALSE)
+            if (refId.illegal == false)
             {
                 if (refId.loc == REG_FRAME)
                 {

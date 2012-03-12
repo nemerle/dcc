@@ -11,7 +11,7 @@
 #include <list>
 #include <set>
 #include <algorithm>
-
+#include "types.h"
 #include "Enums.h"
 #include "machine_x86.h"
 
@@ -26,12 +26,6 @@ struct IDX_ARRAY : public std::vector<iICODE>
     {
         return std::find(begin(),end(),idx)!=end();
     }
-};
-
-static constexpr const char * hlTypes[13] = {
-    "", "char", "unsigned char", "int", "unsigned int",
-    "long", "unsigned long", "record", "int *", "char *",
-    "", "float", "double"
 };
 
 typedef enum
@@ -97,14 +91,13 @@ struct ID
     bool isSigned() const { return (type==TYPE_BYTE_SIGN)||(type==TYPE_WORD_SIGN)||(type==TYPE_LONG_SIGN);}
     uint16_t typeBitsize() const
     {
-        switch(type)
-        {
-            case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
-            return 16;
-            case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
-            return 8;
-        }
-        return ~0;
+        return TypeContainer::typeSize(type)*8;
+    }
+    void setLocalName(int i)
+    {
+       // char buf[32];
+        //sprintf (buf, "loc%ld", i);
+        //name=buf;
     }
 };
 

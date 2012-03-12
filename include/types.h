@@ -3,9 +3,10 @@
  * (C) Cristina Cifuentes, Mike van Emmerik
  ****************************************************************************/
 #pragma once
+#include <cassert>
 #include <stdint.h>
+#include "Enums.h"
 /**** Common definitions and macros ****/
-typedef unsigned int uint32_t;  /* 32 bits  */
 #define MAX 0x7FFFFFFF
 
 /* Type definitions used in the program */
@@ -13,14 +14,6 @@ typedef unsigned char byte; /* 8 bits   */
 typedef unsigned short word;/* 16 bits  */
 typedef short int16;        /* 16 bits  */
 typedef unsigned char boolT; /* 8 bits   */
-
-#if defined(__MSDOS__) | defined(WIN32)
-#define unlink _unlink		// Compiler is picky about non Ansi names
-#endif
-
-
-#define TRUE    1
-#define FALSE   0
 
 #define SYNTHESIZED_MIN 0x100000    /* Synthesized labs use bits 21..32 */
 
@@ -72,4 +65,42 @@ struct eDuVal
         val = x&VAL;
     }
     bool isUSE_VAL() {return use&&val;}            /* Use and Val                                   */
+};
+static constexpr const char * hlTypes[13] = {
+    "", "char", "unsigned char", "int", "unsigned int",
+    "long", "unsigned long", "record", "int *", "char *",
+    "", "float", "double"
+};
+
+struct TypeContainer
+{
+    hlType m_type;
+    size_t m_size;
+    TypeContainer(hlType t,size_t sz) : m_type(t),m_size(sz)
+    {
+    }
+    static size_t typeSize(hlType t)
+    {
+        switch(t)
+        {
+            case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
+            return 2;
+            case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
+            return 1;
+        }
+        return 0;
+    }
+    static hlType defaultTypeForSize(size_t x)
+    {
+        /* Type of the symbol according to the number of bytes it uses */
+        static hlType cbType[] = {TYPE_UNKNOWN, TYPE_BYTE_UNSIGN, TYPE_WORD_SIGN,
+                                  TYPE_UNKNOWN, TYPE_LONG_SIGN};
+
+        assert(x < sizeof(cbType)/sizeof(hlType));
+        return cbType[x];
+    }
+    static constexpr const char *typeName(hlType t)
+    {
+        return hlTypes[t];
+    }
 };
