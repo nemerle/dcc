@@ -1,0 +1,45 @@
+		main  PROC  NEAR
+000 0002FA 55                  PUSH           bp                 
+001 0002FB 8BEC                MOV            bp, sp             
+002 0002FD 83EC02              SUB            sp, 2              
+003 000300 56                  PUSH           si                 
+004 000301 C746FEFF00          MOV            word ptr [bp-2], 0FFh
+005 000306 BE8F00              MOV            si, 8Fh            
+006 000309 8B46FE              MOV            ax, [bp-2]         
+007 00030C 03C6                ADD            ax, si             
+008 00030E 8BF0                MOV            si, ax             
+009 000310 8B46FE              MOV            ax, [bp-2]         
+010 000313 2BC6                SUB            ax, si             
+011 000315 8946FE              MOV            [bp-2], ax         
+012 000318 8B46FE              MOV            ax, [bp-2]         
+013 00031B F7E6                MUL            si                 
+014 00031D 8946FE              MOV            [bp-2], ax         
+015 000320 8BC6                MOV            ax, si             
+016 000322 99                  CWD                               
+018 000323 F77EFE              IDIV           word ptr [bp-2]    
+020 000326 8BF0                MOV            si, ax             
+021 000328 8BC6                MOV            ax, si             
+022 00032A 99                  CWD                               
+024 00032B F77EFE              IDIV           word ptr [bp-2]    
+026 00032E 8BF2                MOV            si, dx             
+027 000330 8B46FE              MOV            ax, [bp-2]         
+028 000333 B105                MOV            cl, 5              
+029 000335 D3E0                SHL            ax, cl             
+030 000337 8946FE              MOV            [bp-2], ax         
+031 00033A 8BC6                MOV            ax, si             
+032 00033C 8A4EFE              MOV            cl, [bp-2]         
+033 00033F D3F8                SAR            ax, cl             
+034 000341 8BF0                MOV            si, ax             
+035 000343 56                  PUSH           si                 
+036 000344 FF76FE              PUSH           word ptr [bp-2]    
+037 000347 B89401              MOV            ax, 194h           
+038 00034A 50                  PUSH           ax                 
+039 00034B E8AC06              CALL           near ptr printf    
+040 00034E 83C406              ADD            sp, 6              
+041 000351 5E                  POP            si                 
+042 000352 8BE5                MOV            sp, bp             
+043 000354 5D                  POP            bp                 
+044 000355 C3                  RET                               
+
+		main  ENDP
+

@@ -74,7 +74,6 @@ void main ()
 {
 long loc1;
 long loc2;
-
     printf ("enter number of iterations ");
     scanf ("%ld", &loc0);
     printf ("executing %ld iterations\n", loc2);

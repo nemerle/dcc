@@ -11,6 +11,13 @@
 struct CALL_GRAPH;
 struct COND_EXPR;
 struct Disassembler;
+struct Function;
+struct CALL_GRAPH;
+
+typedef llvm::iplist<Function> FunctionListType;
+typedef FunctionListType lFunction;
+typedef lFunction::iterator ilFunction;
+
 namespace llvm
 {
 // Traits for intrusive list of basic blocks...
@@ -143,6 +150,7 @@ public:
     void buildCFG(Disassembler &ds);
     void controlFlowAnalysis();
     void newRegArg(iICODE picode, iICODE ticode);
+    void writeProcComments(std::ostream &ostr);
 protected:
     // TODO: replace those with friend visitor ?
     void propLongReg(int loc_ident_idx, const ID &pLocId);

@@ -1,0 +1,601 @@
+		proc_10  PROC  FAR
+000 000D23 55                  PUSH           bp                 
+001 000D24 8BEC                MOV            bp, sp             
+002 000D26 83EC68              SUB            sp, 68h            
+003 000D29 56                  PUSH           si                 
+004 000D2A 57                  PUSH           di                 
+005 000D2B 1E                  PUSH           ds                 
+006 000D2C B85901              MOV            ax, 159h           
+007 000D2F 50                  PUSH           ax                 
+008 000D30 16                  PUSH           ss                 
+009 000D31 8D469C              LEA            ax, [bp-64h]       
+010 000D34 50                  PUSH           ax                 
+011 000D35 0E                  PUSH           cs                 
+012 000D36 E8CDFF              CALL           near ptr proc_2    
+013 000D39 83C408              ADD            sp, 8              
+014 000D3C 1E                  PUSH           ds                 
+015 000D3D B87001              MOV            ax, 170h           
+016 000D40 50                  PUSH           ax                 
+017 000D41 1E                  PUSH           ds                 
+018 000D42 B86701              MOV            ax, 167h           
+019 000D45 50                  PUSH           ax                 
+020 000D46 9A24022904          CALL            far ptr fopen     
+021 000D4B 83C408              ADD            sp, 8              
+022 000D4E 89569A              MOV            [bp-66h], dx       
+023 000D51 894698              MOV            [bp-68h], ax       
+024 000D54 0BD0                OR             dx, ax             
+025 000D56 7516                JNE            L1                 
+026 000D58 1E                  PUSH           ds                 
+027 000D59 B87201              MOV            ax, 172h           
+028 000D5C 50                  PUSH           ax                 
+029 000D5D 9A02000E05          CALL            far ptr printf    
+030 000D62 59                  POP            cx                 
+031 000D63 59                  POP            cx                 
+032 000D64 B8FFFF              MOV            ax, 0FFFFh         
+033 000D67 50                  PUSH           ax                 
+034 000D68 9A0200DA03          CALL            far ptr exit      
+035 000D6D 59                  POP            cx                 
+
+036 000D6E 33FF           L1:  XOR            di, di             
+
+038 000DAF 47             L2:  INC            di                 
+039 000DB0 8BC7                MOV            ax, di             
+040 000DB2 3DE803              CMP            ax, 3E8h           
+041 000DB5 7CBB                JL             L3                 
+042 000DB7 FF769A              PUSH           word ptr [bp-66h]  
+043 000DBA FF7698              PUSH           word ptr [bp-68h]  
+044 000DBD 9A0800A104          CALL            far ptr fclose    
+045 000DC2 59                  POP            cx                 
+046 000DC3 59                  POP            cx                 
+047 000DC4 8BC7                MOV            ax, di             
+049 000DC8 5F                  POP            di                 
+050 000DC9 5E                  POP            si                 
+051 000DCA 8BE5                MOV            sp, bp             
+052 000DCC 5D                  POP            bp                 
+053 000DCD CB                  RETF                              
+
+054 000D72 33F6           L3:  XOR            si, si             
+
+056 000DA8 36807A9C00     L4:  CMP            byte ptr ss:[bp+si-64h], 0
+057 000DAD 75C7                JNE            L5                 
+
+059 000D76 C45E98         L5:  LES            bx, dword ptr[bp-68h]
+060 000D79 26FF07              INC            word ptr es:[bx]   
+061 000D7C 7D17                JGE            L6                 
+062 000D7E 368A429C            MOV            al, ss:[bp+si-64h] 
+063 000D82 C45E98              LES            bx, dword ptr[bp-68h]
+064 000D85 26FF470C            INC            word ptr es:[bx+0Ch]
+065 000D89 26C45F0C            LES            bx, dword ptres:[bx+0Ch]
+066 000D8D 4B                  DEC            bx                 
+067 000D8E 268807              MOV            es:[bx], al        
+068 000D91 B400                MOV            ah, 0              
+
+070 000DA7 46             L7:  INC            si                 
+071                            JMP            L4                 ;Synthetic inst
+
+072 000D95 FF769A         L6:  PUSH           word ptr [bp-66h]  
+073 000D98 FF7698              PUSH           word ptr [bp-68h]  
+074 000D9B 36FF729C            PUSH           word ptr ss:[bp+si-64h]
+075 000D9F 9A06001005          CALL            far ptr _fputc    
+076 000DA4 83C406              ADD            sp, 6              
+077                            JMP            L7                 ;Synthetic inst
+
+		proc_10  ENDP
+
+		proc_9  PROC  FAR
+000 000B96 55                  PUSH           bp                 
+001 000B97 8BEC                MOV            bp, sp             
+002 000B99 83EC08              SUB            sp, 8              
+003 000B9C 56                  PUSH           si                 
+004 000B9D BE6400              MOV            si, 64h            
+
+006 000C2B 8BC6           L8:  MOV            ax, si             
+007 000C2D 4E                  DEC            si                 
+008 000C2E 0BC0                OR             ax, ax             
+009 000C30 7403                JE             L9                 
+
+011 000BA3 CD394606       L10: ESC            FLD          [bp+6]
+012 000BA7 CD384E06            ESC            FMUL          [bp+6]
+013 000BAB CD384E06            ESC            FMUL          [bp+6]
+014 000BAF CD384E06            ESC            FMUL          [bp+6]
+015 000BB3 CD384E06            ESC            FMUL          [bp+6]
+016 000BB7 CD384E06            ESC            FMUL          [bp+6]
+017 000BBB CD384E06            ESC            FMUL          [bp+6]
+018 000BBF CD395EF8            ESC            FSTP          [bp-8]
+019 000BC3 CD3D                INT            3Dh                	/* Unknown int */
+
+020 000BC5 CD3946F8            ESC            FLD          [bp-8]
+021 000BC9 CD387606            ESC            FDIV          [bp+6]
+022 000BCD CD387606            ESC            FDIV          [bp+6]
+023 000BD1 CD387606            ESC            FDIV          [bp+6]
+024 000BD5 CD387606            ESC            FDIV          [bp+6]
+025 000BD9 CD387606            ESC            FDIV          [bp+6]
+026 000BDD CD387606            ESC            FDIV          [bp+6]
+027 000BE1 CD395EF8            ESC            FSTP          [bp-8]
+028 000BE5 CD3D                INT            3Dh                	/* Unknown int */
+
+029 000BE7 CD3946F8            ESC            FLD          [bp-8]
+030 000BEB CD384606            ESC            FADD          [bp+6]
+031 000BEF CD384606            ESC            FADD          [bp+6]
+032 000BF3 CD384606            ESC            FADD          [bp+6]
+033 000BF7 CD384606            ESC            FADD          [bp+6]
+034 000BFB CD384606            ESC            FADD          [bp+6]
+035 000BFF CD384606            ESC            FADD          [bp+6]
+036 000C03 CD395EF8            ESC            FSTP          [bp-8]
+037 000C07 CD3D                INT            3Dh                	/* Unknown int */
+
+038 000C09 CD3946F8            ESC            FLD          [bp-8]
+039 000C0D CD386606            ESC            FSUB          [bp+6]
+040 000C11 CD386606            ESC            FSUB          [bp+6]
+041 000C15 CD386606            ESC            FSUB          [bp+6]
+042 000C19 CD386606            ESC            FSUB          [bp+6]
+043 000C1D CD386606            ESC            FSUB          [bp+6]
+044 000C21 CD386606            ESC            FSUB          [bp+6]
+045 000C25 CD395EF8            ESC            FSTP          [bp-8]
+046 000C29 CD3D                INT            3Dh                	/* Unknown int */
+
+047                            JMP            L8                 ;Synthetic inst
+
+048 000C35 CD3946F8       L9:  ESC            FLD          [bp-8]
+050 000C3B 5E                  POP            si                 
+051 000C3C 8BE5                MOV            sp, bp             
+052 000C3E 5D                  POP            bp                 
+053 000C3F CB                  RETF                              
+
+		proc_9  ENDP
+
+		proc_8  PROC  FAR
+000 000B68 55                  PUSH           bp                 
+001 000B69 8BEC                MOV            bp, sp             
+002 000B6B CD39062601          ESC            FLD          [126h]
+003 000B70 CD394606            ESC            FLD          [bp+6]
+004 000B74 CD3AD9              ESC            FCOMPP             
+005 000B77 CD393E2C06          ESC            FSTSW          [62Ch]
+006 000B7C CD3D                INT            3Dh                	/* Unknown int */
+
+007 000B7E 8A262D06            MOV            ah, [62Dh]         
+008 000B82 9E                  SAHF                              
+009 000B83 7309                JAE            L11                
+010 000B85 CD394606            ESC            FLD          [bp+6]
+011 000B89 CD35E0              ESC            FCHS               
+
+014 000B94 5D             L12: POP            bp                 
+015 000B95 CB                  RETF                              
+
+016 000B8E CD394606       L11: ESC            FLD          [bp+6]
+017                            JMP            L12                ;Synthetic inst
+
+		proc_8  ENDP
+
+		proc_7  PROC  FAR
+000 000AD1 55                  PUSH           bp                 
+001 000AD2 8BEC                MOV            bp, sp             
+002 000AD4 83EC10              SUB            sp, 10h            
+003 000AD7 CD394606            ESC            FLD          [bp+6]
+004 000ADB CD38362701          ESC            FDIV          [127h]
+005 000AE0 CD395EF8            ESC            FSTP          [bp-8]
+006 000AE4 CD3D                INT            3Dh                	/* Unknown int */
+
+007 000AE6 8B460C              MOV            ax, [bp+0Ch]       
+008 000AE9 8946F6              MOV            [bp-0Ah], ax       
+009 000AEC 8B460A              MOV            ax, [bp+0Ah]       
+010 000AEF 8946F4              MOV            [bp-0Ch], ax       
+011 000AF2 8B4608              MOV            ax, [bp+8]         
+012 000AF5 8946F2              MOV            [bp-0Eh], ax       
+013 000AF8 8B4606              MOV            ax, [bp+6]         
+014 000AFB 8946F0              MOV            [bp-10h], ax       
+
+016 000B43 CD39062F01     L13: ESC            FLD          [12Fh]
+017 000B48 CD384EF8            ESC            FMUL          [bp-8]
+018 000B4C CD385EF0            ESC            FCOMP          [bp-10h]
+019 000B50 CD393E2C06          ESC            FSTSW          [62Ch]
+020 000B55 CD3D                INT            3Dh                	/* Unknown int */
+
+021 000B57 8A262D06            MOV            ah, [62Dh]         
+022 000B5B 9E                  SAHF                              
+023 000B5C 72A2                JB             L14                
+024 000B5E CD3946F8            ESC            FLD          [bp-8]
+026 000B64 8BE5                MOV            sp, bp             
+027 000B66 5D                  POP            bp                 
+028 000B67 CB                  RETF                              
+
+029 000B00 CD394606       L14: ESC            FLD          [bp+6]
+030 000B04 CD3876F8            ESC            FDIV          [bp-8]
+031 000B08 CD3866F8            ESC            FSUB          [bp-8]
+032 000B0C CD395EF0            ESC            FSTP          [bp-10h]
+033 000B10 CD3D                INT            3Dh                	/* Unknown int */
+
+034 000B12 FF76F6              PUSH           word ptr [bp-0Ah]  
+035 000B15 FF76F4              PUSH           word ptr [bp-0Ch]  
+036 000B18 FF76F2              PUSH           word ptr [bp-0Eh]  
+037 000B1B FF76F0              PUSH           word ptr [bp-10h]  
+038 000B1E 9AB8028B00          CALL            far ptr proc_8    
+039 000B23 83C408              ADD            sp, 8              
+040 000B26 CD395EF0            ESC            FSTP          [bp-10h]
+041 000B2A CD3D                INT            3Dh                	/* Unknown int */
+
+042 000B2C CD394606            ESC            FLD          [bp+6]
+043 000B30 CD3876F8            ESC            FDIV          [bp-8]
+044 000B34 CD3846F8            ESC            FADD          [bp-8]
+045 000B38 CD38362701          ESC            FDIV          [127h]
+046 000B3D CD395EF8            ESC            FSTP          [bp-8]
+047 000B41 CD3D                INT            3Dh                	/* Unknown int */
+
+048                            JMP            L13                ;Synthetic inst
+
+		proc_7  ENDP
+
+		proc_6  PROC  FAR
+000 000A74 55                  PUSH           bp                 
+001 000A75 8BEC                MOV            bp, sp             
+002 000A77 56                  PUSH           si                 
+003 000A78 8B4606              MOV            ax, [bp+6]         
+004 000A7B 0B4608              OR             ax, [bp+8]         
+005 000A7E 7524                JNE            L15                
+006 000A80 33F6                XOR            si, si             
+
+008 000A9C 81FE2823       L16: CMP            si, 2328h          
+009 000AA0 7CE2                JL             L17                
+
+011 000AC6 8B5608         L18: MOV            dx, [bp+8]         
+012 000AC9 8B4606              MOV            ax, [bp+6]         
+014 000ACE 5E                  POP            si                 
+015 000ACF 5D                  POP            bp                 
+016 000AD0 CB                  RETF                              
+
+017 000A84 8B169600       L17: MOV            dx, [96h]          
+018 000A88 A19400              MOV            ax, [94h]          
+019 000A8B 014606              ADD            [bp+6], ax         
+020 000A8E 115608              ADC            [bp+8], dx         
+021 000A91 8306940002          ADD            word ptr [94h], 2  
+022 000A96 8316960000          ADC            word ptr [96h], 0  
+023 000A9B 46                  INC            si                 
+024                            JMP            L16                ;Synthetic inst
+
+025 000AA4 33F6           L15: XOR            si, si             
+
+027 000AC0 81FE2823       L19: CMP            si, 2328h          
+028 000AC4 7CE2                JL             L20                
+
+030 000AA8 832E940002     L20: SUB            word ptr [94h], 2  
+031 000AAD 831E960000          SBB            word ptr [96h], 0  
+032 000AB2 8B169600            MOV            dx, [96h]          
+033 000AB6 A19400              MOV            ax, [94h]          
+034 000AB9 294606              SUB            [bp+6], ax         
+035 000ABC 195608              SBB            [bp+8], dx         
+036 000ABF 46                  INC            si                 
+037                            JMP            L19                ;Synthetic inst
+
+		proc_6  ENDP
+
+		proc_5  PROC  FAR
+000 000C40 55                  PUSH           bp                 
+001 000C41 8BEC                MOV            bp, sp             
+002 000C43 56                  PUSH           si                 
+003 000C44 8B7606              MOV            si, [bp+6]         
+004 000C47 83FE02              CMP            si, 2              
+005 000C4A 7E1E                JLE            L21                
+006 000C4C 8BC6                MOV            ax, si             
+007 000C4E 48                  DEC            ax                 
+008 000C4F 50                  PUSH           ax                 
+009 000C50 0E                  PUSH           cs                 
+010 000C51 E8ECFF              CALL           near ptr proc_5    
+011 000C54 59                  POP            cx                 
+012 000C55 50                  PUSH           ax                 
+013 000C56 8BC6                MOV            ax, si             
+014 000C58 05FEFF              ADD            ax, 0FFFEh         
+015 000C5B 50                  PUSH           ax                 
+016 000C5C 0E                  PUSH           cs                 
+017 000C5D E8E0FF              CALL           near ptr proc_5    
+018 000C60 59                  POP            cx                 
+019 000C61 8BD0                MOV            dx, ax             
+020 000C63 58                  POP            ax                 
+021 000C64 03C2                ADD            ax, dx             
+
+023 000C6F 5E             L22: POP            si                 
+024 000C70 5D                  POP            bp                 
+025 000C71 CB                  RETF                              
+
+026 000C6A B80100         L21: MOV            ax, 1              
+027 000C6D EB00                JMP            L22                
+
+		proc_5  ENDP
+
+		proc_4  PROC  FAR
+000 000DCE 55                  PUSH           bp                 
+001 000DCF 8BEC                MOV            bp, sp             
+002 000DD1 83EC04              SUB            sp, 4              
+003 000DD4 56                  PUSH           si                 
+004 000DD5 57                  PUSH           di                 
+005 000DD6 33F6                XOR            si, si             
+
+007 000DFA 81FEE803       L23: CMP            si, 3E8h           
+008 000DFE 7CDA                JL             L24                
+009 000E00 8B46FE              MOV            ax, [bp-2]         
+011 000E05 5F                  POP            di                 
+012 000E06 5E                  POP            si                 
+013 000E07 8BE5                MOV            sp, bp             
+014 000E09 5D                  POP            bp                 
+015 000E0A CB                  RETF                              
+
+016 000DDA C746FE0000     L24: MOV            word ptr [bp-2], 0 
+017 000DDF 33FF                XOR            di, di             
+018 000DE1 C746FC0100          MOV            word ptr [bp-4], 1 
+
+020 000DF3 81FFB300       L25: CMP            di, 0B3h           
+021 000DF7 7CEF                JL             L26                
+022 000DF9 46                  INC            si                 
+023                            JMP            L23                ;Synthetic inst
+
+024 000DE8 8B46FC         L26: MOV            ax, [bp-4]         
+025 000DEB 0146FE              ADD            [bp-2], ax         
+026 000DEE 8346FC02            ADD            word ptr [bp-4], 2 
+027 000DF2 47                  INC            di                 
+028                            JMP            L25                ;Synthetic inst
+
+		proc_4  ENDP
+
+		proc_3  PROC  FAR
+000 000CC8 55                  PUSH           bp                 
+001 000CC9 8BEC                MOV            bp, sp             
+
+003 000CE0 C45E06         L27: LES            bx, dword ptr[bp+6]
+004 000CE3 268A07              MOV            al, es:[bx]        
+005 000CE6 C45E0A              LES            bx, dword ptr[bp+0Ah]
+006 000CE9 263A07              CMP            al, es:[bx]        
+007 000CEC 74DF                JE             L28                
+008 000CEE C45E06              LES            bx, dword ptr[bp+6]
+009 000CF1 268A07              MOV            al, es:[bx]        
+010 000CF4 98                  CWD                               
+011 000CF5 C45E0A              LES            bx, dword ptr[bp+0Ah]
+012 000CF8 50                  PUSH           ax                 
+013 000CF9 268A07              MOV            al, es:[bx]        
+014 000CFC 98                  CWD                               
+015 000CFD 8BD0                MOV            dx, ax             
+016 000CFF 58                  POP            ax                 
+017 000D00 2BC2                SUB            ax, dx             
+
+019 000D04 5D             L29: POP            bp                 
+020 000D05 CB                  RETF                              
+
+021 000CCD C45E06         L28: LES            bx, dword ptr[bp+6]
+022 000CD0 26803F00            CMP            byte ptr es:[bx], 0
+023 000CD4 7504                JNE            L30                
+024 000CD6 33C0                XOR            ax, ax             
+025 000CD8 EB2A                JMP            L29                
+
+026 000CDA FF4606         L30: INC            word ptr [bp+6]    
+027 000CDD FF460A              INC            word ptr [bp+0Ah]  
+028                            JMP            L27                ;Synthetic inst
+
+		proc_3  ENDP
+
+		proc_2  PROC  FAR
+000 000D06 55                  PUSH           bp                 
+001 000D07 8BEC                MOV            bp, sp             
+
+003 000D0B C45E0A         L31: LES            bx, dword ptr[bp+0Ah]
+004 000D0E FF460A              INC            word ptr [bp+0Ah]  
+005 000D11 268A07              MOV            al, es:[bx]        
+006 000D14 C45E06              LES            bx, dword ptr[bp+6]
+007 000D17 FF4606              INC            word ptr [bp+6]    
+008 000D1A 268807              MOV            es:[bx], al        
+009 000D1D 0AC0                OR             al, al             
+010 000D1F 75EA                JNE            L31                
+011 000D21 5D                  POP            bp                 
+012 000D22 CB                  RETF                              
+
+		proc_2  ENDP
+
+		proc_1  PROC  FAR
+000 000C72 55                  PUSH           bp                 
+001 000C73 8BEC                MOV            bp, sp             
+002 000C75 56                  PUSH           si                 
+003 000C76 57                  PUSH           di                 
+004 000C77 33F6                XOR            si, si             
+005 000C79 33FF                XOR            di, di             
+
+007 000CBA 81FE2823       L32: CMP            si, 2328h          
+008 000CBE 7CBD                JL             L33                
+009 000CC0 8BC7                MOV            ax, di             
+011 000CC4 5F                  POP            di                 
+012 000CC5 5E                  POP            si                 
+013 000CC6 5D                  POP            bp                 
+014 000CC7 CB                  RETF                              
+
+015 000C7D 1E             L33: PUSH           ds                 
+016 000C7E B83701              MOV            ax, 137h           
+017 000C81 50                  PUSH           ax                 
+018 000C82 FF7608              PUSH           word ptr [bp+8]    
+019 000C85 FF7606              PUSH           word ptr [bp+6]    
+020 000C88 9A56048B00          CALL            far ptr proc_2    
+021 000C8D 83C408              ADD            sp, 8              
+022 000C90 1E                  PUSH           ds                 
+023 000C91 B84801              MOV            ax, 148h           
+024 000C94 50                  PUSH           ax                 
+025 000C95 FF760C              PUSH           word ptr [bp+0Ch]  
+026 000C98 FF760A              PUSH           word ptr [bp+0Ah]  
+027 000C9B 9A56048B00          CALL            far ptr proc_2    
+028 000CA0 83C408              ADD            sp, 8              
+029 000CA3 FF760C              PUSH           word ptr [bp+0Ch]  
+030 000CA6 FF760A              PUSH           word ptr [bp+0Ah]  
+031 000CA9 FF7608              PUSH           word ptr [bp+8]    
+032 000CAC FF7606              PUSH           word ptr [bp+6]    
+033 000CAF 9A18048B00          CALL            far ptr proc_3    
+034 000CB4 83C408              ADD            sp, 8              
+035 000CB7 03F8                ADD            di, ax             
+036 000CB9 46                  INC            si                 
+037                            JMP            L32                ;Synthetic inst
+
+		proc_1  ENDP
+
+		main  PROC  FAR
+000 0008B4 55                  PUSH           bp                 
+001 0008B5 8BEC                MOV            bp, sp             
+002 0008B7 81ECD400            SUB            sp, 0D4h           
+003 0008BB 56                  PUSH           si                 
+004 0008BC 33F6                XOR            si, si             
+005 0008BE B80700              MOV            ax, 7              
+006 0008C1 50                  PUSH           ax                 
+007 0008C2 1E                  PUSH           ds                 
+008 0008C3 B89800              MOV            ax, 98h            
+009 0008C6 50                  PUSH           ax                 
+010 0008C7 9A02000E05          CALL            far ptr printf    
+011 0008CC 83C406              ADD            sp, 6              
+
+013 000A56 83FE06         L34: CMP            si, 6              
+014 000A59 7D03                JGE            L35                
+
+016 0008D2 8BC6           L36: MOV            ax, si             
+017 0008D4 3D0500              CMP            ax, 5              
+018 0008D7 7603                JBE            L37                
+
+021 000A55 46             L38: INC            si                 
+022                            JMP            L34                ;Synthetic inst
+
+023 0008DC 8BD8           L37: MOV            bx, ax             
+024 0008DE D1E3                SHL            bx, 1              
+025 0008E0 2EFFA73500          JMP            word ptr cs:[bx+35h];Switch 
+
+026 0008F1 16                  PUSH           ss                 ;Case l0
+027 0008F2 8D4690              LEA            ax, [bp-70h]       
+028 0008F5 50                  PUSH           ax                 
+029 0008F6 16                  PUSH           ss                 
+030 0008F7 8D862CFF            LEA            ax, [bp-0D4h]      
+031 0008FB 50                  PUSH           ax                 
+032 0008FC 9AC2038B00          CALL            far ptr proc_1    
+033 000901 83C408              ADD            sp, 8              
+034 000904 A31806              MOV            [618h], ax         
+035 000907 FF361806            PUSH           word ptr [618h]    
+036 00090B 1E                  PUSH           ds                 
+037 00090C B8A500              MOV            ax, 0A5h           
+038 00090F 50                  PUSH           ax                 
+039 000910 9A02000E05          CALL            far ptr printf    
+040 000915 83C406              ADD            sp, 6              
+041 000918 E93A01              JMP            L38                
+
+042 00091B 9A1E058B00          CALL            far ptr proc_4    ;Case l1
+043 000920 A31A06              MOV            [61Ah], ax         
+044 000923 FF361A06            PUSH           word ptr [61Ah]    
+045 000927 1E                  PUSH           ds                 
+046 000928 B8B400              MOV            ax, 0B4h           
+047 00092B 50                  PUSH           ax                 
+048 00092C 9A02000E05          CALL            far ptr printf    
+049 000931 83C406              ADD            sp, 6              
+050 000934 E91E01              JMP            L38                
+
+051 000937 B81800              MOV            ax, 18h            ;Case l2
+052 00093A 50                  PUSH           ax                 
+053 00093B 9A90038B00          CALL            far ptr proc_5    
+054 000940 59                  POP            cx                 
+055 000941 A31E06              MOV            [61Eh], ax         
+056 000944 FF361E06            PUSH           word ptr [61Eh]    
+057 000948 1E                  PUSH           ds                 
+058 000949 B8C300              MOV            ax, 0C3h           
+059 00094C 50                  PUSH           ax                 
+060 00094D 9A02000E05          CALL            far ptr printf    
+061 000952 83C406              ADD            sp, 6              
+062 000955 E9FD00              JMP            L38                
+
+063 000958 C746F60000          MOV            word ptr [bp-0Ah], 0;Case l3
+064 00095D C746F40000          MOV            word ptr [bp-0Ch], 0
+065 000962 FF76F6              PUSH           word ptr [bp-0Ah]  
+066 000965 FF76F4              PUSH           word ptr [bp-0Ch]  
+067 000968 9AC4018B00          CALL            far ptr proc_6    
+068 00096D 59                  POP            cx                 
+069 00096E 59                  POP            cx                 
+070 00096F 89162206            MOV            [622h], dx         
+071 000973 A32006              MOV            [620h], ax         
+072 000976 FF362206            PUSH           word ptr [622h]    
+073 00097A FF362006            PUSH           word ptr [620h]    
+074 00097E 9AC4018B00          CALL            far ptr proc_6    
+075 000983 59                  POP            cx                 
+076 000984 59                  POP            cx                 
+077 000985 8956F6              MOV            [bp-0Ah], dx       
+078 000988 8946F4              MOV            [bp-0Ch], ax       
+079 00098B FF362206            PUSH           word ptr [622h]    
+080 00098F FF362006            PUSH           word ptr [620h]    
+081 000993 1E                  PUSH           ds                 
+082 000994 B8D200              MOV            ax, 0D2h           
+083 000997 50                  PUSH           ax                 
+084 000998 9A02000E05          CALL            far ptr printf    
+085 00099D 83C408              ADD            sp, 8              
+086 0009A0 FF76F6              PUSH           word ptr [bp-0Ah]  
+087 0009A3 FF76F4              PUSH           word ptr [bp-0Ch]  
+088 0009A6 1E                  PUSH           ds                 
+089 0009A7 B8E100              MOV            ax, 0E1h           
+090 0009AA 50                  PUSH           ax                 
+091 0009AB 9A02000E05          CALL            far ptr printf    
+092 0009B0 83C408              ADD            sp, 8              
+093 0009B3 E99F00              JMP            L38                
+
+094 0009B6 8B162206            MOV            dx, [622h]         ;Case l4
+095 0009BA A12006              MOV            ax, [620h]         
+096 0009BD 52                  PUSH           dx                 
+097 0009BE 50                  PUSH           ax                 
+098 0009BF CD378626FF          ESC            FILD          [bp-0DAh]
+099 0009C4 CD3D                INT            3Dh                	/* Unknown int */
+
+100 0009C6 83C404              ADD            sp, 4              
+101 0009C9 83EC08              SUB            sp, 8              
+102 0009CC CD399E22FF          ESC            FSTP          [bp-0DEh]
+103 0009D1 CD3D                INT            3Dh                	/* Unknown int */
+
+104 0009D3 9A21028B00          CALL            far ptr proc_7    
+105 0009D8 83C408              ADD            sp, 8              
+106 0009DB CD391E2406          ESC            FSTP          [624h]
+107 0009E0 CD3D                INT            3Dh                	/* Unknown int */
+
+108 0009E2 FF362A06            PUSH           word ptr [62Ah]    
+109 0009E6 FF362806            PUSH           word ptr [628h]    
+110 0009EA FF362606            PUSH           word ptr [626h]    
+111 0009EE FF362406            PUSH           word ptr [624h]    
+112 0009F2 1E                  PUSH           ds                 
+113 0009F3 B8F100              MOV            ax, 0F1h           
+114 0009F6 50                  PUSH           ax                 
+115 0009F7 9A02000E05          CALL            far ptr printf    
+116 0009FC 83C40C              ADD            sp, 0Ch            
+117 0009FF FF362A06            PUSH           word ptr [62Ah]    
+118 000A03 FF362806            PUSH           word ptr [628h]    
+119 000A07 FF362606            PUSH           word ptr [626h]    
+120 000A0B FF362406            PUSH           word ptr [624h]    
+121 000A0F 9AE6028B00          CALL            far ptr proc_9    
+122 000A14 83C408              ADD            sp, 8              
+123 000A17 CD395EF8            ESC            FSTP          [bp-8]
+124 000A1B CD3D                INT            3Dh                	/* Unknown int */
+
+125 000A1D FF76FE              PUSH           word ptr [bp-2]    
+126 000A20 FF76FC              PUSH           word ptr [bp-4]    
+127 000A23 FF76FA              PUSH           word ptr [bp-6]    
+128 000A26 FF76F8              PUSH           word ptr [bp-8]    
+129 000A29 1E                  PUSH           ds                 
+130 000A2A B80001              MOV            ax, 100h           
+131 000A2D 50                  PUSH           ax                 
+132 000A2E 9A02000E05          CALL            far ptr printf    
+133 000A33 83C40C              ADD            sp, 0Ch            
+134 000A36 EB1D                JMP            L38                
+
+135 000A38 9A73048B00          CALL            far ptr proc_10   ;Case l5
+136 000A3D A31C06              MOV            [61Ch], ax         
+137 000A40 FF361C06            PUSH           word ptr [61Ch]    
+138 000A44 1E                  PUSH           ds                 
+139 000A45 B80E01              MOV            ax, 10Eh           
+140 000A48 50                  PUSH           ax                 
+141 000A49 9A02000E05          CALL            far ptr printf    
+142 000A4E 83C406              ADD            sp, 6              
+143 000A51 EB02                JMP            L38                
+
+144 000A5E B80700         L35: MOV            ax, 7              
+145 000A61 50                  PUSH           ax                 
+146 000A62 1E                  PUSH           ds                 
+147 000A63 B81C01              MOV            ax, 11Ch           
+148 000A66 50                  PUSH           ax                 
+149 000A67 9A02000E05          CALL            far ptr printf    
+150 000A6C 83C406              ADD            sp, 6              
+151 000A6F 5E                  POP            si                 
+152 000A70 8BE5                MOV            sp, bp             
+153 000A72 5D                  POP            bp                 
+154 000A73 CB                  RETF                              
+
+		main  ENDP
+

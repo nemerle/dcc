@@ -185,85 +185,95 @@ void LLInst::writeIntComment (std::ostringstream &s)
 //, &cCode.decl
 void Function::writeProcComments()
 {
+    std::ostringstream ostr;
+    writeProcComments(ostr);
+    cCode.appendDecl(ostr.str());
+}
+
+void Function::writeProcComments(std::ostream &ostr)
+{
     int i;
     ID *id;			/* Pointer to register argument identifier */
     STKSYM * psym;		/* Pointer to register argument symbol */
 
     /* About the parameters */
     if (this->cbParam)
-        cCode.appendDecl("/* Takes %d bytes of parameters.\n",this->cbParam);
+        ostr << "/* Takes "<<this->cbParam<<" bytes of parameters.\n";
     else if (this->flg & REG_ARGS)
     {
-        cCode.appendDecl("/* Uses register arguments:\n");
+        ostr << "/* Uses register arguments:\n";
         for (i = 0; i < this->args.numArgs; i++)
         {
             psym = &this->args.sym[i];
+            ostr << " *     "<<psym->name<<" = ";
             if (psym->regs->expr.ident.idType == REGISTER)
             {
                 id = &this->localId.id_arr[psym->regs->expr.ident.idNode.regiIdx];
-                cCode.appendDecl(" *     %s = %s.\n", psym->name,
-                                 Machine_X86::regName(id->id.regi).c_str());
+                ostr << Machine_X86::regName(id->id.regi);
             }
             else		/* long register */
             {
                 id = &this->localId.id_arr[psym->regs->expr.ident.idNode.longIdx];
-                cCode.appendDecl(" *     %s = %s:%s.\n", psym->name,
-                                 Machine_X86::regName(id->id.longId.h).c_str(),
-                                 Machine_X86::regName(id->id.longId.l).c_str());
+                ostr << Machine_X86::regName(id->id.longId.h) << ":";
+                ostr << Machine_X86::regName(id->id.longId.l);
             }
+            ostr << ".\n";
 
         }
     }
     else
-        cCode.appendDecl("/* Takes no parameters.\n");
+        ostr << "/* Takes no parameters.\n";
 
     /* Type of procedure */
     if (this->flg & PROC_RUNTIME)
-        cCode.appendDecl(" * Runtime support routine of the compiler.\n");
+        ostr << " * Runtime support routine of the compiler.\n";
     if (this->flg & PROC_IS_HLL)
-        cCode.appendDecl(" * High-level language prologue code.\n");
+        ostr << " * High-level language prologue code.\n";
     if (this->flg & PROC_ASM)
     {
-        cCode.appendDecl(" * Untranslatable routine.  Assembler provided.\n");
+        ostr << " * Untranslatable routine.  Assembler provided.\n";
         if (this->flg & PROC_IS_FUNC)
-            switch (this->retVal.type) {
+            switch (this->retVal.type) { // TODO: Functions return value in various regs
                 case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
-                    cCode.appendDecl(" * Return value in register al.\n");
+                    ostr << " * Return value in register al.\n";
                     break;
                 case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
-                    cCode.appendDecl(" * Return value in register ax.\n");
+                    ostr << " * Return value in register ax.\n";
                     break;
                 case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
-                    cCode.appendDecl(" * Return value in registers dx:ax.\n");
+                    ostr << " * Return value in registers dx:ax.\n";
                     break;
             } /* eos */
     }
 
     /* Calling convention */
     if (this->flg & CALL_PASCAL)
-        cCode.appendDecl(" * Pascal calling convention.\n");
+        ostr << " * Pascal calling convention.\n";
     else if (this->flg & CALL_C)
-        cCode.appendDecl(" * C calling convention.\n");
+        ostr << " * C calling convention.\n";
     else if (this->flg & CALL_UNKNOWN)
-        cCode.appendDecl(" * Unknown calling convention.\n");
+        ostr << " * Unknown calling convention.\n";
 
     /* Other flags */
     if (this->flg & (PROC_BADINST | PROC_IJMP))
-        cCode.appendDecl(" * Incomplete due to an %s.\n",
-                         (this->flg & PROC_BADINST)? "untranslated opcode":
-                                                     "indirect JMP");
+    {
+        ostr << " * Incomplete due to an ";
+        if(this->flg & PROC_BADINST)
+            ostr << "untranslated opcode.\n";
+        else
+            ostr << "indirect JMP.\n";
+    }
     if (this->flg & PROC_ICALL)
-        cCode.appendDecl(" * Indirect call procedure.\n");
+        ostr << " * Indirect call procedure.\n";
     if (this->flg & IMPURE)
-        cCode.appendDecl(" * Contains impure code.\n");
+        ostr << " * Contains impure code.\n";
     if (this->flg & NOT_HLL)
-        cCode.appendDecl(" * Contains instructions not normally used by compilers.\n");
+        ostr << " * Contains instructions not normally used by compilers.\n";
     if (this->flg & FLOAT_OP)
-        cCode.appendDecl(" * Contains coprocessor instructions.\n");
+        ostr << " * Contains coprocessor instructions.\n";
 
     /* Graph reducibility */
     if (this->flg & GRAPH_IRRED)
-        cCode.appendDecl(" * Irreducible control flow graph.\n");
-    cCode.appendDecl(" */\n{\n");
+        ostr << " * Irreducible control flow graph.\n";
+    ostr << " */\n{\n";
 }
-

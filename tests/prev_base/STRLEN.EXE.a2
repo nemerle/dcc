@@ -1,0 +1,31 @@
+		proc_1  PROC  NEAR
+000 000305 55                  PUSH           bp                 
+001 000306 8BEC                MOV            bp, sp             
+002 000308 56                  PUSH           si                 
+003 000309 33F6                XOR            si, si             
+
+005 00030E 8B5E04         L1:  MOV            bx, [bp+4]         
+006 000311 FF4604              INC            word ptr [bp+4]    
+007 000314 803F00              CMP            byte ptr [bx], 0   
+008 000317 75F4                JNE            L2                 
+009 000319 8BC6                MOV            ax, si             
+011 00031D 5E                  POP            si                 
+012 00031E 5D                  POP            bp                 
+013 00031F C3                  RET                               
+
+014 00030D 46             L2:  INC            si                 
+015                            JMP            L1                 ;Synthetic inst
+
+		proc_1  ENDP
+
+		main  PROC  NEAR
+000 0002FA 56                  PUSH           si                 
+001 0002FB BE9401              MOV            si, 194h           
+002 0002FE 56                  PUSH           si                 
+003 0002FF E80300              CALL           near ptr proc_1    
+004 000302 59                  POP            cx                 
+005 000303 5E                  POP            si                 
+006 000304 C3                  RET                               
+
+		main  ENDP
+

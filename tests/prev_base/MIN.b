@@ -14,7 +14,6 @@ void start ()
 int loc1;
 int loc2; /* ax */
 int loc3; /* bx */
-
     loc1 = 0;
     loc2 = loc1;
 

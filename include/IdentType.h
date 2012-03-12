@@ -2,6 +2,7 @@
 #include "ast.h"
 #include "types.h"
 #include "machine_x86.h"
+
 struct IDENTTYPE
 {
     condId           idType;

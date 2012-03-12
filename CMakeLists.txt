@@ -1,17 +1,25 @@
 PROJECT(dcc_original)
-cmake_minimum_required(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+OPTION(dcc_build_tests "Enable unit tests." OFF)
 
 ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS)
-if(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
+IF(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE)
-    add_definitions(/W4)
-else()
+    ADD_DEFINITIONS(/W4)
+ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall --std=c++0x")
-    #SET(CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_DEBUG ${CMAKE_CXX_FLAGS_DEBUG}"  )
-endif()
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}"  ) #-D_GLIBCXX_DEBUG
+ENDIF()
+
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
 
 FIND_PACKAGE(LLVM)
 FIND_PACKAGE(Boost)
+IF(dcc_build_tests)
+    FIND_PACKAGE(GMock)
+ENDIF()
+
 llvm_map_components_to_libraries(REQ_LLVM_LIBRARIES jit native mc support)
 INCLUDE_DIRECTORIES(
     include
@@ -87,6 +95,13 @@ set(dcc_HEADERS
     include/StackFrame.h
     include/BasicBlock.h
 )
+SOURCE_GROUP(Source FILES ${dcc_SOURCES})
+SOURCE_GROUP(Headers FILES ${dcc_HEADERS})
+
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 TARGET_LINK_LIBRARIES(dcc_original ${REQ_LLVM_LIBRARIES})
+if(dcc_build_tests)
+ADD_SUBDIRECTORY(src)
+endif()
+
 

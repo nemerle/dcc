@@ -1,5 +1,5 @@
 /*
- * Input file	: ./tests/inputs/FIBOS.EXE
+ * Input file	: ./tests/inputs/FIBOL.EXE
  * File type	: EXE
  */
 
@@ -29,6 +29,7 @@ int loc2; /* ax */
 void main ()
 /* Takes no parameters.
  * High-level language prologue code.
+ * Contains instructions not normally used by compilers.
  */
 {
 int loc1;
@@ -36,12 +37,12 @@ int loc2;
 int loc3;
 int loc4;
     printf ("Input number of iterations: ");
-    scanf ("%d", &loc1);
+    scanf ("%d", &loc1, );
     loc3 = 1;
 
     while ((loc3 <= loc1)) {
         printf ("Input number: ");
-        scanf ("%d", &loc2);
+        scanf ("%d", &loc2, );
         printf ("fibonacci(%d) = %u\n", loc2, proc_1 (loc2));
         loc3 = (loc3 + 1);
     }	/* end of while */

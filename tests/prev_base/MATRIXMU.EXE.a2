@@ -1,0 +1,95 @@
+		proc_1  PROC  NEAR
+000 0002FA 55                  PUSH           bp                 
+001 0002FB 8BEC                MOV            bp, sp             
+002 0002FD 83EC02              SUB            sp, 2              
+003 000300 56                  PUSH           si                 
+004 000301 57                  PUSH           di                 
+005 000302 33F6                XOR            si, si             
+
+007 000378 83FE05         L1:  CMP            si, 5              
+008 00037B 7C89                JL             L2                 
+009 00037D 5F                  POP            di                 
+010 00037E 5E                  POP            si                 
+011 00037F 8BE5                MOV            sp, bp             
+012 000381 5D                  POP            bp                 
+013 000382 C3                  RET                               
+
+014 000306 33FF           L2:  XOR            di, di             
+
+016 000372 83FF04         L3:  CMP            di, 4              
+017 000375 7C93                JL             L4                 
+018 000377 46                  INC            si                 
+019                            JMP            L1                 ;Synthetic inst
+
+020 00030A C746FE0000     L4:  MOV            word ptr [bp-2], 0 
+
+022 00036B 837EFE04       L5:  CMP            word ptr [bp-2], 4 
+023 00036F 7CA0                JL             L6                 
+024 000371 47                  INC            di                 
+025                            JMP            L3                 ;Synthetic inst
+
+026 000311 8BDE           L6:  MOV            bx, si             
+027 000313 D1E3                SHL            bx, 1              
+028 000315 D1E3                SHL            bx, 1              
+029 000317 D1E3                SHL            bx, 1              
+030 000319 035E04              ADD            bx, [bp+4]         
+031 00031C 8B46FE              MOV            ax, [bp-2]         
+032 00031F D1E0                SHL            ax, 1              
+033 000321 03D8                ADD            bx, ax             
+034 000323 8B07                MOV            ax, [bx]           
+035 000325 50                  PUSH           ax                 
+036 000326 8B46FE              MOV            ax, [bp-2]         
+037 000329 BA0A00              MOV            dx, 0Ah            
+038 00032C F7E2                MUL            dx                 
+039 00032E 8BD8                MOV            bx, ax             
+040 000330 035E06              ADD            bx, [bp+6]         
+041 000333 8BC7                MOV            ax, di             
+042 000335 D1E0                SHL            ax, 1              
+043 000337 03D8                ADD            bx, ax             
+044 000339 58                  POP            ax                 
+045 00033A F727                MUL            word ptr [bx]      
+046 00033C 50                  PUSH           ax                 
+047 00033D 8BC6                MOV            ax, si             
+048 00033F BA0A00              MOV            dx, 0Ah            
+049 000342 F7E2                MUL            dx                 
+050 000344 8BD8                MOV            bx, ax             
+051 000346 035E08              ADD            bx, [bp+8]         
+052 000349 8BC7                MOV            ax, di             
+053 00034B D1E0                SHL            ax, 1              
+054 00034D 03D8                ADD            bx, ax             
+055 00034F 58                  POP            ax                 
+056 000350 0307                ADD            ax, [bx]           
+057 000352 50                  PUSH           ax                 
+058 000353 8BC6                MOV            ax, si             
+059 000355 BA0A00              MOV            dx, 0Ah            
+060 000358 F7E2                MUL            dx                 
+061 00035A 8BD8                MOV            bx, ax             
+062 00035C 035E08              ADD            bx, [bp+8]         
+063 00035F 8BC7                MOV            ax, di             
+064 000361 D1E0                SHL            ax, 1              
+065 000363 03D8                ADD            bx, ax             
+066 000365 58                  POP            ax                 
+067 000366 8907                MOV            [bx], ax           
+068 000368 FF46FE              INC            word ptr [bp-2]    
+069                            JMP            L5                 ;Synthetic inst
+
+		proc_1  ENDP
+
+		main  PROC  NEAR
+000 000383 55                  PUSH           bp                 
+001 000384 8BEC                MOV            bp, sp             
+002 000386 83EC78              SUB            sp, 78h            
+003 000389 8D46D8              LEA            ax, [bp-28h]       
+004 00038C 50                  PUSH           ax                 
+005 00038D 8D46B0              LEA            ax, [bp-50h]       
+006 000390 50                  PUSH           ax                 
+007 000391 8D4688              LEA            ax, [bp-78h]       
+008 000394 50                  PUSH           ax                 
+009 000395 E862FF              CALL           near ptr proc_1    
+010 000398 83C406              ADD            sp, 6              
+011 00039B 8BE5                MOV            sp, bp             
+012 00039D 5D                  POP            bp                 
+013 00039E C3                  RET                               
+
+		main  ENDP
+

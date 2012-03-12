@@ -110,7 +110,6 @@ long loc3;
 long loc4;
 long loc5;
 int loc6; /* ax */
-
     scanf ("%ld", &loc0);
     printf ("executing %ld iterations\n", loc5);
     scanf ("%ld", &loc2);

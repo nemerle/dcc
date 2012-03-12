@@ -16,7 +16,6 @@ long loc2;
 long loc3;
 int loc4;
 int loc5;
-
     printf ("enter number of iterations\n");
     scanf ("%ld", &loc0);
     printf ("executing %ld iterations\n", loc3);

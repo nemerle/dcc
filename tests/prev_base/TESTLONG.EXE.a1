@@ -1,0 +1,40 @@
+		main  PROC  NEAR
+000 0002FA 55                  PUSH           bp                 
+001 0002FB 8BEC                MOV            bp, sp             
+002 0002FD 83EC08              SUB            sp, 8              
+003 000300 8D46FC              LEA            ax, [bp-4]         
+004 000303 50                  PUSH           ax                 
+005 000304 B89401              MOV            ax, 194h           
+006 000307 50                  PUSH           ax                 
+007 000308 E84A14              CALL           near ptr scanf     
+008 00030B 59                  POP            cx                 
+009 00030C 59                  POP            cx                 
+010 00030D 8D46F8              LEA            ax, [bp-8]         
+011 000310 50                  PUSH           ax                 
+012 000311 B89701              MOV            ax, 197h           
+013 000314 50                  PUSH           ax                 
+014 000315 E83D14              CALL           near ptr scanf     
+015 000318 59                  POP            cx                 
+016 000319 59                  POP            cx                 
+017 00031A 8D46FC              LEA            ax, [bp-4]         
+018 00031D 50                  PUSH           ax                 
+019 00031E 8D46F8              LEA            ax, [bp-8]         
+020 000321 50                  PUSH           ax                 
+021 000322 B89A01              MOV            ax, 19Ah           
+022 000325 50                  PUSH           ax                 
+023 000326 E82C14              CALL           near ptr scanf     
+024 000329 83C406              ADD            sp, 6              
+025 00032C FF76FE              PUSH           word ptr [bp-2]    
+026 00032F FF76FC              PUSH           word ptr [bp-4]    
+027 000332 FF76FA              PUSH           word ptr [bp-6]    
+028 000335 FF76F8              PUSH           word ptr [bp-8]    
+029 000338 B8A001              MOV            ax, 1A0h           
+030 00033B 50                  PUSH           ax                 
+031 00033C E88D0B              CALL           near ptr printf    
+032 00033F 83C40A              ADD            sp, 0Ah            
+033 000342 8BE5                MOV            sp, bp             
+034 000344 5D                  POP            bp                 
+035 000345 C3                  RET                               
+
+		main  ENDP
+

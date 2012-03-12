@@ -50,8 +50,6 @@ static void writeStrTab (std::ostream &ios, strTable &strTab)
 void writeBundle (std::ostream &ios, bundle procCode)
 {
     writeStrTab (ios, procCode.decl);
-    if (procCode.decl[procCode.decl.size() - 1][0] != ' ')
-       ios << "\n";
     writeStrTab (ios, procCode.code);
 }
 

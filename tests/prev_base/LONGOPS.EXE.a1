@@ -1,0 +1,291 @@
+		main  PROC  NEAR
+000 0002FA 55                  PUSH           bp                 
+001 0002FB 8BEC                MOV            bp, sp             
+002 0002FD 83EC08              SUB            sp, 8              
+003 000300 C746FA0000          MOV            word ptr [bp-6], 0 
+004 000305 C746F8FF00          MOV            word ptr [bp-8], 0FFh
+005 00030A C746FE0000          MOV            word ptr [bp-2], 0 
+006 00030F C746FC8F00          MOV            word ptr [bp-4], 8Fh
+007 000314 8B56FA              MOV            dx, [bp-6]         
+008 000317 8B46F8              MOV            ax, [bp-8]         
+009 00031A 0346FC              ADD            ax, [bp-4]         
+010 00031D 1356FE              ADC            dx, [bp-2]         
+011 000320 8956FE              MOV            [bp-2], dx         
+012 000323 8946FC              MOV            [bp-4], ax         
+013 000326 8B56FA              MOV            dx, [bp-6]         
+014 000329 8B46F8              MOV            ax, [bp-8]         
+015 00032C 2B46FC              SUB            ax, [bp-4]         
+016 00032F 1B56FE              SBB            dx, [bp-2]         
+017 000332 8956FA              MOV            [bp-6], dx         
+018 000335 8946F8              MOV            [bp-8], ax         
+019 000338 8B56FA              MOV            dx, [bp-6]         
+020 00033B 8B46F8              MOV            ax, [bp-8]         
+021 00033E 8B4EFE              MOV            cx, [bp-2]         
+022 000341 8B5EFC              MOV            bx, [bp-4]         
+023 000344 9AC3081000          CALL            far ptr LXMUL@    
+024 000349 8956FA              MOV            [bp-6], dx         
+025 00034C 8946F8              MOV            [bp-8], ax         
+026 00034F FF76FA              PUSH           word ptr [bp-6]    
+027 000352 FF76F8              PUSH           word ptr [bp-8]    
+028 000355 FF76FE              PUSH           word ptr [bp-2]    
+029 000358 FF76FC              PUSH           word ptr [bp-4]    
+030 00035B 9AC6101000          CALL            far ptr LDIV@     
+031 000360 8956FE              MOV            [bp-2], dx         
+032 000363 8946FC              MOV            [bp-4], ax         
+033 000366 FF76FA              PUSH           word ptr [bp-6]    
+034 000369 FF76F8              PUSH           word ptr [bp-8]    
+035 00036C FF76FE              PUSH           word ptr [bp-2]    
+036 00036F FF76FC              PUSH           word ptr [bp-4]    
+037 000372 9ACF101000          CALL            far ptr LMOD@     
+038 000377 8956FE              MOV            [bp-2], dx         
+039 00037A 8946FC              MOV            [bp-4], ax         
+040 00037D 8B56FA              MOV            dx, [bp-6]         
+041 000380 8B46F8              MOV            ax, [bp-8]         
+042 000383 B105                MOV            cl, 5              
+043 000385 9A87111000          CALL            far ptr LXLSH@    
+044 00038A 8956FA              MOV            [bp-6], dx         
+045 00038D 8946F8              MOV            [bp-8], ax         
+046 000390 8B56FE              MOV            dx, [bp-2]         
+047 000393 8B46FC              MOV            ax, [bp-4]         
+048 000396 8A4EF8              MOV            cl, [bp-8]         
+049 000399 9A69111000          CALL            far ptr LXRSH@    
+050 00039E 8956FE              MOV            [bp-2], dx         
+051 0003A1 8946FC              MOV            [bp-4], ax         
+052 0003A4 FF76FE              PUSH           word ptr [bp-2]    
+053 0003A7 FF76FC              PUSH           word ptr [bp-4]    
+054 0003AA FF76FA              PUSH           word ptr [bp-6]    
+055 0003AD FF76F8              PUSH           word ptr [bp-8]    
+056 0003B0 B89401              MOV            ax, 194h           
+057 0003B3 50                  PUSH           ax                 
+058 0003B4 E8C406              CALL           near ptr printf    
+059 0003B7 83C40A              ADD            sp, 0Ah            
+060 0003BA 8BE5                MOV            sp, bp             
+061 0003BC 5D                  POP            bp                 
+062 0003BD C3                  RET                               
+
+		main  ENDP
+
+		LXMUL@  PROC  FAR
+000 0009C3 56                  PUSH           si                 
+007 0009C6 85C0                TEST           ax, ax             
+008 0009C8 7402                JE             L1                 
+009 0009CA F7E3                MUL            bx                 
+013 0009CD 85C0                TEST           ax, ax             
+014 0009CF 7404                JE             L2                 
+015 0009D1 F7E6                MUL            si                 
+016 0009D3 03C8                ADD            cx, ax             
+020 0009D6 F7E3                MUL            bx                 
+021 0009D8 03D1                ADD            dx, cx             
+022 0009DA 5E                  POP            si                 
+023 0009DB CB                  RETF                              
+
+		LXMUL@  ENDP
+
+		LDIV@  PROC  FAR
+000 0011C6 33C9                XOR            cx, cx             
+001 0011C8 EB0D                JMP            L3                 
+
+002 0011D7 55             L3:  PUSH           bp                 
+003 0011D8 56                  PUSH           si                 
+004 0011D9 57                  PUSH           di                 
+005 0011DA 8BEC                MOV            bp, sp             
+006 0011DC 8BF9                MOV            di, cx             
+007 0011DE 8B460A              MOV            ax, [bp+0Ah]       
+008 0011E1 8B560C              MOV            dx, [bp+0Ch]       
+009 0011E4 8B5E0E              MOV            bx, [bp+0Eh]       
+010 0011E7 8B4E10              MOV            cx, [bp+10h]       
+011 0011EA 0BC9                OR             cx, cx             
+012 0011EC 7508                JNE            L4                 
+013 0011EE 0BD2                OR             dx, dx             
+014 0011F0 7469                JE             L5                 
+015 0011F2 0BDB                OR             bx, bx             
+016 0011F4 7465                JE             L5                 
+
+017 0011F6 F7C70100       L4:  TEST           di, 1              
+018 0011FA 751C                JNE            L6                 
+019 0011FC 0BD2                OR             dx, dx             
+020 0011FE 790A                JNS            L7                 
+021 001200 F7DA                NEG            dx                 
+022 001202 F7D8                NEG            ax                 
+023 001204 83DA00              SBB            dx, 0              
+024 001207 83CF0C              OR             di, 0Ch            
+
+025 00120A 0BC9           L7:  OR             cx, cx             
+026 00120C 790A                JNS            L6                 
+027 00120E F7D9                NEG            cx                 
+028 001210 F7DB                NEG            bx                 
+029 001212 83D900              SBB            cx, 0              
+030 001215 83F704              XOR            di, 4              
+
+031 001218 8BE9           L6:  MOV            bp, cx             
+032 00121A B92000              MOV            cx, 20h            
+033 00121D 57                  PUSH           di                 
+034 00121E 33FF                XOR            di, di             
+035 001220 33F6                XOR            si, si             
+
+036 001222 D1E0           L8:  SHL            ax, 1              
+037 001224 D1D2                RCL            dx, 1              
+038 001226 D1D6                RCL            si, 1              
+039 001228 D1D7                RCL            di, 1              
+040 00122A 3BFD                CMP            di, bp             
+041 00122C 720B                JB             L9                 
+042 00122E 7704                JA             L10                
+043 001230 3BF3                CMP            si, bx             
+044 001232 7205                JB             L9                 
+
+045 001234 2BF3           L10: SUB            si, bx             
+046 001236 1BFD                SBB            di, bp             
+047 001238 40                  INC            ax                 
+
+048 001239 E2E7           L9:  LOOP           L8                 
+049 00123B 5B                  POP            bx                 
+050 00123C F7C30200            TEST           bx, 2              
+051 001240 7406                JE             L11                
+052 001242 8BC6                MOV            ax, si             
+053 001244 8BD7                MOV            dx, di             
+054 001246 D1EB                SHR            bx, 1              
+
+055 001248 F7C30400       L11: TEST           bx, 4              
+056 00124C 7407                JE             L12                
+057 00124E F7DA                NEG            dx                 
+058 001250 F7D8                NEG            ax                 
+059 001252 83DA00              SBB            dx, 0              
+
+060 001255 5F             L12: POP            di                 
+061 001256 5E                  POP            si                 
+062 001257 5D                  POP            bp                 
+063 001258 CA0800              RETF           8                  
+065 00125B F7F3                DIV            bx                 
+067 00125D F7C70200            TEST           di, 2              
+068 001261 7402                JE             L13                
+069 001263 8BC2                MOV            ax, dx             
+
+070 001265 33D2           L13: XOR            dx, dx             
+071 001267 EBEC                JMP            L12                
+
+		LDIV@  ENDP
+
+		LMOD@  PROC  FAR
+000 0011CF B90200              MOV            cx, 2              
+001 0011D2 EB03                JMP            L14                
+
+002 0011D7 55             L14: PUSH           bp                 
+003 0011D8 56                  PUSH           si                 
+004 0011D9 57                  PUSH           di                 
+005 0011DA 8BEC                MOV            bp, sp             
+006 0011DC 8BF9                MOV            di, cx             
+007 0011DE 8B460A              MOV            ax, [bp+0Ah]       
+008 0011E1 8B560C              MOV            dx, [bp+0Ch]       
+009 0011E4 8B5E0E              MOV            bx, [bp+0Eh]       
+010 0011E7 8B4E10              MOV            cx, [bp+10h]       
+011 0011EA 0BC9                OR             cx, cx             
+012 0011EC 7508                JNE            L15                
+013 0011EE 0BD2                OR             dx, dx             
+014 0011F0 7469                JE             L16                
+015 0011F2 0BDB                OR             bx, bx             
+016 0011F4 7465                JE             L16                
+
+017 0011F6 F7C70100       L15: TEST           di, 1              
+018 0011FA 751C                JNE            L17                
+019 0011FC 0BD2                OR             dx, dx             
+020 0011FE 790A                JNS            L18                
+021 001200 F7DA                NEG            dx                 
+022 001202 F7D8                NEG            ax                 
+023 001204 83DA00              SBB            dx, 0              
+024 001207 83CF0C              OR             di, 0Ch            
+
+025 00120A 0BC9           L18: OR             cx, cx             
+026 00120C 790A                JNS            L17                
+027 00120E F7D9                NEG            cx                 
+028 001210 F7DB                NEG            bx                 
+029 001212 83D900              SBB            cx, 0              
+030 001215 83F704              XOR            di, 4              
+
+031 001218 8BE9           L17: MOV            bp, cx             
+032 00121A B92000              MOV            cx, 20h            
+033 00121D 57                  PUSH           di                 
+034 00121E 33FF                XOR            di, di             
+035 001220 33F6                XOR            si, si             
+
+036 001222 D1E0           L19: SHL            ax, 1              
+037 001224 D1D2                RCL            dx, 1              
+038 001226 D1D6                RCL            si, 1              
+039 001228 D1D7                RCL            di, 1              
+040 00122A 3BFD                CMP            di, bp             
+041 00122C 720B                JB             L20                
+042 00122E 7704                JA             L21                
+043 001230 3BF3                CMP            si, bx             
+044 001232 7205                JB             L20                
+
+045 001234 2BF3           L21: SUB            si, bx             
+046 001236 1BFD                SBB            di, bp             
+047 001238 40                  INC            ax                 
+
+048 001239 E2E7           L20: LOOP           L19                
+049 00123B 5B                  POP            bx                 
+050 00123C F7C30200            TEST           bx, 2              
+051 001240 7406                JE             L22                
+052 001242 8BC6                MOV            ax, si             
+053 001244 8BD7                MOV            dx, di             
+054 001246 D1EB                SHR            bx, 1              
+
+055 001248 F7C30400       L22: TEST           bx, 4              
+056 00124C 7407                JE             L23                
+057 00124E F7DA                NEG            dx                 
+058 001250 F7D8                NEG            ax                 
+059 001252 83DA00              SBB            dx, 0              
+
+060 001255 5F             L23: POP            di                 
+061 001256 5E                  POP            si                 
+062 001257 5D                  POP            bp                 
+063 001258 CA0800              RETF           8                  
+065 00125B F7F3                DIV            bx                 
+067 00125D F7C70200            TEST           di, 2              
+068 001261 7402                JE             L24                
+069 001263 8BC2                MOV            ax, dx             
+
+070 001265 33D2           L24: XOR            dx, dx             
+071 001267 EBEC                JMP            L23                
+
+		LMOD@  ENDP
+
+		LXLSH@  PROC  FAR
+000 001287 80F910              CMP            cl, 10h            
+001 00128A 7310                JAE            L25                
+002 00128C 8BD8                MOV            bx, ax             
+003 00128E D3E0                SHL            ax, cl             
+004 001290 D3E2                SHL            dx, cl             
+005 001292 F6D9                NEG            cl                 
+006 001294 80C110              ADD            cl, 10h            
+007 001297 D3EB                SHR            bx, cl             
+008 001299 0BD3                OR             dx, bx             
+009 00129B CB                  RETF                              
+
+010 00129C 80E910         L25: SUB            cl, 10h            
+011 00129F 8BD0                MOV            dx, ax             
+012 0012A1 33C0                XOR            ax, ax             
+013 0012A3 D3E2                SHL            dx, cl             
+014 0012A5 CB                  RETF                              
+
+		LXLSH@  ENDP
+
+		LXRSH@  PROC  FAR
+000 001269 80F910              CMP            cl, 10h            
+001 00126C 7310                JAE            L26                
+002 00126E 8BDA                MOV            bx, dx             
+003 001270 D3E8                SHR            ax, cl             
+004 001272 D3FA                SAR            dx, cl             
+005 001274 F6D9                NEG            cl                 
+006 001276 80C110              ADD            cl, 10h            
+007 001279 D3E3                SHL            bx, cl             
+008 00127B 0BC3                OR             ax, bx             
+009 00127D CB                  RETF                              
+
+010 00127E 80E910         L26: SUB            cl, 10h            
+011 001281 8BC2                MOV            ax, dx             
+012 001283 99                  CWD                               
+013 001284 D3F8                SAR            ax, cl             
+014 001286 CB                  RETF                              
+
+		LXRSH@  ENDP
+
