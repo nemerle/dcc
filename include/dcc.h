@@ -54,8 +54,8 @@ public:
         }
 public:
         void writeNodeCallGraph(int indIdx);
-        boolT insertCallGraph(ilFunction caller, ilFunction callee);
-        boolT insertCallGraph(Function *caller, ilFunction callee);
+        bool insertCallGraph(ilFunction caller, ilFunction callee);
+        bool insertCallGraph(Function *caller, ilFunction callee);
         void insertArc(ilFunction newProc);
 };
 //#define NUM_PROCS_DELTA		5		/* delta # procs a proc invokes		 	*/

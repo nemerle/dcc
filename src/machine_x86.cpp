@@ -54,3 +54,7 @@ bool Machine_X86::physicalReg(eReg r)
 {
     return (r>=rAX) && (r<rTMP);
 }
+bool Machine_X86::isMemOff(eReg r)
+{
+    return r == 0 || r >= INDEX_BX_SI;
+}

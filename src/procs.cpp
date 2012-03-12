@@ -40,7 +40,7 @@ void CALL_GRAPH::insertArc (ilFunction newProc)
 
 
 /* Inserts a (caller, callee) arc in the call graph tree. */
-boolT CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
+bool CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
 {
     int i;
 
@@ -58,7 +58,7 @@ boolT CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
     }
 }
 
-boolT CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
+bool CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
 {
     auto iter = std::find_if(pProcList.begin(),pProcList.end(),
                              [caller](const Function &f)->bool {return caller==&f;});
@@ -97,7 +97,7 @@ void CALL_GRAPH::write()
 void Function::newRegArg(iICODE picode, iICODE ticode)
 {
     COND_EXPR *lhs;
-    STKFRAME * ps, *ts;
+    STKFRAME * call_args_stackframe, *target_stackframe;
     ID *id;
     int i, tidx;
     boolT regExist;
@@ -110,8 +110,8 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     tproc->flg |= REG_ARGS;
 
     /* Get registers and index into target procedure's local list */
-    ps = ticode->hl()->call.args;
-    ts = &tproc->args;
+    call_args_stackframe = ticode->hl()->call.args;
+    target_stackframe = &tproc->args;
     lhs = picode->hl()->asgn.lhs;
     type = lhs->expr.ident.idType;
     if (type == REGISTER)
@@ -132,33 +132,33 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
 
     /* Check if register argument already on the formal argument list */
     regExist = false;
-    for (i = 0; i < ts->sym.size(); i++)
+    for(STKSYM &tgt_sym : target_stackframe->sym)
     {
         if (type == REGISTER)
         {
-            if ((ts->sym[i].regs != NULL) &&
-                    (ts->sym[i].regs->expr.ident.idNode.regiIdx == tidx))
+            if ((tgt_sym.regs != NULL) &&
+                    (tgt_sym.regs->expr.ident.idNode.regiIdx == tidx))
             {
                 regExist = true;
-                i = ts->sym.size();
             }
         }
         else if (type == LONG_VAR)
         {
-            if ((ts->sym[i].regs != NULL) &&
-                    (ts->sym[i].regs->expr.ident.idNode.longIdx == tidx))
+            if ((tgt_sym.regs != NULL) &&
+                    (tgt_sym.regs->expr.ident.idNode.longIdx == tidx))
             {
                 regExist = true;
-                i = ts->sym.size();
             }
         }
+        if(regExist == true)
+            break;
     }
 
     /* Do ts (formal arguments) */
     if (regExist == false)
     {
         STKSYM newsym;
-        sprintf (newsym.name, "arg%ld", ts->sym.size());
+        sprintf (newsym.name, "arg%ld", target_stackframe->sym.size());
         if (type == REGISTER)
         {
             if (regL < rAL)
@@ -171,23 +171,23 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
                 newsym.type = TYPE_BYTE_SIGN;
                 newsym.regs = COND_EXPR::idRegIdx(tidx, BYTE_REG);
             }
-            sprintf (tproc->localId.id_arr[tidx].name, "arg%ld", ts->sym.size());
+            sprintf (tproc->localId.id_arr[tidx].name, "arg%ld", target_stackframe->sym.size());
         }
         else if (type == LONG_VAR)
         {
             newsym.regs = COND_EXPR::idLongIdx (tidx);
             newsym.type = TYPE_LONG_SIGN;
-            sprintf (tproc->localId.id_arr[tidx].name, "arg%ld", ts->sym.size());
+            sprintf (tproc->localId.id_arr[tidx].name, "arg%ld", target_stackframe->sym.size());
             tproc->localId.propLongId (regL, regH,
                         tproc->localId.id_arr[tidx].name);
         }
-        ts->sym.push_back(newsym);
-        ts->numArgs++;
+        target_stackframe->sym.push_back(newsym);
+        target_stackframe->numArgs++;
     }
 
     /* Do ps (actual arguments) */
     STKSYM newsym;
-    sprintf (newsym.name, "arg%ld", ps->sym.size());
+    sprintf (newsym.name, "arg%ld", call_args_stackframe->sym.size());
     newsym.actual = picode->hl()->asgn.rhs;
     newsym.regs = lhs;
     /* Mask off high and low register(s) in picode */
@@ -207,8 +207,8 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
             newsym.type = TYPE_LONG_SIGN;
             break;
     }
-    ps->sym.push_back(newsym);
-    ps->numArgs++;
+    call_args_stackframe->sym.push_back(newsym);
+    call_args_stackframe->numArgs++;
 }
 
 

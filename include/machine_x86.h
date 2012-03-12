@@ -62,4 +62,5 @@ public:
         }
     }
 
+    static bool isMemOff(eReg r);
 };
