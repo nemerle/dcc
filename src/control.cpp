@@ -494,10 +494,10 @@ void Function::compoundCond()
     ICODE * picode, * ticode;
     boolT change;
 
-    change = TRUE;
+    change = true;
     while (change)
     {
-        change = FALSE;
+        change = false;
 
         /* Traverse nodes in postorder, this way, the header node of a
          * compound condition is analysed first */
@@ -584,7 +584,7 @@ void Function::compoundCond()
                 else
                     i--;		/* to repeat this analysis */
 
-                change = TRUE;
+                change = true;
             }
 
             /* Check (X && Y) case */
@@ -616,7 +616,7 @@ void Function::compoundCond()
                 else
                     i--;		/* to repeat this analysis */
 
-                change = TRUE;
+                change = true;
             }
 
             /* Check (!X || Y) case */
@@ -654,7 +654,7 @@ void Function::compoundCond()
                 else
                     i--;		/* to repeat this analysis */
 
-                change = TRUE;
+                change = true;
             }
         }
     }

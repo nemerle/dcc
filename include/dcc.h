@@ -3,8 +3,13 @@
  * (C) Cristina Cifuentes, Mike van Emmerik
  ****************************************************************************/
 #pragma once
+//TODO: Remove boolT
+
 #include <llvm/ADT/ilist.h>
+#include <utility>
+#include <algorithm>
 #include <bitset>
+
 #include "Enums.h"
 #include "types.h"
 #include "ast.h"

@@ -105,10 +105,10 @@ void derSeq_Entry::findIntervals (Function *c)
             *succ;            /* Successor basic block        */
     int i;           /* Counter              */
     queue H;            /* Queue of possible header nodes   */
-    boolT first = TRUE;       /* First pass through the loop      */
+    boolT first = true;       /* First pass through the loop      */
 
     appendQueue (H, Gi);  /* H = {first node of G} */
-    Gi->beenOnH = TRUE;
+    Gi->beenOnH = true;
     Gi->reachingInt = BB::Create(0,"",c); /* ^ empty BB */
 
     /* Process header nodes list H */
@@ -138,7 +138,7 @@ void derSeq_Entry::findIntervals (Function *c)
                     else if (! succ->beenOnH) /* out edge */
                     {
                         appendQueue (H, succ);
-                        succ->beenOnH = TRUE;
+                        succ->beenOnH = true;
                         pI->numOutEdges++;
                     }
                 }
@@ -250,7 +250,7 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
     derivedGi.push_back(derSeq_Entry());
     derSeq_Entry &new_entry(derivedGi.back());
     Ii = prev_entry.Ii;
-    sameGraph = TRUE;
+    sameGraph = true;
     BBnode = 0;
     std::vector<BB *> bbs;
     while (Ii)
@@ -263,7 +263,7 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
 
         /* Check for more than 1 interval */
         if (sameGraph && (listIi.size()>1))
-            sameGraph = FALSE;
+            sameGraph = false;
 
         /* Find out edges */
 
@@ -335,10 +335,10 @@ uint8_t Function::findDerivedSeq (derSeq &derivedGi)
         derivedGi.erase(iter,derivedGi.end()); /* remove Gi+1 */
         //        freeDerivedSeq(derivedGi->next);
         //        derivedGi->next = NULL;
-        return FALSE;
+        return false;
     }
     derivedGi.back().findIntervals (this);
-    return TRUE;
+    return true;
 }
 
 /* Converts the irreducible graph G into an equivalent reducible one, by

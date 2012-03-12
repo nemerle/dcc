@@ -151,7 +151,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     traversed = DFS_ALPHA;
 
     /* Check for start of loop */
-    repCond = FALSE;
+    repCond = false;
     latch = NULL;
     _loopType = loopType;
     if (_loopType)
@@ -204,7 +204,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     }
 
     /* Write the code for this basic block */
-    if (repCond == FALSE)
+    if (repCond == false)
         writeBB (indLevel, pProc, numLoc);
 
     /* Check for end of path */
@@ -272,7 +272,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
         {
             stats.numHLIcode++;
             indLevel++;
-            emptyThen = FALSE;
+            emptyThen = false;
 
             if (ifFollow != MAX)		/* there is a follow */
             {

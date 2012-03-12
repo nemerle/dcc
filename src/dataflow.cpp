@@ -636,7 +636,7 @@ bool COND_EXPR::xClear (iICODE f, iICODE t, iICODE lastBBinst, Function * pproc)
         if(0==rhs())
             return false;
         res = rhs()->xClear ( f, t, lastBBinst, pproc);
-        if (res == FALSE)
+        if (res == false)
             return false;
         if(0==lhs())
             return false;
@@ -783,7 +783,7 @@ void Function::processHliCall(COND_EXPR *_exp, iICODE picode)
                     pp->args.adjustForArgType (numArgs,expType (_exp, this));
                 res = picode->newStkArg (_exp,(llIcode)picode->ll()->getOpcode(), this);
             }
-            if (res == FALSE)
+            if (res == false)
                 k += hlTypeSize (_exp, this);
             numArgs++;
         }

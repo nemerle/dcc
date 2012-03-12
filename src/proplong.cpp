@@ -248,7 +248,7 @@ void Function::propLongStk (int i, const ID &pLocId)
             continue;
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
         {
-            if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, next1) == TRUE)
+            if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, next1) == true)
             {
                 switch (pIcode->ll()->getOpcode())
                 {

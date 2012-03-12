@@ -365,7 +365,7 @@ eErrorId scan(uint32_t ip, ICODE &p)
 
 
 /***************************************************************************
- relocItem - returns TRUE if uint16_t pointed at is in relocation table
+ relocItem - returns true if uint16_t pointed at is in relocation table
  **************************************************************************/
 static boolT relocItem(uint8_t *p)
 {
@@ -374,8 +374,8 @@ static boolT relocItem(uint8_t *p)
 
     for (i = 0; i < prog.cReloc; i++)
         if (prog.relocTable[i] == off)
-            return TRUE;
-    return FALSE;
+            return true;
+    return false;
 }
 
 
@@ -402,8 +402,8 @@ static int signex(uint8_t b)
 /****************************************************************************
  * setAddress - Updates the source or destination field for the current
  *	icode, based on fdst and the TO_REG flag.
- * 	Note: fdst == TRUE is for the r/m part of the field (dest, unless TO_REG)
- *	      fdst == FALSE is for reg part of the field
+ * 	Note: fdst == true is for the r/m part of the field (dest, unless TO_REG)
+ *	      fdst == false is for reg part of the field
  ***************************************************************************/
 static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t off)
 {
@@ -458,24 +458,24 @@ static void rm(int i)
     switch (mod) {
         case 0:		/* No disp unless rm == 6 */
             if (rm == 6) {
-                setAddress(i, TRUE, SegPrefix, 0, getWord());
+                setAddress(i, true, SegPrefix, 0, getWord());
                 pIcode->ll()->setFlags(WORD_OFF);
             }
             else
-                setAddress(i, TRUE, SegPrefix, rm + INDEX_BX_SI, 0);
+                setAddress(i, true, SegPrefix, rm + INDEX_BX_SI, 0);
             break;
 
         case 1:		/* 1 uint8_t disp */
-            setAddress(i, TRUE, SegPrefix, rm+INDEX_BX_SI, (uint16_t)signex(*pInst++));
+            setAddress(i, true, SegPrefix, rm+INDEX_BX_SI, (uint16_t)signex(*pInst++));
             break;
 
         case 2:		/* 2 uint8_t disp */
-            setAddress(i, TRUE, SegPrefix, rm + INDEX_BX_SI, getWord());
+            setAddress(i, true, SegPrefix, rm + INDEX_BX_SI, getWord());
             pIcode->ll()->setFlags(WORD_OFF);
             break;
 
         case 3:		/* reg */
-            setAddress(i, TRUE, 0, rm + rAX, 0);
+            setAddress(i, true, 0, rm + rAX, 0);
             break;
     }
 
@@ -490,7 +490,7 @@ static void rm(int i)
  ***************************************************************************/
 static void modrm(int i)
 {
-    setAddress(i, FALSE, 0, REG(*pInst) + rAX, 0);
+    setAddress(i, false, 0, REG(*pInst) + rAX, 0);
     rm(i);
 }
 
@@ -505,7 +505,7 @@ static void segrm(int i)
     if (reg > rDS || (reg == rCS && (stateTable[i].flg & TO_REG)))
         pIcode->ll()->setOpcode((llIcode)0); // setCBW because it has that index
     else {
-        setAddress(i, FALSE, 0, (int16_t)reg, 0);
+        setAddress(i, false, 0, (int16_t)reg, 0);
         rm(i);
     }
 }
@@ -516,7 +516,7 @@ static void segrm(int i)
  ***************************************************************************/
 static void regop(int i)
 {
-    setAddress(i, FALSE, 0, ((int16_t)i & 7) + rAX, 0);
+    setAddress(i, false, 0, ((int16_t)i & 7) + rAX, 0);
     pIcode->ll()->dst.regi = pIcode->ll()->src.regi;
 }
 
@@ -526,7 +526,7 @@ static void regop(int i)
  *****************************************************************************/
 static void segop(int i)
 {
-    setAddress(i, TRUE, 0, (((int16_t)i & 0x18) >> 3) + rES, 0);
+    setAddress(i, true, 0, (((int16_t)i & 0x18) >> 3) + rES, 0);
 }
 
 
@@ -535,7 +535,7 @@ static void segop(int i)
  ***************************************************************************/
 static void axImp(int i)
 {
-    setAddress(i, TRUE, 0, rAX, 0);
+    setAddress(i, true, 0, rAX, 0);
 }
 
 /* Implied AX source */
@@ -556,7 +556,7 @@ static void alImp (int )
  ****************************************************************************/
 static void memImp(int i)
 {
-    setAddress(i, FALSE, SegPrefix, 0, 0);
+    setAddress(i, false, SegPrefix, 0, 0);
 }
 
 
@@ -674,7 +674,7 @@ static void arith(int i)
     else if (!(opcode == iNOT || opcode == iNEG))
     {
         pIcode->ll()->src = pIcode->ll()->dst;
-        setAddress(i, TRUE, 0, rAX, 0);			/* dst = AX  */
+        setAddress(i, true, 0, rAX, 0);			/* dst = AX  */
     }
     else if (opcode == iNEG || opcode == iNOT)
         pIcode->ll()->setFlags(NO_SRC);
@@ -727,7 +727,7 @@ static void data2(int )
  ****************************************************************************/
 static void dispM(int i)
 {
-    setAddress(i, FALSE, SegPrefix, 0, getWord());
+    setAddress(i, false, SegPrefix, 0, getWord());
 }
 
 

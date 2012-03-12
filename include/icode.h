@@ -12,6 +12,7 @@
 #include <llvm/CodeGen/MachineInstr.h>
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCAsmInfo.h>
+#include <llvm/Value.h>
 #include "Enums.h"
 #include "state.h"			// State depends on INDEXBASE, but later need STATE
 //enum condId;

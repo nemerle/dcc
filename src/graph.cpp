@@ -80,7 +80,7 @@ CondJumps:
                         pBB = BB::Create(start, ip, MULTI_BRANCH, ll->caseTbl.numEntries, this);
                         for (i = 0; i < ll->caseTbl.numEntries; i++)
                             pBB->edges[i].ip = ll->caseTbl.entries[i];
-                        hasCase = TRUE;
+                        hasCase = true;
                     }
                     else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
                     {
@@ -285,7 +285,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
             else
             {
                 pBB->front().ll()->setFlags(NO_CODE);
-                pBB->front().invalidate(); //pProc->Icode.SetLlInvalid(pBB->begin(), TRUE);
+                pBB->front().invalidate(); //pProc->Icode.SetLlInvalid(pBB->begin(), true);
             }
 
             pBB = pBB->edges[0].BBptr;
@@ -304,7 +304,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
                     pBB->front().ll()->setFlags(NO_CODE);
                     pBB->front().invalidate();
                     //                    pProc->Icode.setFlags(pBB->start, NO_CODE);
-                    //                    pProc->Icode.SetLlInvalid(pBB->start, TRUE);
+                    //                    pProc->Icode.SetLlInvalid(pBB->start, true);
                 }
             } while (pBB->nodeType != NOWHERE_NODE);
 

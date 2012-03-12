@@ -74,7 +74,7 @@ void ICODE::setJCond(COND_EXPR *cexp)
 }
 
 
-/* Sets the invalid field to TRUE as this low-level icode is no longer valid,
+/* Sets the invalid field to true as this low-level icode is no longer valid,
  * it has been replaced by a high-level icode. */
 void ICODE ::invalidate()
 {

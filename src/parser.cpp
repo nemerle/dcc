@@ -122,14 +122,14 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     SYM *    psym;
     uint32_t   offset;
     eErrorId err;
-    boolT   done = FALSE;
+    boolT   done = false;
 
     if (name.find("chkstk") != string::npos)
     {
         // Danger! Dcc will likely fall over in this code.
         // So we act as though we have done with this proc
         //		pProc->flg &= ~TERMINATES;			// Not sure about this
-        done = TRUE;
+        done = true;
         // And mark it as a library function, so structure() won't choke on it
         flg |= PROC_ISLIB;
         return;
@@ -252,7 +252,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             {   STATE   StCopy;
                 int     ip      = Icode.size()-1;	/* Index of this jump */
                 ICODE  &prev(Icode.back()); /* Previous icode */
-                boolT   fBranch = FALSE;
+                boolT   fBranch = false;
 
                 pstate->JCond.regi = 0;
 
@@ -286,7 +286,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
                 /*** Jumps ***/
             case iJMP:
-            case iJMPF: /* Returns TRUE if we've run into a loop */
+            case iJMPF: /* Returns true if we've run into a loop */
                 done = process_JMP (*pIcode, pstate, pcallGraph);
                 break;
 
@@ -305,7 +305,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 /* Fall through */
             case iIRET:
                 this->flg &= ~TERMINATES;
-                done = TRUE;
+                done = true;
                 break;
 
             case iINT:
@@ -397,7 +397,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 }
 
 
-/* process_JMP - Handles JMPs, returns TRUE if we should end recursion  */
+/* process_JMP - Handles JMPs, returns true if we should end recursion  */
 boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
 {
     static uint8_t i2r[4] = {rSI, rDI, rBP, rBX};
@@ -416,7 +416,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
             exit(1);
         }
 
-        /* Return TRUE if jump target is already parsed */
+        /* Return true if jump target is already parsed */
         return Icode.labelSrch(i, tmp);
     }
 
@@ -486,7 +486,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
             pIcode.ll()->setFlags(SWITCH);
             pIcode.ll()->caseTbl.numEntries = (endTable - offTable) / 2;
             assert(pIcode.ll()->caseTbl.numEntries<512);
-            psw = (uint32_t*)allocMem(pIcode.ll()->caseTbl.numEntries*sizeof(uint32_t));
+            psw = new uint32_t [pIcode.ll()->caseTbl.numEntries];
             pIcode.ll()->caseTbl.entries = psw;
 
             for (i = offTable, k = 0; i < endTable; i += 2)
@@ -503,7 +503,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
                 *psw++ = last_current_insn->ll()->GetLlLabel();
 
             }
-            return TRUE;
+            return true;
         }
     }
 
@@ -512,13 +512,13 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
     flg |= PROC_IJMP;
     flg &= ~TERMINATES;
     interactDis(this, this->Icode.size()-1);
-    return TRUE;
+    return true;
 }
 
 
 /* Process procedure call.
  * Note: We assume that CALL's will return unless there is good evidence to
- *       the contrary - thus we return FALSE unless all paths in the called
+ *       the contrary - thus we return false unless all paths in the called
  *       procedure end in DOS exits.  This is reasonable since C procedures
  *       will always include the epilogue after the call anyway and it's to
  *       be assumed that if an assembler program contains a CALL that the
@@ -533,7 +533,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
     boolT indirect;
 
     /* For Indirect Calls, find the function address */
-    indirect = FALSE;
+    indirect = false;
     //pIcode.ll()->immed.proc.proc=fakeproc;
     if ( not pIcode.ll()->testFlags(I) )
     {
@@ -863,19 +863,19 @@ void STATE::setState(uint16_t reg, int16_t value)
 {
     value &= 0xFFFF;
     r[reg] = value;
-    f[reg] = TRUE;
+    f[reg] = true;
     switch (reg) {
         case rAX: case rCX: case rDX: case rBX:
             r[reg + rAL - rAX] = value & 0xFF;
-            f[reg + rAL - rAX] = TRUE;
+            f[reg + rAL - rAX] = true;
             r[reg + rAH - rAX] = (value >> 8) & 0xFF;
-            f[reg + rAH - rAX] = TRUE;
+            f[reg + rAH - rAX] = true;
             break;
 
         case rAL: case rCL: case rDL: case rBL:
             if (f[reg - rAL + rAH]) {
                 r[reg - rAL + rAX] =(r[reg - rAL + rAH] << 8) + (value & 0xFF);
-                f[reg - rAL + rAX] = TRUE;
+                f[reg - rAL + rAX] = true;
             }
             break;
 
@@ -883,7 +883,7 @@ void STATE::setState(uint16_t reg, int16_t value)
             if (f[reg - rAH + rAL])
             {
                 r[reg - rAH + rAX] = r[reg - rAH + rAL] + ((value & 0xFF) << 8);
-                f[reg - rAH + rAX] = TRUE;
+                f[reg - rAH + rAX] = true;
             }
             break;
     }
@@ -1233,6 +1233,6 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
 
     for (i = rSP; i <= rBH; i++)        /* Kill all defined registers */
         if (pIcode.ll()->flagDU.d & (1 << i))
-            pstate->f[i] = FALSE;
+            pstate->f[i] = false;
 }
 

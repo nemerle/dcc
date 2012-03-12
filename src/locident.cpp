@@ -432,15 +432,15 @@ void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const char *name)
             {
                 strcpy (_id->name, name);
                 strcpy (_id->macro, "LO");
-                _id->hasMacro = TRUE;
-                _id->illegal = TRUE;
+                _id->hasMacro = true;
+                _id->illegal = true;
             }
             else if (_id->id.regi == regH)
             {
                 strcpy (_id->name, name);
                 strcpy (_id->macro, "HI");
-                _id->hasMacro = TRUE;
-                _id->illegal = TRUE;
+                _id->hasMacro = true;
+                _id->illegal = true;
             }
         }
     }

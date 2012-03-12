@@ -131,7 +131,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     }
 
     /* Check if register argument already on the formal argument list */
-    regExist = FALSE;
+    regExist = false;
     for (i = 0; i < ts->sym.size(); i++)
     {
         if (type == REGISTER)
@@ -139,7 +139,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
             if ((ts->sym[i].regs != NULL) &&
                     (ts->sym[i].regs->expr.ident.idNode.regiIdx == tidx))
             {
-                regExist = TRUE;
+                regExist = true;
                 i = ts->sym.size();
             }
         }
@@ -148,14 +148,14 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
             if ((ts->sym[i].regs != NULL) &&
                     (ts->sym[i].regs->expr.ident.idNode.longIdx == tidx))
             {
-                regExist = TRUE;
+                regExist = true;
                 i = ts->sym.size();
             }
         }
     }
 
     /* Do ts (formal arguments) */
-    if (regExist == FALSE)
+    if (regExist == false)
     {
         STKSYM newsym;
         sprintf (newsym.name, "arg%ld", ts->sym.size());
@@ -366,10 +366,10 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
                     nsym = psym + 1;
                     sprintf (nsym->macro, "HI");
                     sprintf (psym->macro, "LO");
-                    nsym->hasMacro = TRUE;
-                    psym->hasMacro = TRUE;
+                    nsym->hasMacro = true;
+                    psym->hasMacro = true;
                     sprintf (nsym->name, "%s", psym->name);
-                    nsym->invalid = TRUE;
+                    nsym->invalid = true;
                     numArgs--;
                 }
                 break;

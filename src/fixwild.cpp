@@ -18,8 +18,6 @@
 
 #ifndef bool
 #define bool  unsigned char
-#define TRUE  1
-#define FALSE 0
 #define uint8_t  unsigned char
 #endif
 
@@ -39,7 +37,7 @@ static bool ModRM(uint8_t pat[])
 
     /* A standard mod/rm uint8_t follows opcode */
     op = pat[pc++];                         /* The mod/rm uint8_t */
-    if (pc >= PATLEN) return TRUE;          /* Skip Mod/RM */
+    if (pc >= PATLEN) return true;          /* Skip Mod/RM */
     switch (op & 0xC0)
     {
         case 0x00:                          /* [reg] or [nnnn] */
@@ -47,26 +45,26 @@ static bool ModRM(uint8_t pat[])
             {
                 /* Uses [nnnn] address mode */
                 pat[pc++] = WILD;
-                if (pc >= PATLEN) return TRUE;
+                if (pc >= PATLEN) return true;
                 pat[pc++] = WILD;
-                if (pc >= PATLEN) return TRUE;
+                if (pc >= PATLEN) return true;
             }
             break;
         case 0x40:                          /* [reg + nn] */
-            if ((pc+=1) >= PATLEN) return TRUE;
+            if ((pc+=1) >= PATLEN) return true;
             break;
         case 0x80:                          /* [reg + nnnn] */
             /* Possibly just a long constant offset from a register,
                 but often will be an index from a variable */
             pat[pc++] = WILD;
-            if (pc >= PATLEN) return TRUE;
+            if (pc >= PATLEN) return true;
             pat[pc++] = WILD;
-            if (pc >= PATLEN) return TRUE;
+            if (pc >= PATLEN) return true;
             break;
         case 0xC0:                          /* reg */
             break;
     }
-    return FALSE;
+    return false;
 }
 
 /* Change the next two bytes to wild cards */
@@ -74,10 +72,10 @@ static bool
 TwoWild(uint8_t pat[])
 {
     pat[pc++] = WILD;
-    if (pc >= PATLEN) return TRUE;      /* Pattern exhausted */
+    if (pc >= PATLEN) return true;      /* Pattern exhausted */
     pat[pc++] = WILD;
-    if (pc >= PATLEN) return TRUE;
-    return FALSE;
+    if (pc >= PATLEN) return true;
+    return false;
 }
 
 /* Change the next four bytes to wild cards */
@@ -105,7 +103,7 @@ static bool op0F(uint8_t pat[])
     {
         case 0x00:              /* 00 - 0F */
             if (op >= 0x06)     /* Clts, Invd, Wbinvd */
-                return FALSE;
+                return false;
             else
             {
                 /* Grp 6, Grp 7, LAR, LSL */
@@ -116,7 +114,7 @@ static bool op0F(uint8_t pat[])
 
         case 0x80:
             pc += 2;            /* uint16_t displacement cond jumps */
-            return FALSE;
+            return false;
 
         case 0x90:              /* uint8_t set on condition */
             return ModRM(pat);
@@ -128,7 +126,7 @@ static bool op0F(uint8_t pat[])
                 case 0xA1:      /* Pop  FS */
                 case 0xA8:      /* Push GS */
                 case 0xA9:      /* Pop  GS */
-                    return FALSE;
+                    return false;
 
                 case 0xA3:      /* Bt  Ev,Gv */
                 case 0xAB:      /* Bts Ev,Gv */
@@ -136,9 +134,9 @@ static bool op0F(uint8_t pat[])
 
                 case 0xA4:      /* Shld EvGbIb */
                 case 0xAC:      /* Shrd EvGbIb */
-                    if (ModRM(pat)) return TRUE;
+                    if (ModRM(pat)) return true;
                     pc++;       /* The #num bits to shift */
-                    return FALSE;
+                    return false;
 
                 case 0xA5:      /* Shld EvGb CL */
                 case 0xAD:      /* Shrd EvGb CL */
@@ -152,9 +150,9 @@ static bool op0F(uint8_t pat[])
             if (op == 0xBA)
             {
                 /* Grp 8: bt/bts/btr/btc Ev,#nn */
-                if (ModRM(pat)) return TRUE;
+                if (ModRM(pat)) return true;
                 pc++;           /* The #num bits to shift */
-                return FALSE;
+                return false;
             }
             return ModRM(pat);
 
@@ -165,10 +163,10 @@ static bool op0F(uint8_t pat[])
                 return ModRM(pat);
             }
             /* Else BSWAP */
-            return FALSE;
+            return false;
 
         default:
-            return FALSE;       /* Treat as double uint8_t opcodes */
+            return false;       /* Treat as double uint8_t opcodes */
 
     }
 

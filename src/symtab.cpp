@@ -106,7 +106,7 @@ void createSymTables(void)
 
     /* Now the string table */
     strTabNext = 0;
-    pStrTab = (char *)allocMem(STRTABSIZE);
+    pStrTab = new char[STRTABSIZE];
 
     curTableType = Label;
 

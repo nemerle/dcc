@@ -241,7 +241,7 @@ void Disassembler::disassem(Function * ppProc)
     destroySymTables();
 }
 /****************************************************************************
- * dis1Line() - disassemble one line to stream fp                           *                                   *
+ * dis1Line() - disassemble one line to stream fp                           *
  * i is index into Icode for this proc                                      *
  * It is assumed that icode i is already scanned                            *
  ****************************************************************************/
@@ -511,7 +511,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     /* Comments */
     if (inst.testFlags(SYNTHETIC))
     {
-        fImpure = FALSE;
+        fImpure = false;
     }
     else
     {

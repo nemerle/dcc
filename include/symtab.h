@@ -3,6 +3,12 @@
  * (C) Mike van Emmerik
 */
 #pragma once
+#include <string>
+#include <stdint.h>
+#include "Enums.h"
+#include "types.h"
+struct COND_EXPR;
+struct TypeContainer;
 /* * * * * * * * * * * * * * * * * */
 /* Symbol table structs and protos */
 /* * * * * * * * * * * * * * * * * */

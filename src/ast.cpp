@@ -647,37 +647,37 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
     case NEGATION:
         if (expr->expr.unaryExp->type == IDENTIFIER)
         {
-            needBracket = FALSE;
+            needBracket = false;
             outStr << "!";
         }
         else
             outStr << "! (";
         outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        if (needBracket == TRUE)
+        if (needBracket == true)
             outStr << ")";
         break;
 
     case ADDRESSOF:
         if (expr->expr.unaryExp->type == IDENTIFIER)
         {
-            needBracket = FALSE;
+            needBracket = false;
             outStr << "&";
         }
         else
             outStr << "&(";
         outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        if (needBracket == TRUE)
+        if (needBracket == true)
             outStr << ")";
         break;
 
     case DEREFERENCE:
         outStr << "*";
         if (expr->expr.unaryExp->type == IDENTIFIER)
-            needBracket = FALSE;
+            needBracket = false;
         else
             outStr << "(";
         outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        if (needBracket == TRUE)
+        if (needBracket == true)
             outStr << ")";
         break;
 
@@ -864,7 +864,7 @@ COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,LOCAL_ID *lo
                 return _expr;
             }
         }
-        return FALSE;
+        return false;
 
     case BOOLEAN_OP:
         temp = lhs()->insertSubTreeReg( _expr, regi, locsym);

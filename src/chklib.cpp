@@ -309,7 +309,7 @@ void SetupLibCheck(void)
     readProtoFile();
 
 
-    prog.bSigs = FALSE;			/* False unless everything goes right */
+    prog.bSigs = false;			/* False unless everything goes right */
     /* Read the parameters */
     grab(4, g_file);
     if (memcmp("dccs", buf, 4) != 0)
@@ -419,7 +419,7 @@ void SetupLibCheck(void)
         }
     }
     fclose(g_file);
-    prog.bSigs = TRUE;
+    prog.bSigs = true;
 }
 
 
@@ -431,7 +431,7 @@ void CleanupLibCheck(void)
 }
 
 
-/* Check this function to see if it is a library function. Return TRUE if
+/* Check this function to see if it is a library function. Return true if
     it is, and copy its name to pProc->name
 */
 bool LibCheck(Function & pProc)
@@ -441,11 +441,11 @@ bool LibCheck(Function & pProc)
     int Idx;
     uint8_t pat[PATLEN];
 
-    if (prog.bSigs == FALSE)
+    if (prog.bSigs == false)
     {
         /* No signatures... can't rely on hash parameters to be initialised
                         so always return false */
-        return FALSE;
+        return false;
     }
 
     fileOffset = pProc.procEntry;              /* Offset into the image */

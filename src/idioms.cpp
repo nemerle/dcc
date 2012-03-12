@@ -18,7 +18,7 @@
 #include <llvm/Support/PatternMatch.h>
 #include <boost/iterator/filter_iterator.hpp>
 /*****************************************************************************
- * JmpInst - Returns TRUE if opcode is a conditional or unconditional jump
+ * JmpInst - Returns true if opcode is a conditional or unconditional jump
  ****************************************************************************/
 bool LLInst::isJmpInst()
 {
