@@ -58,6 +58,7 @@ set(dcc_SOURCES
     src/parser.cpp
     src/perfhlib.cpp
     src/procs.cpp
+    src/project.cpp
     src/proplong.cpp
     src/reducible.cpp
     src/scanner.cpp
@@ -87,6 +88,7 @@ set(dcc_HEADERS
     include/idioms/xor_idioms.h
     include/locident.h
     include/perfhlib.h
+    include/project.h
     include/scanner.h
     include/state.h
     include/symtab.h

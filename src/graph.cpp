@@ -7,7 +7,8 @@
 #include <string.h>
 #include <malloc.h>		/* For free() */
 #include "graph.h"
-
+#include "project.h"
+extern Project g_proj;
 //static BB *  rmJMP(Function * pProc, int marker, BB * pBB);
 static void mergeFallThrough(Function * pProc, BB * pBB);
 static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, int *first, int *last);
@@ -165,9 +166,11 @@ void Function::markImpure()
     {
         if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
-        assert(icod.ll()->caseTbl.numEntries<symtab.size());
-        psym = &symtab[icod.ll()->caseTbl.numEntries];
-        for (int c = (int)psym->label; c < (int)psym->label+psym->size; c++)
+        //assert that case tbl has less entries then symbol table ????
+        //WARNING: Case entries are held in symbol table !
+        assert(g_proj.validSymIdx(icod.ll()->caseTbl.numEntries));
+        const SYM &psym(g_proj.getSymByIdx(icod.ll()->caseTbl.numEntries));
+        for (int c = (int)psym.label; c < (int)psym.label+psym.size; c++)
         {
             if (BITMAP(c, BM_CODE))
             {

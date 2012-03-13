@@ -12,6 +12,8 @@
 #include "types.h"
 #include "dcc.h"
 #include "machine_x86.h"
+#include "project.h"
+extern Project g_proj;
 using namespace std;
 // Conditional operator symbols in C.  Index by condOp enumeration type
 static const char * const condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
@@ -116,15 +118,12 @@ COND_EXPR *GlobalVariable::Create(int16_t segValue, int16_t off)
 {
     COND_EXPR *newExp;
     uint32_t adr;
-    size_t i;
 
     newExp = new COND_EXPR(IDENTIFIER);
     newExp->expr.ident.idType = GLOB_VAR;
     adr = opAdr(segValue, off);
-    for (i = 0; i < symtab.size(); i++)
-        if (symtab[i].label == adr)
-            break;
-    if (i == symtab.size())
+    auto i=g_proj.getSymIdxByAdd(adr);
+    if ( not g_proj.validSymIdx(i) )
     {
         printf ("Error, glob var not found in symtab\n");
         delete newExp;
@@ -478,7 +477,7 @@ int hlTypeSize (const COND_EXPR *expr, Function * pproc)
         switch (expr->expr.ident.idType)
         {
         case GLOB_VAR:
-            return (symtab[expr->expr.ident.idNode.globIdx].size);
+            return (g_proj.symbolSize(expr->expr.ident.idNode.globIdx));
         case REGISTER:
             if (expr->expr.ident.regiType == BYTE_REG)
                 return (1);
@@ -541,7 +540,7 @@ hlType expType (const COND_EXPR *expr, Function * pproc)
         switch (expr->expr.ident.idType)
         {
         case GLOB_VAR:
-            return (symtab[expr->expr.ident.idNode.globIdx].type);
+            return g_proj.symbolType(expr->expr.ident.idNode.globIdx);
         case REGISTER:
             if (expr->expr.ident.regiType == BYTE_REG)
                 return (TYPE_BYTE_SIGN);
@@ -700,7 +699,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
         switch (expr->expr.ident.idType)
         {
         case GLOB_VAR:
-            o << symtab[expr->expr.ident.idNode.globIdx].name;
+            o << g_proj.symtab[expr->expr.ident.idNode.globIdx].name;
             break;
         case REGISTER:
             id = &pProc->localId.id_arr[expr->expr.ident.idNode.regiIdx];

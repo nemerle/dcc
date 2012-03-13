@@ -5,6 +5,7 @@
  ****************************************************************************/
 
 #include "dcc.h"
+#include "project.h"
 #include <string.h>
 
 /* Global variables - extern to other modules */
@@ -15,8 +16,8 @@ PROG    prog;               /* programs fields      				  */
 OPTION  option;             /* Command line options     			  */
 //Function *   pProcList;			/* List of procedures, topologically sort */
 //Function *	pLastProc;			/* Pointer to last node in procedure list */
-FunctionListType pProcList;
-CALL_GRAPH	*callGraph;		/* Call graph of the program			  */
+//FunctionListType pProcList;
+//CALL_GRAPH	*callGraph;		/* Call graph of the program			  */
 
 static char *initargs(int argc, char *argv[]);
 static void displayTotalStats(void);
@@ -26,7 +27,7 @@ static void displayTotalStats(void);
  * main
  ***************************************************************************/
 #include <iostream>
-
+extern Project g_proj;
 int main(int argc, char *argv[])
 {
 //     llvm::MCOperand op=llvm::MCOperand::CreateImm(11);
@@ -41,7 +42,9 @@ int main(int argc, char *argv[])
      * building the call graph and attaching appropriate bits of code for
      * each procedure.
     */
-    FrontEnd (option.filename, &callGraph);
+    DccFrontend fe(option.filename);
+    if(false==fe.FrontEnd ())
+        return -1;
 
     /* In the middle is a so called Universal Decompiling Machine.
      * It processes the procedure list and I-code and attaches where it can
@@ -53,9 +56,9 @@ int main(int argc, char *argv[])
      * analysis, data flow etc. and outputs it to output file ready for
      * re-compilation.
     */
-    BackEnd(option.filename, callGraph);
+    BackEnd(option.filename, g_proj.callGraph);
 
-    callGraph->write();
+    g_proj.callGraph->write();
 
     if (option.Stats)
         displayTotalStats();

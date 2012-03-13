@@ -10,11 +10,12 @@
 #include <algorithm>
 
 #include "dcc.h"
+#include "project.h"
 using namespace std;
+extern Project g_proj;
 //static void     FollowCtrl (Function * pProc, CALL_GRAPH * pcallGraph, STATE * pstate);
 static boolT    process_JMP (ICODE * pIcode, STATE * pstate, CALL_GRAPH * pcallGraph);
 static void     setBits(int16_t type, uint32_t start, uint32_t len);
-//static SYM *     updateGlobSym(uint32_t operand, int size, uint16_t duFlag,bool &created);
 static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 void    interactDis(Function * initProc, int ic);
@@ -31,7 +32,7 @@ static uint32_t    SynthLab;
 
 /* Parses the program, builds the call graph, and returns the list of
  * procedures found     */
-void parse (CALL_GRAPH * *pcallGraph)
+void DccFrontend::parse(Project &proj)
 {
     STATE state;
 
@@ -45,11 +46,12 @@ void parse (CALL_GRAPH * *pcallGraph)
     SynthLab = SYNTHESIZED_MIN;
 
     // default-construct a Function object !
-    pProcList.push_back(Function::Create());
+    auto func = proj.createFunction();
+
     /* Check for special settings of initial state, based on idioms of the
           startup code */
     state.checkStartup();
-    Function &start_proc(pProcList.front());
+    Function &start_proc(proj.pProcList.front());
     /* Make a struct for the initial procedure */
     if (prog.offMain != -1)
     {
@@ -71,36 +73,19 @@ void parse (CALL_GRAPH * *pcallGraph)
     start_proc.state = state;
 
     /* Set up call graph initial node */
-    *pcallGraph = new CALL_GRAPH;
-    (*pcallGraph)->proc = pProcList.begin();
+    proj.callGraph = new CALL_GRAPH;
+    proj.callGraph->proc = proj.pProcList.begin();
 
     /* This proc needs to be called to set things up for LibCheck(), which
        checks a proc to see if it is a know C (etc) library */
     SetupLibCheck();
-
+    //ERROR:  proj and g_proj are 'live' at this point !
     /* Recursively build entire procedure list */
-    pProcList.front().FollowCtrl (*pcallGraph, &state);
+    proj.pProcList.front().FollowCtrl (proj.callGraph, &state);
 
     /* This proc needs to be called to clean things up from SetupLibCheck() */
     CleanupLibCheck();
 }
-
-
-/* Updates the type of the symbol in the symbol table.  The size is updated
- * if necessary (0 means no update necessary).      */
-static void updateSymType (uint32_t symbol, hlType symType, int size)
-{ int i;
-
-    for (i = 0; i < symtab.size(); i++)
-        if (symtab[i].label == symbol)
-        {
-            symtab[i].type = symType;
-            if (size != 0)
-                symtab[i].size = size;
-            break;
-        }
-}
-
 
 /* Returns the size of the string pointed by sym and delimited by delim.
  * Size includes delimiter.     */
@@ -123,7 +108,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     uint32_t   offset;
     eErrorId err;
     boolT   done = false;
-
+    SYMTAB &global_symbol_table(g_proj.symtab);
     if (name.find("chkstk") != string::npos)
     {
         // Danger! Dcc will likely fall over in this code.
@@ -332,7 +317,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                             size = prog.fCOM ?
                                         strSize (&prog.Image[operand], '$') :
                                         strSize (&prog.Image[operand], '$'); // + 0x100
-                            updateSymType (operand, TYPE_STR, size);
+                            global_symbol_table.updateSymType (operand, TypeContainer(TYPE_STR, size));
                         }
                 }
                 else if ((ll->src.op() == 0x2F) && (pstate->f[rAH]))
@@ -591,16 +576,13 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
     if (pIcode.ll()->testFlags(I))
     {
         /* Search procedure list for one with appropriate entry point */
-        ilFunction iter= std::find_if(pProcList.begin(),pProcList.end(),
-            [pIcode](const Function &f) ->
-                bool { return f.procEntry==pIcode.ll()->src.op(); });
+        ilFunction iter = g_proj.findByEntry(pIcode.ll()->src.op());
 
         /* Create a new procedure node and save copy of the state */
-        if (iter==pProcList.end())
+        if ( not g_proj.valid(iter) )
         {
-            pProcList.push_back(Function::Create());
-            Function &x(pProcList.back());
-            iter = (++pProcList.rbegin()).base();
+            iter = g_proj.createFunction();
+            Function &x(*iter);
             x.procEntry = pIcode.ll()->src.op();
             LibCheck(x);
 
@@ -608,7 +590,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
             {
                 /* A library function. No need to do any more to it */
                 pcallGraph->insertCallGraph (this, iter);
-                iter = (++pProcList.rbegin()).base();
+                //iter = (++pProcList.rbegin()).base();
                 last_insn.ll()->src.proc.proc = &x;
                 return false;
             }
@@ -647,7 +629,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
 
         }
         else
-            pcallGraph->insertCallGraph (this, iter);
+            g_proj.callGraph->insertCallGraph (this, iter);
 
         last_insn.ll()->src.proc.proc = &(*iter); // ^ target proc
 
@@ -780,13 +762,13 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
     if (pm->segValue)  /* there is a value in the seg field */
     {
             operand = opAdr (pm->segValue, pm->off);
-            psym = symtab.updateGlobSym (operand, size, duFlag,created_new);
+        psym = g_proj.symtab.updateGlobSym (operand, size, duFlag,created_new);
         }
     else if (pstate->f[pm->seg]) /* new value */
     {
             pm->segValue = pstate->r[pm->seg];
             operand = opAdr(pm->segValue, pm->off);
-            psym = symtab.updateGlobSym (operand, size, duFlag,created_new);
+        psym = g_proj.symtab.updateGlobSym (operand, size, duFlag,created_new);
 
             /* Flag new memory locations that are segment values */
         if (created_new)
@@ -888,7 +870,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     LLOperand * pm   = (d == SRC)? &pIcode.ll()->src: &pIcode.ll()->dst;
     SYM *  psym;
 
-    if (pm->regi == 0 || pm->regi >= INDEX_BX_SI)
+    if ( Machine_X86::isMemOff(pm->regi) )
     {
         if (pm->regi == INDEX_BP)      /* indexed on bp */
         {
@@ -916,7 +898,8 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         {
             setBits (BM_DATA, psym->label, (uint32_t)size);
             pIcode.ll()->setFlags(SYM_USE);
-            pIcode.ll()->caseTbl.numEntries = psym - &symtab[0];
+            pIcode.ll()->caseTbl.numEntries = distance(&g_proj.symtab[0],psym);
+
         }
     }
 
@@ -965,7 +948,7 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         {
             setBits(BM_DATA, psym->label, (uint32_t)size);
             pIcode.ll()->setFlags(SYM_DEF);
-            pIcode.ll()->caseTbl.numEntries = distance(&symtab[0],psym);
+            pIcode.ll()->caseTbl.numEntries = distance(&g_proj.symtab[0],psym);
         }
     }
 

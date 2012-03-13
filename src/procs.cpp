@@ -8,8 +8,9 @@
 #include <cstring>
 #include <cassert>
 #include "dcc.h"
+#include "project.h"
 
-
+extern Project g_proj;
 /* Static indentation buffer */
 static constexpr int indSize=81;          /* size of indentation buffer; max 20 */
 static char indentBuf[indSize] =
@@ -60,10 +61,7 @@ bool CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
 
 bool CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
 {
-    auto iter = std::find_if(pProcList.begin(),pProcList.end(),
-                             [caller](const Function &f)->bool {return caller==&f;});
-    assert(iter!=pProcList.end());
-    return insertCallGraph(iter,callee);
+    return insertCallGraph(g_proj.funcIter(caller),callee);
 }
 
 
@@ -99,7 +97,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     COND_EXPR *lhs;
     STKFRAME * call_args_stackframe, *target_stackframe;
     ID *id;
-    int i, tidx;
+    int tidx;
     boolT regExist;
     condId type;
     Function * tproc;

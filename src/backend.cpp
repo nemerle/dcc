@@ -14,7 +14,7 @@
 #include <sstream>
 #include <string.h>
 #include <stdio.h>
-
+#include "project.h"
 bundle cCode;			/* Procedure declaration and code */
 using namespace std;
 
@@ -94,13 +94,6 @@ char *cChar (uint8_t c)
  * Note: to get to the value of the variable:
  *		com file: prog.Image[operand]
  *		exe file: prog.Image[operand+0x100] 	*/
-static void printGlobVar (std::ostream &ostr,SYM * psym);
-static void printGlobVar (SYM * psym)
-{
-    std::ostringstream ostr;
-    printGlobVar(ostr,psym);
-    cCode.appendDecl(ostr.str());
-}
 static void printGlobVar (std::ostream &ostr,SYM * psym)
 {
     int j;
@@ -135,7 +128,7 @@ static void printGlobVar (std::ostream &ostr,SYM * psym)
 // Note: Not called at present.
 /* Writes the contents of the symbol table, along with any variable
  * initialization. */
-static void writeGlobSymTable()
+void Project::writeGlobSymTable()
 {
     std::ostringstream ostr;
 
@@ -228,10 +221,9 @@ void Function::codeGen (std::ostream &fs)
             ostr<<", ";
     }
     ostr<<")\n";
-    cCode.appendDecl( ostr.str() );
 
     /* Write comments */
-    writeProcComments();
+    writeProcComments( ostr );
 
     /* Write local variables */
     if (! (flg & PROC_ASM))
@@ -249,7 +241,7 @@ void Function::codeGen (std::ostream &fs)
                         ((flg & DI_REGVAR) && (refId.id.regi == rDI)))
                 {
                     refId.setLocalName(++numLoc);
-                    cCode.appendDecl( "int %s;\n", refId.name.c_str());
+                    ostr << "int "<<refId.name<<";\n";
                 }
                 /* Other registers are named when they are first used in
                      * the output C code, and appended to the proc decl. */
@@ -258,10 +250,11 @@ void Function::codeGen (std::ostream &fs)
             {
                 /* Name local variables and output appropriate type */
                     refId.setLocalName(++numLoc);
-                cCode.appendDecl( "%s %s;\n",hlTypes[refId.type], refId.name.c_str());
+                ostr << TypeContainer::typeName(refId.type)<<" "<<refId.name<<";\n";
             }
         }
     }
+    cCode.appendDecl(ostr.str());
     /* Write procedure's code */
     if (flg & PROC_ASM)		/* generate assembler */
     {

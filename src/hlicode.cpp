@@ -304,7 +304,6 @@ void Function::highLevelGen()
                     rhs = COND_EXPR::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
                 lhs = COND_EXPR::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
             }
-
         switch (ll->getOpcode())
         {
             case iADD:

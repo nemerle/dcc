@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include "dcc.h"
 #include "disassem.h"
+#include "project.h"
 
+extern Project g_proj;
 static void displayCFG(Function * pProc);
 static void displayDfs(BB * pBB);
 
@@ -71,7 +73,7 @@ void udm(void)
     /* Build the control flow graph, find idioms, and convert low-level
      * icodes to high-level ones */
     Disassembler ds(2);
-    for (auto iter = pProcList.rbegin(); iter!=pProcList.rend(); ++iter)
+    for (auto iter = g_proj.pProcList.rbegin(); iter!=g_proj.pProcList.rend(); ++iter)
     {
         iter->buildCFG(ds);
     }
@@ -81,10 +83,10 @@ void udm(void)
      * and intermediate instructions.  Find expressions by forward
      * substitution algorithm */
     std::bitset<32> live_regs;
-    pProcList.front().dataFlow (live_regs);
+    g_proj.pProcList.front().dataFlow (live_regs);
 
     /* Control flow analysis - structuring algorithm */
-    for (auto iter = pProcList.rbegin(); iter!=pProcList.rend(); ++iter)
+    for (auto iter = g_proj.pProcList.rbegin(); iter!=g_proj.pProcList.rend(); ++iter)
     {
         iter->controlFlowAnalysis();
     }

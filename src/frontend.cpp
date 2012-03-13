@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>			/* For malloc, free, realloc */
-
+#include "project.h"
 typedef struct {			/*        PSP structure					*/
     uint16_t int20h;			/* interrupt 20h						*/
     uint16_t eof;				/* segment, end of allocation block		*/
@@ -58,17 +58,22 @@ static void displayMemMap(void);
 * FrontEnd - invokes the loader, parser, disassembler (if asm1), icode
 * rewritter, and displays any useful information.
 ****************************************************************************/
-void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
+extern Project g_proj;
+bool DccFrontend::FrontEnd ()
 {
+
+    g_proj.callGraph = 0;
+    g_proj.m_fname = m_fname;
+
     /* Load program into memory */
-    LoadImage(filename);
+    LoadImage(g_proj);
 
     if (option.verbose)
         displayLoadInfo();
 
     /* Do depth first flow analysis building call graph and procedure list,
      * and attaching the I-code to each procedure          */
-    parse (pcallGraph);
+    parse (g_proj);
 
     if (option.asm1)
     {
@@ -77,7 +82,7 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
 
     /* Search through code looking for impure references and flag them */
     Disassembler ds(1);
-    for(Function &f : pProcList)
+    for(Function &f : g_proj.pProcList)
     {
         f.markImpure();
         if (option.asm1)
@@ -87,17 +92,18 @@ void FrontEnd (char *filename, CALL_GRAPH * *pcallGraph)
     }
     if (option.Interact)
     {
-        interactDis(&pProcList.front(), 0);     /* Interactive disassembler */
+        interactDis(&g_proj.pProcList.front(), 0);     /* Interactive disassembler */
     }
 
     /* Converts jump target addresses to icode offsets */
-    for(Function &f : pProcList)
+    for(Function &f : g_proj.pProcList)
     {
         f.bindIcodeOff();
     }
     /* Print memory bitmap */
     if (option.Map)
         displayMemMap();
+    return(true); // we no longer own proj !
 }
 
 
@@ -191,22 +197,22 @@ static void displayMemMap(void)
 /*****************************************************************************
 * LoadImage
 ****************************************************************************/
-static void LoadImage(char *filename)
+void DccFrontend::LoadImage(Project &proj)
 {
     FILE   *fp;
     int		i, cb;
     uint8_t	buf[4];
 
     /* Open the input file */
-    if ((fp = fopen(filename, "rb")) == NULL)
+    if ((fp = fopen(proj.m_fname.c_str(), "rb")) == NULL)
     {
-        fatalError(CANNOT_OPEN, filename);
+        fatalError(CANNOT_OPEN, proj.m_fname.c_str());
     }
 
     /* Read in first 2 bytes to check EXE signature */
     if (fread(&header, 1, 2, fp) != 2)
     {
-        fatalError(CANNOT_READ, filename);
+        fatalError(CANNOT_READ, proj.m_fname.c_str());
     }
 
     if (! (prog.fCOM = (boolT)(header.sigLo != 0x4D || header.sigHi != 0x5A))) {
@@ -214,7 +220,7 @@ static void LoadImage(char *filename)
         fseek(fp, 0, SEEK_SET);
         if (fread(&header, sizeof(header), 1, fp) != 1)
         {
-            fatalError(CANNOT_READ, filename);
+            fatalError(CANNOT_READ, proj.m_fname.c_str());
         }
 
         /* This is a typical DOS kludge! */
@@ -292,16 +298,9 @@ static void LoadImage(char *filename)
     prog.Image[1] = 0x20;		/* for termination checking     */
 
     /* Read in the image past where a PSP would go */
-#ifdef __DOSWIN__
-    if (cb > 0xFFFF)
-    {
-        printf("Image size of %ld bytes too large for fread!\n", cb);
-        fatalError(CANNOT_READ, filename);
-    }
-#endif
     if (cb != (int)fread(prog.Image + sizeof(PSP), 1, (size_t)cb, fp))
     {
-        fatalError(CANNOT_READ, filename);
+        fatalError(CANNOT_READ, proj.m_fname.c_str());
     }
 
     /* Set up memory map */

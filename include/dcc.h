@@ -20,7 +20,7 @@
 #include "bundle.h"
 #include "Procedure.h"
 #include "BasicBlock.h"
-
+struct Project;
 /* CALL GRAPH NODE */
 struct CALL_GRAPH
 {
@@ -60,7 +60,6 @@ typedef struct {            /* Command line option flags */
 } OPTION;
 
 extern OPTION option;       /* Command line options             */
-extern SYMTAB symtab;       /* Global symbol table              */
 
 struct PROG /* Loaded program image parameters  */
 {
@@ -111,8 +110,17 @@ extern STATS stats; /* Icode statistics */
 
 
 /**** Global function prototypes ****/
-
-void    FrontEnd(char *filename, CALL_GRAPH * *);            /* frontend.c   */
+class DccFrontend
+{
+    void    LoadImage(Project &proj);
+    void    parse(Project &proj);
+    std::string m_fname;
+public:
+    DccFrontend(const std::string &fname) : m_fname(fname)
+    {
+    }
+    bool FrontEnd();            /* frontend.c   */
+};
 
 void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
