@@ -132,7 +132,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
 
     /* Check if register argument already on the formal argument list */
     regExist = false;
-    for(STKSYM &tgt_sym : target_stackframe->sym)
+    for(STKSYM &tgt_sym : *target_stackframe)
     {
         if (type == REGISTER)
         {
@@ -158,7 +158,9 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     if (regExist == false)
     {
         STKSYM newsym;
-        sprintf (newsym.name, "arg%ld", target_stackframe->sym.size());
+
+        newsym.setArgName(target_stackframe->size());
+
         if (type == REGISTER)
         {
             if (regL < rAL)
@@ -171,23 +173,22 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
                 newsym.type = TYPE_BYTE_SIGN;
                 newsym.regs = COND_EXPR::idRegIdx(tidx, BYTE_REG);
             }
-            sprintf (tproc->localId.id_arr[tidx].name, "arg%ld", target_stackframe->sym.size());
+            tproc->localId.id_arr[tidx].name = newsym.name;
         }
         else if (type == LONG_VAR)
         {
             newsym.regs = COND_EXPR::idLongIdx (tidx);
             newsym.type = TYPE_LONG_SIGN;
-            sprintf (tproc->localId.id_arr[tidx].name, "arg%ld", target_stackframe->sym.size());
-            tproc->localId.propLongId (regL, regH,
-                        tproc->localId.id_arr[tidx].name);
+            tproc->localId.id_arr[tidx].name = newsym.name;
+            tproc->localId.propLongId (regL, regH, tproc->localId.id_arr[tidx].name.c_str());
         }
-        target_stackframe->sym.push_back(newsym);
+        target_stackframe->push_back(newsym);
         target_stackframe->numArgs++;
     }
 
     /* Do ps (actual arguments) */
     STKSYM newsym;
-    sprintf (newsym.name, "arg%ld", call_args_stackframe->sym.size());
+    newsym.setArgName(call_args_stackframe->size());
     newsym.actual = picode->hl()->asgn.rhs;
     newsym.regs = lhs;
     /* Mask off high and low register(s) in picode */
@@ -207,15 +208,15 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
             newsym.type = TYPE_LONG_SIGN;
             break;
     }
-    call_args_stackframe->sym.push_back(newsym);
+    call_args_stackframe->push_back(newsym);
     call_args_stackframe->numArgs++;
 }
 
 
 /** Inserts the new expression (ie. the actual parameter) on the argument
  * list.
- * @return TRUE if it was a near call that made use of a segment register.
- *         FALSE elsewhere
+ * @return true if it was a near call that made use of a segment register.
+ *         false elsewhere
 */
 bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
 {
@@ -239,7 +240,7 @@ bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
     /* Place register argument on the argument list */
     STKSYM newsym;
     newsym.actual = exp;
-    args->sym.push_back(newsym);
+    args->push_back(newsym);
     args->numArgs++;
     return false;
 }
@@ -249,8 +250,8 @@ bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
  * argument list of picode.	*/
 void CallType::placeStkArg (COND_EXPR *exp, int pos)
 {
-    args->sym[pos].actual = exp;
-    sprintf (args->sym[pos].name, "arg%ld", pos);
+    (*args)[pos].actual = exp;
+    (*args)[pos].setArgName(pos);
 }
 
 
@@ -317,34 +318,31 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
     hlType forType;
     STKSYM * psym, * nsym;
     int off, i;
-
-    /* Find stack offset for this argument */
-    off = m_minOff;
-    for (i = 0; i < numArg_; i++)
-    {
-        if(i>=sym.size())
-        {
-            break; //TODO: verify
-        }
-        off += sym[i].size;
-    }
-
-    /* Find formal argument */
-    if (numArg_ < sym.size())
-    {
-        psym = &sym[numArg_];
-        i = numArg_;
-        //auto iter=std::find_if(sym.begin(),sym.end(),[off](STKSYM &s)->bool {s.off==off;});
-        auto iter=std::find_if(sym.begin()+numArg_,sym.end(),[off](STKSYM &s)->bool {s.off==off;});
-        if(iter==sym.end()) // symbol not found
-            return;
-        psym = &(*iter);
-    }
     /* If formal argument does not exist, do not create new ones, just
      * ignore actual argument
      */
-    else
+    if(numArg_>size())
         return;
+
+    /* Find stack offset for this argument */
+    off = m_minOff;
+    i=0;
+    for(STKSYM &s : *this) // walk formal arguments upto numArg_
+    {
+        if(i>=numArg_)
+            break;
+        off+=s.size;
+        i++;
+    }
+
+    /* Find formal argument */
+    //psym = &at(numArg_);
+    //i = numArg_;
+        //auto iter=std::find_if(sym.begin(),sym.end(),[off](STKSYM &s)->bool {s.off==off;});
+    auto iter=std::find_if(begin()+numArg_,end(),[off](STKSYM &s)->bool {s.label==off;});
+    if(iter==end()) // symbol not found
+            return;
+        psym = &(*iter);
 
     forType = psym->type;
     if (forType != actType_)
@@ -364,11 +362,11 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
                     psym->type = actType_;
                     psym->size = 4;
                     nsym = psym + 1;
-                    sprintf (nsym->macro, "HI");
-                    sprintf (psym->macro, "LO");
+                    nsym->macro = "HI";
+                    psym->macro = "LO";
                     nsym->hasMacro = true;
                     psym->hasMacro = true;
-                    sprintf (nsym->name, "%s", psym->name);
+                    nsym->name = psym->name;
                     nsym->invalid = true;
                     numArgs--;
                 }

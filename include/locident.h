@@ -65,7 +65,7 @@ struct ID
     frameType           loc;        /* Frame location                           */
     bool                hasMacro;   /* Identifier requires a macro              */
     char                macro[10];  /* Macro for this identifier                */
-    char                name[20];   /* Identifier's name                        */
+    std::string         name;       /* Identifier's name                        */
     union {                         /* Different types of identifiers           */
         eReg		regi;       /* For TYPE_BYTE(uint16_t)_(UN)SIGN registers   */
         struct {                    /* For TYPE_BYTE(uint16_t)_(UN)SIGN on the stack */
@@ -95,9 +95,9 @@ struct ID
     }
     void setLocalName(int i)
     {
-       // char buf[32];
-        //sprintf (buf, "loc%ld", i);
-        //name=buf;
+        char buf[32];
+        sprintf (buf, "loc%ld", i);
+        name=buf;
     }
 };
 

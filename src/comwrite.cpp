@@ -204,7 +204,7 @@ void Function::writeProcComments(std::ostream &ostr)
         ostr << "/* Uses register arguments:\n";
         for (i = 0; i < this->args.numArgs; i++)
         {
-            psym = &this->args.sym[i];
+            psym = &this->args[i];
             ostr << " *     "<<psym->name<<" = ";
             if (psym->regs->expr.ident.idType == REGISTER)
             {

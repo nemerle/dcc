@@ -14,7 +14,7 @@ using namespace std;
 //static void     FollowCtrl (Function * pProc, CALL_GRAPH * pcallGraph, STATE * pstate);
 static boolT    process_JMP (ICODE * pIcode, STATE * pstate, CALL_GRAPH * pcallGraph);
 static void     setBits(int16_t type, uint32_t start, uint32_t len);
-static SYM *     updateGlobSym(uint32_t operand, int size, uint16_t duFlag);
+//static SYM *     updateGlobSym(uint32_t operand, int size, uint16_t duFlag,bool &created);
 static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 void    interactDis(Function * initProc, int ic);
@@ -718,77 +718,32 @@ static void process_MOV(LLInst & ll, STATE * pstate)
 }
 
 
-/* Type of the symbol according to the number of bytes it uses */
-static hlType cbType[] = {TYPE_UNKNOWN, TYPE_BYTE_UNSIGN, TYPE_WORD_SIGN,
-                          TYPE_UNKNOWN, TYPE_LONG_SIGN};
-
-/* Creates an entry in the global symbol table (symtab) if the variable
- * is not there yet.  If it is part of the symtab, the size of the variable
- * is checked and updated if the old size was less than the new size (ie.
- * the maximum size is always saved).   */
-static SYM * updateGlobSym (uint32_t operand, int size, uint16_t duFlag)
-{
-    int i;
-
-    /* Check for symbol in symbol table */
-    for (i = 0; i < symtab.size(); i++)
-        if (symtab[i].label == operand)
-        {
-            if (symtab[i].size < size)
-                symtab[i].size = size;
-            break;
-        }
-
-    /* New symbol, not in symbol table */
-    if (i == symtab.size())
-    {
-        SYM v;
-        sprintf (v.name, "var%05lX", operand);
-        v.label = operand;
-        v.size  = size;
-        v.type = cbType[size];
-        if (duFlag == eDuVal::USE)  /* must already have init value */
-        {
-            v.duVal.use =1; // USEVAL;
-            v.duVal.val =1;
-        }
-        else
-        {
-            v.duVal.setFlags(duFlag);
-        }
-        symtab.push_back(v);
-    }
-    return (&symtab[i]);
-}
-
 
 /* Updates the offset entry to the stack frame table (arguments),
  * and returns a pointer to such entry. */
-static void updateFrameOff (STKFRAME * ps, int16_t off, int size, uint16_t duFlag)
+void STKFRAME::updateFrameOff ( int16_t off, int _size, uint16_t duFlag)
 {
     int   i;
 
     /* Check for symbol in stack frame table */
-    for (i = 0; i < ps->sym.size(); i++)
+    auto iter=findByLabel(off);
+    if(iter!=end())
     {
-        if (ps->sym[i].off == off)
+        if (iter->size < _size)
         {
-            if (ps->sym[i].size < size)
-            {
-                ps->sym[i].size = size;
+            iter->size = _size;
             }
-            break;
         }
-    }
-
-    /* New symbol, not in table */
-    if (i == ps->sym.size())
+    else
     {
+        char nm[16];
         STKSYM new_sym;
-        sprintf (new_sym.name, "arg%ld", i);
-        new_sym.off = off;
-        new_sym.size  = size;
-        new_sym.type = cbType[size];
+
+        sprintf (nm, "arg%ld", size());
+        new_sym.name = nm;
+        new_sym.label= off;
+        new_sym.size = _size;
+        new_sym.type = TypeContainer::defaultTypeForSize(_size);
         if (duFlag == eDuVal::USE)  /* must already have init value */
         {
             new_sym.duVal.use=1;
@@ -798,13 +753,13 @@ static void updateFrameOff (STKFRAME * ps, int16_t off, int size, uint16_t duFla
         {
             new_sym.duVal.setFlags(duFlag);
         }
-        ps->sym.push_back(new_sym);
-        ps->numArgs++;
+        push_back(new_sym);
+        this->numArgs++;
     }
 
     /* Save maximum argument offset */
-    if ((uint32_t)ps->maxOff < (off + (uint32_t)size))
-        ps->maxOff = off + (int16_t)size;
+    if ((uint32_t)this->maxOff < (off + (uint32_t)_size))
+        this->maxOff = off + (int16_t)_size;
 }
 
 
@@ -815,29 +770,26 @@ static void updateFrameOff (STKFRAME * ps, int16_t off, int size, uint16_t duFla
 static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag)
 {
     int     i;
-    SYM *    psym;
+    SYM *    psym=nullptr;
     uint32_t   operand;
+    bool created_new=false;
+    if (pm->regi != rUNDEF)
+        return nullptr; // register or indexed
 
-    if (pm->regi == 0)
-    {
         /* Global var */
-        if (pm->segValue) { /* there is a value in the seg field */
+    if (pm->segValue)  /* there is a value in the seg field */
+    {
             operand = opAdr (pm->segValue, pm->off);
-            psym = updateGlobSym (operand, size, duFlag);
-
-            /* Check for out of bounds */
-            if (psym->label >= (uint32_t)prog.cbImage)
-                return (NULL);
-            return (psym);
+            psym = symtab.updateGlobSym (operand, size, duFlag,created_new);
         }
-        else if (pstate->f[pm->seg]) {      /* new value */
+    else if (pstate->f[pm->seg]) /* new value */
+    {
             pm->segValue = pstate->r[pm->seg];
             operand = opAdr(pm->segValue, pm->off);
-            i = symtab.size();
-            psym = updateGlobSym (operand, size, duFlag);
+            psym = symtab.updateGlobSym (operand, size, duFlag,created_new);
 
             /* Flag new memory locations that are segment values */
-            if (symtab.size() > i)
+        if (created_new)
             {
                 if (size == 4)
                     operand += 2;   /* High uint16_t */
@@ -847,14 +799,11 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
                         break;
                     }
             }
-
-            /* Check for out of bounds */
-            if (psym->label >= (uint32_t)prog.cbImage)
-                return (NULL);
-            return (psym);
         }
-    }
-    return (NULL);
+    /* Check for out of bounds */
+    if (psym && (psym->label>=0) and (psym->label < (uint32_t)prog.cbImage))
+        return psym;
+    return nullptr;
 }
 
 
@@ -944,7 +893,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         if (pm->regi == INDEX_BP)      /* indexed on bp */
         {
             if (pm->off >= 2)
-                updateFrameOff (&pProc->args, pm->off, size, eDuVal::USE);
+                pProc->args.updateFrameOff ( pm->off, size, eDuVal::USE);
             else if (pm->off < 0)
                 pProc->localId.newByteWordStk (TYPE_WORD_SIGN, pm->off, 0);
         }
@@ -991,7 +940,7 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         if (pm->regi == INDEX_BP)      /* indexed on bp */
         {
             if (pm->off >= 2)
-                updateFrameOff (&pProc->args, pm->off, size, eDEF);
+                pProc->args.updateFrameOff ( pm->off, size, eDEF);
             else if (pm->off < 0)
                 pProc->localId.newByteWordStk (TYPE_WORD_SIGN, pm->off, 0);
         }
@@ -1016,7 +965,7 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         {
             setBits(BM_DATA, psym->label, (uint32_t)size);
             pIcode.ll()->setFlags(SYM_DEF);
-            pIcode.ll()->caseTbl.numEntries = psym - &symtab[0];
+            pIcode.ll()->caseTbl.numEntries = distance(&symtab[0],psym);
         }
     }
 

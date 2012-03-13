@@ -487,20 +487,20 @@ COND_EXPR *COND_EXPR::inverse () const
 
 /* Returns the string that represents the procedure call of tproc (ie. with
  * actual parameters) */
-std::string writeCall (Function * tproc, STKFRAME * args, Function * pproc, int *numLoc)
+std::string writeCall (Function * tproc, STKFRAME & args, Function * pproc, int *numLoc)
 {
     int i;                        /* counter of # arguments       */
     string condExp;
-    ostringstream s;
-    s<<tproc->name<<" (";
-    for (i = 0; i < args->sym.size(); i++)
+    ostringstream ostr;
+    ostr<<tproc->name<<" (";
+    for(const STKSYM &sym : args)
     {
-        s << walkCondExpr (args->sym[i].actual, pproc, numLoc);
-        if (i < (args->sym.size() - 1))
-            s << ", ";
+        ostr << walkCondExpr (sym.actual, pproc, numLoc);
+        if((&sym)!=&(args.back()))
+            ostr << ", ";
     }
-    s << ")";
-    return s.str();
+    ostr << ")";
+    return ostr.str();
 }
 
 
@@ -547,7 +547,7 @@ string AssignType::writeOut(Function *pProc, int *numLoc)
 string CallType::writeOut(Function *pProc, int *numLoc)
 {
     ostringstream ostr;
-    ostr << writeCall (proc, args, pProc,numLoc);
+    ostr << writeCall (proc, *args, pProc,numLoc);
     ostr << ";\n";
     return ostr.str();
 }

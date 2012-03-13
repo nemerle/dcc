@@ -183,7 +183,7 @@ COND_EXPR *COND_EXPR::idLoc(int off, LOCAL_ID *localId)
     if (i == localId->csym())
         printf ("Error, cannot find local var\n");
     newExp->expr.ident.idNode.localIdx = i;
-    sprintf (localId->id_arr[i].name, "loc%ld", i);
+    localId->id_arr[i].setLocalName(i);
     return (newExp);
 }
 
@@ -192,15 +192,13 @@ COND_EXPR *COND_EXPR::idLoc(int off, LOCAL_ID *localId)
 COND_EXPR *COND_EXPR::idParam(int off, const STKFRAME * argSymtab)
 {
     COND_EXPR *newExp;
-    size_t i;
 
     newExp = new COND_EXPR(IDENTIFIER);
     newExp->expr.ident.idType = PARAM;
-    for (i = 0; i < argSymtab->sym.size(); i++)
-        if (argSymtab->sym[i].off == off)
-            break;
-    if (i == argSymtab->sym.size()) printf ("Error, cannot find argument var\n");
-    newExp->expr.ident.idNode.localIdx = i;
+    auto iter=argSymtab->findByLabel(off);
+    if (iter == argSymtab->end())
+        printf ("Error, cannot find argument var\n");
+    newExp->expr.ident.idNode.localIdx = distance(argSymtab->begin(),iter);
     return (newExp);
 }
 
@@ -489,7 +487,7 @@ int hlTypeSize (const COND_EXPR *expr, Function * pproc)
         case LOCAL_VAR:
             return (hlSize[pproc->localId.id_arr[expr->expr.ident.idNode.localIdx].type]);
         case PARAM:
-            return (hlSize[pproc->args.sym[expr->expr.ident.idNode.paramIdx].type]);
+            return (hlSize[pproc->args[expr->expr.ident.idNode.paramIdx].type]);
         case GLOB_VAR_IDX:
             return (hlSize[pproc->localId.id_arr[expr->expr.ident.idNode.idxGlbIdx].type]);
         case CONSTANT:
@@ -552,7 +550,7 @@ hlType expType (const COND_EXPR *expr, Function * pproc)
         case LOCAL_VAR:
             return (pproc->localId.id_arr[expr->expr.ident.idNode.localIdx].type);
         case PARAM:
-            return (pproc->args.sym[expr->expr.ident.idNode.paramIdx].type);
+            return (pproc->args[expr->expr.ident.idNode.paramIdx].type);
         case GLOB_VAR_IDX:
             return (pproc->localId.id_arr[expr->expr.ident.idNode.idxGlbIdx].type);
         case CONSTANT:
@@ -708,7 +706,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
             id = &pProc->localId.id_arr[expr->expr.ident.idNode.regiIdx];
             if (id->name[0] == '\0')	/* no name */
             {
-                sprintf (id->name, "loc%ld", ++(*numLoc));
+                id->setLocalName(++(*numLoc));
                 codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
                 codeOut <<"/* "<<Machine_X86::regName(id->id.regi)<<" */\n";
             }
@@ -723,7 +721,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
             break;
 
         case PARAM:
-            psym = &pProc->args.sym[expr->expr.ident.idNode.paramIdx];
+            psym = &pProc->args[expr->expr.ident.idNode.paramIdx];
             if (psym->hasMacro)
                 o << psym->macro<<"("<<psym->name<< ")";
             else
@@ -752,12 +750,12 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
                 o << id->name;
             else if (id->loc == REG_FRAME)
             {
-                sprintf (id->name, "loc%ld", ++(*numLoc));
+                id->setLocalName(++(*numLoc));
                 codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
                 codeOut <<"/* "<<Machine_X86::regName(id->id.longId.h) << ":" <<
                             Machine_X86::regName(id->id.longId.l) << " */\n";
                 o << id->name;
-                pProc->localId.propLongId (id->id.longId.l,id->id.longId.h, id->name);
+                pProc->localId.propLongId (id->id.longId.l,id->id.longId.h, id->name.c_str());
             }
             else    /* GLB_FRAME */
             {
@@ -769,7 +767,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
             break;
 
         case FUNCTION:
-            o << writeCall (expr->expr.ident.idNode.call.proc,expr->expr.ident.idNode.call.args, pProc, numLoc);
+            o << writeCall (expr->expr.ident.idNode.call.proc,*expr->expr.ident.idNode.call.args, pProc, numLoc);
             break;
 
         case OTHER:
@@ -786,7 +784,6 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
         break;
     }
     cCode.appendDecl(codeOut.str());
-
     return outStr.str();
 }
 

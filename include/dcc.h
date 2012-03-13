@@ -21,27 +21,6 @@
 #include "Procedure.h"
 #include "BasicBlock.h"
 
-typedef llvm::iplist<Function> FunctionListType;
-typedef FunctionListType lFunction;
-typedef lFunction::iterator ilFunction;
-
-
-/* SYMBOL TABLE */
-struct SYM
-{
-    SYM() : label(0),size(0),flg(0),type(TYPE_UNKNOWN)
-    {
-
-    }
-    char        name[10];   /* New name for this variable   */
-    uint32_t       label;      /* physical address (20 bit)    */
-    int         size;       /* maximum size                 */
-    uint32_t     flg;        /* SEG_IMMED, IMPURE, WORD_OFF  */
-    hlType      type;       /* probable type                */
-    eDuVal      duVal;      /* DEF, USE, VAL                */
-};
-
-typedef std::vector<SYM> SYMTAB;
 /* CALL GRAPH NODE */
 struct CALL_GRAPH
 {
@@ -134,7 +113,6 @@ extern STATS stats; /* Icode statistics */
 /**** Global function prototypes ****/
 
 void    FrontEnd(char *filename, CALL_GRAPH * *);            /* frontend.c   */
-void   *allocMem(int cb);                                   /* frontend.c   */
 
 void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
@@ -167,7 +145,7 @@ hlType	  expType (const COND_EXPR *, Function *);
 
 
 /* Exported functions from hlicode.c */
-std::string writeCall (Function *, STKFRAME *, Function *, int *);
+std::string writeCall (Function *, STKFRAME &, Function *, int *);
 char 	*writeJcond (const HLTYPE &, Function *, int *);
 char 	*writeJcondInv (HLTYPE, Function *, int *);
 

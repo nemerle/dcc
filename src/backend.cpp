@@ -94,35 +94,39 @@ char *cChar (uint8_t c)
  * Note: to get to the value of the variable:
  *		com file: prog.Image[operand]
  *		exe file: prog.Image[operand+0x100] 	*/
+static void printGlobVar (std::ostream &ostr,SYM * psym);
 static void printGlobVar (SYM * psym)
+{
+    std::ostringstream ostr;
+    printGlobVar(ostr,psym);
+    cCode.appendDecl(ostr.str());
+}
+static void printGlobVar (std::ostream &ostr,SYM * psym)
 {
     int j;
     uint32_t relocOp = prog.fCOM ? psym->label : psym->label + 0x100;
 
     switch (psym->size)
     {
-        case 1: cCode.appendDecl( "uint8_t\t%s = %ld;\n",
-                                  psym->name, prog.Image[relocOp]);
+        case 1:
+            ostr << "uint8_t\t"<<psym->name<<" = "<<prog.Image[relocOp]<<";\n";
             break;
-        case 2: cCode.appendDecl( "uint16_t\t%s = %ld;\n",
-                                  psym->name, LH(prog.Image+relocOp));
+        case 2:
+            ostr << "uint16_t\t"<<psym->name<<" = "<<LH(prog.Image+relocOp)<<";\n";
             break;
         case 4: if (psym->type == TYPE_PTR)  /* pointer */
-                cCode.appendDecl( "uint16_t\t*%s = %ld;\n",
-                                  psym->name, LH(prog.Image+relocOp));
+                ostr << "uint16_t *\t"<<psym->name<<" = "<<LH(prog.Image+relocOp)<<";\n";
             else 			/* char */
-                cCode.appendDecl(
-                            "char\t%s[4] = \"%c%c%c%c\";\n",
-                            psym->name, prog.Image[relocOp],
-                            prog.Image[relocOp+1], prog.Image[relocOp+2],
-                            prog.Image[relocOp+3]);
+                ostr << "char\t"<<psym->name<<"[4] = \""<<
+                        prog.Image[relocOp]<<prog.Image[relocOp+1]<<
+                        prog.Image[relocOp+2]<<prog.Image[relocOp+3]<<";\n";
             break;
         default:
         {
             ostringstream strContents;
             for (j=0; j < psym->size; j++)
                 strContents << cChar(prog.Image[relocOp + j]);
-            cCode.appendDecl( "char\t*%s = \"%s\";\n", psym->name, strContents.str().c_str());
+            ostr << "char\t*"<<psym->name<<" = \""<<strContents.str()<<"\";\n";
         }
     }
 }
@@ -133,32 +137,31 @@ static void printGlobVar (SYM * psym)
  * initialization. */
 static void writeGlobSymTable()
 {
-    char type[10];
+    std::ostringstream ostr;
 
-    if (not symtab.empty())
-    {
-        cCode.appendDecl( "/* Global variables */\n");
+    if (symtab.empty())
+        return;
+    ostr<<"/* Global variables */\n";
         for (SYM &sym : symtab)
         {
             if (sym.duVal.isUSE_VAL())	/* first used */
-                printGlobVar (&sym);
+            printGlobVar (ostr,&sym);
             else {					/* first defined */
                 switch (sym.size) {
-                    case 1:  strcpy (type, "uint8_t\t"); break;
-                    case 2:  strcpy (type, "int\t"); break;
+                case 1:  ostr<<"uint8_t\t"; break;
+                case 2:  ostr<<"int\t"; break;
                     case 4:  if (sym.type == TYPE_PTR)
-                            strcpy (type, "int\t*");
+                        ostr<<"int\t*";
                         else
-                            strcpy (type, "char\t*");
+                        ostr<<"char\t*";
                         break;
-                    default: strcpy (type, "char\t*");
+                default: ostr<<"char\t*";
                 }
-                cCode.appendDecl( "%s%s;\t/* size = %ld */\n",
-                                  type, sym.name, sym.size);
+            ostr<<sym.name<<";\t/* size = "<<sym.size<<" */\n";
             }
         }
-        cCode.appendDecl( "\n");
-    }
+    ostr<< "\n";
+    cCode.appendDecl( ostr.str() );
 }
 
 
@@ -202,7 +205,7 @@ static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 void Function::codeGen (std::ostream &fs)
 {
     int numLoc;
-    ostringstream buf;
+    ostringstream ostr;
     //STKFRAME * args;       /* Procedure arguments              */
     //char buf[200],        /* Procedure's definition           */
     //        arg[30];         /* One argument                     */
@@ -211,22 +214,21 @@ void Function::codeGen (std::ostream &fs)
     /* Write procedure/function header */
     newBundle (&cCode);
     if (flg & PROC_IS_FUNC)      /* Function */
-        cCode.appendDecl( "\n%s %s (", hlTypes[retVal.type],name.c_str());
+        ostr<< "\n"<<TypeContainer::typeName(retVal.type)<<" "<<name<<" (";
     else                                /* Procedure */
-        cCode.appendDecl( "\nvoid %s (", name.c_str());
+        ostr<< "\nvoid "<<name<<" (";
 
     /* Write arguments */
-    for (size_t i = 0; i < args.sym.size(); i++)
+    for (size_t i = 0; i < args.size(); i++)
     {
-        if (args.sym[i].invalid == false)
-        {
-            buf<<hlTypes[args.sym[i].type]<<" "<<args.sym[i].name;
-            if (i < (args.sym.size() - 1))
-                buf<<", ";
-        }
+        if ( args[i].invalid )
+            continue;
+        ostr<<hlTypes[args[i].type]<<" "<<args[i].name;
+        if (i < (args.size() - 1))
+            ostr<<", ";
     }
-    buf<<")\n";
-    cCode.appendDecl( buf.str() );
+    ostr<<")\n";
+    cCode.appendDecl( ostr.str() );
 
     /* Write comments */
     writeProcComments();
@@ -238,27 +240,25 @@ void Function::codeGen (std::ostream &fs)
         for (ID &refId : localId )
         {
             /* Output only non-invalidated entries */
-            if (refId.illegal == false)
+            if ( refId.illegal )
+                continue;
+            if (refId.loc == REG_FRAME)
             {
-                if (refId.loc == REG_FRAME)
-                {
-                    /* Register variables are assigned to a local variable */
-                    if (((flg & SI_REGVAR) && (refId.id.regi == rSI)) ||
+                /* Register variables are assigned to a local variable */
+                if (((flg & SI_REGVAR) && (refId.id.regi == rSI)) ||
                         ((flg & DI_REGVAR) && (refId.id.regi == rDI)))
-                    {
-                        sprintf (refId.name, "loc%ld", ++numLoc);
-                        cCode.appendDecl( "int %s;\n", refId.name);
-                    }
-                    /* Other registers are named when they are first used in
-                     * the output C code, and appended to the proc decl. */
-                }
-
-                else if (refId.loc == STK_FRAME)
                 {
-                    /* Name local variables and output appropriate type */
-                    sprintf (refId.name, "loc%ld", ++numLoc);
-                    cCode.appendDecl( "%s %s;\n",hlTypes[refId.type], refId.name);
+                    refId.setLocalName(++numLoc);
+                    cCode.appendDecl( "int %s;\n", refId.name.c_str());
                 }
+                /* Other registers are named when they are first used in
+                     * the output C code, and appended to the proc decl. */
+            }
+            else if (refId.loc == STK_FRAME)
+            {
+                /* Name local variables and output appropriate type */
+                    refId.setLocalName(++numLoc);
+                cCode.appendDecl( "%s %s;\n",hlTypes[refId.type], refId.name.c_str());
             }
         }
     }

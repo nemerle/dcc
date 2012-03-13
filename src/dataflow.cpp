@@ -75,12 +75,8 @@ ExpStack g_exp_stk;
  * is in the stack frame provided.  */
 size_t STKFRAME::getLocVar(int off)
 {
-    size_t i;
-
-    for (i = 0; i < sym.size(); i++)
-        if (sym[i].off == off)
-            break;
-    return (i);
+    auto iter=findByLabel(off);
+    return distance(begin(),iter);
 }
 
 
@@ -686,11 +682,11 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, int num
         if (pp->args.numArgs > 0)
             if (pp->flg & PROC_VARARG)
             {
-                if (numArgs < pp->args.sym.size())
-                    adjustActArgType (_exp, pp->args.sym[numArgs].type, pProc);
+                if (numArgs < pp->args.size())
+                    adjustActArgType (_exp, pp->args[numArgs].type, pProc);
             }
             else
-                adjustActArgType (_exp, pp->args.sym[numArgs].type, pProc);
+                adjustActArgType (_exp, pp->args[numArgs].type, pProc);
     }
     else			/* user function */
     {
@@ -774,7 +770,7 @@ void Function::processHliCall(COND_EXPR *_exp, iICODE picode)
             if (pp->flg & PROC_ISLIB)	/* library function */
             {
                 if (pp->args.numArgs > 0)
-                    adjustActArgType(_exp, pp->args.sym[numArgs].type, this);
+                    adjustActArgType(_exp, pp->args[numArgs].type, this);
                 res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), this);
             }
             else			/* user function */

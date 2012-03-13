@@ -137,3 +137,58 @@ boolT readVal(std::ostringstream &symName, uint32_t symOff, Function * symProc)
 {
     return false; // no symbolic names for now
 }
+
+/* Updates the type of the symbol in the symbol table.  The size is updated
+ * if necessary (0 means no update necessary).      */
+void SYMTAB::updateSymType (uint32_t symbol,const TypeContainer &tc)
+{
+    int i;
+    auto iter=findByLabel(symbol);
+    if(iter==end())
+        return;
+    iter->type = tc.m_type;
+    if (tc.m_size != 0)
+        iter->size = tc.m_size;
+}
+
+/* Creates an entry in the global symbol table (symtab) if the variable
+ * is not there yet.  If it is part of the symtab, the size of the variable
+ * is checked and updated if the old size was less than the new size (ie.
+ * the maximum size is always saved).   */
+//TODO: SYMTAB::updateGlobSym should be renamed to insertOrUpdateSym
+SYM * SYMTAB::updateGlobSym (uint32_t operand, int size, uint16_t duFlag,bool &inserted_new)
+{
+    /* Check for symbol in symbol table */
+    auto iter = findByLabel(operand);
+    if(iter!=end())
+    {
+        if(iter->size<size)
+            iter->size = size;
+        inserted_new=false;
+        return &(*iter);
+    }
+
+    /* New symbol, not in symbol table */
+    SYM v;
+    char buf[32]={};
+    sprintf (buf, "var%05X", operand);
+    v.name  = buf;
+    v.label = operand;
+    v.size  = size;
+    v.type  = TypeContainer::defaultTypeForSize(size);
+    if (duFlag == eDuVal::USE)  /* must already have init value */
+    {
+        v.duVal.use =1; // USEVAL;
+        v.duVal.val =1;
+    }
+    else
+    {
+        v.duVal.setFlags(duFlag);
+    }
+    push_back(v);
+    inserted_new=true;
+    return (&back());
+}
+
+//template<> class SymbolTableCommon<SYM>;
+//template<> class SymbolTableCommon<STKSYM>;

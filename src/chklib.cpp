@@ -480,10 +480,10 @@ bool LibCheck(Function & pProc)
                     the appropriate field */
                 arg = pFunc[i].firstArg;
                 pProc.args.numArgs = pFunc[i].numArg;
-                pProc.args.sym.resize(pFunc[i].numArg);
+                pProc.args.resize(pFunc[i].numArg);
                 for (j=0; j < pFunc[i].numArg; j++)
                 {
-                    pProc.args.sym[j].type = pArg[arg++];
+                    pProc.args[j].type = pArg[arg++];
                 }
                 if (pFunc[i].typ != TYPE_UNKNOWN)
                 {

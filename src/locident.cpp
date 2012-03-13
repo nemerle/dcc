@@ -420,28 +420,23 @@ eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
  * long register identifier.	*/
 void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const char *name)
 {
-    int i;
-    ID *_id;
-
-    for (i = 0; i < id_arr.size(); i++)
+    for (ID &rid : id_arr)
     {
-        _id = &id_arr[i];
-        if (_id->typeBitsize()==16)
+        if (rid.typeBitsize()!=16)
+            continue;
+        if ( (rid.id.regi != regL) and (rid.id.regi != regH) )
+            continue;
+        // otherwise at least 1 is ok
+        rid.name = name;
+        rid.hasMacro = true;
+        rid.illegal = true;
+        if (rid.id.regi == regL)
         {
-            if (_id->id.regi == regL)
-            {
-                strcpy (_id->name, name);
-                strcpy (_id->macro, "LO");
-                _id->hasMacro = true;
-                _id->illegal = true;
+            strcpy (rid.macro, "LO");
             }
-            else if (_id->id.regi == regH)
+        else // if (rid.id.regi == regH)
             {
-                strcpy (_id->name, name);
-                strcpy (_id->macro, "HI");
-                _id->hasMacro = true;
-                _id->illegal = true;
-            }
+            strcpy (rid.macro, "HI");
         }
     }
 }
