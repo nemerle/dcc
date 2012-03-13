@@ -107,17 +107,17 @@
 095 0009BA A12006              MOV            ax, [620h]         
 096 0009BD 52                  PUSH           dx                 
 097 0009BE 50                  PUSH           ax                 
-098 0009BF CD378626FF          ESC            FILD          [bp-0DAh]
+098 0009BF CD378626FF          ESC            FILD dword ptr [bp-0DAh]
 099 0009C4 CD3D                INT            3Dh                	/* Unknown int */
 
 100 0009C6 83C404              ADD            sp, 4              
 101 0009C9 83EC08              SUB            sp, 8              
-102 0009CC CD399E22FF          ESC            FSTP          [bp-0DEh]
+102 0009CC CD399E22FF          ESC            FSTP qword ptr [bp-0DEh]
 103 0009D1 CD3D                INT            3Dh                	/* Unknown int */
 
 104 0009D3 9A21028B00          CALL            far ptr proc_7    
 105 0009D8 83C408              ADD            sp, 8              
-106 0009DB CD391E2406          ESC            FSTP          [624h]
+106 0009DB CD391E2406          ESC            FSTP qword ptr [624h]
 107 0009E0 CD3D                INT            3Dh                	/* Unknown int */
 
 108 0009E2 FF362A06            PUSH           word ptr [62Ah]    
@@ -135,7 +135,7 @@
 120 000A0B FF362406            PUSH           word ptr [624h]    
 121 000A0F 9AE6028B00          CALL            far ptr proc_9    
 122 000A14 83C408              ADD            sp, 8              
-123 000A17 CD395EF8            ESC            FSTP          [bp-8]
+123 000A17 CD395EF8            ESC            FSTP qword ptr [bp-8]
 124 000A1B CD3D                INT            3Dh                	/* Unknown int */
 
 125 000A1D FF76FE              PUSH           word ptr [bp-2]    
@@ -398,9 +398,9 @@
 000 000AD1 55                  PUSH           bp                 
 001 000AD2 8BEC                MOV            bp, sp             
 002 000AD4 83EC10              SUB            sp, 10h            
-003 000AD7 CD394606            ESC            FLD          [bp+6]
-004 000ADB CD38362701          ESC            FDIV          [127h]
-005 000AE0 CD395EF8            ESC            FSTP          [bp-8]
+003 000AD7 CD394606            ESC            FLD qword ptr [bp+6]
+004 000ADB CD38362701          ESC            FDIV qword ptr [127h]
+005 000AE0 CD395EF8            ESC            FSTP qword ptr [bp-8]
 006 000AE4 CD3D                INT            3Dh                	/* Unknown int */
 
 007 000AE6 8B460C              MOV            ax, [bp+0Ch]       
@@ -413,26 +413,26 @@
 014 000AFB 8946F0              MOV            [bp-10h], ax       
 015 000AFE EB43                JMP            L29                
 
-016 000B43 CD39062F01     L29: ESC            FLD          [12Fh]
-017 000B48 CD384EF8            ESC            FMUL          [bp-8]
-018 000B4C CD385EF0            ESC            FCOMP          [bp-10h]
-019 000B50 CD393E2C06          ESC            FSTSW          [62Ch]
+016 000B43 CD39062F01     L29: ESC            FLD qword ptr [12Fh]
+017 000B48 CD384EF8            ESC            FMUL qword ptr [bp-8]
+018 000B4C CD385EF0            ESC            FCOMP qword ptr [bp-10h]
+019 000B50 CD393E2C06          ESC            FSTSW qword ptr [62Ch]
 020 000B55 CD3D                INT            3Dh                	/* Unknown int */
 
 021 000B57 8A262D06            MOV            ah, [62Dh]         
 022 000B5B 9E                  SAHF                              
 023 000B5C 72A2                JB             L30                
-024 000B5E CD3946F8            ESC            FLD          [bp-8]
+024 000B5E CD3946F8            ESC            FLD qword ptr [bp-8]
 025 000B62 EB00                JMP            L31                
 
 026 000B64 8BE5           L31: MOV            sp, bp             
 027 000B66 5D                  POP            bp                 
 028 000B67 CB                  RETF                              
 
-029 000B00 CD394606       L30: ESC            FLD          [bp+6]
-030 000B04 CD3876F8            ESC            FDIV          [bp-8]
-031 000B08 CD3866F8            ESC            FSUB          [bp-8]
-032 000B0C CD395EF0            ESC            FSTP          [bp-10h]
+029 000B00 CD394606       L30: ESC            FLD qword ptr [bp+6]
+030 000B04 CD3876F8            ESC            FDIV qword ptr [bp-8]
+031 000B08 CD3866F8            ESC            FSUB qword ptr [bp-8]
+032 000B0C CD395EF0            ESC            FSTP qword ptr [bp-10h]
 033 000B10 CD3D                INT            3Dh                	/* Unknown int */
 
 034 000B12 FF76F6              PUSH           word ptr [bp-0Ah]  
@@ -441,14 +441,14 @@
 037 000B1B FF76F0              PUSH           word ptr [bp-10h]  
 038 000B1E 9AB8028B00          CALL            far ptr proc_8    
 039 000B23 83C408              ADD            sp, 8              
-040 000B26 CD395EF0            ESC            FSTP          [bp-10h]
+040 000B26 CD395EF0            ESC            FSTP qword ptr [bp-10h]
 041 000B2A CD3D                INT            3Dh                	/* Unknown int */
 
-042 000B2C CD394606            ESC            FLD          [bp+6]
-043 000B30 CD3876F8            ESC            FDIV          [bp-8]
-044 000B34 CD3846F8            ESC            FADD          [bp-8]
-045 000B38 CD38362701          ESC            FDIV          [127h]
-046 000B3D CD395EF8            ESC            FSTP          [bp-8]
+042 000B2C CD394606            ESC            FLD qword ptr [bp+6]
+043 000B30 CD3876F8            ESC            FDIV qword ptr [bp-8]
+044 000B34 CD3846F8            ESC            FADD qword ptr [bp-8]
+045 000B38 CD38362701          ESC            FDIV qword ptr [127h]
+046 000B3D CD395EF8            ESC            FSTP qword ptr [bp-8]
 047 000B41 CD3D                INT            3Dh                	/* Unknown int */
 
 048                            JMP            L29                ;Synthetic inst
@@ -458,16 +458,16 @@
 		proc_8  PROC  FAR
 000 000B68 55                  PUSH           bp                 
 001 000B69 8BEC                MOV            bp, sp             
-002 000B6B CD39062601          ESC            FLD          [126h]
-003 000B70 CD394606            ESC            FLD          [bp+6]
+002 000B6B CD39062601          ESC            FLD qword ptr [126h]
+003 000B70 CD394606            ESC            FLD qword ptr [bp+6]
 004 000B74 CD3AD9              ESC            FCOMPP             
-005 000B77 CD393E2C06          ESC            FSTSW          [62Ch]
+005 000B77 CD393E2C06          ESC            FSTSW qword ptr [62Ch]
 006 000B7C CD3D                INT            3Dh                	/* Unknown int */
 
 007 000B7E 8A262D06            MOV            ah, [62Dh]         
 008 000B82 9E                  SAHF                              
 009 000B83 7309                JAE            L32                
-010 000B85 CD394606            ESC            FLD          [bp+6]
+010 000B85 CD394606            ESC            FLD qword ptr [bp+6]
 011 000B89 CD35E0              ESC            FCHS               
 012 000B8C EB04                JMP            L33                
 
@@ -476,7 +476,7 @@
 014 000B94 5D             L34: POP            bp                 
 015 000B95 CB                  RETF                              
 
-016 000B8E CD394606       L32: ESC            FLD          [bp+6]
+016 000B8E CD394606       L32: ESC            FLD qword ptr [bp+6]
 017                            JMP            L33                ;Synthetic inst
 
 		proc_8  ENDP
@@ -495,49 +495,49 @@
 009 000C30 7403                JE             L36                
 010 000C32 E96EFF              JMP            L37                
 
-011 000BA3 CD394606       L37: ESC            FLD          [bp+6]
-012 000BA7 CD384E06            ESC            FMUL          [bp+6]
-013 000BAB CD384E06            ESC            FMUL          [bp+6]
-014 000BAF CD384E06            ESC            FMUL          [bp+6]
-015 000BB3 CD384E06            ESC            FMUL          [bp+6]
-016 000BB7 CD384E06            ESC            FMUL          [bp+6]
-017 000BBB CD384E06            ESC            FMUL          [bp+6]
-018 000BBF CD395EF8            ESC            FSTP          [bp-8]
+011 000BA3 CD394606       L37: ESC            FLD qword ptr [bp+6]
+012 000BA7 CD384E06            ESC            FMUL qword ptr [bp+6]
+013 000BAB CD384E06            ESC            FMUL qword ptr [bp+6]
+014 000BAF CD384E06            ESC            FMUL qword ptr [bp+6]
+015 000BB3 CD384E06            ESC            FMUL qword ptr [bp+6]
+016 000BB7 CD384E06            ESC            FMUL qword ptr [bp+6]
+017 000BBB CD384E06            ESC            FMUL qword ptr [bp+6]
+018 000BBF CD395EF8            ESC            FSTP qword ptr [bp-8]
 019 000BC3 CD3D                INT            3Dh                	/* Unknown int */
 
-020 000BC5 CD3946F8            ESC            FLD          [bp-8]
-021 000BC9 CD387606            ESC            FDIV          [bp+6]
-022 000BCD CD387606            ESC            FDIV          [bp+6]
-023 000BD1 CD387606            ESC            FDIV          [bp+6]
-024 000BD5 CD387606            ESC            FDIV          [bp+6]
-025 000BD9 CD387606            ESC            FDIV          [bp+6]
-026 000BDD CD387606            ESC            FDIV          [bp+6]
-027 000BE1 CD395EF8            ESC            FSTP          [bp-8]
+020 000BC5 CD3946F8            ESC            FLD qword ptr [bp-8]
+021 000BC9 CD387606            ESC            FDIV qword ptr [bp+6]
+022 000BCD CD387606            ESC            FDIV qword ptr [bp+6]
+023 000BD1 CD387606            ESC            FDIV qword ptr [bp+6]
+024 000BD5 CD387606            ESC            FDIV qword ptr [bp+6]
+025 000BD9 CD387606            ESC            FDIV qword ptr [bp+6]
+026 000BDD CD387606            ESC            FDIV qword ptr [bp+6]
+027 000BE1 CD395EF8            ESC            FSTP qword ptr [bp-8]
 028 000BE5 CD3D                INT            3Dh                	/* Unknown int */
 
-029 000BE7 CD3946F8            ESC            FLD          [bp-8]
-030 000BEB CD384606            ESC            FADD          [bp+6]
-031 000BEF CD384606            ESC            FADD          [bp+6]
-032 000BF3 CD384606            ESC            FADD          [bp+6]
-033 000BF7 CD384606            ESC            FADD          [bp+6]
-034 000BFB CD384606            ESC            FADD          [bp+6]
-035 000BFF CD384606            ESC            FADD          [bp+6]
-036 000C03 CD395EF8            ESC            FSTP          [bp-8]
+029 000BE7 CD3946F8            ESC            FLD qword ptr [bp-8]
+030 000BEB CD384606            ESC            FADD qword ptr [bp+6]
+031 000BEF CD384606            ESC            FADD qword ptr [bp+6]
+032 000BF3 CD384606            ESC            FADD qword ptr [bp+6]
+033 000BF7 CD384606            ESC            FADD qword ptr [bp+6]
+034 000BFB CD384606            ESC            FADD qword ptr [bp+6]
+035 000BFF CD384606            ESC            FADD qword ptr [bp+6]
+036 000C03 CD395EF8            ESC            FSTP qword ptr [bp-8]
 037 000C07 CD3D                INT            3Dh                	/* Unknown int */
 
-038 000C09 CD3946F8            ESC            FLD          [bp-8]
-039 000C0D CD386606            ESC            FSUB          [bp+6]
-040 000C11 CD386606            ESC            FSUB          [bp+6]
-041 000C15 CD386606            ESC            FSUB          [bp+6]
-042 000C19 CD386606            ESC            FSUB          [bp+6]
-043 000C1D CD386606            ESC            FSUB          [bp+6]
-044 000C21 CD386606            ESC            FSUB          [bp+6]
-045 000C25 CD395EF8            ESC            FSTP          [bp-8]
+038 000C09 CD3946F8            ESC            FLD qword ptr [bp-8]
+039 000C0D CD386606            ESC            FSUB qword ptr [bp+6]
+040 000C11 CD386606            ESC            FSUB qword ptr [bp+6]
+041 000C15 CD386606            ESC            FSUB qword ptr [bp+6]
+042 000C19 CD386606            ESC            FSUB qword ptr [bp+6]
+043 000C1D CD386606            ESC            FSUB qword ptr [bp+6]
+044 000C21 CD386606            ESC            FSUB qword ptr [bp+6]
+045 000C25 CD395EF8            ESC            FSTP qword ptr [bp-8]
 046 000C29 CD3D                INT            3Dh                	/* Unknown int */
 
 047                            JMP            L35                ;Synthetic inst
 
-048 000C35 CD3946F8       L36: ESC            FLD          [bp-8]
+048 000C35 CD3946F8       L36: ESC            FLD qword ptr [bp-8]
 049 000C39 EB00                JMP            L38                
 
 050 000C3B 5E             L38: POP            si                 

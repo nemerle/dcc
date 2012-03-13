@@ -224,7 +224,7 @@ bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
          * long references to another segment) */
     if (exp)
     {
-        if ((exp->type == IDENTIFIER) && (exp->expr.ident.idType == REGISTER))
+        if ((exp->m_type == IDENTIFIER) && (exp->expr.ident.idType == REGISTER))
         {
             regi =  pproc->localId.id_arr[exp->expr.ident.idNode.regiIdx].id.regi;
             if ((regi >= rES) && (regi <= rDS))
@@ -264,8 +264,8 @@ void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
     if (exp == NULL)
         return;
 
-    actType = expType (exp, pproc);
-    if (((actType == forType) || (exp->type != IDENTIFIER)))
+    actType = exp-> expType (pproc);
+    if (((actType == forType) || (exp->m_type != IDENTIFIER)))
         return;
     switch (forType)
     {

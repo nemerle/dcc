@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>		/* For free() */
 
 #include "dcc.h"
 #include "symtab.h"
@@ -17,49 +16,16 @@
 
 // Note: for the time being, there is no interactive disassembler
 // for unix
-#ifndef __UNIX__
-#include <conio.h>	// getch() etc
-#endif
+
 using namespace std;
 
 
 #define POS_LAB     15              /* Position of label */
 #define POS_OPC     20              /* Position of opcode */
 #define POS_OPR     25              /* Position of operand */
-#define	WID_PTR		10				/* Width of the "xword ptr" lingo */
+#define	WID_PTR     10              /* Width of the "xword ptr" lingo */
 #define POS_OPR2    POS_OPR+WID_PTR /* Position of operand after "xword ptr" */
 #define POS_CMT     54              /* Position of comment */
-
-
-#define DELTA_ICODE 16              /* Number of icodes to realloc by each time */
-
-/* The following opcodes are for mod != 3 */
-static const char *szFlops1[] =
-{
-    /* 0        1        2       3        4        5        6        7  */
-    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
-    "FLD",   "???",   "FST",  "???",   "FLDENV","FLDCW", "FSTENV","FSTSW",  /* 08 */
-    "FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "FISUBR","FIDIV", "FIDIVR", /* 10 */
-    "FILD",  "???",   "FIST", "FISTP", "???",   "???",   "???",   "FSTP",   /* 18 */
-    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 20 */
-    "FLD",   "FLD",   "FST",  "FSTP",  "FRESTOR","???",  "FSAVE", "FSTSW",  /* 28 */
-    "FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "FISUBR","FIDIV", "FIDIVR", /* 30 */
-    "FILD",  "???",   "FIST", "FISTP", "FBLD",  "???",   "FBSTP", "FISTP"   /* 38 */
-};
-
-/* The following opcodes are for mod == 3 */
-static const char *szFlops2[] =
-{
-    /* 0        1        2       3        4        5        6        7  */
-    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
-    "FLD",   "FXCH",  "FNOP", "???",   "",      "",      "",      "",       /* 08 */
-    "FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "",      "FIDIV", "FIDIVR", /* 10 */
-    "FILD",  "???",   "FIST", "FISTP", "???",   "???",   "???",   "FSTP",   /* 18 */
-    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 20 */
-    "FFREE", "FSTP",  "FST",  "???",   "FUCOM", "FUCOMP","???",   "???",    /* 28 */
-    "FADDP", "FMULP", "FICOM","",      "FSUBRP","FISUBR","FDIVRP","FDIVP",  /* 30 */
-    "FILD",  "???",   "FIST", "FISTP", "",      "???",   "FBSTP", "FISTP"   /* 38 */
-};
 
 static const char *szFlops0C[] =
 {
@@ -102,21 +68,15 @@ static const char *szFlops3C[] =
 };
 
 
-//static const char *szIndex[8] = {"bx+si", "bx+di", "bp+si", "bp+di", "si", "di","bp","bx" };
-//static const char *szBreg[8]  = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
-//static const char *szWreg[12] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di",
-//                                  "es", "cs", "ss", "ds" };
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
-
-//void  dis1LineOp(int i, boolT fWin, char attr, uint16_t *len, Function * pProc);
 static void  formatRM(ostringstream &p, uint32_t flg, const LLOperand &pm);
 static ostringstream &strDst(ostringstream &os, uint32_t flg, LLOperand &pm);
 
 static char *strHex(uint32_t d);
-static int   checkScanned(uint32_t pcCur);
-static void  setProc(Function * proc);
-static void  dispData(uint16_t dataSeg);
+//static int   checkScanned(uint32_t pcCur);
+//static void  setProc(Function * proc);
+//static void  dispData(uint16_t dataSeg);
 boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 //static  FILE   *dis_g_fp;
@@ -133,10 +93,9 @@ struct POSSTACK_ENTRY
     int     ic;                 /* An icode offset */
     Function *   pProc;              /* A pointer to a PROCEDURE structure */
 } ;
-vector<POSSTACK_ENTRY> posStack; /* position stack */
-uint8_t              iPS;          /* Index into the stack */
+static vector<POSSTACK_ENTRY> posStack; /* position stack */
+static uint8_t              iPS;          /* Index into the stack */
 
-//static  char    cbuf[256];      /* Has to be 256 for wgetstr() to work */
 
 // These are "curses equivalent" functions. (Used to use curses for all this,
 // but it was too much of a distribution hassle
@@ -197,10 +156,9 @@ void Disassembler::disassem(Function * ppProc)
             fatalError(CANNOT_OPEN, p);
         }
     }
-    pc=pProc->Icode;
     /* Create temporary code array */
     // Mike: needs objectising!
-    //pc = (ICODE *)memcpy(allocMem(cb), pProc->Icode.GetFirstIcode(), (size_t)cb);
+    pc=pProc->Icode;
 
     if (pass == 1)
     {
@@ -577,11 +535,11 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         /* output to .a1 or .a2 file */
         if (not inst.testFlags(SYNTHETIC) )
         {
-            sprintf(buf,"%03ld %06lX",loc_ip, inst.label);
+            sprintf(buf,"%03d %06X",loc_ip, inst.label);
         }
         else		/* SYNTHETIC instruction */
         {
-            sprintf(buf,"%03ld       ",loc_ip);
+            sprintf(buf,"%03d       ",loc_ip);
             result_stream<<";Synthetic inst";
         }
         m_fp<<buf<< " " << result_stream.str() << "\n";
@@ -600,9 +558,7 @@ static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
     if (pm.segOver)
     {
         p <<Machine_X86::regName(pm.segOver)<<':';
-        //strcat(strcpy(seg, szWreg[pm.segOver - rAX]), ":");
     }
-    //else    *seg = '\0';
 
     if (pm.regi == rUNDEF)
     {
@@ -611,10 +567,6 @@ static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
     else if (pm.isReg())
     {
         p<<Machine_X86::regName(pm.regi);
-//        if(flg & B)
-//            p << szBreg[pm.regi - rAL];
-//        else
-//            p << szWreg[pm.regi - rAX];
     }
 
     else if (pm.off)
@@ -699,35 +651,35 @@ void LLInst::flops(std::ostringstream &out)
     if ( not dst.isReg() )
     {
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
-        out<<szFlops1[op]<<' ';
+        out<<Machine_X86::floatOpName(op)<<' ';
         out <<setw(10);
         if ((op == 0x29) || (op == 0x1F))
         {
-            strcpy(bf, "tbyte ptr ");
+            out <<  "tbyte ptr ";
         }
         else switch (op & 0x30)
         {
             case 0x00:
             case 0x10:
-                strcpy(bf, "dword ptr ");
+                out << "dword ptr ";
                 break;
             case 0x20:
-                strcpy(bf, "qword ptr ");
+                out << "qword ptr ";
                 break;
             case 0x30:
                 switch (op)
                 {
                     case 0x3C:       /* FBLD */
                     case 0x3E:       /* FBSTP */
-                        strcpy(bf, "tbyte ptr ");
+                        out << "tbyte ptr ";
                         break;
                     case 0x3D:       /* FILD 64 bit */
                     case 0x3F:       /* FISTP 64 bit */
-                        strcpy(bf, "qword ptr ");
+                        out << "qword ptr ";
                         break;
 
                     default:
-                        strcpy(bf, "uint16_t  ptr ");
+                        out << "uint16_t  ptr ";
                         break;
                 }
         }
@@ -738,9 +690,9 @@ void LLInst::flops(std::ostringstream &out)
     {
         /* The mod/rm mod bits are set to 11 (i.e. register).
            Could be specials (0x0C-0x0F, etc), or the st(i) versions of
-                   normal opcodes. Because the opcodes are slightly different for
-                   this case (e.g. op=04 means FSUB if reg != 3, but FSUBR for
-                   reg == 3), a separate table is used (szFlops2). */
+            normal opcodes. Because the opcodes are slightly different for
+            this case (e.g. op=04 means FSUB if reg != 3, but FSUBR for
+            reg == 3), a separate table is used (szFlops2). */
         int destRegIdx=dst.regi - rAX;
         switch (op)
         {
@@ -769,7 +721,7 @@ void LLInst::flops(std::ostringstream &out)
                 out << szFlops3C[destRegIdx];
                 break;
             default:
-                out << szFlops2[op];
+                out << Machine_X86::floatOpName(0x40+op);
                 if ((op >= 0x20) && (op <= 0x27))
                 {
                     /* This is the ST(i), ST form. */

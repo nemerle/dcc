@@ -20,15 +20,6 @@ static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 void    interactDis(Function * initProc, int ic);
 static uint32_t    SynthLab;
-//TODO: Move these to Machine_X86
-/*constexpr */eReg subRegH(eReg reg)
-{
-    return eReg((int)reg + (int)rAH-(int)rAX);
-}
-/*constexpr */eReg subRegL(eReg reg)
-{
-    return eReg((int)reg + (int)rAL-(int)rAX);
-}
 
 /* Parses the program, builds the call graph, and returns the list of
  * procedures found     */

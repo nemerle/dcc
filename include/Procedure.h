@@ -151,7 +151,14 @@ public:
     void controlFlowAnalysis();
     void newRegArg(iICODE picode, iICODE ticode);
     void writeProcComments(std::ostream &ostr);
-protected:
+    bool Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB);
+    bool Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB);
+    bool Case_notX_or_Y(BB* pbb, BB* thenBB, BB* elseBB);
+    bool Case_notX_and_Y(BB* pbb, BB* thenBB, BB* elseBB);
+    void replaceInEdge(BB* where, BB* which, BB* with);
+    protected:
+    bool removeInEdge_Flag_and_ProcessLatch(BB *pbb, BB *a, BB *b);
+
     // TODO: replace those with friend visitor ?
     void propLongReg(int loc_ident_idx, const ID &pLocId);
     void propLongStk(int i, const ID &pLocId);

@@ -120,6 +120,12 @@ public:
         assert(e);
         exp.v=e;
     }
+    void replaceExpr(COND_EXPR *e)
+    {
+        assert(e);
+        delete exp.v;
+        exp.v=e;
+    }
     COND_EXPR * expr() { return exp.v;}
     const COND_EXPR * const expr() const  { return exp.v;}
     void set(hlIcode i,COND_EXPR *e)

@@ -159,22 +159,22 @@ void proc_8 (int arg0)
 {
                     PUSH           bp                 
                     MOV            bp, sp             
-                    ESC            FLD          [126h]
-                    ESC            FLD          [bp+6]
+                    ESC            FLD qword ptr [126h]
+                    ESC            FLD qword ptr [bp+6]
                     ESC            FCOMPP             
-                    ESC            FSTSW          [62Ch]
+                    ESC            FSTSW qword ptr [62Ch]
                     INT            3Dh                	/* Unknown int */
 
                     MOV            ah, [62Dh]         
                     SAHF                              
                     JAE            L1                 
-                    ESC            FLD          [bp+6]
+                    ESC            FLD qword ptr [bp+6]
                     ESC            FCHS               
 
                L2:  POP            bp                 
                     RETF                              
 
-               L1:  ESC            FLD          [bp+6]
+               L1:  ESC            FLD qword ptr [bp+6]
                     JMP            L2                 ;Synthetic inst
 }
 
@@ -191,9 +191,9 @@ void proc_8 (int arg0)
                     PUSH           bp                 
                     MOV            bp, sp             
                     SUB            sp, 10h            
-                    ESC            FLD          [bp+6]
-                    ESC            FDIV          [127h]
-                    ESC            FSTP          [bp-8]
+                    ESC            FLD qword ptr [bp+6]
+                    ESC            FDIV qword ptr [127h]
+                    ESC            FSTP qword ptr [bp-8]
                     INT            3Dh                	/* Unknown int */
 
                     MOV            ax, [bp+0Ch]       
@@ -205,24 +205,24 @@ void proc_8 (int arg0)
                     MOV            ax, [bp+6]         
                     MOV            [bp-10h], ax       
 
-               L1:  ESC            FLD          [12Fh]
-                    ESC            FMUL          [bp-8]
-                    ESC            FCOMP          [bp-10h]
-                    ESC            FSTSW          [62Ch]
+               L1:  ESC            FLD qword ptr [12Fh]
+                    ESC            FMUL qword ptr [bp-8]
+                    ESC            FCOMP qword ptr [bp-10h]
+                    ESC            FSTSW qword ptr [62Ch]
                     INT            3Dh                	/* Unknown int */
 
                     MOV            ah, [62Dh]         
                     SAHF                              
                     JB             L2                 
-                    ESC            FLD          [bp-8]
+                    ESC            FLD qword ptr [bp-8]
                     MOV            sp, bp             
                     POP            bp                 
                     RETF                              
 
-               L2:  ESC            FLD          [bp+6]
-                    ESC            FDIV          [bp-8]
-                    ESC            FSUB          [bp-8]
-                    ESC            FSTP          [bp-10h]
+               L2:  ESC            FLD qword ptr [bp+6]
+                    ESC            FDIV qword ptr [bp-8]
+                    ESC            FSUB qword ptr [bp-8]
+                    ESC            FSTP qword ptr [bp-10h]
                     INT            3Dh                	/* Unknown int */
 
                     PUSH           word ptr [bp-0Ah]  
@@ -231,14 +231,14 @@ void proc_8 (int arg0)
                     PUSH           word ptr [bp-10h]  
                     CALL            far ptr proc_8    
                     ADD            sp, 8              
-                    ESC            FSTP          [bp-10h]
+                    ESC            FSTP qword ptr [bp-10h]
                     INT            3Dh                	/* Unknown int */
 
-                    ESC            FLD          [bp+6]
-                    ESC            FDIV          [bp-8]
-                    ESC            FADD          [bp-8]
-                    ESC            FDIV          [127h]
-                    ESC            FSTP          [bp-8]
+                    ESC            FLD qword ptr [bp+6]
+                    ESC            FDIV qword ptr [bp-8]
+                    ESC            FADD qword ptr [bp-8]
+                    ESC            FDIV qword ptr [127h]
+                    ESC            FSTP qword ptr [bp-8]
                     INT            3Dh                	/* Unknown int */
 
                     JMP            L1                 ;Synthetic inst

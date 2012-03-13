@@ -355,7 +355,7 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
                             break;
                         default:
                             ticode.du1.numRegsDef = 0;
-                            fprintf(stderr,"Function::liveRegAnalysis : Unknown return type %d, assume 0\n",pcallee->retVal.type);
+                            //fprintf(stderr,"Function::liveRegAnalysis : Unknown return type %d, assume 0\n",pcallee->retVal.type);
                         } /*eos*/
 
                         /* Propagate def/use results to calling icode */
@@ -605,7 +605,7 @@ bool COND_EXPR::xClear (iICODE f, iICODE t, iICODE lastBBinst, Function * pproc)
     boolT res;
     uint8_t regi;
 
-    switch (type)
+    switch (m_type)
     {
     case IDENTIFIER:
         if (expr.ident.idType == REGISTER)
@@ -691,7 +691,14 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, int num
     else			/* user function */
     {
         if (pp->args.numArgs > 0)
-            pp->args.adjustForArgType (numArgs, expType (_exp, pProc));
+        {
+            if(_exp==NULL)
+            {
+                fprintf(stderr,"Would try to adjustForArgType with null _exp\n");
+            }
+            else
+                pp->args.adjustForArgType (numArgs, _exp->expType (pProc));
+        }
     }
     res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), pProc);
 
@@ -776,7 +783,13 @@ void Function::processHliCall(COND_EXPR *_exp, iICODE picode)
             else			/* user function */
             {
                 if (pp->args.numArgs >0)
-                    pp->args.adjustForArgType (numArgs,expType (_exp, this));
+                {
+                    if(_exp==NULL)
+                    {
+                        fprintf(stderr,"Would try to adjustForArgType with null _exp\n");
+                    }
+                    pp->args.adjustForArgType (numArgs,_exp->expType (this));
+                }
                 res = picode->newStkArg (_exp,(llIcode)picode->ll()->getOpcode(), this);
             }
             if (res == false)

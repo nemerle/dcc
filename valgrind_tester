@@ -7,16 +7,19 @@ def path_local(from)
     from.gsub('/','\\\\')
 end
 TESTS_DIR="./tests"
-def perform_test(exepath,filepath,outname)
+def perform_test(exepath,filepath,outname,args)
 	output_path=path_local(TESTS_DIR+"/outputs/"+outname)
 	error_path=path_local(TESTS_DIR+"/errors/"+outname)
 	exepath=path_local(exepath)
 	output_path=path_local(output_path)
 	filepath=path_local(filepath)
-	printf("calling:" + "#{exepath} -a1 -o#{output_path}.a1 #{filepath}\n")
+	joined_args = args.join(' ')
+	printf("calling:" + "#{exepath} #{joined_args} -o#{output_path}.a1 #{filepath}\n")
 	valgrind_mode="valgrind --track-origins=yes "
 	#valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes 
-	result = `#{valgrind_mode} #{exepath} -a2V -o#{output_path}.a2 #{filepath} 2>#{error_path}.val`
+	result = `#{valgrind_mode} #{exepath} #{joined_args} -a1 -o#{output_path}.b #{filepath} 2>#{error_path}.val`
+	result = `#{valgrind_mode} #{exepath} #{joined_args} -a2 -o#{output_path}.b #{filepath} 2>>#{error_path}.val`
+	result = `#{valgrind_mode} #{exepath} #{joined_args} -o#{output_path}.b #{filepath} 2>>#{error_path}.val`
 	puts result
 	p $?
 end
@@ -28,7 +31,7 @@ if(ARGV.size()==0)
 end
 Dir.open(TESTS_DIR+"/inputs").each() {|f|
 	next if f=="." or f==".."
-	perform_test(".//"+ARGV[0],TESTS_DIR+"/inputs/"+f,f)
+	perform_test(".//"+ARGV[0],TESTS_DIR+"/inputs/"+f,f,ARGV[1..-1])
 }
 Dir.open(TESTS_DIR+"/inputs").each() {|f|
 	next if f=="." or f==".."

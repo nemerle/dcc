@@ -44,29 +44,29 @@ protected:
     } boolExpr;
 
 public:
-    condNodeType            type;       /* Conditional Expression Node Type */
+    condNodeType            m_type;       /* Conditional Expression Node Type */
     union _exprNode {                   /* Different cond expr nodes        */
         COND_EXPR    *unaryExp;  /* for NEGATION,ADDRESSOF,DEREFERENCE*/
         IDENTTYPE   ident;     /* for IDENTIFIER                   */
     }   expr;
     COND_EXPR *lhs()
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return boolExpr.lhs;
     }
     const COND_EXPR *lhs() const
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return boolExpr.lhs;
     }
     COND_EXPR *rhs()
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return boolExpr.rhs;
     }
     const COND_EXPR *rhs() const
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return boolExpr.rhs;
     }
     condOp op() const { return boolExpr.op;}
@@ -92,11 +92,11 @@ public:
     void changeBoolOp(condOp newOp);
     COND_EXPR(const COND_EXPR &other)
     {
-        type=other.type;
+        m_type=other.m_type;
         expr=other.expr;
         boolExpr=other.boolExpr;
     }
-    COND_EXPR(condNodeType t=UNKNOWN_OP) : type(t)
+    COND_EXPR(condNodeType t=UNKNOWN_OP) : m_type(t)
     {
         memset(&expr,0,sizeof(_exprNode));
         memset(&boolExpr,0,sizeof(boolExpr));
@@ -108,6 +108,7 @@ public:
     virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, Function *pproc);
     virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
     virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
+    virtual hlType expType(Function *pproc) const;
 };
 struct BinaryOperator : public COND_EXPR
 {
@@ -129,22 +130,22 @@ struct BinaryOperator : public COND_EXPR
 
     COND_EXPR *lhs()
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return m_lhs;
     }
     const COND_EXPR *lhs() const
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return m_lhs;
     }
     COND_EXPR *rhs()
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return m_rhs;
     }
     const COND_EXPR *rhs() const
     {
-        assert(type==BOOLEAN_OP);
+        assert(m_type==BOOLEAN_OP);
         return m_rhs;
     }
     condOp op() const { return m_op;}
@@ -161,7 +162,7 @@ struct UnaryOperator : public COND_EXPR
     static UnaryOperator *Create(condNodeType t, COND_EXPR *sub_expr)
     {
         UnaryOperator *newExp = new UnaryOperator();
-        newExp->type=t;
+        newExp->m_type=t;
         newExp->unaryExp = sub_expr;
         return (newExp);
     }

@@ -13,27 +13,17 @@
 
 #define deltaProcLines  20
 
-
+using namespace std;
 /* Allocates memory for a new bundle and initializes it to zero.    */
-void newBundle (bundle *)
-{
-}
-
-
-/* Returns the next available index into the table */
-int nextBundleIdx (strTable *strTab)
-{
-    return (strTab->size());
-}
 
 
 /* Adds the given label to the start of the line strTab[idx].  The first
  * tab is removed and replaced by this label */
-void addLabelBundle (strTable &strTab, int idx, int label)
+void strTable::addLabelBundle (int idx, int label)
 {
-    char s[lineSize];
-    sprintf (s, "l%ld: %s", label, strTab[idx].c_str()+4);
-    strTab[idx] = s;
+    char s[16];
+    sprintf (s, "l%d: ", label);
+    at(idx) = string(s)+at(idx).substr(4);
 }
 
 
@@ -76,6 +66,10 @@ void bundle::appendCode(const char *format,...)
     vsprintf (buf, format, args);
     code.push_back(buf);
     va_end (args);
+}
+void bundle::appendCode(const std::string &s)
+{
+    code.push_back(s);
 }
 
 void bundle::appendDecl(const char *format,...)

@@ -105,7 +105,7 @@ static BB * Create(int start, int ip, uint8_t nodeType, int numOutEdges, Functio
     ///
     const Function *getParent() const { return Parent; }
     Function *getParent()       { return Parent; }
-    void writeBB(int lev, Function *pProc, int *numLoc);
+    void writeBB(std::ostream &ostr, int lev, Function *pProc, int *numLoc);
     BB *rmJMP(int marker, BB *pBB);
     void genDU1();
 private:

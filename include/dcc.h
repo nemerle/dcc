@@ -39,8 +39,8 @@ public:
 };
 //#define NUM_PROCS_DELTA		5		/* delta # procs a proc invokes		 	*/
 //extern std::list<Function> pProcList;
-extern FunctionListType pProcList;
-extern CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
+//extern FunctionListType pProcList;
+//extern CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
 extern bundle cCode;			/* Output C procedure's declaration and code */
 
 /**** Global variables ****/
@@ -89,21 +89,24 @@ extern std::bitset<32> maskDuReg[30];	/* masks off du bits for regs		*/
 /* Registers used by icode instructions */
 
 /* Memory map states */
-#define BM_UNKNOWN  0   /* Unscanned memory     */
-#define BM_DATA     1   /* Data                 */
-#define BM_CODE     2   /* Code                 */
-#define BM_IMPURE   3   /* Used as Data and Code*/
+enum eAreaType
+{
+    BM_UNKNOWN = 0,   /* Unscanned memory     */
+    BM_DATA =    1,   /* Data                 */
+    BM_CODE =    2,   /* Code                 */
+    BM_IMPURE =  3   /* Used as Data and Code*/
+};
 
 /* Intermediate instructions statistics */
 struct STATS
 {
-        int		numBBbef;		/* number of basic blocks initially 	       */
-        int		numBBaft;		/* number of basic blocks at the end 	       */
-        int		nOrder;			/* n-th order								   */
-        int		numLLIcode;		/* number of low-level Icode instructions      */
+        int		numBBbef;       /* number of basic blocks initially 	       */
+        int		numBBaft;       /* number of basic blocks at the end 	       */
+        int		nOrder;         /* n-th order								   */
+        int		numLLIcode;     /* number of low-level Icode instructions      */
         int		numHLIcode; 	/* number of high-level Icode instructions     */
-        int		totalLL;		/* total number of low-level Icode insts       */
-        int		totalHL;		/* total number of high-level Icod insts       */
+        int		totalLL;        /* total number of low-level Icode insts       */
+        int		totalHL;        /* total number of high-level Icod insts       */
 };
 
 extern STATS stats; /* Icode statistics */
@@ -124,32 +127,30 @@ public:
 
 void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
-BB *    newBB(BB *, int, int, uint8_t, int, Function *);      /* graph.c      */
+BB *    newBB(BB *, int, int, uint8_t, int, Function *);    /* graph.c      */
 void    BackEnd(char *filename, CALL_GRAPH *);              /* backend.c    */
-char   *cChar(uint8_t c);                                      /* backend.c    */
-eErrorId scan(uint32_t ip, ICODE &p);                          /* scanner.c    */
+char   *cChar(uint8_t c);                                   /* backend.c    */
+eErrorId scan(uint32_t ip, ICODE &p);                       /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */
 
-int     strSize (uint8_t *, char);                             /* parser.c     */
-//void    disassem(int pass, Function * pProc);              /* disassem.c   */
-void    interactDis(Function * initProc, int initIC);      /* disassem.c   */
-bool   JmpInst(llIcode opcode);                            /* idioms.c     */
-queue::iterator  appendQueue(queue &Q, BB *node);                  /* reducible.c  */
+int     strSize (uint8_t *, char);                          /* parser.c     */
+//void    disassem(int pass, Function * pProc);             /* disassem.c   */
+void    interactDis(Function * initProc, int initIC);       /* disassem.c   */
+bool    JmpInst(llIcode opcode);                            /* idioms.c     */
+queue::iterator  appendQueue(queue &Q, BB *node);           /* reducible.c  */
 
 void    SetupLibCheck(void);                                /* chklib.c     */
 void    CleanupLibCheck(void);                              /* chklib.c     */
-bool    LibCheck(Function &p);                            /* chklib.c     */
+bool    LibCheck(Function &p);                              /* chklib.c     */
 
 /* Exported functions from procs.c */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
-void	allocStkArgs (ICODE *, int);
-void	placeStkArg (ICODE *, COND_EXPR *, int);
 void	adjustActArgType (COND_EXPR *, hlType, Function *);
 
 /* Exported functions from ast.c */
 std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, int *);
 int       hlTypeSize (const COND_EXPR *, Function *);
-hlType	  expType (const COND_EXPR *, Function *);
+//hlType	  expType (const COND_EXPR *, Function *);
 
 
 /* Exported functions from hlicode.c */
@@ -164,6 +165,4 @@ boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, iI
 eReg otherLongRegi(eReg, int, LOCAL_ID *);
 
 
-extern eReg subRegH(eReg reg); //TODO: move these into machine_x86
-extern eReg subRegL(eReg reg);
 extern const char *indentStr(int level);

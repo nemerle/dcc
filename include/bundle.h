@@ -8,14 +8,26 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
-typedef std::vector<std::string> strTable;
+struct strTable : std::vector<std::string>
+{
+    /* Returns the next available index into the table */
+    size_t nextIdx() {return size();}
+public:
+    void addLabelBundle(int idx, int label);
+};
 
 struct bundle
 {
 public:
     void appendCode(const char *format, ...);
+    void appendCode(const std::string &s);
     void appendDecl(const char *format, ...);
     void appendDecl(const std::string &);
+    void init()
+    {
+        decl.clear();
+        code.clear();
+    }
     strTable    decl;   /* Declarations */
     strTable    code;   /* C code       */
 };
@@ -23,9 +35,7 @@ public:
 
 #define lineSize	360		/* 3 lines in the mean time */
 
-void    newBundle (bundle *procCode);
-int     nextBundleIdx (strTable *strTab);
-void	addLabelBundle (strTable &strTab, int idx, int label);
+//void    newBundle (bundle *procCode);
 void    writeBundle (std::ostream &ios, bundle procCode);
 void    freeBundle (bundle *procCode);
 

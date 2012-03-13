@@ -452,7 +452,7 @@ COND_EXPR *COND_EXPR::inverse () const
                                  DUMMY, DUMMY, DUMMY, DUMMY, DUMMY, DUMMY,
                                  DUMMY, DBL_OR, DBL_AND};
     COND_EXPR *res=0;
-    if (type == BOOLEAN_OP)
+    if (m_type == BOOLEAN_OP)
     {
         switch ( op() )
         {
@@ -476,7 +476,7 @@ COND_EXPR *COND_EXPR::inverse () const
         } /* eos */
 
     }
-    else if (type == NEGATION) //TODO: memleak here
+    else if (m_type == NEGATION) //TODO: memleak here
     {
         return expr.unaryExp->clone();
     }

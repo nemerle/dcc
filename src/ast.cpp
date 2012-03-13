@@ -459,7 +459,7 @@ int hlTypeSize (const COND_EXPR *expr, Function * pproc)
     if (expr == NULL)
         return (2);		/* for TYPE_UNKNOWN */
 
-    switch (expr->type) {
+    switch (expr->m_type) {
     case BOOLEAN_OP:
         first = hlTypeSize (expr->lhs(), pproc);
         second = hlTypeSize (expr->rhs(), pproc);
@@ -507,21 +507,21 @@ int hlTypeSize (const COND_EXPR *expr, Function * pproc)
 
 
 /* Returns the type of the expression */
-hlType expType (const COND_EXPR *expr, Function * pproc)
+hlType COND_EXPR::expType(Function * pproc) const
 {
     hlType first, second;
 
-    if (expr == NULL)
+    if (this == nullptr)
         return (TYPE_UNKNOWN);
 
-    switch (expr->type)
+    switch (m_type)
     {
     case BOOLEAN_OP:
-        first = expType (expr->lhs(), pproc);
-        second = expType (expr->rhs(), pproc);
+        first = lhs()->expType ( pproc );
+        second = rhs()->expType ( pproc );
         if (first != second)
         {
-            if (hlTypeSize (expr->lhs(), pproc) > hlTypeSize (expr->rhs(), pproc))
+            if (hlTypeSize (lhs(), pproc) > hlTypeSize (rhs(), pproc))
                 return (first);
             else
                 return (second);
@@ -532,34 +532,34 @@ hlType expType (const COND_EXPR *expr, Function * pproc)
     case POST_INC: case POST_DEC:
     case PRE_INC:  case PRE_DEC:
     case NEGATION:
-        return (expType (expr->expr.unaryExp, pproc));
+        return (expr.unaryExp->expType (pproc));
 
     case ADDRESSOF:	return (TYPE_PTR);		/***????****/
     case DEREFERENCE:	return (TYPE_PTR);
     case IDENTIFIER:
-        switch (expr->expr.ident.idType)
+        switch (expr.ident.idType)
         {
         case GLOB_VAR:
-            return g_proj.symbolType(expr->expr.ident.idNode.globIdx);
+            return g_proj.symbolType(expr.ident.idNode.globIdx);
         case REGISTER:
-            if (expr->expr.ident.regiType == BYTE_REG)
+            if (expr.ident.regiType == BYTE_REG)
                 return (TYPE_BYTE_SIGN);
             else
                 return (TYPE_WORD_SIGN);
         case LOCAL_VAR:
-            return (pproc->localId.id_arr[expr->expr.ident.idNode.localIdx].type);
+            return (pproc->localId.id_arr[expr.ident.idNode.localIdx].type);
         case PARAM:
-            return (pproc->args[expr->expr.ident.idNode.paramIdx].type);
+            return (pproc->args[expr.ident.idNode.paramIdx].type);
         case GLOB_VAR_IDX:
-            return (pproc->localId.id_arr[expr->expr.ident.idNode.idxGlbIdx].type);
+            return (pproc->localId.id_arr[expr.ident.idNode.idxGlbIdx].type);
         case CONSTANT:
             return (TYPE_CONST);
         case STRING:
             return (TYPE_STR);
         case LONG_VAR:
-            return (pproc->localId.id_arr[expr->expr.ident.idNode.longIdx].type);
+            return (pproc->localId.id_arr[expr.ident.idNode.longIdx].type);
         case FUNCTION:
-            return (expr->expr.ident.idNode.call.proc->retVal.type);
+            return (expr.ident.idNode.call.proc->retVal.type);
         case OTHER:
             return (TYPE_UNKNOWN);
         } /* eos */
@@ -579,7 +579,7 @@ void HlTypeSupport::performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *t
     IDENTTYPE* ident;     	/* ptr to an identifier */
     eReg otherRegi;         /* high or low part of long register */
 
-    switch (tree->type) {
+    switch (tree->m_type) {
     case BOOLEAN_OP:
         break;
     case POST_INC: case POST_DEC:
@@ -631,7 +631,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
         return "";
 
     needBracket = true;
-    switch (expr->type)
+    switch (expr->m_type)
     {
     case BOOLEAN_OP:
         outStr << "(";
@@ -642,7 +642,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
         break;
 
     case NEGATION:
-        if (expr->expr.unaryExp->type == IDENTIFIER)
+        if (expr->expr.unaryExp->m_type == IDENTIFIER)
         {
             needBracket = false;
             outStr << "!";
@@ -655,7 +655,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
         break;
 
     case ADDRESSOF:
-        if (expr->expr.unaryExp->type == IDENTIFIER)
+        if (expr->expr.unaryExp->m_type == IDENTIFIER)
         {
             needBracket = false;
             outStr << "&";
@@ -669,7 +669,7 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
 
     case DEREFERENCE:
         outStr << "*";
-        if (expr->expr.unaryExp->type == IDENTIFIER)
+        if (expr->expr.unaryExp->m_type == IDENTIFIER)
             needBracket = false;
         else
             outStr << "(";
@@ -793,7 +793,7 @@ COND_EXPR *COND_EXPR::clone() const
 {
     COND_EXPR* newExp=0;        /* Expression node copy */
 
-    switch (type)
+    switch (m_type)
     {
     case BOOLEAN_OP:
         newExp = new COND_EXPR(*this);
@@ -836,19 +836,13 @@ bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,
     }
     return false;
 }
-bool isSubRegisterOf(eReg reg,eReg parent)
-{
-    if ((parent < rAX) || (parent > rBX))
-        return false; // only AX -> BX are coverede by subregisters
-    return ((reg==subRegH(parent)) || (reg == subRegL(parent)));
-}
 COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,LOCAL_ID *locsym)
 {
 
     eReg treeReg;
     COND_EXPR *temp;
 
-    switch (type) {
+    switch (m_type) {
     case IDENTIFIER:
         if (expr.ident.idType == REGISTER)
         {
@@ -857,7 +851,7 @@ COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,LOCAL_ID *lo
             {
                 return _expr;
             }
-            else if(isSubRegisterOf(treeReg,regi))    /* uint16_t/uint8_t reg */
+            else if(Machine_X86::isSubRegisterOf(treeReg,regi))    /* uint16_t/uint8_t reg */
             {
                 return _expr;
             }
@@ -928,7 +922,7 @@ bool COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, COND_EXPR **tree, int lon
 COND_EXPR *COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
 {
     COND_EXPR *temp;
-    switch (type)
+    switch (m_type)
     {
     case IDENTIFIER:
         if (expr.ident.idNode.longIdx == longIdx)
@@ -987,7 +981,7 @@ COND_EXPR *BinaryOperator::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
 /* Recursively deallocates the abstract syntax tree rooted at *exp */
 void COND_EXPR::release()
 {
-    switch (type)
+    switch (m_type)
     {
     case BOOLEAN_OP:
         lhs()->release();

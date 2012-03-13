@@ -157,6 +157,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     if (_loopType)
     {
         latch = pProc->m_dfsLast[this->latchNode];
+        std::ostringstream ostr;
         switch (_loopType)
         {
             case WHILE_TYPE:
@@ -170,7 +171,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                 if (numHlIcodes > 1)
                 {
                     /* Write the code for this basic block */
-                    writeBB(indLevel, pProc, numLoc);
+                    writeBB(ostr,indLevel, pProc, numLoc);
                     repCond = true;
                 }
 
@@ -178,34 +179,36 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                  * the THEN path of the header node */
                 if (edges[ELSE].BBptr->dfsLastNum == loopFollow)
                 {
-                    COND_EXPR *old_expr=picode->hl()->expr();
-                    string e=walkCondExpr (old_expr, pProc, numLoc);
-                    picode->hl()->expr(picode->hl()->expr()->inverse());
-                    delete old_expr;
+                    picode->hl()->replaceExpr(picode->hl()->expr()->inverse());
                 }
                 {
                     string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
-                    cCode.appendCode( "\n%swhile (%s) {\n", indentStr(indLevel),e.c_str());
+                    ostr << "\n"<<indentStr(indLevel)<<"while ("<<e<<") {\n";
                 }
                 picode->invalidate();
                 break;
 
             case REPEAT_TYPE:
-                cCode.appendCode( "\n%sdo {\n", indentStr(indLevel));
+                ostr << "\n"<<indentStr(indLevel)<<"do {\n";
                 picode = &latch->back();
                 picode->invalidate();
                 break;
 
             case ENDLESS_TYPE:
-                cCode.appendCode( "\n%sfor (;;) {\n", indentStr(indLevel));
+                ostr << "\n"<<indentStr(indLevel)<<"for (;;) {\n";
         }
+        cCode.appendCode(ostr.str());
         stats.numHLIcode += 1;
         indLevel++;
     }
 
     /* Write the code for this basic block */
     if (repCond == false)
-        writeBB (indLevel, pProc, numLoc);
+    {
+        std::ostringstream ostr;
+        writeBB(ostr,indLevel, pProc, numLoc);
+        cCode.appendCode(ostr.str());
+    }
 
     /* Check for end of path */
     _nodeType = nodeType;
@@ -237,11 +240,15 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
         indLevel--;
         if (_loopType == WHILE_TYPE)
         {
+            std::ostringstream ostr;
             /* Check if there is need to repeat other statements involved
                          * in while condition, then, emit the loop trailer */
             if (repCond)
-                writeBB (indLevel+1, pProc, numLoc);
-            cCode.appendCode( "%s}	/* end of while */\n",indentStr(indLevel));
+            {
+                writeBB(ostr,indLevel+1, pProc, numLoc);
+            }
+            ostr <<indentStr(indLevel)<< "}	/* end of while */\n";
+            cCode.appendCode(ostr.str());
         }
         else if (_loopType == ENDLESS_TYPE)
             cCode.appendCode( "%s}	/* end of loop */\n",indentStr(indLevel));
@@ -346,13 +353,11 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
  * Args: pBB: pointer to the current basic block.
  *		 Icode: pointer to the array of icodes for current procedure.
  *		 lev: indentation level - used for formatting.	*/
-void BB::writeBB(int lev, Function * pProc, int *numLoc)
+void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
 {
     /* Save the index into the code table in case there is a later goto
-  * into this instruction (first instruction of the BB) */
-    front().ll()->codeIdx = nextBundleIdx (&cCode.code);
-    //hli[start].codeIdx = nextBundleIdx (&cCode.code);
-    //for (i = start, last = i + length; i < last; i++)
+     * into this instruction (first instruction of the BB) */
+    front().ll()->codeIdx = cCode.code.nextIdx();
 
     /* Generate code for each hlicode that is not a HLI_JCOND */
 
@@ -363,7 +368,7 @@ void BB::writeBB(int lev, Function * pProc, int *numLoc)
             std::string line = pHli.hl()->write1HlIcode(pProc, numLoc);
             if (!line.empty())
             {
-                cCode.appendCode( "%s%s", indentStr(lev), line.c_str());
+                ostr<<indentStr(lev)<<line;
                 stats.numHLIcode++;
             }
             if (option.verbose)

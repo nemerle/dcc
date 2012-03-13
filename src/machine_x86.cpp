@@ -43,11 +43,47 @@ static const std::string szOps[] =
     "STD",  "STI",      "STOS",     "REP STOS", "SUB",      "TEST", "WAIT", "XCHG",
     "XLAT", "XOR",      "INTO",     "NOP",      "REPNE",    "REPE",	"MOD"
 };
+/* The following opcodes are for mod != 3 */
+static std::string szFlops1[] =
+{
+    /* 0        1        2       3        4        5        6        7  */
+    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
+    "FLD",   "???",   "FST",  "???",   "FLDENV","FLDCW", "FSTENV","FSTSW",  /* 08 */
+    "FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "FISUBR","FIDIV", "FIDIVR", /* 10 */
+    "FILD",  "???",   "FIST", "FISTP", "???",   "???",   "???",   "FSTP",   /* 18 */
+    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 20 */
+    "FLD",   "FLD",   "FST",  "FSTP",  "FRESTOR","???",  "FSAVE", "FSTSW",  /* 28 */
+    "FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "FISUBR","FIDIV", "FIDIVR", /* 30 */
+    "FILD",  "???",   "FIST", "FISTP", "FBLD",  "???",   "FBSTP", "FISTP"   /* 38 */
+};
+/* The following opcodes are for mod == 3 */
+static std::string szFlops2[] =
+{
+    /* 0        1        2       3        4        5        6        7  */
+    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
+    "FLD",   "FXCH",  "FNOP", "???",   "",      "",      "",      "",       /* 08 */
+    "FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "",      "FIDIV", "FIDIVR", /* 10 */
+    "FILD",  "???",   "FIST", "FISTP", "???",   "???",   "???",   "FSTP",   /* 18 */
+    "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 20 */
+    "FFREE", "FSTP",  "FST",  "???",   "FUCOM", "FUCOMP","???",   "???",    /* 28 */
+    "FADDP", "FMULP", "FICOM","",      "FSUBRP","FISUBR","FDIVRP","FDIVP",  /* 30 */
+    "FILD",  "???",   "FIST", "FISTP", "",      "???",   "FBSTP", "FISTP"   /* 38 */
+};
 
 const std::string &Machine_X86::opcodeName(unsigned r)
 {
     assert(r<(sizeof(szOps)/sizeof(std::string)));
     return szOps[r];
+}
+const std::string &Machine_X86::floatOpName(unsigned r)
+{
+    if(r>=(sizeof(szFlops1)/sizeof(std::string)))
+    {
+        r-= (sizeof(szFlops1)/sizeof(std::string));
+        assert(r<(sizeof(szFlops2)/sizeof(std::string)));
+        return szFlops2[r];
+    }
+    return szFlops1[r];
 }
 
 bool Machine_X86::physicalReg(eReg r)
@@ -57,4 +93,19 @@ bool Machine_X86::physicalReg(eReg r)
 bool Machine_X86::isMemOff(eReg r)
 {
     return r == 0 || r >= INDEX_BX_SI;
+}
+//TODO: Move these to Machine_X86
+eReg Machine_X86::subRegH(eReg reg)
+{
+    return eReg((int)reg + (int)rAH-(int)rAX);
+}
+eReg Machine_X86::subRegL(eReg reg)
+{
+    return eReg((int)reg + (int)rAL-(int)rAX);
+}
+bool Machine_X86::isSubRegisterOf(eReg reg,eReg parent)
+{
+    if ((parent < rAX) || (parent > rBX))
+        return false; // only AX -> BX are coverede by subregisters
+    return ((reg==subRegH(parent)) || (reg == subRegL(parent)));
 }

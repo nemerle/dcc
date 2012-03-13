@@ -49,6 +49,7 @@ public:
     Machine_X86();
     static const std::string &regName(eReg r);
     static const std::string &opcodeName(unsigned r);
+    static const std::string &floatOpName(unsigned r);
     static bool physicalReg(eReg r);
     /* Writes the registers that are set in the bitvector */
     //TODO: move this into Machine_X86 ?
@@ -61,6 +62,9 @@ public:
                 ostr << regName(eReg(j));
         }
     }
+    static eReg subRegH(eReg reg); //TODO: move these into machine_x86
+    static eReg subRegL(eReg reg);
 
     static bool isMemOff(eReg r);
+    static bool isSubRegisterOf(eReg reg, eReg parent);
 };

@@ -437,7 +437,7 @@ static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t of
     pm->off = (int16_t)off;
     if (reg && reg < INDEX_BX_SI && (stateTable[i].flg & B))
     {
-        pm->regi = subRegL(pm->regi);
+        pm->regi = Machine_X86::subRegL(pm->regi);
     }
 
     if (seg)	/* So we can catch invalid use of segment overrides */

@@ -163,7 +163,7 @@ void Project::writeGlobSymTable()
 static void writeHeader (std::ostream &_ios, char *fileName)
 {
     /* Write header information */
-    newBundle (&cCode);
+    cCode.init();
     cCode.appendDecl( "/*\n");
     cCode.appendDecl( " * Input file\t: %s\n", fileName);
     cCode.appendDecl( " * File type\t: %s\n", (prog.fCOM)?"COM":"EXE");
@@ -205,7 +205,7 @@ void Function::codeGen (std::ostream &fs)
     BB *pBB;              /* Pointer to basic block           */
 
     /* Write procedure/function header */
-    newBundle (&cCode);
+    cCode.init();
     if (flg & PROC_IS_FUNC)      /* Function */
         ostr<< "\n"<<TypeContainer::typeName(retVal.type)<<" "<<name<<" (";
     else                                /* Procedure */
@@ -254,7 +254,7 @@ void Function::codeGen (std::ostream &fs)
             }
         }
     }
-    cCode.appendDecl(ostr.str());
+    fs<<ostr.str();
     /* Write procedure's code */
     if (flg & PROC_ASM)		/* generate assembler */
     {

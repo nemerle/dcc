@@ -26,7 +26,7 @@ typedef std::list<int> nodeList; /* dfsLast index to the node */
  * during the dfs traversal (ie. s has a smaller dfsFirst number) or s == p,
  * then it is a backedge.
  * Also incrementes the number of backedges entries to the header node. */
-static boolT isBackEdge (BB * p,BB * s)
+static bool isBackEdge (BB * p,BB * s)
 {
     if (p->dfsFirstNum >= s->dfsFirstNum)
     {
@@ -89,7 +89,7 @@ static void insertList (nodeList &l, int n)
 
 /* Returns whether or not the node n (dfsLast numbering of a basic block)
  * is on the list l. */
-static boolT inList (nodeList &l, int n)
+static bool inList (const nodeList &l, int n)
 {
     return std::find(l.begin(),l.end(),n)!=l.end();
 }
@@ -113,15 +113,12 @@ static boolT inInt(BB * n, queue &q)
  * The follow node is the closest node to the loop. */
 static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
 {
-    int succ;
-
     head->loopFollow = MAX;
-    nodeList::iterator p = loopNodes.begin();
-    for( ;p != loopNodes.end();++p)
+    for( int loop_node :  loopNodes)
     {
-        for (size_t j = 0; j < pProc->m_dfsLast[*p]->edges.size(); j++)
+        for (TYPEADR_TYPE &typeaddr: pProc->m_dfsLast[loop_node]->edges)
         {
-            succ = pProc->m_dfsLast[*p]->edges[j].BBptr->dfsLastNum;
+            int succ = typeaddr.BBptr->dfsLastNum;
             if ((! inList(loopNodes, succ)) && (succ < head->loopFollow))
                 head->loopFollow = succ;
         }
@@ -284,7 +281,7 @@ void Function::structLoops(derSeq *derivedG)
         while (Ii)       /* for all intervals Ii of Gi */
         {
             latchNode = NULL;
-          intNodes.clear();
+            intNodes.clear();
 
             /* Find interval head (original BB node in G1) and create
            * list of nodes of interval Ii.              */
@@ -317,7 +314,7 @@ void Function::structLoops(derSeq *derivedG)
                  * statements (if any) and that the node doesn't belong to
                  * another loop.                   */
                 if ((latchNode->caseHead == intHead->caseHead) &&
-                    (latchNode->loopHead == NO_NODE))
+                        (latchNode->loopHead == NO_NODE))
                 {
                     intHead->latchNode = latchNode->dfsLastNum;
                     findNodesInLoop(latchNode, intHead, this, intNodes);
@@ -352,7 +349,8 @@ static bool successor (int s, int h, Function * pProc)
  * the list l, head and tail (dfsLast index to first and exit node of the
  * case).                               */
 static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
-{ int current,      /* index to current node */
+{
+    int current,      /* index to current node */
             i;
 
     pBB->traversed = DFS_CASE;
@@ -361,9 +359,11 @@ static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
     {
         insertList (l, current);
         pBB->caseHead = head;
-        for (i = 0; i < pBB->edges.size(); i++)
-            if (pBB->edges[i].BBptr->traversed != DFS_CASE)
-                tagNodesInCase (pBB->edges[i].BBptr, l, head, tail);
+        for(TYPEADR_TYPE &edge : pBB->edges)
+        {
+            if (edge.BBptr->traversed != DFS_CASE)
+                tagNodesInCase (edge.BBptr, l, head, tail);
+        }
     }
 }
 
@@ -418,13 +418,11 @@ void Function::structCases()
 static void flagNodes (nodeList &l, int f, Function * pProc)
 {
     nodeList::iterator p;
-
-    p = l.begin();
-    while (p!=l.end())
+    for(int idx : l)
     {
-        pProc->m_dfsLast[*p]->ifFollow = f;
-        p = l.erase(p);
+        pProc->m_dfsLast[idx]->ifFollow = f;
     }
+    l.clear();
 }
 
 
@@ -482,26 +480,127 @@ void Function::structIfs ()
         freeList (domDesc);
     }
 }
+bool Function::removeInEdge_Flag_and_ProcessLatch(BB *pbb,BB *a,BB *b)
+{
+    /* Remove in-edge e to t */
+    auto iter = std::find(b->inEdges.begin(),b->inEdges.end(),a);
+    assert(iter!=b->inEdges.end());
+    b->inEdges.erase(iter); /* looses 1 arc */
+    a->flg |= INVALID_BB;
+
+    if (pbb->flg & IS_LATCH_NODE)
+        this->m_dfsLast[a->dfsLastNum] = pbb;
+    else
+        return true; /* to repeat this analysis */
+    return false;
+
+}
 
 
-/* Checks for compound conditions of basic blocks that have only 1 high
+void Function::replaceInEdge(BB* where, BB* which,BB* with)
+{
+    auto iter=std::find(where->inEdges.begin(),where->inEdges.end(),which);
+    assert(iter!=where->inEdges.end());
+    *iter=with;
+}
+bool Function::Case_notX_or_Y(BB* pbb, BB* thenBB, BB* elseBB)
+{
+    HLTYPE &hl1(*pbb->back().hl());
+    HLTYPE &hl2(*thenBB->back().hl());
+
+    BB* obb = elseBB->edges[THEN].BBptr;
+
+    /* Construct compound DBL_OR expression */
+    hl1.replaceExpr(hl1.expr()->inverse());
+    hl1.expr(COND_EXPR::boolOp (hl1.expr(), hl2.expr(), DBL_OR));
+
+    /* Replace in-edge to obb from e to pbb */
+    replaceInEdge(obb,elseBB,pbb);
+
+    /* New THEN and ELSE out-edges of pbb */
+    pbb->edges[THEN].BBptr = obb;
+    pbb->edges[ELSE].BBptr = thenBB;
+
+    /* Remove in-edge e to t */
+    return removeInEdge_Flag_and_ProcessLatch(pbb,elseBB,thenBB);
+}
+bool Function::Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB)
+{
+    HLTYPE &hl1(*pbb->back().hl());
+    HLTYPE &hl2(*thenBB->back().hl());
+    BB* obb = elseBB->edges[ELSE].BBptr;
+
+    /* Construct compound DBL_AND expression */
+    hl1.expr(COND_EXPR::boolOp (hl1.expr(),hl2.expr(), DBL_AND));
+
+    /* Replace in-edge to obb from e to pbb */
+    replaceInEdge(obb,elseBB,pbb);
+    /* New ELSE out-edge of pbb */
+    pbb->edges[ELSE].BBptr = obb;
+
+    /* Remove in-edge e to t */
+    return removeInEdge_Flag_and_ProcessLatch(pbb,elseBB,thenBB);
+}
+
+
+bool Function::Case_notX_and_Y(BB* pbb, BB* thenBB, BB* elseBB)
+{
+    HLTYPE &hl1(*pbb->back().hl());
+    HLTYPE &hl2(*thenBB->back().hl());
+
+    BB* obb = thenBB->edges[ELSE].BBptr;
+
+    /* Construct compound DBL_AND expression */
+
+    hl1.replaceExpr(hl1.expr()->inverse());
+    hl1.expr(COND_EXPR::boolOp (hl1.expr(), hl2.expr(), DBL_AND));
+
+    /* Replace in-edge to obb from t to pbb */
+    replaceInEdge(obb,thenBB,pbb);
+
+    /* New THEN and ELSE out-edges of pbb */
+    pbb->edges[THEN].BBptr = elseBB;
+    pbb->edges[ELSE].BBptr = obb;
+
+    /* Remove in-edge t to e */
+    return removeInEdge_Flag_and_ProcessLatch(pbb,thenBB,elseBB);
+}
+
+bool Function::Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB)
+{
+    HLTYPE &hl1(*pbb->back().hl());
+    HLTYPE &hl2(*thenBB->back().hl());
+
+    BB * obb = thenBB->edges[THEN].BBptr;
+
+    /* Construct compound DBL_OR expression */
+    hl1.expr(COND_EXPR::boolOp (hl1.expr(), hl2.expr(), DBL_OR));
+
+    /* Replace in-edge to obb from t to pbb */
+    auto iter=find(obb->inEdges.begin(),obb->inEdges.end(),thenBB);
+    if(iter!=obb->inEdges.end())
+        *iter = pbb;
+
+    /* New THEN out-edge of pbb */
+    pbb->edges[THEN].BBptr = obb;
+
+    /* Remove in-edge t to e */
+    return removeInEdge_Flag_and_ProcessLatch(pbb,thenBB,elseBB);
+}
+/** \brief Checks for compound conditions of basic blocks that have only 1 high
  * level instruction.  Whenever these blocks are found, they are merged
  * into one block with the appropriate condition */
 void Function::compoundCond()
 {
-    int i; //j, k, numOutEdges
-    BB * pbb, * t, * e, * obb;//,* pred;
-    ICODE * picode, * ticode;
-    boolT change;
-
-    change = true;
+    BB * pbb, * thenBB, * elseBB;
+    bool change = true;
     while (change)
     {
         change = false;
 
         /* Traverse nodes in postorder, this way, the header node of a
          * compound condition is analysed first */
-        for (i = 0; i < this->numBBs; i++)
+        for (int i = 0; i < this->numBBs; i++)
         {
             pbb = this->m_dfsLast[i];
             if (pbb->flg & INVALID_BB)
@@ -510,152 +609,44 @@ void Function::compoundCond()
             if (pbb->nodeType != TWO_BRANCH)
                 continue;
 
-            t = pbb->edges[THEN].BBptr;
-            e = pbb->edges[ELSE].BBptr;
+            thenBB = pbb->edges[THEN].BBptr;
+            elseBB = pbb->edges[ELSE].BBptr;
+
+            change = true; //assume change
 
             /* Check (X || Y) case */
-            if ((t->nodeType == TWO_BRANCH) && (t->numHlIcodes == 1) &&
-                    (t->inEdges.size() == 1) && (t->edges[ELSE].BBptr == e))
+            if ((thenBB->nodeType == TWO_BRANCH) && (thenBB->numHlIcodes == 1) &&
+                (thenBB->inEdges.size() == 1) && (thenBB->edges[ELSE].BBptr == elseBB))
             {
-                obb = t->edges[THEN].BBptr;
-
-                /* Construct compound DBL_OR expression */
-                picode = &pbb->back();
-                ticode = &t->back();
-                picode->hl()->expr(COND_EXPR::boolOp (picode->hl()->expr(), ticode->hl()->expr(), DBL_OR));
-
-                /* Replace in-edge to obb from t to pbb */
-                {
-                    auto iter=find(obb->inEdges.begin(),obb->inEdges.end(),t);
-                    if(iter!=obb->inEdges.end())
-                        *iter = pbb;
-                }
-
-                /* New THEN out-edge of pbb */
-                pbb->edges[THEN].BBptr = obb;
-
-                /* Remove in-edge t to e */
-                auto iter=std::find(e->inEdges.begin(),e->inEdges.end(),t);
-                assert(iter!=e->inEdges.end());
-                e->inEdges.erase(iter);
-                t->flg |= INVALID_BB;
-
-                if (pbb->flg & IS_LATCH_NODE)
-                    this->m_dfsLast[t->dfsLastNum] = pbb;
-                else
-                    i--;		/* to repeat this analysis */
-
-                change = true;
+                if(Case_X_or_Y(pbb, thenBB, elseBB))
+                    --i;
             }
 
             /* Check (!X && Y) case */
-            else if ((t->nodeType == TWO_BRANCH) && (t->numHlIcodes == 1) &&
-                     (t->inEdges.size() == 1) && (t->edges[THEN].BBptr == e))
+            else if ((thenBB->nodeType == TWO_BRANCH) && (thenBB->numHlIcodes == 1) &&
+                     (thenBB->inEdges.size() == 1) && (thenBB->edges[THEN].BBptr == elseBB))
             {
-                obb = t->edges[ELSE].BBptr;
-
-                /* Construct compound DBL_AND expression */
-                picode = &pbb->back();
-                ticode = &t->back();
-
-                COND_EXPR *oldexpr=picode->hl()->expr();
-                picode->hl()->expr(picode->hl()->expr()->inverse());
-                delete oldexpr;
-
-                picode->hl()->expr(COND_EXPR::boolOp (picode->hl()->expr(), ticode->hl()->expr(), DBL_AND));
-
-                /* Replace in-edge to obb from t to pbb */
-                auto iter=std::find(obb->inEdges.begin(),obb->inEdges.end(),t);
-                assert(iter!=obb->inEdges.end());
-                *iter=pbb;
-
-                /* New THEN and ELSE out-edges of pbb */
-                pbb->edges[THEN].BBptr = e;
-                pbb->edges[ELSE].BBptr = obb;
-
-                /* Remove in-edge t to e */
-                iter=std::find(e->inEdges.begin(),e->inEdges.end(),t);
-                assert(iter!=e->inEdges.end());
-                e->inEdges.erase(iter); /* looses 1 arc */
-                t->flg |= INVALID_BB;
-
-                if (pbb->flg & IS_LATCH_NODE)
-                    this->m_dfsLast[t->dfsLastNum] = pbb;
-                else
-                    i--;		/* to repeat this analysis */
-
-                change = true;
+                if(Case_notX_and_Y(pbb, thenBB, elseBB))
+                    --i;
             }
 
             /* Check (X && Y) case */
-            else if ((e->nodeType == TWO_BRANCH) && (e->numHlIcodes == 1) &&
-                     (e->inEdges.size()==1) && (e->edges[THEN].BBptr == t))
+            else if ((elseBB->nodeType == TWO_BRANCH) && (elseBB->numHlIcodes == 1) &&
+                     (elseBB->inEdges.size()==1) && (elseBB->edges[THEN].BBptr == thenBB))
             {
-                obb = e->edges[ELSE].BBptr;
-
-                /* Construct compound DBL_AND expression */
-                picode = &pbb->back();
-                ticode = &t->back();
-                picode->hl()->expr(COND_EXPR::boolOp (picode->hl()->expr(),ticode->hl()->expr(), DBL_AND));
-
-                /* Replace in-edge to obb from e to pbb */
-                auto iter = std::find(obb->inEdges.begin(),obb->inEdges.end(),e);
-                assert(iter!=obb->inEdges.end());
-                *iter=pbb;
-                /* New ELSE out-edge of pbb */
-                pbb->edges[ELSE].BBptr = obb;
-
-                /* Remove in-edge e to t */
-                iter = std::find(t->inEdges.begin(),t->inEdges.end(),e);
-                assert(iter!=t->inEdges.end());
-                t->inEdges.erase(iter);
-                e->flg |= INVALID_BB;
-
-                if (pbb->flg & IS_LATCH_NODE)
-                    this->m_dfsLast[e->dfsLastNum] = pbb;
-                else
-                    i--;		/* to repeat this analysis */
-
-                change = true;
+                if(Case_X_and_Y(pbb, thenBB, elseBB ))
+                    --i;
             }
 
             /* Check (!X || Y) case */
-            else if ((e->nodeType == TWO_BRANCH) && (e->numHlIcodes == 1) &&
-                     (e->inEdges.size() == 1) && (e->edges[ELSE].BBptr == t))
+            else if ((elseBB->nodeType == TWO_BRANCH) && (elseBB->numHlIcodes == 1) &&
+                     (elseBB->inEdges.size() == 1) && (elseBB->edges[ELSE].BBptr == thenBB))
             {
-                obb = e->edges[THEN].BBptr;
-
-                /* Construct compound DBL_OR expression */
-                picode = &pbb->back();
-                ticode = &t->back();
-                COND_EXPR *oldexp=picode->hl()->expr();
-                picode->hl()->expr(picode->hl()->expr()->inverse());
-                delete oldexp;
-                picode->hl()->expr(COND_EXPR::boolOp (picode->hl()->expr(), ticode->hl()->expr(), DBL_OR));
-                //picode->hl()->expr() = exp;
-
-                /* Replace in-edge to obb from e to pbb */
-                auto iter = std::find(obb->inEdges.begin(),obb->inEdges.end(),e);
-                assert(iter!=obb->inEdges.end());
-                *iter=pbb;
-
-                /* New THEN and ELSE out-edges of pbb */
-                pbb->edges[THEN].BBptr = obb;
-                pbb->edges[ELSE].BBptr = t;
-
-                /* Remove in-edge e to t */
-                iter = std::find(t->inEdges.begin(),t->inEdges.end(),e);
-                assert(iter!=t->inEdges.end());
-                t->inEdges.erase(iter);
-                e->flg |= INVALID_BB;
-
-                if (pbb->flg & IS_LATCH_NODE)
-                    this->m_dfsLast[e->dfsLastNum] = pbb;
-                else
-                    i--;		/* to repeat this analysis */
-
-                change = true;
+                if(Case_notX_or_Y(pbb, thenBB, elseBB ))
+                    --i;
             }
+            else
+                change = false; // otherwise we changed nothing
         }
     }
 }

@@ -75,7 +75,7 @@ void LLInst::emitGotoLabel (int indLevel)
 
         /* Node has been traversed already, so backpatch this label into
                  * the code */
-        addLabelBundle (cCode.code, codeIdx, hllLabNum);
+        cCode.code.addLabelBundle (codeIdx, hllLabNum);
     }
     cCode.appendCode( "%sgoto L%ld;\n", indentStr(indLevel), hllLabNum);
     stats.numHLIcode++;
