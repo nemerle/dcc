@@ -124,6 +124,9 @@ public:
         r->name = nm;
         return r;
     }
+    bool anyFlagsSet(uint32_t t) { return (flg&t)!=0;}
+    bool hasRegArgs() const { return (flg & REG_ARGS)!=0;}
+    bool isLibrary() const { return (flg & PROC_ISLIB)!=0;}
     void compoundCond();
     void writeProcComments();
     void lowLevelAnalysis();
@@ -140,10 +143,8 @@ public:
     void process_operands(ICODE &pIcode, STATE *pstate);
     boolT process_JMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     boolT process_CALL(ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
-    void displayCFG();
     void freeCFG();
     void codeGen(std::ostream &fs);
-    void displayStats();
     void mergeFallThrough(BB *pBB);
     void structIfs();
     void structLoops(derSeq *derivedG);
@@ -151,20 +152,25 @@ public:
     void controlFlowAnalysis();
     void newRegArg(iICODE picode, iICODE ticode);
     void writeProcComments(std::ostream &ostr);
+
+    void displayCFG();
+    void displayStats();
+    void processHliCall(COND_EXPR *exp, iICODE picode);
+
+protected:
+    bool removeInEdge_Flag_and_ProcessLatch(BB *pbb, BB *a, BB *b);
     bool Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB);
     bool Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB);
     bool Case_notX_or_Y(BB* pbb, BB* thenBB, BB* elseBB);
     bool Case_notX_and_Y(BB* pbb, BB* thenBB, BB* elseBB);
     void replaceInEdge(BB* where, BB* which, BB* with);
-    protected:
-    bool removeInEdge_Flag_and_ProcessLatch(BB *pbb, BB *a, BB *b);
+    void processExpPush(int &numHlIcodes, iICODE picode);
 
     // TODO: replace those with friend visitor ?
     void propLongReg(int loc_ident_idx, const ID &pLocId);
     void propLongStk(int i, const ID &pLocId);
     void propLongGlb(int i, const ID &pLocId);
     void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong);
-    void processHliCall(COND_EXPR *exp, iICODE picode);
 
     int     findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE iter);
     int     findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE beg);
@@ -176,6 +182,6 @@ public:
     void    findIdioms();
     void    propLong();
     void    genLiveKtes();
-    uint8_t    findDerivedSeq (derSeq &derivedGi);
+    uint8_t findDerivedSeq (derSeq &derivedGi);
     bool    nextOrderGraph(derSeq &derivedGi);
 };

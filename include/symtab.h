@@ -50,7 +50,7 @@ struct STKSYM : public SymbolCommon
     void setArgName(int i)
     {
         char buf[32];
-        sprintf (buf, "arg%ld", i);
+        sprintf (buf, "arg%d", i);
         name = buf;
     }
 };

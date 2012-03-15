@@ -2,13 +2,15 @@
  * Description   : Performs control flow analysis on the CFG
  * (C) Cristina Cifuentes
  ********************************************************************/
+#include <boost/range/algorithm.hpp>
 #include <algorithm>
 #include <list>
 #include <cassert>
-#include "dcc.h"
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+
+#include "dcc.h"
 
 //typedef struct list {
 //    int         nodeIdx;
@@ -577,6 +579,7 @@ bool Function::Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB)
     hl1.expr(COND_EXPR::boolOp (hl1.expr(), hl2.expr(), DBL_OR));
 
     /* Replace in-edge to obb from t to pbb */
+
     auto iter=find(obb->inEdges.begin(),obb->inEdges.end(),thenBB);
     if(iter!=obb->inEdges.end())
         *iter = pbb;

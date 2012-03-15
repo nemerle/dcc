@@ -823,7 +823,7 @@ void COND_EXPR::changeBoolOp (condOp newOp)
 
 /* Inserts the expression exp into the tree at the location specified by the
  * register regi */
-bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,LOCAL_ID *locsym)
+bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,const LOCAL_ID *locsym)
 {
 
     if (tree == NULL)
@@ -836,7 +836,7 @@ bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,
     }
     return false;
 }
-COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,LOCAL_ID *locsym)
+COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,const LOCAL_ID *locsym)
 {
 
     eReg treeReg;

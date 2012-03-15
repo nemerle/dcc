@@ -30,6 +30,7 @@ public:
     }
     strTable    decl;   /* Declarations */
     strTable    code;   /* C code       */
+    int current_indent;
 };
 
 

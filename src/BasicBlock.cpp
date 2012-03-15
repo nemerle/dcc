@@ -1,10 +1,13 @@
 #include <cassert>
 #include <string>
-
+#include <boost/range/rbegin.hpp>
+#include <boost/range/rend.hpp>
+#include <boost/range/adaptors.hpp>
 #include "BasicBlock.h"
 #include "Procedure.h"
 #include "dcc.h"
 using namespace std;
+using namespace boost;
 
 BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
 {
@@ -12,29 +15,27 @@ BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
     pnewBB->Parent = parent;
     return pnewBB;
 }
-
-BB *BB::Create(int start, int ip, uint8_t _nodeType, int numOutEdges, Function *parent)
+/**
+ *  @arg start - basic block starts here, might be parent->Icode.end()
+ *  @arg fin - last of basic block's instructions
+*/
+BB *BB::Create(iICODE start, iICODE fin, uint8_t _nodeType, int numOutEdges, Function *parent)
 {
     BB* pnewBB;
-
     pnewBB = new BB;
     pnewBB->nodeType = _nodeType;	/* Initialise */
     pnewBB->immedDom = NO_DOM;
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
-            pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
-    pnewBB->range_start = parent->Icode.begin();
-    pnewBB->range_end = parent->Icode.begin();
-    if(start!=-1)
+    pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
+    pnewBB->instructions = make_iterator_range(start,fin);
+    if(start==parent->Icode.end())
     {
-        advance(pnewBB->range_start,start);
-        advance(pnewBB->range_end,ip+1);
+        pnewBB->instructions = make_iterator_range(parent->Icode.end(),parent->Icode.end());
     }
     else
     {
-        pnewBB->range_end = parent->Icode.end();
-        pnewBB->range_end = parent->Icode.end();
+        pnewBB->instructions.advance_end(1); // 1 after fin, to create range where fin is inclusive
     }
-
     if (numOutEdges)
         pnewBB->edges.resize(numOutEdges);
 
@@ -42,15 +43,31 @@ BB *BB::Create(int start, int ip, uint8_t _nodeType, int numOutEdges, Function *
          * real code basic blocks (ie. not interval bbs) */
     if(parent)
     {
-        if (start >= 0)
-            parent->Icode.SetInBB(start, ip, pnewBB);
+        if (start != parent->Icode.end())
+            parent->Icode.SetInBB(pnewBB->instructions, pnewBB);
         parent->heldBBs.push_back(pnewBB);
         parent->m_cfg.push_back(pnewBB);
         pnewBB->Parent = parent;
     }
-    if (start != -1)		/* Only for code BB's */
+    if ( start != parent->Icode.end() )		/* Only for code BB's */
         stats.numBBbef++;
     return pnewBB;
+}
+BB *BB::Create(int start, int ip, uint8_t _nodeType, int numOutEdges, Function *parent)
+{
+    iICODE st(parent->Icode.begin());
+    iICODE fin(parent->Icode.begin());
+    if(start==-1)
+    {
+        st  = parent->Icode.end();
+        fin = parent->Icode.end();
+    }
+    else
+    {
+        advance(st,start);
+        advance(fin,ip);
+    }
+    return Create(st,fin,_nodeType,numOutEdges,parent);
 }
 
 static const char *const s_nodeType[] = {"branch", "if", "case", "fall", "return", "call",
@@ -67,7 +84,12 @@ void BB::display()
     printf("start = %ld, length = %ld, #out edges = %ld\n", begin()->loc_ip, size(), edges.size());
 
     for (size_t i = 0; i < edges.size(); i++)
-        printf(" outEdge[%2d] = %ld\n",i, edges[i].BBptr->begin()->loc_ip);
+    {
+        if(edges[i].BBptr==0)
+            printf(" outEdge[%2d] = Unlinked out edge to %d\n",i, edges[i].ip);
+        else
+            printf(" outEdge[%2d] = %d\n",i, edges[i].BBptr->begin()->loc_ip);
+    }
 }
 /*****************************************************************************
  * displayDfs - Displays the CFG using a depth first traversal
@@ -131,11 +153,63 @@ void BB::displayDfs()
  *						current procedure.
  *				indLevel: indentation level - used for formatting.
  *				numLoc: last # assigned to local variables 				*/
+ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, boolT &repCond)
+{
+    latch = pProc->m_dfsLast[this->latchNode];
+    std::ostringstream ostr;
+    ICODE* picode;
+    switch (loopType)
+    {
+        case WHILE_TYPE:
+            picode = &this->back();
+
+            /* Check for error in while condition */
+            if (picode->hl()->opcode != HLI_JCOND)
+                reportError (WHILE_FAIL);
+
+            /* Check if condition is more than 1 HL instruction */
+            if (numHlIcodes > 1)
+            {
+                /* Write the code for this basic block */
+                writeBB(ostr,indLevel, pProc, numLoc);
+                repCond = true;
+            }
+
+            /* Condition needs to be inverted if the loop body is along
+             * the THEN path of the header node */
+            if (edges[ELSE].BBptr->dfsLastNum == loopFollow)
+            {
+                picode->hl()->replaceExpr(picode->hl()->expr()->inverse());
+            }
+            {
+                string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
+                ostr << "\n"<<indentStr(indLevel)<<"while ("<<e<<") {\n";
+            }
+            picode->invalidate();
+            break;
+
+        case REPEAT_TYPE:
+            ostr << "\n"<<indentStr(indLevel)<<"do {\n";
+            picode = &latch->back();
+            picode->invalidate();
+            break;
+
+        case ENDLESS_TYPE:
+            ostr << "\n"<<indentStr(indLevel)<<"for (;;) {\n";
+    }
+    cCode.appendCode(ostr.str());
+    stats.numHLIcode += 1;
+    indLevel++;
+    return picode;
+}
+bool BB::isEndOfPath(int latch_node_idx) const
+{
+    return nodeType == RETURN_NODE || nodeType == TERMINATE_NODE ||
+           nodeType == NOWHERE_NODE || (dfsLastNum == latch_node_idx);
+}
 void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode, int _ifFollow)
 {
-    int follow,						/* ifFollow                 	*/
-        _loopType, 					/* Type of loop, if any         */
-        _nodeType;                                      /* Type of node                 */
+    int follow;						/* ifFollow                 	*/
     BB * succ, *latch;					/* Successor and latching node 	*/
     ICODE * picode;					/* Pointer to HLI_JCOND instruction	*/
     char *l;                                            /* Pointer to HLI_JCOND expression	*/
@@ -146,60 +220,16 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     if ((_ifFollow != UN_INIT) && (this == pProc->m_dfsLast[_ifFollow]))
         return;
 
-    if (traversed == DFS_ALPHA)
+    if (wasTraversedAtLevel(DFS_ALPHA))
         return;
     traversed = DFS_ALPHA;
 
     /* Check for start of loop */
     repCond = false;
     latch = NULL;
-    _loopType = loopType;
-    if (_loopType)
+    if (loopType)
     {
-        latch = pProc->m_dfsLast[this->latchNode];
-        std::ostringstream ostr;
-        switch (_loopType)
-        {
-            case WHILE_TYPE:
-                picode = &this->back();
-
-                /* Check for error in while condition */
-                if (picode->hl()->opcode != HLI_JCOND)
-                    reportError (WHILE_FAIL);
-
-                /* Check if condition is more than 1 HL instruction */
-                if (numHlIcodes > 1)
-                {
-                    /* Write the code for this basic block */
-                    writeBB(ostr,indLevel, pProc, numLoc);
-                    repCond = true;
-                }
-
-                /* Condition needs to be inverted if the loop body is along
-                 * the THEN path of the header node */
-                if (edges[ELSE].BBptr->dfsLastNum == loopFollow)
-                {
-                    picode->hl()->replaceExpr(picode->hl()->expr()->inverse());
-                }
-                {
-                    string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
-                    ostr << "\n"<<indentStr(indLevel)<<"while ("<<e<<") {\n";
-                }
-                picode->invalidate();
-                break;
-
-            case REPEAT_TYPE:
-                ostr << "\n"<<indentStr(indLevel)<<"do {\n";
-                picode = &latch->back();
-                picode->invalidate();
-                break;
-
-            case ENDLESS_TYPE:
-                ostr << "\n"<<indentStr(indLevel)<<"for (;;) {\n";
-        }
-        cCode.appendCode(ostr.str());
-        stats.numHLIcode += 1;
-        indLevel++;
+       picode=writeLoopHeader(indLevel, pProc, numLoc, latch, repCond);
     }
 
     /* Write the code for this basic block */
@@ -211,18 +241,16 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     }
 
     /* Check for end of path */
-    _nodeType = nodeType;
-    if (_nodeType == RETURN_NODE || _nodeType == TERMINATE_NODE ||
-        _nodeType == NOWHERE_NODE || (dfsLastNum == _latchNode))
+    if (isEndOfPath(_latchNode))
         return;
 
     /* Check type of loop/node and process code */
-    if (_loopType)	/* there is a loop */
+    if (    loopType)	/* there is a loop */
     {
         assert(latch);
         if (this != latch)		/* loop is over several bbs */
         {
-            if (_loopType == WHILE_TYPE)
+            if (loopType == WHILE_TYPE)
             {
                 succ = edges[THEN].BBptr;
                 if (succ->dfsLastNum == loopFollow)
@@ -238,7 +266,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
 
         /* Loop epilogue: generate the loop trailer */
         indLevel--;
-        if (_loopType == WHILE_TYPE)
+        if (loopType == WHILE_TYPE)
         {
             std::ostringstream ostr;
             /* Check if there is need to repeat other statements involved
@@ -250,9 +278,9 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             ostr <<indentStr(indLevel)<< "}	/* end of while */\n";
             cCode.appendCode(ostr.str());
         }
-        else if (_loopType == ENDLESS_TYPE)
+        else if (loopType == ENDLESS_TYPE)
             cCode.appendCode( "%s}	/* end of loop */\n",indentStr(indLevel));
-        else if (_loopType == REPEAT_TYPE)
+        else if (loopType == REPEAT_TYPE)
         {
             if (picode->hl()->opcode != HLI_JCOND)
                 reportError (REPEAT_FAIL);
@@ -275,7 +303,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
 
     else		/* no loop, process nodeType of the graph */
     {
-        if (_nodeType == TWO_BRANCH)		/* if-then[-else] */
+        if (nodeType == TWO_BRANCH)		/* if-then[-else] */
         {
             stats.numHLIcode++;
             indLevel++;
@@ -344,8 +372,11 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
         else 	/* fall, call, 1w */
         {
             succ = edges[0].BBptr;		/* fall-through edge */
+            assert(succ->size()>0);
             if (succ->traversed != DFS_ALPHA)
+            {
                 succ->writeCode (indLevel, pProc,numLoc, _latchNode,_ifFollow);
+            }
         }
     }
 }
@@ -361,7 +392,7 @@ void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
 
     /* Generate code for each hlicode that is not a HLI_JCOND */
 
-    for(ICODE &pHli : *this)
+    for(ICODE &pHli : instructions)
     {
         if ((pHli.type == HIGH_LEVEL) && ( pHli.valid() )) //TODO: use filtering range here.
         {
@@ -379,33 +410,34 @@ void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
 
 iICODE BB::begin()
 {
-    return range_start;
+    return instructions.begin();//range_start;
 }
 
 iICODE BB::end() const
 {
-    return range_end;
+    return instructions.end();//range_end
 }
 ICODE &BB::back()
 {
-    return *rbegin();
+    return instructions.back();//*rbegin();
 }
 
 size_t BB::size()
 {
-    return distance(range_start,range_end);
+
+    return distance(instructions.begin(),instructions.end());
 }
 
 ICODE &BB::front()
 {
-    return *begin();
+    return instructions.front();//*begin();
 }
 
 riICODE BB::rbegin()
 {
-    return riICODE(end());
+    return riICODE( instructions.end() );
 }
 riICODE BB::rend()
 {
-    return riICODE(begin());
+    return riICODE( instructions.begin() );
 }

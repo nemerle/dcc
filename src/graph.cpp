@@ -30,23 +30,26 @@ void Function::createCFG()
      * 6) End of procedure
      */
     int		i;
-    int		ip, start;
+    int		ip;
     BB *        psBB;
     BB *        pBB;
     iICODE 	pIcode = Icode.begin();
-
+    iICODE      iStart = Icode.begin();
     stats.numBBbef = stats.numBBaft = 0;
-    for (ip = start = 0; pIcode!=Icode.end(); ip++, pIcode++)
+    for (; pIcode!=Icode.end(); ++pIcode)
     {
+        iICODE nextIcode = ++iICODE(pIcode);
         LLInst *ll = pIcode->ll();
         /* Stick a NOWHERE_NODE on the end if we terminate
                  * with anything other than a ret, jump or terminate */
-        if (ip + 1 == Icode.size() and
+        if (nextIcode == Icode.end() and
                 (not ll->testFlags(TERMINATES)) and
                 (not ll->match(iJMP)) and (not ll->match(iJMPF)) and
                 (not ll->match(iRET)) and (not ll->match(iRETF)))
         {
-            pBB=BB::Create(start, ip, NOWHERE_NODE, 0, this);
+            //pBB=BB::Create(start, ip, NOWHERE_NODE, 0, this);
+            pBB=BB::Create(iStart, pIcode, NOWHERE_NODE, 0, this);
+
         }
 
         /* Only process icodes that have valid instructions */
@@ -58,10 +61,11 @@ void Function::createCFG()
                 case iJE:  case iJNE:  case iJS:   case iJNS:
                 case iJO:  case iJNO:  case iJP:   case iJNP:
                 case iJCXZ:
-                    pBB = BB::Create(start, ip, TWO_BRANCH, 2, this);
+                    pBB = BB::Create(iStart, pIcode, TWO_BRANCH, 2, this);
 CondJumps:
-                    start = ip + 1;
-                    pBB->edges[0].ip = (uint32_t)start;
+                    //start = ip + 1;
+                    iStart = ++iICODE(pIcode);
+                    pBB->edges[0].ip = (uint32_t)iStart->loc_ip;
                     /* This is for jumps off into nowhere */
                     if ( ll->testFlags(NO_LABEL) )
                     {
@@ -72,25 +76,29 @@ CondJumps:
                     break;
 
                 case iLOOP: case iLOOPE: case iLOOPNE:
-                    pBB = BB::Create(start, ip, LOOP_NODE, 2, this);
+                    //pBB = BB::Create(start, ip, LOOP_NODE, 2, this);
+                    pBB = BB::Create(iStart, pIcode, LOOP_NODE, 2, this);
                     goto CondJumps;
 
                 case iJMPF: case iJMP:
                     if (ll->testFlags(SWITCH))
                     {
-                        pBB = BB::Create(start, ip, MULTI_BRANCH, ll->caseTbl.numEntries, this);
+                        //pBB = BB::Create(start, ip, MULTI_BRANCH, ll->caseTbl.numEntries, this);
+                        pBB = BB::Create(iStart, pIcode, MULTI_BRANCH, ll->caseTbl.numEntries, this);
                         for (i = 0; i < ll->caseTbl.numEntries; i++)
                             pBB->edges[i].ip = ll->caseTbl.entries[i];
                         hasCase = true;
                     }
                     else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
                     {
-                        pBB = BB::Create(start, ip, ONE_BRANCH, 1, this);
+                        //pBB = BB::Create(start, ip, ONE_BRANCH, 1, this);
+                        pBB = BB::Create(iStart, pIcode, ONE_BRANCH, 1, this);
+
                         pBB->edges[0].ip = ll->src.op();
                     }
                     else
-                        BB::Create(start, ip, NOWHERE_NODE, 0, this);
-                    start = ip + 1;
+                        BB::Create(iStart, pIcode,  NOWHERE_NODE, 0, this);
+                    iStart = ++iICODE(pIcode);
                     break;
 
                 case iCALLF: case iCALL:
@@ -100,16 +108,17 @@ CondJumps:
                         i = ((p->flg) & TERMINATES) ? 0 : 1;
                     else
                         i = 1;
-                    pBB = BB::Create(start, ip, CALL_NODE, i, this);
-                    start = ip + 1;
+                    pBB = BB::Create(iStart, pIcode,  CALL_NODE, i, this);
+                    iStart = ++iICODE(pIcode);//start = ip + 1;
                     if (i)
-                        pBB->edges[0].ip = (uint32_t)start;
+                        pBB->edges[0].ip = iStart->loc_ip;//(uint32_t)start;
                 }
                     break;
 
                 case iRET:  case iRETF:
-                    BB::Create(start, ip, RETURN_NODE, 0, this);
-                    start = ip + 1;
+                    //BB::Create(start, ip, RETURN_NODE, 0, this);
+                    BB::Create(iStart, pIcode,  RETURN_NODE, 0, this);
+                    iStart = ++iICODE(pIcode);
                     break;
 
                 default:
@@ -117,18 +126,20 @@ CondJumps:
                     iICODE next1=++iICODE(pIcode);
                     if ( ll->testFlags(TERMINATES) )
                     {
-                        pBB = BB::Create(start, ip, TERMINATE_NODE, 0, this);
-                        start = ip + 1;
+                        pBB = BB::Create(iStart, pIcode,  TERMINATE_NODE, 0, this);
+                        //pBB = BB::Create(start, ip, TERMINATE_NODE, 0, this);
+                        iStart = ++iICODE(pIcode); // start = ip + 1;
                     }
                     /* Check for a fall through */
                     else if (next1 != Icode.end())
                     {
-                        assert(next1->loc_ip==ip+1);
                         if (next1->ll()->testFlags(TARGET | CASE))
                         {
-                            pBB = BB::Create(start, ip, FALL_NODE, 1, this);
-                            start = ip + 1;
-                            pBB->edges[0].ip = (uint32_t)start;
+                            //pBB = BB::Create(start, ip, FALL_NODE, 1, this);
+                            pBB = BB::Create(iStart, pIcode,  FALL_NODE, 1, this);
+                            iStart = ++iICODE(pIcode); // start = ip + 1;
+                            pBB->addOutEdge(iStart->loc_ip);
+                            pBB->edges[0].ip = iStart->loc_ip;//(uint32_t)start;
                         }
                     }
                     break;
@@ -142,7 +153,7 @@ CondJumps:
         pBB = *iter;
         for (size_t edeg_idx = 0; edeg_idx < pBB->edges.size(); edeg_idx++)
         {
-            ip = pBB->edges[edeg_idx].ip;
+            uint32_t ip = pBB->edges[edeg_idx].ip;
             if (ip >= SYNTHESIZED_MIN)
             {
                 fatalError (INVALID_SYNTHETIC_BB);
@@ -273,13 +284,13 @@ void Function::compressCFG()
  ***************************************************************************/
 BB *BB::rmJMP(int marker, BB * pBB)
 {
-    marker += DFS_JMP;
+    marker += (int)DFS_JMP;
 
     while (pBB->nodeType == ONE_BRANCH && pBB->size() == 1)
     {
         if (pBB->traversed != marker)
         {
-            pBB->traversed = marker;
+            pBB->traversed = (eDFS)marker;
             pBB->inEdges.pop_back();
             if (not pBB->inEdges.empty())
             {
@@ -347,15 +358,14 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             back().ll()->setFlags(NO_CODE);
             back().invalidate();
             nodeType = FALL_NODE;
-            range_end--;
-
+            //instructions.advance_end(-1); //TODO: causes creation of empty BB
         }
         /* If there's no other edges into child can merge */
         if (pChild->inEdges.size() != 1)
             break;
 
         nodeType = pChild->nodeType;
-        range_end = pChild->range_end;
+        instructions = boost::make_iterator_range(begin(),pChild->end());
         pChild->front().ll()->clrFlags(TARGET);
         edges.swap(pChild->edges);
 

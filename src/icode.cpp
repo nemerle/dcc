@@ -36,6 +36,14 @@ void CIcodeRec::SetInBB(int start, int _end, BB *pnewBB)
     }
 }
 
+void CIcodeRec::SetInBB(rCODE &rang, BB *pnewBB)
+{
+    for(ICODE &ic : rang)
+    {
+        ic.inBB = pnewBB;
+    }
+}
+
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and
    replaces *pIndex with an icode index */
 bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)

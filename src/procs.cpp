@@ -92,11 +92,11 @@ void CALL_GRAPH::write()
 /* Updates the argument table by including the register(s) (ie. lhs of
  * picode) and the actual expression (ie. rhs of picode).
  * Note: register(s) are only included once in the table.   */
-void Function::newRegArg(iICODE picode, iICODE ticode)
+void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
 {
     COND_EXPR *lhs;
     STKFRAME * call_args_stackframe, *target_stackframe;
-    ID *id;
+    const ID *id;
     int tidx;
     boolT regExist;
     condId type;
@@ -114,7 +114,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     type = lhs->expr.ident.idType;
     if (type == REGISTER)
     {
-        regL = localId.id_arr[lhs->expr.ident.idNode.regiIdx].id.regi;
+        regL = id_arr[lhs->expr.ident.idNode.regiIdx].id.regi;
         if (regL < rAL)
             tidx = tproc->localId.newByteWordReg(TYPE_WORD_SIGN, regL);
         else
@@ -122,28 +122,28 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     }
     else if (type == LONG_VAR)
     {
-        regL = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.l;
-        regH = localId.id_arr[lhs->expr.ident.idNode.longIdx].id.longId.h;
+        int longIdx = lhs->expr.ident.idNode.longIdx;
+        regL = id_arr[longIdx].id.longId.l;
+        regH = id_arr[longIdx].id.longId.h;
         tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, tproc->Icode.begin() /*0*/);
-        //tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, Icode.begin() /*0*/);
     }
 
     /* Check if register argument already on the formal argument list */
     regExist = false;
     for(STKSYM &tgt_sym : *target_stackframe)
     {
+        if( tgt_sym.regs == NULL ) // both REGISTER and LONG_VAR require this precondition
+            continue;
         if (type == REGISTER)
         {
-            if ((tgt_sym.regs != NULL) &&
-                    (tgt_sym.regs->expr.ident.idNode.regiIdx == tidx))
+            if ( tgt_sym.regs->expr.ident.idNode.regiIdx == tidx )
             {
                 regExist = true;
             }
         }
         else if (type == LONG_VAR)
         {
-            if ((tgt_sym.regs != NULL) &&
-                    (tgt_sym.regs->expr.ident.idNode.longIdx == tidx))
+            if ( tgt_sym.regs->expr.ident.idNode.longIdx == tidx )
             {
                 regExist = true;
             }
@@ -192,7 +192,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
     /* Mask off high and low register(s) in picode */
     switch (type) {
         case REGISTER:
-            id = &localId.id_arr[lhs->expr.ident.idNode.regiIdx];
+            id = &id_arr[lhs->expr.ident.idNode.regiIdx];
             picode->du.def &= maskDuReg[id->id.regi];
             if (id->id.regi < rAL)
                 newsym.type = TYPE_WORD_SIGN;
@@ -200,7 +200,7 @@ void Function::newRegArg(iICODE picode, iICODE ticode)
                 newsym.type = TYPE_BYTE_SIGN;
             break;
         case LONG_VAR:
-            id = &localId.id_arr[lhs->expr.ident.idNode.longIdx];
+            id = &id_arr[lhs->expr.ident.idNode.longIdx];
             picode->du.def &= maskDuReg[id->id.longId.h];
             picode->du.def &= maskDuReg[id->id.longId.l];
             newsym.type = TYPE_LONG_SIGN;
@@ -250,6 +250,11 @@ void CallType::placeStkArg (COND_EXPR *exp, int pos)
 {
     (*args)[pos].actual = exp;
     (*args)[pos].setArgName(pos);
+}
+
+COND_EXPR *CallType::toId()
+{
+    return COND_EXPR::idFunc( proc, args);
 }
 
 

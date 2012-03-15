@@ -5,6 +5,8 @@
 #include <string>
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
+#include <boost/range.hpp>
+#include "icode.h"
 #include "types.h"
 #include "graph.h"
 //#include "icode.h"
@@ -12,22 +14,21 @@
 struct Function;
 class CIcodeRec;
 struct BB;
+struct LOCAL_ID;
 struct interval;
-struct ICODE;
-typedef std::list<ICODE>::iterator iICODE;
-typedef std::list<ICODE>::reverse_iterator riICODE;
-typedef union
+
+struct TYPEADR_TYPE
 {
     uint32_t         ip;             /* Out edge icode address       */
     BB *          BBptr;          /* Out edge pointer to next BB  */
     interval     *intPtr;         /* Out edge ptr to next interval*/
-} TYPEADR_TYPE;
+};
 
 struct BB : public llvm::ilist_node<BB>
 {
 private:
     BB(const BB&);
-    BB() : nodeType(0),traversed(0),
+    BB() : nodeType(0),traversed(DFS_NONE),
         numHlIcodes(0),flg(0),
         inEdges(0),
         edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
@@ -38,10 +39,14 @@ private:
 
     }
     //friend class SymbolTableListTraits<BB, Function>;
-    iICODE  range_start;
-    iICODE  range_end;
+    typedef boost::iterator_range<iICODE> rCODE;
+    rCODE instructions;
 
 public:
+    struct ValidFunctor
+    {
+        bool operator()(BB *p) {return p->valid();}
+    };
     iICODE begin();
     iICODE end() const;
     riICODE rbegin();
@@ -50,7 +55,7 @@ public:
     ICODE &back();
     size_t size();
     uint8_t            nodeType;       /* Type of node                 */
-    int             traversed;      /* Boolean: traversed yet?      */
+    eDFS             traversed;      /* last traversal id is held here traversed yet?      */
     int             numHlIcodes;	/* No. of high-level icodes		*/
     uint32_t         flg;			/* BB flags						*/
 
@@ -94,8 +99,9 @@ public:
     int             caseTail;       /* tail node for the case       */
 
     int             index;          /* Index, used in several ways  */
-static BB * Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
-static BB * Create(int start, int ip, uint8_t nodeType, int numOutEdges, Function * parent);
+    static BB * Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
+    static BB * Create(int start, int ip, uint8_t nodeType, int numOutEdges, Function * parent);
+    static BB * Create(iICODE start, iICODE fin, uint8_t _nodeType, int numOutEdges, Function *parent);
     void    writeCode(int indLevel, Function *pProc, int *numLoc, int latchNode, int ifFollow);
     void    mergeFallThrough(CIcodeRec &Icode);
     void    dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last);
@@ -105,10 +111,19 @@ static BB * Create(int start, int ip, uint8_t nodeType, int numOutEdges, Functio
     ///
     const Function *getParent() const { return Parent; }
     Function *getParent()       { return Parent; }
-    void writeBB(std::ostream &ostr, int lev, Function *pProc, int *numLoc);
-    BB *rmJMP(int marker, BB *pBB);
-    void genDU1();
+    void    writeBB(std::ostream &ostr, int lev, Function *pProc, int *numLoc);
+    BB *    rmJMP(int marker, BB *pBB);
+    void    genDU1();
+    int     findBBExps(LOCAL_ID &locals, Function *f);
+    bool    valid() {return 0==(flg & INVALID_BB); }
+    bool    wasTraversedAtLevel(int l) const {return traversed==l;}
+    ICODE * writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, boolT &repCond);
+    void addOutEdge(uint32_t ip)  // TODO: fix this
+    {
+        edges[0].ip = ip;
+    }
 private:
+    bool    isEndOfPath(int latch_node_idx) const;
     Function *Parent;
 
 };

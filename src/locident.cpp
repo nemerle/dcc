@@ -176,7 +176,12 @@ int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
     id_arr[idx].id.longId.l = regL;
     return (idx);
 }
-
+/* Returns an identifier conditional expression node of type TYPE_LONG or
+ * TYPE_WORD_SIGN	*/
+COND_EXPR * LOCAL_ID::createId(const ID *retVal, iICODE ix_)
+{
+    return COND_EXPR::idID(retVal,this,ix_);
+}
 
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new global identifier node of type

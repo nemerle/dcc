@@ -18,6 +18,7 @@
 /* Type definition */
 // this array has to stay in-order of addition i.e. not std::set<iICODE,std::less<iICODE> >
 // TODO: why ?
+struct COND_EXPR;
 struct ICODE;
 typedef std::list<ICODE>::iterator iICODE;
 struct IDX_ARRAY : public std::vector<iICODE>
@@ -104,6 +105,10 @@ struct ID
 struct LOCAL_ID
 {
     std::vector<ID> id_arr;
+protected:
+    int newLongIdx(int16_t seg, int16_t offH, int16_t offL, uint8_t regi, hlType t);
+    int newLongGlb(int16_t seg, int16_t offH, int16_t offL, hlType t);
+    int newLongStk(hlType t, int offH, int offL);
 public:
     LOCAL_ID()
     {
@@ -122,10 +127,10 @@ public:
     void flagByteWordId(int off);
     void propLongId(uint8_t regL, uint8_t regH, const char *name);
     size_t csym() const {return id_arr.size();}
-protected:
-    int newLongIdx(int16_t seg, int16_t offH, int16_t offL, uint8_t regi, hlType t);
-    int newLongGlb(int16_t seg, int16_t offH, int16_t offL, hlType t);
-    int newLongStk(hlType t, int offH, int offL);
+    void newRegArg(iICODE picode, iICODE ticode) const;
+    void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong) const;
+    void forwardSubs(COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode, iICODE ticode, int &numHlIcodes) const;
+    COND_EXPR *createId(const ID *retVal, iICODE ix_);
 };
 
 

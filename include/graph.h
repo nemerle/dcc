@@ -28,6 +28,7 @@ enum eBBKind
 /* Depth-first traversal constants */
 enum eDFS
 {
+    DFS_NONE,
     DFS_DISP=1,   /* Display graph pass   */
     DFS_MERGE=2,   /* Merge nodes pass     */
     DFS_NUM=3,   /* DFS numbering pass   */

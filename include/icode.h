@@ -13,6 +13,7 @@
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/Value.h>
+#include <boost/range.hpp>
 #include "Enums.h"
 #include "state.h"			// State depends on INDEXBASE, but later need STATE
 //enum condId;
@@ -26,6 +27,7 @@ struct ICODE;
 struct bundle;
 typedef std::list<ICODE>::iterator iICODE;
 typedef std::list<ICODE>::reverse_iterator riICODE;
+typedef boost::iterator_range<iICODE> rCODE;
 
 /* uint8_t and uint16_t registers */
 
@@ -58,6 +60,7 @@ struct CallType : public HlTypeSupport
     void allocStkArgs (int num);
     bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc);
     void placeStkArg(COND_EXPR *exp, int pos);
+    virtual COND_EXPR * toId();
 public:
     bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
@@ -285,6 +288,18 @@ protected:
     HLTYPE m_hl;
     bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
 public:
+    template<int FLAG>
+    struct FlagFilter
+    {
+        bool operator()(ICODE *ic) {return ic->ll()->testFlags(FLAG);}
+        bool operator()(ICODE &ic) {return ic.ll()->testFlags(FLAG);}
+    };
+    template<int TYPE>
+    struct TypeFilter
+    {
+        bool operator()(ICODE *ic) {return ic->type==HIGH_LEVEL;}
+        bool operator()(ICODE &ic) {return ic.type==HIGH_LEVEL;}
+    };
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
     {
@@ -399,6 +414,7 @@ public:
 
     ICODE *	addIcode(ICODE *pIcode);
     void	SetInBB(int start, int end, BB* pnewBB);
+    void	SetInBB(rCODE &rang, BB* pnewBB);
     bool	labelSrch(uint32_t target, uint32_t &pIndex);
     iterator    labelSrch(uint32_t target);
     ICODE *	GetIcode(int ip);
