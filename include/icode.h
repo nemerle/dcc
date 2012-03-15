@@ -300,6 +300,12 @@ public:
         bool operator()(ICODE *ic) {return ic->type==HIGH_LEVEL;}
         bool operator()(ICODE &ic) {return ic.type==HIGH_LEVEL;}
     };
+    template<int TYPE>
+    struct TypeAndValidFilter
+    {
+        bool operator()(ICODE *ic) {return (ic->type==HIGH_LEVEL)&&(ic->valid());}
+        bool operator()(ICODE &ic) {return (ic.type==HIGH_LEVEL)&&ic.valid();}
+    };
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
     {

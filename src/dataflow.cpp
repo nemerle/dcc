@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <stdio.h>
 using namespace boost;
+using namespace boost::adaptors;
 struct ExpStack
 {
     typedef std::list<COND_EXPR *> EXP_STK;
@@ -398,7 +399,6 @@ void Function::liveRegAnalysis (std::bitset<32> &in_liveOut)
 
 void BB::genDU1()
 {
-    using namespace boost::adaptors;
     eReg regi;            /* Register that was defined */
     int k, defRegIdx, useIdx;
     iICODE picode, ticode,lastInst;
@@ -603,7 +603,7 @@ static void forwardSubsLong (int longIdx, COND_EXPR *_exp, iICODE picode, iICODE
 
 /* Returns whether the elements of the expression rhs are all x-clear from
  * instruction f up to instruction t.	*/
-bool COND_EXPR::xClear (iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID & locId)
+bool COND_EXPR::xClear (rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID & locId)
 {
     iICODE i;
     boolT res;
@@ -615,13 +615,12 @@ bool COND_EXPR::xClear (iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID & 
         if (expr.ident.idType == REGISTER)
         {
             regi= locId.id_arr[expr.ident.idNode.regiIdx].id.regi;
-            for (i = ++iICODE(f); (i != lastBBinst) && (i!=t); i++)
-                if ((i->type == HIGH_LEVEL) && ( i->valid() ))
-                {
-                    if ((i->du.def & duReg[regi]).any())
-                        return false;
-                }
-            if (i != lastBBinst)
+            range_to_check.advance_begin(1);
+            auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
+            for (ICODE &i : all_valid_and_high_level_after_start)
+                if ((i.du.def & duReg[regi]).any())
+                    return false;
+            if (all_valid_and_high_level_after_start.end().base() != lastBBinst)
                 return true;
             return false;
         }
@@ -635,38 +634,38 @@ bool COND_EXPR::xClear (iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID & 
     case BOOLEAN_OP:
         if(0==rhs())
             return false;
-        res = rhs()->xClear ( f, t, lastBBinst, locId);
+        res = rhs()->xClear ( range_to_check, lastBBinst, locId);
         if (res == false)
             return false;
         if(0==lhs())
             return false;
-        return lhs()->xClear ( f, t, lastBBinst, locId);
+        return lhs()->xClear ( range_to_check, lastBBinst, locId);
 
     case NEGATION:
     case ADDRESSOF:
     case DEREFERENCE:
         if(0==expr.unaryExp)
             return false;
-        return expr.unaryExp->xClear ( f, t, lastBBinst, locId);
+        return expr.unaryExp->xClear ( range_to_check, lastBBinst, locId);
     } /* eos */
     return false;
 }
-bool UnaryOperator::xClear(iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID &locs)
+bool UnaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs)
 {
     if(0==unaryExp)
         return false;
-    return unaryExp->xClear ( f, t, lastBBinst, locs);
+    return unaryExp->xClear ( range_to_check, lastBBinst, locs);
 }
 
-bool BinaryOperator::xClear(iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID &locs)
+bool BinaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs)
 {
     if(0==m_rhs)
         return false;
-    if ( ! m_rhs->xClear (f, t, lastBBinst, locs) )
+    if ( ! m_rhs->xClear (range_to_check, lastBBinst, locs) )
         return false;
     if(0==m_lhs)
         return false;
-    return m_lhs->xClear (f, t, lastBBinst, locs);
+    return m_lhs->xClear (range_to_check, lastBBinst, locs);
 }
 /* Checks the type of the formal argument as against to the actual argument,
  * whenever possible, and then places the actual argument on the procedure's
@@ -840,10 +839,11 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     uint8_t regi;
     numHlIcodes = 0;
     // register(s) to be forward substituted	*/
-    for (iICODE picode = begin(); picode != end(); picode++)
+    auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
+    for (auto picode = valid_and_highlevel.begin(); picode != valid_and_highlevel.end(); picode++)
     {
-        if ((picode->type != HIGH_LEVEL) || ( ! picode->valid() ))
-            continue;
+//        if ((picode->type != HIGH_LEVEL) || ( ! picode->valid() ))
+//            continue;
         HLTYPE &_icHl(*picode->hl());
         numHlIcodes++;
         if (picode->du1.numRegsDef == 1)    /* uint8_t/uint16_t regs */
@@ -870,11 +870,10 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                  (ticode->hl()->opcode != HLI_RET)))
                             continue;
 
-                        if (_icHl.asgn.rhs->xClear (picode,
-                                                    picode->du1.idx[0].uses[0],
+                        if (_icHl.asgn.rhs->xClear (make_iterator_range(picode.base(),picode->du1.idx[0].uses[0]),
                                                     end(), locals))
                         {
-                            locals.processTargetIcode(picode, numHlIcodes, ticode,false);
+                            locals.processTargetIcode(picode.base(), numHlIcodes, ticode,false);
                         }
                         break;
 
@@ -889,7 +888,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         _exp = g_exp_stk.pop();  /* pop last exp pushed */
                         switch (ticode->hl()->opcode) {
                             case HLI_ASSIGN:
-                                locals.forwardSubs(_icHl.expr(), _exp, picode, ticode, numHlIcodes);
+                                locals.forwardSubs(_icHl.expr(), _exp, picode.base(), ticode, numHlIcodes);
                                 break;
 
                             case HLI_JCOND: case HLI_PUSH: case HLI_RET:
@@ -946,7 +945,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 else	/* cannot substitute function */
                                 {
                                     //picode->loc_ip
-                                    lhs = COND_EXPR::idID(_retVal,&locals,picode);
+                                    lhs = COND_EXPR::idID(_retVal,&locals,picode.base());
                                     picode->setAsgn(lhs, _exp);
                                 }
                                 break;
@@ -975,7 +974,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                     ((ticode->hl()->opcode != HLI_CALL) &&
                                      (ticode->hl()->opcode != HLI_RET)))
                                 continue;
-                            locals.processTargetIcode(picode, numHlIcodes, ticode,true);
+                            locals.processTargetIcode(picode.base(), numHlIcodes, ticode,true);
                         }
                         break;
 
@@ -992,7 +991,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                             switch (ticode->hl()->opcode) {
                                 case HLI_ASSIGN:
                                     forwardSubsLong (_icHl.expr()->expr.ident.idNode.longIdx,
-                                                     _exp, picode, ticode, &numHlIcodes);
+                                                     _exp, picode.base(), ticode, &numHlIcodes);
                                     break;
                                 case HLI_JCOND: case HLI_PUSH:
                                     res = COND_EXPR::insertSubTreeLongReg (_exp,
@@ -1017,7 +1016,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                             case HLI_ASSIGN:
                                 _exp = _icHl.call.toId();
                                 ticode->hl()->asgn.lhs =
-                                        COND_EXPR::idLong(&locals, DST, ticode,HIGH_FIRST, picode, eDEF, ++iICODE(ticode));
+                                        COND_EXPR::idLong(&locals, DST, ticode,HIGH_FIRST, picode.base(), eDEF, ++iICODE(ticode));
                                 ticode->hl()->asgn.rhs = _exp;
                                 picode->invalidate();
                                 numHlIcodes--;
@@ -1035,7 +1034,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 res = COND_EXPR::insertSubTreeLongReg (_exp,
                                                                        &ticode->hl()->exp.v,
                                                                        locals.newLongReg ( _retVal->type, _retVal->id.longId.h,
-                                                                                            _retVal->id.longId.l, picode));
+                                                                                            _retVal->id.longId.l, picode.base()));
                                 if (res)	/* was substituted */
                                 {
                                     picode->invalidate();
@@ -1043,7 +1042,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 }
                                 else	/* cannot substitute function */
                                 {
-                                    lhs = locals.createId(_retVal,picode);
+                                    lhs = locals.createId(_retVal,picode.base());
                                     picode->setAsgn(lhs, _exp);
                                 }
                                 break;
@@ -1056,7 +1055,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
          * expression stack */
         else if (_icHl.opcode == HLI_PUSH)
         {
-            g_exp_stk.processExpPush(numHlIcodes, picode);
+            g_exp_stk.processExpPush(numHlIcodes, picode.base());
         }
         else if(picode->du1.numRegsDef!=0)
             printf("Num def %d\n",picode->du1.numRegsDef);
@@ -1068,7 +1067,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
         {
             if ( not _icHl.call.proc->hasRegArgs())
             {
-                fnc->processHliCall(_exp, picode);
+                fnc->processHliCall(_exp, picode.base());
             }
 
             /* If we could not substitute the result of a function,
@@ -1076,7 +1075,7 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
             if ( not _icHl.call.proc->isLibrary() and (not picode->du1.used(0)) and (picode->du1.numRegsDef > 0))
             {
                 _exp = COND_EXPR::idFunc (_icHl.call.proc, _icHl.call.args);
-                lhs = COND_EXPR::idID (&_icHl.call.proc->retVal, &locals, picode);
+                lhs = COND_EXPR::idID (&_icHl.call.proc->retVal, &locals, picode.base());
                 picode->setAsgn(lhs, _exp);
             }
         }

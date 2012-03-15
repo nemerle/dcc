@@ -8,7 +8,7 @@
 #include <cstring>
 #include <list>
 #include "Enums.h"
-
+#include <boost/range.hpp>
 static const int operandSize=20;
 /* The following definitions and types define the Conditional Expression
  * attributed syntax tree, as defined by the following EBNF:
@@ -30,6 +30,7 @@ struct ICODE;
 struct LLInst;
 struct ID;
 typedef std::list<ICODE>::iterator iICODE;
+typedef boost::iterator_range<iICODE> rICODE;
 #include "IdentType.h"
 
 /* Expression data type */
@@ -105,7 +106,7 @@ public:
     virtual ~COND_EXPR() {}
 public:
     virtual COND_EXPR *inverse() const; // return new COND_EXPR that is invarse of this
-    virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID &locId);
+    virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);
     virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
     virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
     virtual hlType expType(Function *pproc) const;
@@ -124,7 +125,7 @@ struct BinaryOperator : public COND_EXPR
     static BinaryOperator *CreateAdd(COND_EXPR *l,COND_EXPR *r);
     virtual COND_EXPR *inverse();
     virtual COND_EXPR *clone();
-    virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID &locs);
+    virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
     virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
     virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
 
@@ -158,7 +159,7 @@ struct UnaryOperator : public COND_EXPR
     COND_EXPR *unaryExp;
     virtual COND_EXPR *inverse();
     virtual COND_EXPR *clone();
-    virtual bool xClear(iICODE f, iICODE t, iICODE lastBBinst, const LOCAL_ID &locs);
+    virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
     static UnaryOperator *Create(condNodeType t, COND_EXPR *sub_expr)
     {
         UnaryOperator *newExp = new UnaryOperator();
