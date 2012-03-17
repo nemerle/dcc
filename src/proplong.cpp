@@ -83,7 +83,7 @@ static boolT isLong22 (iICODE pIcode, iICODE pEnd, iICODE &off)
  * @return number of ICODEs to skip
 
 */
-static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, iICODE atOffset)
+static int longJCond23 (Assignment &asgn, iICODE pIcode, int arc, iICODE atOffset)
 {
     BB * pbb, * obb1, * obb2, * tbb;
     int skipped_insn=0;
@@ -142,8 +142,8 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
     iICODE atOffset1(atOffset),next1(++iICODE(pIcode));
     advance(atOffset1,1);
     /* Create new HLI_JCOND and condition */
-    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[atOffset1->ll()->getOpcode()-iJB]);
-    next1->setJCond(lhs);
+    asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[atOffset1->ll()->getOpcode()-iJB]);
+    next1->setJCond(asgn.lhs);
     next1->copyDU(*pIcode, eUSE, eUSE);
     next1->du.use |= atOffset->du.use;
 
@@ -167,7 +167,7 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
  * the new edges for the remaining nodes.
  * @return number of ICODE's to skip
 */
-static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEnd)
+static int longJCond22 (Assignment &asgn, iICODE pIcode,iICODE pEnd)
 {
 
     BB * pbb, * obb1, * tbb;
@@ -177,8 +177,8 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEn
     iICODE icodes[] = { pIcode++,pIcode++,pIcode++,pIcode++ };
 
     /* Form conditional expression */
-    lhs = COND_EXPR::boolOp (lhs, rhs, condOpJCond[icodes[3]->ll()->getOpcode() - iJB]);
-    icodes[1]->setJCond(lhs);
+    asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[icodes[3]->ll()->getOpcode() - iJB]);
+    icodes[1]->setJCond(asgn.lhs);
     icodes[1]->copyDU (*icodes[0], eUSE, eUSE);
     icodes[1]->du.use |= icodes[2]->du.use;
 
@@ -283,7 +283,7 @@ void Function::propLongStk (int i, const ID &pLocId)
         {
             if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, *l23->ll()) )
             {
-                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, l23));
+                advance(pIcode,longJCond23 (asgn, pIcode, arc, l23));
             }
         }
 
@@ -293,7 +293,7 @@ void Function::propLongStk (int i, const ID &pLocId)
         {
             if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this,asgn, *l23->ll()) )
             {
-                advance(pIcode,longJCond22 (asgn.rhs, asgn.lhs, pIcode,pEnd));
+                advance(pIcode,longJCond22 (asgn, pIcode,pEnd));
             }
         }
     }
@@ -460,7 +460,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn, *long_loc->ll()))
             {
                                 // reduce the advance by 1 here (loop increases) ?
-                advance(pIcode,longJCond23 (asgn.rhs, asgn.lhs, pIcode, arc, long_loc));
+                advance(pIcode,longJCond23 (asgn, pIcode, arc, long_loc));
             }
         }
 
@@ -470,7 +470,8 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         {
             if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn, *long_loc->ll()) )
             {
-                advance(pIcode,longJCond22 (asgn.rhs, asgn.lhs, pIcode,pEnd) - 1);
+                // TODO: verify that removing -1 does not change anything !
+                advance(pIcode,longJCond22 (asgn, pIcode,pEnd));
             }
         }
 

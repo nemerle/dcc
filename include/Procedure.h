@@ -77,6 +77,15 @@ struct Assignment
     COND_EXPR *lhs;
     COND_EXPR *rhs;
 };
+struct JumpTable
+{
+    uint32_t start;
+    uint32_t finish;
+    bool valid() {return start<finish;}
+    size_t size() { return (finish-start)/2;}
+    size_t entrySize() { return 2;}
+    void pruneEntries(uint16_t cs);
+};
 
 struct Function : public llvm::ilist_node<Function>
 {
