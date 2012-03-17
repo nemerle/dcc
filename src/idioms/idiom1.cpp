@@ -60,7 +60,7 @@ bool Idiom1::match(iICODE picode)
     m_icodes.clear();
     m_min_off = 0;
     /* PUSH BP as first instruction of procedure */
-    if ( (not picode->ll()->testFlags(I)) && picode->ll()->src.regi == rBP)
+    if ( (not picode->ll()->testFlags(I)) && picode->ll()->src().regi == rBP)
     {
         m_icodes.push_back( picode++ ); // insert iPUSH
         if(picode==m_end)

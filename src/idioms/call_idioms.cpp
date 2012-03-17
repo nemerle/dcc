@@ -24,7 +24,7 @@ bool Idiom3::match(iICODE picode)
         m_icodes[i] = picode++;
     if ( m_icodes[1]->ll()->testFlags(I) && m_icodes[1]->ll()->match(iADD,rSP))
     {
-        m_param_count = m_icodes[1]->ll()->src.op();
+        m_param_count = m_icodes[1]->ll()->src().getImm2();
         return true;
     }
     else if (m_icodes[1]->ll()->match(iMOV,rSP,rBP))
@@ -38,9 +38,7 @@ int Idiom3::action()
 {
     if (m_icodes[0]->ll()->testFlags(I) )
     {
-        m_icodes[0]->ll()->src.proc.proc->cbParam = (int16_t)m_param_count;
-        m_icodes[0]->ll()->src.proc.cb = m_param_count;
-        m_icodes[0]->ll()->src.proc.proc->flg |= CALL_C;
+        m_icodes[0]->ll()->src().addProcInformation(m_param_count,CALL_C);
     }
     else
     {
@@ -98,9 +96,7 @@ int Idiom17::action()
 {
     if (m_icodes[0]->ll()->testFlags(I))
     {
-        m_icodes[0]->ll()->src.proc.proc->cbParam = (int16_t)m_param_count;
-        m_icodes[0]->ll()->src.proc.cb = m_param_count;
-        m_icodes[0]->ll()->src.proc.proc->flg |= CALL_C;
+        m_icodes[0]->ll()->src().addProcInformation(m_param_count,CALL_C);
         for(size_t idx=1; idx<m_icodes.size(); ++idx)
         {
             m_icodes[idx]->invalidate();

@@ -116,12 +116,12 @@ void Function::findIdioms()
         case iCALL:  case iCALLF:
             /* Check for library functions that return a long register.
                          * Propagate this result */
-            if (pIcode->ll()->src.proc.proc != 0)
-                if ((pIcode->ll()->src.proc.proc->flg & PROC_ISLIB) &&
-                        (pIcode->ll()->src.proc.proc->flg & PROC_IS_FUNC))
+            if (pIcode->ll()->src().proc.proc != 0)
+                if ((pIcode->ll()->src().proc.proc->flg & PROC_ISLIB) &&
+                        (pIcode->ll()->src().proc.proc->flg & PROC_IS_FUNC))
                 {
-                    if ((pIcode->ll()->src.proc.proc->retVal.type==TYPE_LONG_SIGN)
-                            || (pIcode->ll()->src.proc.proc->retVal.type == TYPE_LONG_UNSIGN))
+                    if ((pIcode->ll()->src().proc.proc->retVal.type==TYPE_LONG_SIGN)
+                            || (pIcode->ll()->src().proc.proc->retVal.type == TYPE_LONG_UNSIGN))
                         localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, pIcode/*ip*/);
                 }
 
@@ -230,12 +230,12 @@ void Function::bindIcodeOff()
     pIcode = Icode.begin();
 
     /* Flag all jump targets for BB construction and disassembly stage 2 */
-    for(ICODE &c : Icode)
+    for(ICODE &c : Icode) // TODO: use filtered here
     {
         LLInst *ll=c.ll();
         if (ll->testFlags(I) && ll->isJmpInst())
         {
-            iICODE loc=Icode.labelSrch(ll->src.op());
+            iICODE loc=Icode.labelSrch(ll->src().getImm2());
             if (loc!=Icode.end())
                 loc->ll()->setFlags(TARGET);
         }
@@ -253,10 +253,10 @@ void Function::bindIcodeOff()
         if (ll->testFlags(I) )
         {
             uint32_t found;
-            if (! Icode.labelSrch(ll->src.op(), found))
+            if (! Icode.labelSrch(ll->src().getImm2(), found))
                 ll->setFlags( NO_LABEL );
             else
-                ll->src.SetImmediateOp(found);
+                ll->replaceSrc(LLOperand::CreateImm2(found));
 
         }
         else if (ll->testFlags(SWITCH) )

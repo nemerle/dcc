@@ -18,9 +18,9 @@ bool Idiom8::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src.op() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src().getImm2() == 1))
         if ( m_icodes[1]->ll()->match(iRCR,I) &&
-            (m_icodes[1]->ll()->src.op() == 1))
+            (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;
 }
@@ -62,14 +62,14 @@ bool Idiom15::match(iICODE pIcode)
     if(distance(pIcode,m_end)<2)
         return false;
     /* Match SHL reg, 1 */
-    if (not pIcode->ll()->testFlags(I) or (pIcode->ll()->src.op() != 1))
+    if (not pIcode->ll()->testFlags(I) or (pIcode->ll()->src().getImm2() != 1))
         return false;
     m_icodes.clear();
     regi = pIcode->ll()->dst.regi;
     m_icodes.push_back(pIcode++);
     while(  (pIcode!=m_end) and
             pIcode->ll()->match(iSHL,(eReg)regi,I) and
-            (pIcode->ll()->src.op() == 1) )
+            (pIcode->ll()->src().getImm2() == 1) )
     {
         m_icodes.push_back(pIcode++);
     }
@@ -107,8 +107,8 @@ bool Idiom12::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src.op() == 1))
-        if (m_icodes[1]->ll()->match(iRCL,I) && (m_icodes[1]->ll()->src.op() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src().getImm2() == 1))
+        if (m_icodes[1]->ll()->match(iRCL,I) && (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;
 }
@@ -146,8 +146,8 @@ bool Idiom9::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src.op() == 1))
-        if (m_icodes[1]->ll()->match(iRCR,I) && (m_icodes[1]->ll()->src.op() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src().getImm2() == 1))
+        if (m_icodes[1]->ll()->match(iRCR,I) && (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;
 }

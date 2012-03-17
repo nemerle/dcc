@@ -150,16 +150,17 @@ static const char *intOthers[] = {
  * string s.	*/
 void LLInst::writeIntComment (std::ostringstream &s)
 {
+    uint32_t src_immed=src().getImm2();
     s<<"\t/* ";
-    if (src.op() == 0x21)
+    if (src_immed == 0x21)
     {
         s <<int21h[dst.off];
     }
-    else if (src.op() > 0x1F && src.op() < 0x2F)
+    else if (src_immed > 0x1F && src_immed < 0x2F)
     {
-        s <<intOthers[src.op() - 0x20];
+        s <<intOthers[src_immed - 0x20];
     }
-    else if (src.op() == 0x2F)
+    else if (src_immed == 0x2F)
     {
         switch (dst.off)
         {

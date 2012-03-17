@@ -128,7 +128,7 @@ bool Idiom18::match(iICODE picode)
         break;
     case 1:  /* register variable */
         /* Check previous instruction for a MOV */
-        if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src.regi == m_icodes[1]->ll()->dst.regi))
+        if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src().regi == m_icodes[1]->ll()->dst.regi))
         {
             regi = m_icodes[0]->ll()->dst.regi;
             if ( m_icodes[0]->ll()->dst.isReg() )
@@ -140,7 +140,7 @@ bool Idiom18::match(iICODE picode)
         }
         break;
     case 2: /* local */
-        if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src.off == m_icodes[1]->ll()->dst.off))
+        if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src().off == m_icodes[1]->ll()->dst.off))
         {
             regi = m_icodes[0]->ll()->dst.regi;
             if ( m_icodes[0]->ll()->dst.isReg() )
@@ -273,7 +273,7 @@ bool Idiom20::match(iICODE picode)
     if (type == 1)			/* register variable */
     {
         if (m_icodes[1]->ll()->match(iMOV) &&
-                (m_icodes[1]->ll()->src.regi == ll_dest.regi))
+                (m_icodes[1]->ll()->src().regi == ll_dest.regi))
         {
             regi = m_icodes[1]->ll()->dst.regi;
             if ( m_icodes[1]->ll()->dst.isReg() )
@@ -287,7 +287,7 @@ bool Idiom20::match(iICODE picode)
     else if (type == 2)		/* local */
     {
         if ( m_icodes[0]->ll()->match(iMOV) &&
-             (m_icodes[1]->ll()->src.off == ll_dest.off))
+             (m_icodes[1]->ll()->src().off == ll_dest.off))
         {
             regi = m_icodes[1]->ll()->dst.regi;
             if ( m_icodes[1]->ll()->dst.isReg() )

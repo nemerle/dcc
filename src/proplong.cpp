@@ -398,10 +398,10 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             switch (pIcode->ll()->getOpcode())
             {
             case iMOV:
-                if ((pLocId.id.longId.h == pIcode->ll()->src.regi) &&
-                        (pLocId.id.longId.l == next1->ll()->src.regi))
+                if ((pLocId.id.longId.h == pIcode->ll()->src().getReg2()) &&
+                        (pLocId.id.longId.l == next1->ll()->src().getReg2()))
                 {
-                    pIcode->setRegDU( next1->ll()->src.regi, eUSE);
+                    pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
 
                     asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
                     asgn.lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, next1);
@@ -413,11 +413,11 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                 break;
 
             case iPUSH:
-                if ((pLocId.id.longId.h == pIcode->ll()->src.regi) &&
-                        (pLocId.id.longId.l == next1->ll()->src.regi))
+                if ((pLocId.id.longId.h == pIcode->ll()->src().getReg2()) &&
+                        (pLocId.id.longId.l == next1->ll()->src().getReg2()))
                 {
                     asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                    pIcode->setRegDU( next1->ll()->src.regi, eUSE);
+                    pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
                     pIcode->setUnary(HLI_PUSH, asgn.rhs);
                     next1->invalidate();
                 }

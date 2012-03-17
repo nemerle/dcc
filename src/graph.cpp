@@ -72,7 +72,7 @@ CondJumps:
                         pBB->edges.pop_back();
                     }
                     else
-                        pBB->edges[1].ip = ll->src.op();
+                        pBB->edges[1].ip = ll->src().getImm2();
                     break;
 
                 case iLOOP: case iLOOPE: case iLOOPNE:
@@ -94,7 +94,7 @@ CondJumps:
                         //pBB = BB::Create(start, ip, ONE_BRANCH, 1, this);
                         pBB = BB::Create(iStart, pIcode, ONE_BRANCH, 1, this);
 
-                        pBB->edges[0].ip = ll->src.op();
+                        pBB->edges[0].ip = ll->src().getImm2();
                     }
                     else
                         BB::Create(iStart, pIcode,  NOWHERE_NODE, 0, this);
@@ -103,7 +103,7 @@ CondJumps:
 
                 case iCALLF: case iCALL:
                 {
-                    Function * p = ll->src.proc.proc;
+                    Function * p = ll->src().proc.proc;
                     if (p)
                         i = ((p->flg) & TERMINATES) ? 0 : 1;
                     else
@@ -309,7 +309,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
         {
             /* We are going around in circles */
             pBB->nodeType = NOWHERE_NODE;
-            pBB->front().ll()->src.SetImmediateOp(pBB->front().loc_ip);
+            pBB->front().ll()->replaceSrc(LLOperand::CreateImm2(pBB->front().loc_ip));
             //pBB->front().ll()->src.immed.op = pBB->front().loc_ip;
             do {
                 pBB = pBB->edges[0].BBptr;

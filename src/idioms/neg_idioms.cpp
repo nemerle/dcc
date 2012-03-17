@@ -83,7 +83,7 @@ bool Idiom16::match (iICODE picode)
     if ((regi >= rAX) && (regi < INDEX_BX_SI))
     {
         if (m_icodes[1]->ll()->match(iSBB) && m_icodes[2]->ll()->match(iINC))
-            if ((m_icodes[1]->ll()->dst.regi == (m_icodes[1]->ll()->src.regi)) &&
+            if ((m_icodes[1]->ll()->dst.regi == (m_icodes[1]->ll()->src().getReg2())) &&
                     m_icodes[1]->ll()->match((eReg)regi) &&
                     m_icodes[2]->ll()->match((eReg)regi))
                 return true;

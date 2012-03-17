@@ -255,11 +255,11 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst
     {
         newExp->expr.ident.idType = CONSTANT;
         if (f == HIGH_FIRST)
-            newExp->expr.ident.idNode.kte.kte = (pIcode->ll()->src.op() << 16) +
-                    atOffset->ll()->src.op();
+            newExp->expr.ident.idNode.kte.kte = (pIcode->ll()->src().getImm2() << 16) +
+                    atOffset->ll()->src().getImm2();
         else        /* LOW_FIRST */
             newExp->expr.ident.idNode.kte.kte =
-                    (atOffset->ll()->src.op() << 16)+ pIcode->ll()->src.op();
+                    (atOffset->ll()->src().getImm2() << 16)+ pIcode->ll()->src().getImm2();
         newExp->expr.ident.idNode.kte.size = 4;
     }
     /* Save it as a long expression (reg, stack or glob) */
@@ -337,7 +337,7 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
 
     int idx;          /* idx into pIcode->localId table */
 
-    const LLOperand &pm((sd == SRC) ? ll_insn.src : ll_insn.dst);
+    const LLOperand &pm((sd == SRC) ? ll_insn.src() : ll_insn.dst);
 
     if (    ((sd == DST) && ll_insn.testFlags(IM_DST)) or
             ((sd == SRC) && ll_insn.testFlags(IM_SRC)) or
@@ -356,7 +356,7 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
     }
 
     else if ((sd == SRC) && ll_insn.testFlags(I)) /* constant */
-        newExp = COND_EXPR::idKte (ll_insn.src.op(), 2);
+        newExp = COND_EXPR::idKte (ll_insn.src().getImm2(), 2);
     else if (pm.regi == rUNDEF) /* global variable */
         newExp = GlobalVariable::Create(pm.segValue, pm.off);
     else if ( pm.isReg() )      /* register */
@@ -426,7 +426,7 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
 /* Returns the identifier type */
 condId ICODE::idType(opLoc sd)
 {
-    LLOperand &pm((sd == SRC) ? ll()->src : ll()->dst);
+    LLOperand &pm(*ll()->get(sd));
 
     if ((sd == SRC) && ll()->testFlags(I))
         return (CONSTANT);

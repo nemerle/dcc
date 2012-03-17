@@ -95,8 +95,8 @@ static COND_EXPR *srcIdent (const LLInst &ll_insn, Function * pProc, iICODE i, I
     if (ll_insn.testFlags(I))   /* immediate operand */
     {
         if (ll_insn.testFlags(B))
-            return COND_EXPR::idKte (ll_insn.src.op(), 1);
-        return COND_EXPR::idKte (ll_insn.src.op(), 2);
+            return COND_EXPR::idKte (ll_insn.src().getImm2(), 1);
+        return COND_EXPR::idKte (ll_insn.src().getImm2(), 2);
     }
     // otherwise
     return COND_EXPR::id (ll_insn, SRC, pProc, i, duIcode, du);

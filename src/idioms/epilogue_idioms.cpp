@@ -131,7 +131,7 @@ bool Idiom4::match(iICODE pIcode)
     /* Check for RET(F) immed */
     if (pIcode->ll()->testFlags(I) )
     {
-        m_param_count = (int16_t)pIcode->ll()->src.op();
+        m_param_count = (int16_t)pIcode->ll()->src().getImm2();
         return true;
     }
     return false;

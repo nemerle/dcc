@@ -35,7 +35,7 @@ bool Idiom14::match(iICODE pIcode)
         if (m_icodes[1]->ll()->match(iXOR) && not m_icodes[1]->ll()->testFlags(I))
         {
             m_regH = m_icodes[1]->ll()->dst.regi;
-            if (m_regH == m_icodes[1]->ll()->src.regi)
+            if (m_regH == m_icodes[1]->ll()->src().getReg2())
             {
                 if ((m_regL == rAX) && (m_regH == rDX))
                     return true;
@@ -84,9 +84,9 @@ bool Idiom13::match(iICODE pIcode)
     if (not m_icodes[0]->ll()->testFlags(I) && (regi >= rAL) && (regi <= rBH))
     {
         /* Check for MOV regH, 0 */
-        if (m_icodes[1]->ll()->match(iMOV) && m_icodes[1]->ll()->testFlags(I) && (m_icodes[1]->ll()->src.op() == 0))
+        if (m_icodes[1]->ll()->match(iMOV) && m_icodes[1]->ll()->testFlags(I) && (m_icodes[1]->ll()->src().getImm2() == 0))
         {
-            if (m_icodes[1]->ll()->dst.regi == (regi + 4)) //TODO: based on distance between AH-AL,BH-BL etc.
+            if (m_icodes[1]->ll()->dst.regi == (regi + 4)) //WARNING: based on distance between AH-AL,BH-BL etc.
             {
                 m_loaded_reg=(eReg)(regi - rAL + rAX);
                 return true;

@@ -110,10 +110,10 @@ void LLInst::findJumpTargets(CIcodeRec &_pc)
     if (testFlags(I) && ! testFlags(JMP_ICODE) && isJmpInst())
     {
         /* Replace the immediate operand with an icode index */
-        iICODE labTgt=_pc.labelSrch(src.op());
+        iICODE labTgt=_pc.labelSrch(src().getImm2());
         if (labTgt!=_pc.end())
         {
-            src.SetImmediateOp(labTgt->loc_ip);
+            m_src.SetImmediateOp(labTgt->loc_ip);
             /* This icode is the target of a jump */
             labTgt->ll()->setFlags(TARGET);
             setFlags(JMP_ICODE);   /* So its not done twice */
@@ -307,7 +307,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         case iPUSH:
             if (inst.testFlags(I))
             {
-                operands_s<<strHex(inst.src.op());
+                operands_s<<strHex(inst.src().getImm2());
             }
             else
             {
@@ -319,11 +319,11 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             if (inst.testFlags(I))
             {
                 strDst(operands_s,inst.getFlag(), inst.dst) <<", ";
-                formatRM(operands_s, inst.getFlag(), inst.src);
+                formatRM(operands_s, inst.getFlag(), inst.src());
                 inst.strSrc(operands_s);
             }
             else
-                strDst(operands_s,inst.getFlag() | I, inst.src);
+                strDst(operands_s,inst.getFlag() | I, inst.src());
             break;
 
         case iLDS:  case iLES:  case iBOUND:
@@ -340,9 +340,9 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 
             /* Check if there is a symbol here */
     {
-        ICODE *lab=pc.GetIcode(inst.src.op());
+        ICODE *lab=pc.GetIcode(inst.src().getImm2());
             selectTable(Label);
-        if ((inst.src.op() < (uint32_t)numIcode) &&  /* Ensure in range */
+        if ((inst.src().getImm2() < (uint32_t)numIcode) &&  /* Ensure in range */
                 readVal(operands_s, lab->ll()->label, 0))
             {
                 break;                          /* Symbolic label. Done */
@@ -352,11 +352,11 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             if (inst.testFlags(NO_LABEL))
             {
                 //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
-                operands_s<<strHex(inst.src.op());
+                operands_s<<strHex(inst.src().getImm2());
             }
             else if (inst.testFlags(I) )
             {
-                j = inst.src.op();
+                j = inst.src().getImm2();
                 if (pl.count(j)==0)       /* Forward jump */
                 {
                     pl[j] = ++g_lab;
@@ -374,7 +374,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             }
             else
             {
-                strDst(operands_s,I, inst.src);
+                strDst(operands_s,I, inst.src());
             }
             break;
 
@@ -385,7 +385,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
                     operands_s<< "near";
                 else
                     operands_s<< " far";
-                operands_s<<" ptr "<<(inst.src.proc.proc)->name;
+                operands_s<<" ptr "<<(inst.src().proc.proc)->name;
             }
             else if (inst.getOpcode() == iCALLF)
             {
@@ -393,18 +393,18 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
                 inst.strSrc(operands_s,true);
             }
             else
-                strDst(operands_s,I, inst.src);
+                strDst(operands_s,I, inst.src());
             break;
 
         case iENTER:
             operands_s<<strHex(inst.dst.off)<<", ";
-            operands_s<<strHex(inst.src.op());
+            operands_s<<strHex(inst.src().getImm2());
             break;
 
         case iRET:  case iRETF:  case iINT:
             if (inst.testFlags(I))
             {
-                operands_s<<strHex(inst.src.op());
+                operands_s<<strHex(inst.src().getImm2());
             }
             break;
 
@@ -415,7 +415,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         case iMOVS:  case iREP_MOVS:
         case iINS:   case iREP_INS:
         case iOUTS:  case iREP_OUTS:
-            if (inst.src.segOver)
+            if (inst.src().segOver)
             {
                 bool is_dx_src=(inst.getOpcode() == iOUTS || inst.getOpcode() == iREP_OUTS);
                 if(is_dx_src)
@@ -427,11 +427,11 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
                     inst.getOpcode() == iOUTS ||
                     inst.getOpcode() == iREP_OUTS)
                 {
-                    operands_s<<Machine_X86::regName(inst.src.segOver); // szWreg[src.segOver-rAX]
+                    operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
                 }
                 else
                 {
-                    operands_s<<"es:[di], "<<Machine_X86::regName(inst.src.segOver);
+                    operands_s<<"es:[di], "<<Machine_X86::regName(inst.src().segOver);
                 }
                 operands_s<<":[si]";
             }
@@ -442,21 +442,21 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         break;
 
         case iXLAT:
-            if (inst.src.segOver)
+            if (inst.src().segOver)
             {
                 operands_s<<" "<<szPtr[1];
-                operands_s<<Machine_X86::regName(inst.src.segOver)<<":[bx]";
+                operands_s<<Machine_X86::regName(inst.src().segOver)<<":[bx]";
             }
             break;
 
         case iIN:
             (inst.getFlag() & B)? operands_s<<"al, " : operands_s<< "ax, ";
-            (inst.testFlags(I))? operands_s << strHex(inst.src.op()) : operands_s<< "dx";
+            (inst.testFlags(I))? operands_s << strHex(inst.src().getImm2()) : operands_s<< "dx";
             break;
 
         case iOUT:
         {
-            std::string d1=((inst.testFlags(I))? strHex(inst.src.op()): "dx");
+            std::string d1=((inst.testFlags(I))? strHex(inst.src().getImm2()): "dx");
             std::string d2=((inst.getFlag() & B) ? ", al": ", ax");
             operands_s<<d1 << d2;
         }
@@ -608,11 +608,11 @@ ostringstream &LLInst::strSrc(ostringstream &os,bool skip_comma)
     if(false==skip_comma)
         os<<", ";
     if (testFlags(I))
-        os<<strHex(src.op());
+        os<<strHex(src().getImm2());
     else if (testFlags(IM_SRC))		/* level 2 */
         os<<"dx:ax";
     else
-        formatRM(os, getFlag(), src);
+        formatRM(os, getFlag(), src());
 
     return os;
 }
@@ -644,7 +644,7 @@ void interactDis(Function * initProc, int initIC)
 void LLInst::flops(std::ostringstream &out)
 {
     char bf[30];
-    uint8_t op = (uint8_t)src.op();
+    uint8_t op = (uint8_t)src().getImm2();
 
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */

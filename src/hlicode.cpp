@@ -42,11 +42,11 @@ void ICODE::newCallHl()
 {
     type = HIGH_LEVEL;
     hl()->opcode = HLI_CALL;
-    hl()->call.proc = ll()->src.proc.proc;
+    hl()->call.proc = ll()->src().proc.proc;
     hl()->call.args = new STKFRAME;
 
-    if (ll()->src.proc.cb != 0)
-        hl()->call.args->cb = ll()->src.proc.cb;
+    if (ll()->src().proc.cb != 0)
+        hl()->call.args->cb = ll()->src().proc.cb;
     else if(hl()->call.proc)
         hl()->call.args->cb =hl()->call.proc->cbParam;
     else
@@ -117,11 +117,11 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
 HLTYPE LLInst::createCall()
 {
     HLTYPE res(HLI_CALL);
-    res.call.proc = src.proc.proc;
+    res.call.proc = src().proc.proc;
     res.call.args = new STKFRAME;
 
-    if (src.proc.cb != 0)
-        res.call.args->cb = src.proc.cb;
+    if (src().proc.cb != 0)
+        res.call.args->cb = src().proc.cb;
     else if(res.call.proc)
         res.call.args->cb =res.call.proc->cbParam;
     else

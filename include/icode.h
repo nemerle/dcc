@@ -185,7 +185,6 @@ struct LLOperand
         proc.proc=0;
         proc.cb=0;
     }
-    uint32_t op() const {return opz;}
     int64_t getImm2() const {return opz;}
     void SetImmediateOp(uint32_t dw)
     {
@@ -221,7 +220,7 @@ public:
     uint8_t      numBytes;       /* Number of bytes this instr   */
     uint32_t     label;          /* offset in image (20-bit adr) */
     LLOperand    dst;            /* destination operand          */
-    LLOperand    src;            /* source operand               */
+    LLOperand    m_src;            /* source operand               */
     DU           flagDU;         /* def/use of flags				*/
     struct {                    /* Case table if op==JMP && !I  */
         int     numEntries;     /*   # entries in case table    */
@@ -248,7 +247,7 @@ public:
 
     uint32_t  GetLlLabel() const { return label;}
 
-    void SetImmediateOp(uint32_t dw) {src.SetImmediateOp(dw);}
+    void SetImmediateOp(uint32_t dw) {m_src.SetImmediateOp(dw);}
 
 
     bool match(llIcode op)
@@ -265,11 +264,11 @@ public:
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
-        return (getOpcode()==op)&&(dst.regi==dest)&&(src.regi==src_reg);
+        return (getOpcode()==op)&&(dst.regi==dest)&&(m_src.regi==src_reg);
     }
     bool match(eReg dest,eReg src_reg)
     {
-        return (dst.regi==dest)&&(src.regi==src_reg);
+        return (dst.regi==dest)&&(m_src.regi==src_reg);
     }
     bool match(eReg dest)
     {
@@ -300,6 +299,20 @@ public:
         caseTbl.numEntries=0;
         setOpcode(0);
     }
+    const LLOperand &src() const {return m_src;}
+    LLOperand &src() {return m_src;}
+    void replaceSrc(const LLOperand &with)
+    {
+        m_src = with;
+    }
+    void replaceSrc(eReg r)
+    {
+        m_src = LLOperand::CreateReg2(r);
+    }
+    void replaceSrc(int64_t r)
+    {
+        m_src = LLOperand::CreateImm2(r);
+    }
     void replaceDst(const LLOperand &with)
     {
         dst = with;
@@ -309,6 +322,8 @@ public:
         dst = LLOperand::CreateReg2(r);
     }
     ICODE *m_link;
+    const LLOperand *   get(opLoc sd) const { return (sd == SRC) ? &src() : &dst; }
+    LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &dst; }
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */

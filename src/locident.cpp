@@ -10,7 +10,7 @@
 #include "dcc.h"
 bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 {
-    return (a->ll()->src.getReg2()==l) and (b->ll()->dst.getReg2()==h);
+    return (a->ll()->src().getReg2()==l) and (b->ll()->dst.getReg2()==h);
 }
 
 
@@ -279,18 +279,16 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, i
 {
     size_t idx;
   LLOperand *pmH, *pmL;
-//  iICODE atOffset(pIcode);
-//  advance(atOffset,off);
-
+	LLInst &p_ll(*pIcode->ll());
     if (f == LOW_FIRST)
     {
-        pmL = (sd == SRC) ? &pIcode->ll()->src : &pIcode->ll()->dst;
-        pmH = (sd == SRC) ? &atOffset->ll()->src : &atOffset->ll()->dst;
+        pmL = pIcode->ll()->get(sd);
+        pmH = atOffset->ll()->get(sd);
     }
     else        /* HIGH_FIRST */
     {
-        pmH = (sd == SRC) ? &pIcode->ll()->src : &pIcode->ll()->dst;
-        pmL = (sd == SRC) ? &atOffset->ll()->src : &atOffset->ll()->dst;
+        pmL = atOffset->ll()->get(sd);
+        pmH = pIcode->ll()->get(sd);
     }
 
     if (pmL->regi == 0)                                 /* global variable */
@@ -340,8 +338,8 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pPro
 
     pmHdst = &pIcode->ll()->dst;
     pmLdst = &atOffset->ll()->dst;
-    pmHsrc = &pIcode->ll()->src;
-    pmLsrc = &atOffset->ll()->src;
+    pmHsrc = &pIcode->ll()->src();
+    pmLsrc = &atOffset->ll()->src();
 
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
@@ -381,8 +379,8 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
 
     pmHdst = &pIcode->ll()->dst;
     pmLdst = &atOffset->ll()->dst;
-    pmHsrc = &pIcode->ll()->src;
-    pmLsrc = &atOffset->ll()->src;
+    pmHsrc = &pIcode->ll()->src();
+    pmLsrc = &atOffset->ll()->src();
 
     if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
     {

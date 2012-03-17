@@ -412,10 +412,9 @@ static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t of
 {
     LLOperand *pm;
 
-    /* If not to register (i.e. to r/m), and talking about r/m,
-                then this is dest */
+    /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
     pm = (!(stateTable[i].flg & TO_REG) == fdst) ?
-                &pIcode->ll()->dst : &pIcode->ll()->src;
+             &pIcode->ll()->dst : &pIcode->ll()->src();
 
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
          * provide the value of this segment in the field segValue.  */
@@ -425,8 +424,7 @@ static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t of
     }
     else
     {	/* no override, check indexed register */
-        if ((reg >= INDEX_BX_SI) && (reg == INDEX_BP_SI ||
-                                   reg == INDEX_BP_DI || reg == INDEX_BP))
+        if ((reg >= INDEX_BX_SI) && (reg == INDEX_BP_SI || reg == INDEX_BP_DI || reg == INDEX_BP))
         {
             pm->seg = rSS;		/* indexed on bp */
         }
@@ -482,8 +480,8 @@ static void rm(int i)
             break;
     }
 
-    if ((stateTable[i].flg & NSP) && (pIcode->ll()->src.regi==rSP ||
-                                      pIcode->ll()->dst.regi==rSP))
+    if ((stateTable[i].flg & NSP) && (pIcode->ll()->src().getReg2()==rSP ||
+                                      pIcode->ll()->dst.getReg2()==rSP))
         pIcode->ll()->setFlags(NOT_HLL);
 }
 
@@ -520,7 +518,8 @@ static void segrm(int i)
 static void regop(int i)
 {
     setAddress(i, false, 0, ((int16_t)i & 7) + rAX, 0);
-    pIcode->ll()->dst.regi = pIcode->ll()->src.regi;
+    pIcode->ll()->replaceDst(LLOperand::CreateReg2(pIcode->ll()->src().getReg2()));
+//    pIcode->ll()->dst.regi = pIcode->ll()->src.regi;
 }
 
 
@@ -544,13 +543,13 @@ static void axImp(int i)
 /* Implied AX source */
 static void axSrcIm (int )
 {
-    pIcode->ll()->src.regi = rAX;
+    pIcode->ll()->replaceSrc(rAX);//src.regi = rAX;
 }
 
 /* Implied AL source */
 static void alImp (int )
 {
-    pIcode->ll()->src.regi = rAL;
+    pIcode->ll()->replaceSrc(rAL);//src.regi = rAL;
 }
 
 
@@ -620,7 +619,7 @@ static void shift(int i)
     pIcode->ll()->flagDU.u = uf[REG(*pInst)];
     pIcode->ll()->flagDU.d = df[REG(*pInst)];
     rm(i);
-    pIcode->ll()->src.regi = rCL;
+    pIcode->ll()->replaceSrc(rCL); //src.regi =
 }
 
 
@@ -640,7 +639,7 @@ static void trans(int i)
         ll->setOpcode(transTable[REG(*pInst)]);   /* valid on bytes */
         ll->flagDU.d = df[REG(*pInst)];
         rm(i);
-        ll->src = pIcode->ll()->dst;
+        ll->replaceSrc( pIcode->ll()->dst );
         if (ll->match(iJMP) || ll->match(iCALL) || ll->match(iCALLF))
             ll->setFlags(NO_OPS);
         else if (ll->match(iINC) || ll->match(iPUSH) || ll->match(iDEC))
@@ -676,7 +675,7 @@ static void arith(int i)
     }
     else if (!(opcode == iNOT || opcode == iNEG))
     {
-        pIcode->ll()->src = pIcode->ll()->dst;
+        pIcode->ll()->replaceSrc( pIcode->ll()->dst );
         setAddress(i, true, 0, rAX, 0);			/* dst = AX  */
     }
     else if (opcode == iNEG || opcode == iNOT)
@@ -695,7 +694,7 @@ static void arith(int i)
  *****************************************************************************/
 static void data1(int i)
 {
-    pIcode->ll()->src.SetImmediateOp( (stateTable[i].flg & S_EXT)? signex(*pInst++): *pInst++ );
+    pIcode->ll()->replaceSrc(LLOperand::CreateImm2((stateTable[i].flg & S_EXT)? signex(*pInst++): *pInst++));
     pIcode->ll()->setFlags(I);
 }
 
@@ -719,7 +718,7 @@ static void data2(int )
         pIcode->ll()->setFlags(NO_OPS);
     }
     else
-        pIcode->ll()->src.SetImmediateOp(getWord());
+        pIcode->ll()->replaceSrc(getWord());
     pIcode->ll()->setFlags(I);
 }
 
@@ -745,7 +744,7 @@ static void dispN(int )
     /* Note: the result of the subtraction could be between 32k and 64k, and
         still be positive; it is an offset from prog.Image. So this must be
         treated as unsigned */
-    pIcode->ll()->src.SetImmediateOp((uint32_t)(off + (unsigned)(pInst - prog.Image)));
+    pIcode->ll()->replaceSrc((uint32_t)(off + (unsigned)(pInst - prog.Image)));
     pIcode->ll()->setFlags(I);
 }
 
@@ -758,7 +757,7 @@ static void dispS(int )
     PROG &prog(Project::get()->prog);
     long off = signex(*pInst++); 	/* Signed displacement */
 
-    pIcode->ll()->src.SetImmediateOp((uint32_t)(off + (unsigned)(pInst - prog.Image)));
+    pIcode->ll()->replaceSrc((uint32_t)(off + (unsigned)(pInst - prog.Image)));
     pIcode->ll()->setFlags(I);
 }
 
@@ -771,7 +770,7 @@ static void dispF(int )
     uint32_t off = (unsigned)getWord();
     uint32_t seg = (unsigned)getWord();
 
-    pIcode->ll()->src.SetImmediateOp(off + ((uint32_t)(unsigned)seg << 4));
+    pIcode->ll()->replaceSrc(off + ((uint32_t)(unsigned)seg << 4));
     pIcode->ll()->setFlags(I);
 }
 
@@ -820,7 +819,7 @@ static void strop(int )
  ***************************************************************************/
 static void escop(int i)
 {
-    pIcode->ll()->src.SetImmediateOp(REG(*pInst) + (uint32_t)((i & 7) << 3));
+    pIcode->ll()->replaceSrc(REG(*pInst) + (uint32_t)((i & 7) << 3));
     pIcode->ll()->setFlags(I);
     rm(i);
 }
@@ -831,7 +830,7 @@ static void escop(int i)
  ****************************************************************************/
 static void const1(int )
 {
-    pIcode->ll()->src.SetImmediateOp(1);
+    pIcode->ll()->replaceSrc(1);
     pIcode->ll()->setFlags(I);
 }
 
@@ -841,7 +840,7 @@ static void const1(int )
  ****************************************************************************/
 static void const3(int )
 {
-    pIcode->ll()->src.SetImmediateOp(3);
+    pIcode->ll()->replaceSrc(3);
     pIcode->ll()->setFlags(I);
 }
 
@@ -868,12 +867,12 @@ static void none2(int )
  ****************************************************************************/
 static void checkInt(int )
 {
-    uint16_t wOp = (uint16_t) pIcode->ll()->src.op();
+    uint16_t wOp = (uint16_t) pIcode->ll()->src().getImm2();
     if ((wOp >= 0x34) && (wOp <= 0x3B))
     {
         /* This is a Borland/Microsoft floating point emulation instruction.
             Treat as if it is an ESC opcode */
-        pIcode->ll()->src.SetImmediateOp(wOp - 0x34);
+        pIcode->ll()->replaceSrc(wOp - 0x34);
         pIcode->ll()->set(iESC,FLOAT_OP);
 
         escop(wOp - 0x34 + 0xD8);
