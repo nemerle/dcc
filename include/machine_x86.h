@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <bitset>
+
 /* Machine registers */
 enum eReg
 {
@@ -42,11 +43,21 @@ enum eReg
     INDEX_BX, // "bx"
     LAST_REG
 };
+class SourceMachine
+{
+public:
+//    virtual bool physicalReg(eReg r)=0;
 
-class Machine_X86
+};
+//class Machine_X86_Disassembler
+//{
+//    void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm);
+//};
+class Machine_X86 : public SourceMachine
 {
 public:
     Machine_X86();
+    virtual ~Machine_X86() {}
     static const std::string &regName(eReg r);
     static const std::string &opcodeName(unsigned r);
     static const std::string &floatOpName(unsigned r);
@@ -67,4 +78,5 @@ public:
 
     static bool isMemOff(eReg r);
     static bool isSubRegisterOf(eReg reg, eReg parent);
+
 };

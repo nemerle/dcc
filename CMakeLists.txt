@@ -9,7 +9,7 @@ IF(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(/W4)
 ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall --std=c++0x")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}"  ) #-D_GLIBCXX_DEBUG
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG "  ) #--coverage
 ENDIF()
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
@@ -20,8 +20,11 @@ IF(dcc_build_tests)
     FIND_PACKAGE(GMock)
 ENDIF()
 
+ADD_SUBDIRECTORY(3rd_party)
+
 llvm_map_components_to_libraries(REQ_LLVM_LIBRARIES jit native mc support)
 INCLUDE_DIRECTORIES(
+    3rd_party/libdisasm
     include
     include/idioms
     ${Boost_INCLUDE_DIRS}
@@ -59,6 +62,7 @@ set(dcc_SOURCES
     src/perfhlib.cpp
     src/procs.cpp
     src/project.cpp
+    src/Procedure.cpp
     src/proplong.cpp
     src/reducible.cpp
     src/scanner.cpp
@@ -69,6 +73,7 @@ set(dcc_SOURCES
 set(dcc_HEADERS
     include/ast.h
     include/bundle.h
+    include/BinaryImage.h
     include/dcc.h
     include/disassem.h
     include/dosdcc.h
@@ -101,7 +106,7 @@ SOURCE_GROUP(Source FILES ${dcc_SOURCES})
 SOURCE_GROUP(Headers FILES ${dcc_HEADERS})
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
-TARGET_LINK_LIBRARIES(dcc_original ${REQ_LLVM_LIBRARIES})
+TARGET_LINK_LIBRARIES(dcc_original disasm_s ${REQ_LLVM_LIBRARIES})
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)
 endif()

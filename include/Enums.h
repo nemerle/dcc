@@ -84,6 +84,7 @@ enum eLLFlags
     JMP_ICODE   =0x1000000, /* Jmp dest immed.op converted to icode index */
     JX_LOOP     =0x2000000, /* Cond jump is part of loop conditional exp */
     REST_STK    =0x4000000  /* Stack needs to be restored after CALL */
+#define ICODEMASK 0x0FF00FF    /* Masks off parser flags */
 };
 /* Types of icodes */
 enum icodeType

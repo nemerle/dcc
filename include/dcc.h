@@ -61,24 +61,7 @@ typedef struct {            /* Command line option flags */
 
 extern OPTION option;       /* Command line options             */
 
-struct PROG /* Loaded program image parameters  */
-{
-    int16_t     initCS;
-    int16_t     initIP;     /* These are initial load values    */
-    int16_t     initSS;     /* Probably not of great interest   */
-    uint16_t    initSP;
-    bool        fCOM;       /* Flag set if COM program (else EXE)*/
-    int         cReloc;     /* No. of relocation table entries  */
-    uint32_t *  relocTable; /* Ptr. to relocation table         */
-    uint8_t *   map;        /* Memory bitmap ptr                */
-    int         cProcs;     /* Number of procedures so far      */
-    int         offMain;    /* The offset  of the main() proc   */
-    uint16_t    segMain;    /* The segment of the main() proc   */
-    bool        bSigs;		/* True if signatures loaded		*/
-    int         cbImage;    /* Length of image in bytes         */
-    uint8_t *   Image;      /* Allocated by loader to hold entire
-                             * program image                    */
-};
+#include "BinaryImage.h"
 
 extern PROG prog;   		/* Loaded program image parameters  */
 extern std::bitset<32> duReg[30];   /* def/use bits for registers		*/

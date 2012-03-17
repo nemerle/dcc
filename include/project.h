@@ -5,7 +5,9 @@
 #include <list>
 #include <llvm/ADT/ilist.h>
 #include "symtab.h"
+#include "BinaryImage.h"
 struct Function;
+struct SourceMachine;
 struct CALL_GRAPH;
 
 typedef llvm::iplist<Function> FunctionListType;
@@ -20,6 +22,7 @@ struct Project
     std::string m_fname;
     FunctionListType pProcList;
     CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
+    PROG prog;   		/* Loaded program image parameters  */
     Project() {}
     // no copies
     Project(const Project&) = delete;
@@ -51,7 +54,6 @@ struct Project
         return *this;
     }
 
-    static Project *get();
 public:
     ilFunction funcIter(Function *to_find);
     ilFunction findByEntry(uint32_t entry);
@@ -64,6 +66,10 @@ public:
     hlType  symbolType(size_t idx);
     const std::string &symbolName(size_t idx);
     const SYM &getSymByIdx(size_t idx) const;
+
+    static Project *get();
+    PROG * binary() {return &prog;}
+    SourceMachine *machine();
 
 protected:
     void writeGlobSymTable();

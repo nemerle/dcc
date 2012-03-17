@@ -29,6 +29,7 @@ typedef unsigned char boolT; /* 8 bits   */
 //#define LH(p)  ((int16)((byte *)(p))[0] + ((int16)((byte *)(p))[1] << 8))
 #define LH(p)    ((word)((byte *)(p))[0]  + ((word)((byte *)(p))[1] << 8))
 
+
 /* Macro reads a LH word from the image regardless of host convention */
 /* Returns a signed quantity, e.g. C000 is read into an Int as FFFFC000 */
 #define LH_SIGNED(p) (((byte *)(p))[0] + (((char *)(p))[1] << 8))
