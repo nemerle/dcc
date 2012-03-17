@@ -97,6 +97,7 @@ char *cChar (uint8_t c)
 static void printGlobVar (std::ostream &ostr,SYM * psym)
 {
     int j;
+    PROG &prog(Project::get()->prog);
     uint32_t relocOp = prog.fCOM ? psym->label : psym->label + 0x100;
 
     switch (psym->size)
@@ -162,6 +163,7 @@ void Project::writeGlobSymTable()
  * fp. */
 static void writeHeader (std::ostream &_ios, char *fileName)
 {
+    PROG &prog(Project::get()->prog);
     /* Write header information */
     cCode.init();
     cCode.appendDecl( "/*\n");

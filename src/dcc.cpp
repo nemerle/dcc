@@ -12,7 +12,7 @@
 char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
 SYMTAB  symtab;             /* Global symbol table      			  */
 STATS   stats;              /* cfg statistics       				  */
-PROG    prog;               /* programs fields      				  */
+//PROG    prog;               /* programs fields      				  */
 OPTION  option;             /* Command line options     			  */
 //Function *   pProcList;			/* List of procedures, topologically sort */
 //Function *	pLastProc;			/* Pointer to last node in procedure list */

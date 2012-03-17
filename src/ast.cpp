@@ -604,6 +604,7 @@ void HlTypeSupport::performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *t
 /* Returns the string located in image, formatted in C format. */
 static std::string getString (int offset)
 {
+    PROG &prog(Project::get()->prog);
     ostringstream o;
     int strLen, i;
 

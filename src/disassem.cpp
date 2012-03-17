@@ -13,7 +13,7 @@
 #include "dcc.h"
 #include "symtab.h"
 #include "disassem.h"
-
+#include "project.h"
 // Note: for the time being, there is no interactive disassembler
 // for unix
 
@@ -205,6 +205,7 @@ void Disassembler::disassem(Function * ppProc)
  ****************************************************************************/
 void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 {
+    PROG &prog(Project::get()->prog);
     ostringstream oper_stream;
     ostringstream hex_bytes;
     ostringstream result_stream;

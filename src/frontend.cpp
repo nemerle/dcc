@@ -112,6 +112,7 @@ bool DccFrontend::FrontEnd ()
 ***************************************************************************/
 static void displayLoadInfo(void)
 {
+    PROG &prog(Project::get()->prog);
     int	i;
 
     printf("File type is %s\n", (prog.fCOM)?"COM":"EXE");
@@ -145,14 +146,14 @@ static void displayLoadInfo(void)
 ****************************************************************************/
 static void fill(int ip, char *bf)
 {
+    PROG &prog(Project::get()->prog);
     static uint8_t type[4] = {'.', 'd', 'c', 'x'};
     uint8_t	i;
 
     for (i = 0; i < 16; i++, ip++)
     {
         *bf++ = ' ';
-        *bf++ = (ip < prog.cbImage)?
-                    type[(prog.map[ip >> 2] >> ((ip & 3) * 2)) & 3]: ' ';
+        *bf++ = (ip < prog.cbImage)? type[(prog.map[ip >> 2] >> ((ip & 3) * 2)) & 3]: ' ';
     }
     *bf = '\0';
 }
@@ -163,6 +164,8 @@ static void fill(int ip, char *bf)
 ****************************************************************************/
 static void displayMemMap(void)
 {
+    PROG &prog(Project::get()->prog);
+
     char	c, b1[33], b2[33], b3[33];
     uint8_t i;
     int ip = 0;
@@ -199,6 +202,7 @@ static void displayMemMap(void)
 ****************************************************************************/
 void DccFrontend::LoadImage(Project &proj)
 {
+    PROG &prog(Project::get()->prog);
     FILE   *fp;
     int		i, cb;
     uint8_t	buf[4];
@@ -269,7 +273,8 @@ void DccFrontend::LoadImage(Project &proj)
             }
         }
         /* Seek to start of image */
-        fseek(fp, (int)LH(&header.numParaHeader) * 16, SEEK_SET);
+        uint32_t start_of_image= LH(&header.numParaHeader) * 16;
+        fseek(fp, start_of_image, SEEK_SET);
     }
     else
     {	/* COM file

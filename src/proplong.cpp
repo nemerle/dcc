@@ -480,7 +480,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
              * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
         else if (pIcode->ll()->match(iOR) && (next1 != pEnd) && (isJCond ((llIcode)next1->ll()->getOpcode())))
         {
-            if ((pIcode->ll()->dst.regi == pLocId.id.longId.h) && (pIcode->ll()->src.regi == pLocId.id.longId.l))
+            if (pLocId.id.longId.srcDstRegMatch(pIcode,pIcode))
             {
                 asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
                 asgn.rhs = COND_EXPR::idKte (0, 4);	/* long 0 */

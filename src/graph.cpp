@@ -172,6 +172,7 @@ CondJumps:
 
 void Function::markImpure()
 {
+    PROG &prog(Project::get()->prog);
     SYM * psym;
     for(ICODE &icod : Icode)
     {

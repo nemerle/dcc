@@ -263,6 +263,7 @@ COND_EXPR *CallType::toId()
  * the actual argument gets modified */
 void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
 {
+    PROG &prog(Project::get()->prog);
     hlType actType;
     int offset, offL;
 

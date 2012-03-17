@@ -8,6 +8,11 @@
 #include <cstring>
 #include "locident.h"
 #include "dcc.h"
+bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
+{
+    return (a->ll()->src.getReg2()==l) and (b->ll()->dst.getReg2()==h);
+}
+
 
 ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
 {

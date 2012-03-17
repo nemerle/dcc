@@ -61,7 +61,13 @@ const std::string &Project::symbolName(size_t idx)
     assert(validSymIdx(idx));
     return symtab[idx].name;
 }
-Project *get()
+Project *Project::get()
 {
     return &g_proj;
+}
+
+
+SourceMachine *Project::machine()
+{
+    return nullptr;
 }

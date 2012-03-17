@@ -25,6 +25,7 @@ static uint32_t    SynthLab;
  * procedures found     */
 void DccFrontend::parse(Project &proj)
 {
+    PROG &prog(proj.prog);
     STATE state;
 
     /* Set initial state */
@@ -82,6 +83,7 @@ void DccFrontend::parse(Project &proj)
  * Size includes delimiter.     */
 int strSize (uint8_t *sym, char delim)
 {
+    PROG &prog(Project::get()->prog);
     int till_end = sym-prog.Image;
     uint8_t *end_ptr=std::find(sym,sym+(prog.cbImage-(till_end)),delim);
     return end_ptr-sym+1;
@@ -93,12 +95,13 @@ Function *fakeproc=Function::Create(0,0,"fake");
  * using a depth first search.     */
 void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 {
+    PROG &prog(Project::get()->prog);
     ICODE   _Icode, *pIcode;     /* This gets copied to pProc->Icode[] later */
     ICODE   eIcode;             /* extra icodes for iDIV, iIDIV, iXCHG */
     SYM *    psym;
     uint32_t   offset;
     eErrorId err;
-    boolT   done = false;
+    bool   done = false;
     SYMTAB &global_symbol_table(g_proj.symtab);
     if (name.find("chkstk") != string::npos)
     {
@@ -376,6 +379,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 /* process_JMP - Handles JMPs, returns true if we should end recursion  */
 boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
 {
+    PROG &prog(Project::get()->prog);
     static uint8_t i2r[4] = {rSI, rDI, rBP, rBX};
     ICODE       _Icode;
     uint32_t       cs, offTable, endTable;
@@ -503,6 +507,7 @@ boolT Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGr
 
 boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
+    PROG &prog(Project::get()->prog);
     ICODE &last_insn(Icode.back());
     STATE localState;     /* Local copy of the machine state */
     uint32_t off;
@@ -633,6 +638,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
 /* process_MOV - Handles state changes due to simple assignments    */
 static void process_MOV(LLInst & ll, STATE * pstate)
 {
+    PROG &prog(Project::get()->prog);
     SYM *  psym, *psym2;        /* Pointer to symbol in global symbol table */
     uint8_t  dstReg = ll.dst.regi;
     uint8_t  srcReg = ll.src.regi;
@@ -742,6 +748,7 @@ void STKFRAME::updateFrameOff ( int16_t off, int _size, uint16_t duFlag)
  *      symbol table, or Null if it's not a direct memory offset.  */
 static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag)
 {
+    PROG &prog(Project::get()->prog);
     int     i;
     SYM *    psym=nullptr;
     uint32_t   operand;
@@ -816,10 +823,10 @@ void STATE::setState(uint16_t reg, int16_t value)
     replaces *pIndex with an icode index */
 
 
-
-static void setBits(int16_t type, uint32_t start, uint32_t len)
 /* setBits - Sets memory bitmap bits for BM_CODE or BM_DATA (additively) */
+static void setBits(int16_t type, uint32_t start, uint32_t len)
 {
+    PROG &prog(Project::get()->prog);
     uint32_t   i;
 
     if (start < (uint32_t)prog.cbImage)

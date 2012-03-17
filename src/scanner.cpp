@@ -9,6 +9,7 @@
 
 #include "dcc.h"
 #include "scanner.h"
+#include "project.h"
 /*  Parser flags  */
 #define TO_REG      0x000100    /* rm is source  */
 #define S_EXT       0x000200    /* sign extend   */
@@ -326,6 +327,7 @@ static ICODE * pIcode;		/* Ptr to Icode record filled in by scan() */
  ****************************************************************************/
 eErrorId scan(uint32_t ip, ICODE &p)
 {
+    PROG &prog(Project::get()->prog);
     int  op;
     p = ICODE();
     p.type = LOW_LEVEL;
@@ -367,8 +369,9 @@ eErrorId scan(uint32_t ip, ICODE &p)
 /***************************************************************************
  relocItem - returns true if uint16_t pointed at is in relocation table
  **************************************************************************/
-static boolT relocItem(uint8_t *p)
+static bool relocItem(uint8_t *p)
 {
+    PROG &prog(Project::get()->prog);
     int		i;
     uint32_t	off = p - prog.Image;
 
@@ -736,6 +739,7 @@ static void dispM(int i)
  ****************************************************************************/
 static void dispN(int )
 {
+    PROG &prog(Project::get()->prog);
     long off = (short)getWord();	/* Signed displacement */
 
     /* Note: the result of the subtraction could be between 32k and 64k, and
@@ -751,6 +755,7 @@ static void dispN(int )
  ***************************************************************************/
 static void dispS(int )
 {
+    PROG &prog(Project::get()->prog);
     long off = signex(*pInst++); 	/* Signed displacement */
 
     pIcode->ll()->src.SetImmediateOp((uint32_t)(off + (unsigned)(pInst - prog.Image)));

@@ -14,6 +14,7 @@
 #endif
 #include <string.h>
 #include "dcc.h"
+#include "project.h"
 #include "perfhlib.h"
 
 #define  NIL   -1                   /* Used like NULL, but 0 is valid */
@@ -297,6 +298,7 @@ static uint8_t pattMsChkstk[] =
 /* This procedure is called to initialise the library check code */
 void SetupLibCheck(void)
 {
+    PROG &prog(Project::get()->prog);
     uint16_t w, len;
     int i;
 
@@ -436,6 +438,7 @@ void CleanupLibCheck(void)
 */
 bool LibCheck(Function & pProc)
 {
+    PROG &prog(Project::get()->prog);
     long fileOffset;
     int h, i, j, arg;
     int Idx;
@@ -619,6 +622,7 @@ static boolT locatePattern(uint8_t *source, int iMin, int iMax, uint8_t *pattern
 
 void STATE::checkStartup()
 {
+    PROG &prog(Project::get()->prog);
     /* This function checks the startup code for various compilers' way of
     loading DS. If found, it sets DS. This may not be needed in the future if
     pushing and popping of registers is implemented.

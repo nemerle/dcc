@@ -186,10 +186,30 @@ struct LLOperand
         proc.cb=0;
     }
     uint32_t op() const {return opz;}
-    void SetImmediateOp(uint32_t dw) {opz=dw;}
+    int64_t getImm2() const {return opz;}
+    void SetImmediateOp(uint32_t dw)
+    {
+        opz=dw;
+    }
+    eReg getReg2() {return regi;}
     bool isReg() const;
-
-
+    static LLOperand CreateImm2(int64_t Val)
+    {
+        LLOperand Op;
+        //Op.Kind = kImmediate;
+        //Op.ImmVal = Val;
+        Op.opz = Val;
+        return Op;
+    }
+    static LLOperand CreateReg2(unsigned Val)
+    {
+        LLOperand Op;
+//        Op.Kind = kRegister;
+//        Op.RegVal = Reg;
+        Op.regi = (eReg)Val;
+        return Op;
+    }
+    void addProcInformation(int param_count,uint32_t call_conv);
 };
 struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
@@ -279,6 +299,14 @@ public:
         caseTbl.entries=0;
         caseTbl.numEntries=0;
         setOpcode(0);
+    }
+    void replaceDst(const LLOperand &with)
+    {
+        dst = with;
+    }
+    void replaceDst(eReg r)
+    {
+        dst = LLOperand::CreateReg2(r);
     }
     ICODE *m_link;
 };
@@ -438,9 +466,9 @@ public:
     CIcodeRec();	// Constructor
 
     ICODE *	addIcode(ICODE *pIcode);
-    void	SetInBB(int start, int end, BB* pnewBB);
     void	SetInBB(rCODE &rang, BB* pnewBB);
     bool	labelSrch(uint32_t target, uint32_t &pIndex);
     iterator    labelSrch(uint32_t target);
     ICODE *	GetIcode(int ip);
+    bool        alreadyDecoded(uint32_t target);
 };

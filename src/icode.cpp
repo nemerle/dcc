@@ -46,6 +46,13 @@ bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
     pIndex=location->loc_ip;
     return true;
 }
+bool CIcodeRec::alreadyDecoded(uint32_t target)
+{
+    iICODE location=labelSrch(target);
+    if(end()==location)
+            return false;
+    return true;
+}
 CIcodeRec::iterator CIcodeRec::labelSrch(uint32_t target)
 {
     return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ll()->label==target;});
