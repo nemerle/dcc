@@ -122,7 +122,10 @@ public:
     {
         edges[0].ip = ip;
     }
+    void RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode);
 private:
+    bool    FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at);
+    void    ProcessUseDefForFunc(eReg regi, int defRegIdx, iICODE picode);
     bool    isEndOfPath(int latch_node_idx) const;
     Function *Parent;
 

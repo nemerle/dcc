@@ -12,7 +12,7 @@ bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 {
     return (a->ll()->src().getReg2()==l) and (b->ll()->dst.getReg2()==h);
 }
-
+	
 
 ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
 {
@@ -278,7 +278,7 @@ int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
 int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, iICODE atOffset)
 {
     size_t idx;
-  LLOperand *pmH, *pmL;
+    const LLOperand *pmH, *pmL;
 	LLInst &p_ll(*pIcode->ll());
     if (f == LOW_FIRST)
     {
@@ -334,7 +334,8 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, i
  *            rhs, lhs  : return expressions if successful. */
 boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, iICODE atOffset)
 {
-    LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
+    /* pointers to LOW_LEVEL icodes */
+    const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
     pmHdst = &pIcode->ll()->dst;
     pmLdst = &atOffset->ll()->dst;
