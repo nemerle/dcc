@@ -64,13 +64,13 @@ public:
     static bool physicalReg(eReg r);
     /* Writes the registers that are set in the bitvector */
     //TODO: move this into Machine_X86 ?
-    static void writeBitVector (std::ostream &ostr,const std::bitset<32> &regi)
+    static void writeRegVector (std::ostream &ostr,const std::bitset<32> &regi)
     {
         int j;
         for (j = rAX; j < INDEX_BX_SI; j++)
         {
             if (regi.test(j-1))
-                ostr << regName(eReg(j));
+                ostr << regName(eReg(j))<<" ";
         }
     }
     static eReg subRegH(eReg reg); //TODO: move these into machine_x86

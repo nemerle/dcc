@@ -282,13 +282,13 @@ void Function::codeGen (std::ostream &fs)
             cout << "  Start = "<<pBB->begin()->loc_ip;
             cout << ", end = "<<pBB->begin()->loc_ip+pBB->size()<<"\n";
             cout << "  LiveUse = ";
-            Machine_X86::writeBitVector(cout,pBB->liveUse);
+            Machine_X86::writeRegVector(cout,pBB->liveUse);
             cout << "\n  Def = ";
-            Machine_X86::writeBitVector(cout,pBB->def);
+            Machine_X86::writeRegVector(cout,pBB->def);
             cout << "\n  LiveOut = ";
-            Machine_X86::writeBitVector(cout,pBB->liveOut);
+            Machine_X86::writeRegVector(cout,pBB->liveOut);
             cout << "\n  LiveIn = ";
-            Machine_X86::writeBitVector(cout,pBB->liveIn);
+            Machine_X86::writeRegVector(cout,pBB->liveIn);
             cout <<"\n\n";
         }
 }

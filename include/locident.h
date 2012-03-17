@@ -124,7 +124,7 @@ public:
     int newIntIdx(int16_t seg, int16_t off, eReg regi, int ix, hlType t);
     int newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off);
-    int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset);
+    int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);
     void newIdent(hlType t, frameType f);
     void flagByteWordId(int off);
     void propLongId(uint8_t regL, uint8_t regH, const char *name);

@@ -602,13 +602,13 @@ void ICODE::writeDU()
     int my_idx = loc_ip;
     {
         ostringstream ostr;
-        Machine_X86::writeBitVector(ostr,du.def);
+        Machine_X86::writeRegVector(ostr,du.def);
         if (!ostr.str().empty())
             printf ("Def (reg) = %s\n", ostr.str().c_str());
     }
     {
         ostringstream ostr;
-        Machine_X86::writeBitVector(ostr,du.use);
+        Machine_X86::writeRegVector(ostr,du.use);
         if (!ostr.str().empty())
             printf ("Use (reg) = %s\n", ostr.str().c_str());
     }

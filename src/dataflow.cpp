@@ -469,6 +469,7 @@ void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, iICODE picode)
             picode->du.lastDefRegi |= duReg[regi];
     }
 }
+
 /* If not used within this bb or in successors of this
  * bb (ie. not in liveOut), then register is useless,
  * thus remove it.  Also check that this is not a return
@@ -621,7 +622,7 @@ bool COND_EXPR::xClear (rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID
         {
             regi= locId.id_arr[expr.ident.idNode.regiIdx].id.regi;
             range_to_check.advance_begin(1);
-            auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
+            auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::select_valid_high_level);
             for (ICODE &i : all_valid_and_high_level_after_start)
                 if ((i.du.def & duReg[regi]).any())
                     return false;
@@ -701,9 +702,7 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, int num
         if (pp->args.numArgs > 0)
         {
             if(_exp==NULL)
-            {
                 fprintf(stderr,"Would try to adjustForArgType with null _exp\n");
-            }
             else
                 pp->args.adjustForArgType (numArgs, _exp->expType (pProc));
         }
@@ -1021,7 +1020,9 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                             case HLI_ASSIGN:
                                 _exp = _icHl.call.toId();
                                 ticode->hl()->asgn.lhs =
-                                        COND_EXPR::idLong(&locals, DST, ticode,HIGH_FIRST, picode.base(), eDEF, ++iICODE(ticode));
+                                        COND_EXPR::idLong(&locals, DST,
+                                                          ticode,HIGH_FIRST, picode.base(),
+                                                          eDEF, *(++iICODE(ticode))->ll());
                                 ticode->hl()->asgn.rhs = _exp;
                                 picode->invalidate();
                                 numHlIcodes--;
@@ -1110,24 +1111,12 @@ void Function::findExps()
     }
 }
 
-
-/** Invokes procedures related with data flow analysis.  Works on a procedure
- * at a time basis.
- * Note: indirect recursion in liveRegAnalysis is possible. */
-void Function::dataFlow(std::bitset<32> &_liveOut)
+void Function::preprocessReturnDU(std::bitset<32> &_liveOut)
 {
-    bool isAx, isBx, isCx, isDx;
-    int idx;
-
-    /* Remove references to register variables */
-    if (flg & SI_REGVAR)
-        _liveOut &= maskDuReg[rSI];
-    if (flg & DI_REGVAR)
-        _liveOut &= maskDuReg[rDI];
-
-    /* Function - return value register(s) */
     if (_liveOut.any())
     {
+        int idx;
+        bool isAx, isBx, isCx, isDx;
         flg |= PROC_IS_FUNC;
         isAx = _liveOut.test(rAX - rAX);
         isBx = _liveOut.test(rBX - rAX);
@@ -1201,6 +1190,21 @@ void Function::dataFlow(std::bitset<32> &_liveOut)
 
         }
     }
+}
+/** Invokes procedures related with data flow analysis.  Works on a procedure
+ * at a time basis.
+ * Note: indirect recursion in liveRegAnalysis is possible. */
+void Function::dataFlow(std::bitset<32> &_liveOut)
+{
+
+    /* Remove references to register variables */
+    if (flg & SI_REGVAR)
+        _liveOut &= maskDuReg[rSI];
+    if (flg & DI_REGVAR)
+        _liveOut &= maskDuReg[rDI];
+
+    /* Function - return value register(s) */
+    preprocessReturnDU(_liveOut);
 
     /* Data flow analysis */
     liveAnal = true;

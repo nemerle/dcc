@@ -143,8 +143,8 @@ char 	*writeJcondInv (HLTYPE, Function *, int *);
 
 
 /* Exported funcions from locident.c */
-boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE atOffset);
-boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, iICODE);
+boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &atOffset);
+boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &);
 eReg otherLongRegi(eReg, int, LOCAL_ID *);
 
 

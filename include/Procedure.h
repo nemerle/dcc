@@ -157,6 +157,7 @@ public:
     void displayStats();
     void processHliCall(COND_EXPR *exp, iICODE picode);
 
+    void preprocessReturnDU(std::bitset<32> &_liveOut);
 protected:
     bool removeInEdge_Flag_and_ProcessLatch(BB *pbb, BB *a, BB *b);
     bool Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB);

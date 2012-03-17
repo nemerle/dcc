@@ -84,7 +84,7 @@ bool Idiom13::match(iICODE pIcode)
     if (not m_icodes[0]->ll()->testFlags(I) && (regi >= rAL) && (regi <= rBH))
     {
         /* Check for MOV regH, 0 */
-        if (m_icodes[1]->ll()->match(iMOV) && m_icodes[1]->ll()->testFlags(I) && (m_icodes[1]->ll()->src().getImm2() == 0))
+        if (m_icodes[1]->ll()->match(iMOV,I) && (m_icodes[1]->ll()->src().getImm2() == 0))
         {
             if (m_icodes[1]->ll()->dst.regi == (regi + 4)) //WARNING: based on distance between AH-AL,BH-BL etc.
             {

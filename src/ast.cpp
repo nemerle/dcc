@@ -246,7 +246,7 @@ COND_EXPR *COND_EXPR::idLongIdx (int idx)
 
 
 /* Returns an identifier conditional expression node of type LONG_VAR */
-COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, iICODE atOffset)
+COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset)
 {
     int idx;
     COND_EXPR *newExp = new COND_EXPR(IDENTIFIER);
@@ -256,10 +256,10 @@ COND_EXPR *COND_EXPR::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst
         newExp->expr.ident.idType = CONSTANT;
         if (f == HIGH_FIRST)
             newExp->expr.ident.idNode.kte.kte = (pIcode->ll()->src().getImm2() << 16) +
-                    atOffset->ll()->src().getImm2();
+                    atOffset.src().getImm2();
         else        /* LOW_FIRST */
             newExp->expr.ident.idNode.kte.kte =
-                    (atOffset->ll()->src().getImm2() << 16)+ pIcode->ll()->src().getImm2();
+                    (atOffset.src().getImm2() << 16)+ pIcode->ll()->src().getImm2();
         newExp->expr.ident.idNode.kte.size = 4;
     }
     /* Save it as a long expression (reg, stack or glob) */

@@ -275,20 +275,20 @@ int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
 /* Returns the index to an appropriate long identifier.
  * Note: long constants should be checked first and stored as a long integer
  *       number in an expression record.    */
-int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, iICODE atOffset)
+int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, LLInst &atOffset)
 {
     size_t idx;
     const LLOperand *pmH, *pmL;
 	LLInst &p_ll(*pIcode->ll());
     if (f == LOW_FIRST)
     {
-        pmL = pIcode->ll()->get(sd);
-        pmH = atOffset->ll()->get(sd);
+        pmL = p_ll.get(sd);
+        pmH = atOffset.get(sd);
     }
     else        /* HIGH_FIRST */
     {
-        pmL = atOffset->ll()->get(sd);
-        pmH = pIcode->ll()->get(sd);
+        pmL = atOffset.get(sd);
+        pmH = p_ll.get(sd);
     }
 
     if (pmL->regi == 0)                                 /* global variable */
@@ -332,15 +332,15 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, i
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, iICODE atOffset)
+boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
     /* pointers to LOW_LEVEL icodes */
     const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
     pmHdst = &pIcode->ll()->dst;
-    pmLdst = &atOffset->ll()->dst;
+    pmLdst = &atOffset.dst;
     pmHsrc = &pIcode->ll()->src();
-    pmLsrc = &atOffset->ll()->src();
+    pmLsrc = &atOffset.src();
 
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
@@ -372,16 +372,15 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pPro
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
 boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
-                      Function * pProc, Assignment &asgn, iICODE atOffset)
+                      Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
-    LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;  /* pointers to LOW_LEVEL icodes */
-//    iICODE atOffset(pIcode);
-//    advance(atOffset,off);
+    /* pointers to LOW_LEVEL icodes */
+    const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
     pmHdst = &pIcode->ll()->dst;
-    pmLdst = &atOffset->ll()->dst;
+    pmLdst = &atOffset.dst;
     pmHsrc = &pIcode->ll()->src();
-    pmLsrc = &atOffset->ll()->src();
+    pmLsrc = &atOffset.src();
 
     if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
     {
