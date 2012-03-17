@@ -20,6 +20,7 @@
 // TODO: why ?
 struct COND_EXPR;
 struct ICODE;
+struct LLInst;
 typedef std::list<ICODE>::iterator iICODE;
 struct IDX_ARRAY : public std::vector<iICODE>
 {
@@ -49,11 +50,12 @@ typedef struct
     int		offH;	/*   high offset from BP					 */
     int		offL;	/*   low offset from BP						 */
 }	LONG_STKID_TYPE;
-typedef struct
+struct LONGID_TYPE
 {		/* For TYPE_LONG_(UN)SIGN registers			 */
     eReg	h;		/*   high register							 */
     eReg	l;		/*   low register							 */
-} LONGID_TYPE;
+    bool srcDstRegMatch(iICODE a,iICODE b) const;
+};
 
 
 /* ID, LOCAL_ID */

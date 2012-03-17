@@ -22,7 +22,7 @@ static boolT isJCond (llIcode opcode)
 
 
 /* Returns whether the conditions for a 2-3 long variable are satisfied */
-static bool isLong23 (iICODE iter, BB * pbb, iICODE &off, int *arc)
+static bool isLong23 (BB * pbb, iICODE &off, int *arc)
 {
     BB * t, * e, * obb2;
 
@@ -90,7 +90,7 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
     if (arc == THEN)
     {
         /* Find intermediate basic blocks and target block */
-        pbb = pIcode->inBB;
+        pbb = pIcode->getParent();
         obb1 = pbb->edges[THEN].BBptr;
         obb2 = obb1->edges[THEN].BBptr;
         tbb = obb2->edges[THEN].BBptr;
@@ -116,7 +116,7 @@ static int longJCond23 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode, int arc, 
     else  /* ELSE arc */
     {
         /* Find intermediate basic blocks and target block */
-        pbb = pIcode->inBB;
+        pbb = pIcode->getParent();
         obb1 = pbb->edges[ELSE].BBptr;
         obb2 = obb1->edges[THEN].BBptr;
         tbb = obb2->edges[THEN].BBptr;
@@ -183,7 +183,7 @@ static int longJCond22 (COND_EXPR *rhs, COND_EXPR *lhs, iICODE pIcode,iICODE pEn
     icodes[1]->du.use |= icodes[2]->du.use;
 
     /* Adjust outEdges[0] to the new target basic block */
-    pbb = icodes[0]->inBB;
+    pbb = icodes[0]->getParent();
     if (pbb->back().loc_ip == icodes[1]->loc_ip)
     {
         /* Find intermediate and target basic blocks */
@@ -277,9 +277,9 @@ void Function::propLongStk (int i, const ID &pLocId)
                 } /*eos*/
             }
         }
-
+        //TODO: Simplify this!
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ll()->getOpcode() == iCMP) && (isLong23 (pIcode, pIcode->inBB, l23, &arc)))
+        else if ((pIcode->ll()->getOpcode() == iCMP) && (isLong23 (pIcode->getParent(), l23, &arc)))
         {
             if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, l23) )
             {
@@ -455,7 +455,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             } /* eos */
 
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
-        else if ((pIcode->ll()->getOpcode() == iCMP) && (isLong23 (pIcode, pIcode->inBB, long_loc, &arc)))
+        else if ((pIcode->ll()->getOpcode() == iCMP) && (isLong23 (pIcode->getParent(), long_loc, &arc)))
         {
             if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn, long_loc))
             {

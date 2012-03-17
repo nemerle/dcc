@@ -13,9 +13,12 @@
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/Value.h>
+#include <llvm/Instruction.h>
 #include <boost/range.hpp>
+#include "libdis.h"
 #include "Enums.h"
 #include "state.h"			// State depends on INDEXBASE, but later need STATE
+
 //enum condId;
 
 struct LOCAL_ID;
@@ -163,11 +166,12 @@ public:
     void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs);
 } ;
 /* LOW_LEVEL icode operand record */
-struct LLOperand : public llvm::MCOperand
+struct LLOperand
 {
+    llvm::MCOperand llvm_op;
     eReg     seg;               /* CS, DS, ES, SS                       */
-    int16_t    segValue;          /* Value of segment seg during analysis */
     eReg     segOver;           /* CS, DS, ES, SS if segment override   */
+    int16_t    segValue;          /* Value of segment seg during analysis */
     eReg       regi;              /* 0 < regs < INDEXBASE <= index modes  */
     int16_t    off;               /* memory address offset                */
     uint32_t   opz;             /*   idx of immed src op        */
@@ -219,7 +223,6 @@ public:
         }
         flg &= ~flag;
     }
-
     uint32_t getFlag() const {return flg;}
     //llIcode getOpcode() const { return opcode; }
 
@@ -283,11 +286,15 @@ public:
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
 struct ICODE
 {
+    // use llvm names at least
+    typedef BB MachineBasicBlock;
 protected:
     LLInst m_ll;
     HLTYPE m_hl;
+    MachineBasicBlock * Parent;      	/* BB to which this icode belongs   */
     bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
 public:
+    x86_insn_t insn;
     template<int FLAG>
     struct FlagFilter
     {
@@ -306,6 +313,8 @@ public:
         bool operator()(ICODE *ic) {return (ic->type==HIGH_LEVEL)&&(ic->valid());}
         bool operator()(ICODE &ic) {return (ic.type==HIGH_LEVEL)&&ic.valid();}
     };
+    static TypeFilter<HIGH_LEVEL> select_high_level;
+    static TypeAndValidFilter<HIGH_LEVEL> select_valid_high_level;
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
     {
@@ -366,7 +375,6 @@ public:
         }
     };
     icodeType           type;           /* Icode type                       */
-    BB			*inBB;      	/* BB to which this icode belongs   */
     DU_ICODE		du;             /* Def/use regs/vars                */
     DU1			du1;        	/* du chain 1                       */
     int                 loc_ip; // used by CICodeRec to number ICODEs
@@ -396,6 +404,7 @@ public:
     void emitGotoLabel(int indLevel);
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
     bool valid() {return not invalid;}
+    void setParent(MachineBasicBlock *P) { Parent = P; }
 public:
     bool removeDefRegi(eReg regi, int thisDefIdx, LOCAL_ID *locId);
     void checkHlCall();
@@ -403,14 +412,24 @@ public:
     {
         return hl()->call.newStkArg(exp,opcode,pproc);
     }
-    ICODE() : m_ll(this),type(NOT_SCANNED),inBB(0),loc_ip(0),invalid(false)
+    ICODE() : m_ll(this),type(NOT_SCANNED),Parent(0),loc_ip(0),invalid(false)
     {
     }
+public:
+  const MachineBasicBlock* getParent() const { return Parent; }
+  MachineBasicBlock* getParent() { return Parent; }
+  //unsigned getNumOperands() const { return (unsigned)Operands.size(); }
+
 };
+/** Map n low level instructions to m high level instructions
+*/
 struct MappingLLtoML
 {
-    std::list<std::shared_ptr<LLInst> > m_low_level;
-    std::list<std::shared_ptr<HLTYPE> > m_middle_level;
+    typedef llvm::iplist<llvm::Instruction> InstListType;
+    typedef boost::iterator_range<iICODE> rSourceRange;
+    typedef boost::iterator_range<InstListType::iterator> rTargetRange;
+    rSourceRange m_low_level;
+    rTargetRange m_middle_level;
 };
 // This is the icode array object.
 class CIcodeRec : public std::list<ICODE>

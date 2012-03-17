@@ -12,7 +12,8 @@
 
 #define ICODE_DELTA 25		// Amount to allocate for new chunk
 
-
+ICODE::TypeFilter<HIGH_LEVEL> ICODE::select_high_level;
+ICODE::TypeAndValidFilter<HIGH_LEVEL> ICODE::select_valid_high_level;
 CIcodeRec::CIcodeRec()
 {
 }
@@ -27,20 +28,11 @@ ICODE * CIcodeRec::addIcode(ICODE *pIcode)
     return &back();
 }
 
-void CIcodeRec::SetInBB(int start, int _end, BB *pnewBB)
-{
-    for(ICODE &icode : *this)
-    {
-        if((icode.loc_ip>=start) and (icode.loc_ip<=_end))
-            icode.inBB = pnewBB;
-    }
-}
-
 void CIcodeRec::SetInBB(rCODE &rang, BB *pnewBB)
 {
     for(ICODE &ic : rang)
     {
-        ic.inBB = pnewBB;
+        ic.setParent(pnewBB);
     }
 }
 
