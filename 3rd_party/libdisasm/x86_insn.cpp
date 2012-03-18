@@ -17,7 +17,8 @@ int x86_insn_is_valid( x86_insn_t *insn ) {
     return 0;
 }
 
-int x86_insn_t::x86_insn_is_valid( )
+/** \returns false if an instruction is invalid, true if valid */
+bool x86_insn_t::is_valid( )
 {
     if ( this && this->type != insn_invalid && this->size > 0 )
     {
@@ -26,10 +27,15 @@ int x86_insn_t::x86_insn_is_valid( )
 
     return 0;
 }
-uint32_t x86_insn_t::x86_get_address() {
+/* Get Address: return the value of an offset operand, or the offset of
+ * a segment:offset absolute address */
+
+uint32_t x86_insn_t::x86_get_address()
+{
     x86_oplist_t *op_lst;
     assert(this);
-    if (! operands ) {
+    if (! operands )
+    {
         return 0;
     }
 
@@ -48,6 +54,9 @@ uint32_t x86_insn_t::x86_get_address() {
     return 0;
 }
 
+/** Get Relative Offset: return as a sign-extended int32_t the near or far
+ * relative offset operand, or 0 if there is none. There can be only one
+ * relaive offset operand in an instruction. */
 int32_t x86_insn_t::x86_get_rel_offset( ) {
     x86_oplist_t *op_lst;
     assert(this);
@@ -66,6 +75,10 @@ int32_t x86_insn_t::x86_get_rel_offset( ) {
     return 0;
 }
 
+/** Get Branch Target: return the x86_op_t containing the target of
+ * a jump or call operand, or NULL if there is no branch target.
+ * Internally, a 'branch target' is defined as any operand with
+ * Execute Access set. There can be only one branch target per instruction. */
 x86_op_t * x86_insn_t::x86_get_branch_target() {
     x86_oplist_t *op_lst;
     assert(this);
@@ -81,6 +94,24 @@ x86_op_t * x86_insn_t::x86_get_branch_target() {
 
     return NULL;
 }
+x86_op_t * x86_insn_t::get_dest() {
+    x86_oplist_t *op_lst;
+    assert(this);
+    if ( ! operands ) {
+        return NULL;
+    }
+    assert(this->x86_operand_count(op_dest)==1);
+    for (op_lst = operands; op_lst; op_lst = op_lst->next ) {
+        if ( op_lst->op.access & op_write)
+            return &(op_lst->op);
+    }
+
+    return NULL;
+}
+
+/** \brief Get Immediate: return the x86_op_t containing the immediate operand
+  for this instruction, or NULL if there is no immediate operand. There
+  can be only one immediate operand per instruction */
 x86_op_t * x86_insn_t::x86_get_imm() {
     x86_oplist_t *op_lst;
     assert(this);
@@ -101,9 +132,15 @@ x86_op_t * x86_insn_t::x86_get_imm() {
     x->op.type == op_immediate && ! (x->op.flags.op_hardcode)
 
 
-/* if there is an immediate value in the instruction, return a pointer to
- * it */
-unsigned char * x86_insn_t::x86_get_raw_imm() {
+/** \brief if there is an immediate value in the instruction, return a pointer to it
+ * Get Raw Immediate Data: returns a pointer to the immediate data encoded
+ * in the instruction. This is useful for large data types [>32 bits] currently
+ * not supported by libdisasm, or for determining if the disassembler
+ * screwed up the conversion of the immediate data. Note that 'imm' in this
+ * context refers to immediate data encoded at the end of an instruction as
+ * detailed in the Intel Manual Vol II Chapter 2; it does not refer to the
+ * 'op_imm' operand (the third operand in instructions like 'mul' */
+uint8_t *x86_insn_t::x86_get_raw_imm() {
     int size, offset;
     x86_op_t *op  = NULL;
     assert(this);
@@ -128,13 +165,13 @@ unsigned char * x86_insn_t::x86_get_raw_imm() {
     }
 
     /* immediate data is at the end of the insn */
-    size = op->x86_operand_size();
+    size = op->operand_size();
     offset = size - size;
     return( &bytes[offset] );
 }
 
 
-size_t x86_op_t::x86_operand_size() {
+size_t x86_op_t::operand_size() {
     switch (datatype ) {
         case op_byte:    return 1;
         case op_word:    return 2;
@@ -166,6 +203,7 @@ size_t x86_op_t::x86_operand_size() {
     return(4);      /* default size */
 }
 
+/** set the address (usually RVA) of the insn */
 void x86_insn_t::x86_set_insn_addr( uint32_t _addr ) {
     addr = _addr;
 }
@@ -182,6 +220,7 @@ void x86_insn_t::x86_set_insn_block( void * _block ){
     block = _block;
 }
 
+/** set insn->tag to 1 */
 void x86_insn_t::x86_tag_insn(){
     tag = 1;
 }
@@ -190,6 +229,7 @@ void x86_insn_t::x86_untag_insn(){
     tag = 0;
 }
 
+/** \return insn->tag */
 int x86_insn_t::x86_insn_is_tagged(){
     return tag;
 }

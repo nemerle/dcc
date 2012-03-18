@@ -16,16 +16,16 @@
  * only with one argument.
  */
 #define STRNCAT( buf, str, len ) do {   				\
-	int _i = strlen(str), _blen = strlen(buf), _len = len - 1;  	\
-	if ( len ) {							\
-        	strncat( buf, str, _len );  				\
-		if ( _len <= _i ) {					\
-			buf[_blen+_len] = '\0';				\
-			len = 0;					\
-		} else {						\
-			len -= _i;					\
-		}							\
-	}								\
+        int _i = strlen(str), _blen = strlen(buf), _len = len - 1;  	\
+        if ( len ) {							\
+                strncat( buf, str, _len );  				\
+                if ( _len <= _i ) {					\
+                        buf[_blen+_len] = '\0';				\
+                        len = 0;					\
+                } else {						\
+                        len -= _i;					\
+                }							\
+        }								\
 } while( 0 )
 
 #define STRNCATF( buf, fmt, data, len ) do {        \
@@ -47,11 +47,11 @@
 } while( 0 )
 
 static char *prefix_strings[] = {
-	"",     /* no prefix */
-	"repz ", /* the trailing spaces make it easy to prepend to mnemonic */
-	"repnz ",
-	"lock ",
-	"branch delay " /* unused in x86 */
+        "",     /* no prefix */
+        "repz ", /* the trailing spaces make it easy to prepend to mnemonic */
+        "repnz ",
+        "lock ",
+        "branch delay " /* unused in x86 */
 };
 
 static int format_insn_prefix_str( enum x86_insn_prefix prefix, char *buf,
@@ -163,28 +163,28 @@ static int format_expr( x86_ea_t *ea, char *buf, int len,
         char str[MAX_OP_STRING];
 
         if ( format == att_syntax ) {
-		if (ea->base.name[0] || ea->index.name[0] || ea->scale) {
-               		PRINT_DISPLACEMENT(ea);
-	                STRNCAT( buf, "(", len );
+                if (ea->base.name[0] || ea->index.name[0] || ea->scale) {
+                        PRINT_DISPLACEMENT(ea);
+                        STRNCAT( buf, "(", len );
 
-	                if ( ea->base.name[0]) {
-	                        STRNCATF( buf, "%%%s", ea->base.name, len );
-	                }
-	                if ( ea->index.name[0]) {
-	                        STRNCATF( buf, ",%%%s", ea->index.name, len );
-	                        if ( ea->scale > 1 ) {
-	                                STRNCATF( buf, ",%d", ea->scale, len );
-	                        }
-	                }
-	                /* handle the syntactic exception */
-	                if ( ! ea->base.name[0] &&
-	                     ! ea->index.name[0]   ) {
-	                        STRNCATF( buf, ",%d", ea->scale, len );
-	                }
+                        if ( ea->base.name[0]) {
+                                STRNCATF( buf, "%%%s", ea->base.name, len );
+                        }
+                        if ( ea->index.name[0]) {
+                                STRNCATF( buf, ",%%%s", ea->index.name, len );
+                                if ( ea->scale > 1 ) {
+                                        STRNCATF( buf, ",%d", ea->scale, len );
+                                }
+                        }
+                        /* handle the syntactic exception */
+                        if ( ! ea->base.name[0] &&
+                             ! ea->index.name[0]   ) {
+                                STRNCATF( buf, ",%d", ea->scale, len );
+                        }
 
-	                STRNCAT( buf, ")", len );
-		} else
-			STRNCATF( buf, "0x%" PRIX32, ea->disp, len );
+                        STRNCAT( buf, ")", len );
+                } else
+                        STRNCATF( buf, "0x%" PRIX32, ea->disp, len );
 
         } else if ( format == xml_syntax ){
 
@@ -270,8 +270,8 @@ static int format_expr( x86_ea_t *ea, char *buf, int len,
                         }
                 }
 
-                if ( ea->disp_size || (! ea->index.name[0] && 
-					! ea->base.name[0] ) )
+                if ( ea->disp_size || (! ea->index.name[0] &&
+                                        ! ea->base.name[0] ) )
                 {
                         PRINT_DISPLACEMENT(ea);
                 }
@@ -341,34 +341,34 @@ static char *get_operand_datatype_str( x86_op_t *op ){
                 "qword",
                 "dword",		/* 8 */
                 "dqword",
-		"sreal",
-		"dreal",
-		"extreal",		/* 12 */
-		"bcd",
-		"ssimd",
-		"dsimd",
-		"sssimd",		/* 16 */
-		"sdsimd",
-		"descr32",
-		"descr16",
-		"pdescr32",		/* 20 */
-		"pdescr16",
-		"bounds16",
-		"bounds32",
-		"fpu_env16",
-		"fpu_env32",		/* 25 */
-		"fpu_state16",
-		"fpu_state32",
-		"fp_reg_set"
+                "sreal",
+                "dreal",
+                "extreal",		/* 12 */
+                "bcd",
+                "ssimd",
+                "dsimd",
+                "sssimd",		/* 16 */
+                "sdsimd",
+                "descr32",
+                "descr16",
+                "pdescr32",		/* 20 */
+                "pdescr16",
+                "bounds16",
+                "bounds32",
+                "fpu_env16",
+                "fpu_env32",		/* 25 */
+                "fpu_state16",
+                "fpu_state32",
+                "fp_reg_set"
         };
 
-	/* handle signed values first */
+        /* handle signed values first */
         if ( op->flags.op_signed ) {
                 switch (op->datatype) {
                         case op_byte:  return types[0];
                         case op_word:  return types[1];
                         case op_qword: return types[2];
-                	case op_dqword: return types[4];
+                        case op_dqword: return types[4];
                         default:       return types[3];
                 }
         }
@@ -378,25 +378,25 @@ static char *get_operand_datatype_str( x86_op_t *op ){
                 case op_word:   	return types[6];
                 case op_qword:  	return types[7];
                 case op_dqword: 	return types[9];
-		case op_sreal:		return types[10];
-		case op_dreal:		return types[11];
-		case op_extreal:	return types[12];
-		case op_bcd:		return types[13];
-		case op_ssimd:		return types[14];
-		case op_dsimd:		return types[15];
-		case op_sssimd:		return types[16];
-		case op_sdsimd:		return types[17];
-		case op_descr32:	return types[18];
-		case op_descr16:	return types[19];
-		case op_pdescr32:	return types[20];
-		case op_pdescr16:	return types[21];
-		case op_bounds16:	return types[22];
-		case op_bounds32:	return types[23];
-		case op_fpustate16: 	return types[24];
-		case op_fpustate32: 	return types[25];
-		case op_fpuenv16: 	return types[26];
-		case op_fpuenv32: 	return types[27];
-		case op_fpregset: 	return types[28];
+                case op_sreal:		return types[10];
+                case op_dreal:		return types[11];
+                case op_extreal:	return types[12];
+                case op_bcd:		return types[13];
+                case op_ssimd:		return types[14];
+                case op_dsimd:		return types[15];
+                case op_sssimd:		return types[16];
+                case op_sdsimd:		return types[17];
+                case op_descr32:	return types[18];
+                case op_descr16:	return types[19];
+                case op_pdescr32:	return types[20];
+                case op_pdescr16:	return types[21];
+                case op_bounds16:	return types[22];
+                case op_bounds32:	return types[23];
+                case op_fpustate16: 	return types[24];
+                case op_fpustate32: 	return types[25];
+                case op_fpuenv16: 	return types[26];
+                case op_fpuenv32: 	return types[27];
+                case op_fpregset: 	return types[28];
                 default:        	return types[8];
         }
 }
@@ -608,21 +608,21 @@ static char *get_insn_cpu_str( enum x86_insn_cpu cpu ) {
         };
 
         if ( cpu <= sizeof(intel)/sizeof(intel[0]) ) {
-		return intel[cpu];
-	} else if ( cpu == 16 ) {
-		return "K6";
-	} else if ( cpu == 32 ) {
-		return "K7";
-	} else if ( cpu == 48 ) {
-		return "Athlon";
-	}
+                return intel[cpu];
+        } else if ( cpu == 16 ) {
+                return "K6";
+        } else if ( cpu == 32 ) {
+                return "K7";
+        } else if ( cpu == 48 ) {
+                return "Athlon";
+        }
 
         return "";
 }
 
 static char *get_insn_isa_str( enum x86_insn_isa isa ) {
         static char *subset[] = {
-		NULL,				// 0
+                NULL,				// 0
                 "General Purpose",           	// 1
                 "Floating Point",           	// 2
                 "FPU Management",           	// 3
@@ -636,7 +636,7 @@ static char *get_insn_isa_str( enum x86_insn_isa isa ) {
 
         if ( isa > sizeof (subset)/sizeof(subset[0]) ) {
                 return "";
-	}
+        }
 
         return subset[isa];
 }
@@ -658,35 +658,35 @@ static int format_operand_att( x86_op_t *op, x86_insn_t *insn, char *buf,
                         STRNCATF( buf, "$%s", str, len );
                         break;
 
-                case op_relative_near: 
+                case op_relative_near:
                         STRNCATF( buf, "0x%08X",
                                  (unsigned int)(op->data.sbyte +
                                  insn->addr + insn->size), len );
                         break;
 
-		case op_relative_far:
+                case op_relative_far:
                         if (op->datatype == op_word) {
                                 STRNCATF( buf, "0x%08X",
                                           (unsigned int)(op->data.sword +
                                           insn->addr + insn->size), len );
                         } else {
-                        	STRNCATF( buf, "0x%08X",
-                                  	(unsigned int)(op->data.sdword +
-                                  	insn->addr + insn->size), len );
-			}
+                                STRNCATF( buf, "0x%08X",
+                                        (unsigned int)(op->data.sdword +
+                                        insn->addr + insn->size), len );
+                        }
                         break;
 
                 case op_absolute:
-			/* ATT uses the syntax $section, $offset */
+                        /* ATT uses the syntax $section, $offset */
                         STRNCATF( buf, "$0x%04" PRIX16 ", ", op->data.absolute.segment,
-				len );
-			if (op->datatype == op_descr16) {
-                        	STRNCATF( buf, "$0x%04" PRIX16, 
-					op->data.absolute.offset.off16, len );
-			} else {
-                        	STRNCATF( buf, "$0x%08" PRIX32, 
-					op->data.absolute.offset.off32, len );
-			}
+                                len );
+                        if (op->datatype == op_descr16) {
+                                STRNCATF( buf, "$0x%04" PRIX16,
+                                        op->data.absolute.offset.off16, len );
+                        } else {
+                                STRNCATF( buf, "$0x%08" PRIX32,
+                                        op->data.absolute.offset.off32, len );
+                        }
                         break;
                 case op_offset:
                         /* ATT requires a '*' before JMP/CALL ops */
@@ -743,21 +743,21 @@ static int format_operand_native( x86_op_t *op, x86_insn_t *insn, char *buf,
                                           insn->addr + insn->size), len );
                                 break;
                         } else {
-                        	STRNCATF( buf, "0x%08" PRIX32, op->data.sdword +
-                                	  insn->addr + insn->size, len );
-			}
+                                STRNCATF( buf, "0x%08" PRIX32, op->data.sdword +
+                                          insn->addr + insn->size, len );
+                        }
                         break;
 
                 case op_absolute:
                         STRNCATF( buf, "$0x%04" PRIX16 ":", op->data.absolute.segment,
-				len );
-			if (op->datatype == op_descr16) {
-                        	STRNCATF( buf, "0x%04" PRIX16, 
-					op->data.absolute.offset.off16, len );
-			} else {
-                        	STRNCATF( buf, "0x%08" PRIX32, 
-					op->data.absolute.offset.off32, len );
-			}
+                                len );
+                        if (op->datatype == op_descr16) {
+                                STRNCATF( buf, "0x%04" PRIX16,
+                                        op->data.absolute.offset.off16, len );
+                        } else {
+                                STRNCATF( buf, "0x%08" PRIX32,
+                                        op->data.absolute.offset.off32, len );
+                        }
                         break;
 
                 case op_offset:
@@ -824,31 +824,31 @@ static int format_operand_xml( x86_op_t *op, x86_insn_t *insn, char *buf,
                                 break;
                         } else {
 
-                        	STRNCATF( buf, "value=\"0x%08" PRIX32 "\"/>\n",
+                                STRNCATF( buf, "value=\"0x%08" PRIX32 "\"/>\n",
                                       op->data.sdword + insn->addr + insn->size,
                                       len );
-			}
+                        }
                         break;
 
                 case op_absolute:
 
-                        STRNCATF( buf, 
-				"\t\t<absolute_address segment=\"0x%04" PRIX16 "\"",
-                        	op->data.absolute.segment, len );
+                        STRNCATF( buf,
+                                "\t\t<absolute_address segment=\"0x%04" PRIX16 "\"",
+                                op->data.absolute.segment, len );
 
-			if (op->datatype == op_descr16) {
-                        	STRNCATF( buf, "offset=\"0x%04" PRIX16 "\">", 
-					op->data.absolute.offset.off16, len );
-			} else {
-                        	STRNCATF( buf, "offset=\"0x%08" PRIX32 "\">", 
-					op->data.absolute.offset.off32, len );
-			}
+                        if (op->datatype == op_descr16) {
+                                STRNCATF( buf, "offset=\"0x%04" PRIX16 "\">",
+                                        op->data.absolute.offset.off16, len );
+                        } else {
+                                STRNCATF( buf, "offset=\"0x%08" PRIX32 "\">",
+                                        op->data.absolute.offset.off32, len );
+                        }
 
                         STRNCAT( buf, "\t\t</absolute_address>\n", len );
                         break;
 
                 case op_expression:
-			
+
 
                         STRNCAT( buf, "\t\t<address_expression>\n", len );
 
@@ -884,7 +884,7 @@ static int format_operand_raw( x86_op_t *op, x86_insn_t *insn, char *buf,
                                int len){
 
         char str[MAX_OP_RAW_STRING];
-	char *datatype = get_operand_datatype_str(op);
+        char *datatype = get_operand_datatype_str(op);
 
         switch (op->type) {
                 case op_register:
@@ -909,9 +909,9 @@ static int format_operand_raw( x86_op_t *op, x86_insn_t *insn, char *buf,
                         break;
 
                 case op_relative_near:
-			/* NOTE: in raw format, we print the
-			 * relative offset, not the actual
-			 * address of the jump target */
+                        /* NOTE: in raw format, we print the
+                         * relative offset, not the actual
+                         * address of the jump target */
 
                         STRNCAT( buf, "relative|", len );
                         STRNCATF( buf, "%s|", datatype, len );
@@ -927,8 +927,8 @@ static int format_operand_raw( x86_op_t *op, x86_insn_t *insn, char *buf,
                                 STRNCATF( buf, "%" PRId16 "|", op->data.sword, len);
                                 break;
                         } else {
-                        	STRNCATF( buf, "%" PRId32 "|", op->data.sdword, len );
-			}
+                                STRNCATF( buf, "%" PRId32 "|", op->data.sdword, len );
+                        }
                         break;
 
                 case op_absolute:
@@ -937,14 +937,14 @@ static int format_operand_raw( x86_op_t *op, x86_insn_t *insn, char *buf,
                         STRNCATF( buf, "%s|", datatype, len );
 
                         STRNCATF( buf, "$0x%04" PRIX16 ":", op->data.absolute.segment,
-				len );
-			if (op->datatype == op_descr16) {
-                        	STRNCATF( buf, "0x%04" PRIX16 "|", 
-					op->data.absolute.offset.off16, len );
-			} else {
-                        	STRNCATF( buf, "0x%08" PRIX32 "|", 
-					op->data.absolute.offset.off32, len );
-			}
+                                len );
+                        if (op->datatype == op_descr16) {
+                                STRNCATF( buf, "0x%04" PRIX16 "|",
+                                        op->data.absolute.offset.off16, len );
+                        } else {
+                                STRNCATF( buf, "0x%08" PRIX32 "|",
+                                        op->data.absolute.offset.off32, len );
+                        }
 
                         break;
 
@@ -981,14 +981,14 @@ static int format_operand_raw( x86_op_t *op, x86_insn_t *insn, char *buf,
 
 int x86_op_t::x86_format_operand(char *buf, int len,
                         enum x86_asm_format format ){
-	x86_insn_t *_insn;
+        x86_insn_t *_insn;
 
         if ( ! this || ! buf || len < 1 ) {
                 return(0);
         }
 
-	/* insn is stored in x86_op_t since .21-pre3 */
-	_insn = (x86_insn_t *) insn;
+        /* insn is stored in x86_op_t since .21-pre3 */
+        _insn = (x86_insn_t *) insn;
 
         memset( buf, 0, len );
 
@@ -1077,10 +1077,10 @@ static int format_att_mnemonic( x86_insn_t *insn, char *buf, int len) {
             )) {
             if ( insn->x86_operand_count( op_explicit ) > 0 &&
                  is_memory_op( insn->x86_operand_1st() ) ){
-                size = insn->x86_operand_1st()->x86_operand_size();
+                size = insn->x86_operand_1st()->operand_size();
             } else if ( insn->x86_operand_count( op_explicit ) > 1 &&
                         is_memory_op( insn->x86_operand_2nd() ) ){
-                size = insn->x86_operand_2nd()->x86_operand_size();
+                size = insn->x86_operand_2nd()->operand_size();
             }
         }
 
@@ -1094,6 +1094,7 @@ static int format_att_mnemonic( x86_insn_t *insn, char *buf, int len) {
         return ( strlen( buf ) );
 }
 
+/** format (sprintf) an instruction mnemonic into 'buf' using specified syntax */
 int x86_format_mnemonic(x86_insn_t *insn, char *buf, int len,
                         enum x86_asm_format format){
         char str[MAX_OP_STRING];
@@ -1113,24 +1114,24 @@ int x86_format_mnemonic(x86_insn_t *insn, char *buf, int len,
 struct op_string { char *buf; size_t len; };
 
 static void format_op_raw( x86_op_t *op, x86_insn_t *insn, void *arg ) {
-	struct op_string * opstr = (struct op_string *) arg;
+        struct op_string * opstr = (struct op_string *) arg;
 
         format_operand_raw(op, insn, opstr->buf, opstr->len);
 }
 
 static int format_insn_note(x86_insn_t *insn, char *buf, int len){
-	char note[32] = {0};
-	int len_orig = len, note_len = 32;
+        char note[32] = {0};
+        int len_orig = len, note_len = 32;
 
-	if ( insn->note & insn_note_ring0 ) {
-        	STRNCATF( note, "%s", "Ring0 ", note_len );
-	}
-	if ( insn->note & insn_note_smm ) {
-        	STRNCATF( note, "%s", "SMM ", note_len );
-	}
-	if ( insn->note & insn_note_serial ) {
-        	STRNCATF(note, "%s", "Serialize ", note_len );
-	}
+        if ( insn->note & insn_note_ring0 ) {
+                STRNCATF( note, "%s", "Ring0 ", note_len );
+        }
+        if ( insn->note & insn_note_smm ) {
+                STRNCATF( note, "%s", "SMM ", note_len );
+        }
+        if ( insn->note & insn_note_serial ) {
+                STRNCATF(note, "%s", "Serialize ", note_len );
+        }
         STRNCATF( buf, "%s|", note, len );
 
         return( len_orig - len );
@@ -1143,9 +1144,9 @@ static int format_raw_insn( x86_insn_t *insn, char *buf, int len ){
         /* RAW style:
          * ADDRESS|OFFSET|SIZE|BYTES|
          * PREFIX|PREFIX_STRING|GROUP|TYPE|NOTES|
-	 * MNEMONIC|CPU|ISA|FLAGS_SET|FLAGS_TESTED|
-	 * STACK_MOD|STACK_MOD_VAL
-	 * [|OP_TYPE|OP_DATATYPE|OP_ACCESS|OP_FLAGS|OP]*
+         * MNEMONIC|CPU|ISA|FLAGS_SET|FLAGS_TESTED|
+         * STACK_MOD|STACK_MOD_VAL
+         * [|OP_TYPE|OP_DATATYPE|OP_ACCESS|OP_FLAGS|OP]*
      *
      * Register values are encoded as:
      * NAME:TYPE:SIZE
@@ -1222,29 +1223,29 @@ static int format_xml_insn( x86_insn_t *insn, char *buf, int len ) {
         len -= format_insn_eflags_str( insn->flags_tested, buf, len );
         STRNCAT( buf, "\"/>\n\t</flags>\n", len );
 
-	if ( insn->x86_operand_1st() ) {
-        	insn->x86_operand_1st()->x86_format_operand(str,
+        if ( insn->x86_operand_1st() ) {
+                insn->x86_operand_1st()->x86_format_operand(str,
                            sizeof str, xml_syntax);
-        	STRNCAT( buf, "\t<operand name=dest>\n", len );
-        	STRNCAT( buf, str, len );
-        	STRNCAT( buf, "\t</operand>\n", len );
-	}
+                STRNCAT( buf, "\t<operand name=dest>\n", len );
+                STRNCAT( buf, str, len );
+                STRNCAT( buf, "\t</operand>\n", len );
+        }
 
-	if ( insn->x86_operand_2nd() ) {
-        	insn->x86_operand_2nd()->x86_format_operand(str,sizeof str, 
+        if ( insn->x86_operand_2nd() ) {
+                insn->x86_operand_2nd()->x86_format_operand(str,sizeof str,
                                                         xml_syntax);
-        	STRNCAT( buf, "\t<operand name=src>\n", len );
-        	STRNCAT( buf, str, len );
-        	STRNCAT( buf, "\t</operand>\n", len );
-	}
+                STRNCAT( buf, "\t<operand name=src>\n", len );
+                STRNCAT( buf, str, len );
+                STRNCAT( buf, "\t</operand>\n", len );
+        }
 
-	if ( insn->x86_operand_3rd() ) {
-        	insn->x86_operand_3rd()->x86_format_operand(str,sizeof str, 
+        if ( insn->x86_operand_3rd() ) {
+                insn->x86_operand_3rd()->x86_format_operand(str,sizeof str,
                                xml_syntax);
-        	STRNCAT( buf, "\t<operand name=imm>\n", len );
-        	STRNCAT( buf, str, len );
-        	STRNCAT( buf, "\t</operand>\n", len );
-	}
+                STRNCAT( buf, "\t<operand name=imm>\n", len );
+                STRNCAT( buf, str, len );
+                STRNCAT( buf, "\t</operand>\n", len );
+        }
 
         STRNCAT( buf, "</x86_insn>\n", len );
 
@@ -1266,9 +1267,9 @@ int X86_Disasm::x86_format_header( char *buf, int len, enum x86_asm_format forma
                 case raw_syntax:
                         snprintf( buf, len, "ADDRESS|OFFSET|SIZE|BYTES|"
                                "PREFIX|PREFIX_STRING|GROUP|TYPE|NOTES|"
-			       "MNEMONIC|CPU|ISA|FLAGS_SET|FLAGS_TESTED|"
-			       "STACK_MOD|STACK_MOD_VAL"
-			       "[|OP_TYPE|OP_DATATYPE|OP_ACCESS|OP_FLAGS|OP]*"
+                               "MNEMONIC|CPU|ISA|FLAGS_SET|FLAGS_TESTED|"
+                               "STACK_MOD|STACK_MOD_VAL"
+                               "[|OP_TYPE|OP_DATATYPE|OP_ACCESS|OP_FLAGS|OP]*"
                                 );
                         break;
                 case xml_syntax:
@@ -1277,11 +1278,11 @@ int X86_Disasm::x86_format_header( char *buf, int len, enum x86_asm_format forma
                                       "<address rva= offset= size= bytes=/>"
                                       "<prefix type= string=/>"
                                       "<mnemonic group= type= string= "
-				      "cpu= isa= note= />"
+                                      "cpu= isa= note= />"
                                       "<flags type=set>"
                                           "<flag name=>"
                                       "</flags>"
-				      "<stack_mod val= >"
+                                      "<stack_mod val= >"
                                       "<flags type=tested>"
                                           "<flag name=>"
                                       "</flags>"
@@ -1315,16 +1316,18 @@ int X86_Disasm::x86_format_header( char *buf, int len, enum x86_asm_format forma
                                   "</x86_insn>"
                                 );
                         break;
-		case unknown_syntax:
-			if ( len ) {
-				buf[0] = '\0';
-			}
-			break;
+                case unknown_syntax:
+                        if ( len ) {
+                                buf[0] = '\0';
+                        }
+                        break;
         }
 
         return( strlen(buf) );
 }
 
+/** format (sprintf) an instruction into 'buf' using specified syntax;
+ * this includes formatting all operands */
 int x86_insn_t::x86_format_insn( char *buf, int len,
                      enum x86_asm_format format ){
     char str[MAX_OP_STRING];

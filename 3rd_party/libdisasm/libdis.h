@@ -133,12 +133,12 @@ enum x86_reg_type {     /* NOTE: these may be ORed together */
 
 /* x86_reg_t : an X86 CPU register */
 struct x86_reg_t {
-        char name[MAX_REGNAME];
-        enum x86_reg_type type;         /* what register is used for */
-        unsigned int size;              /* size of register in bytes */
-        unsigned int id;                /* register ID #, for quick compares */
-        unsigned int alias;		/* ID of reg this is an alias for */
-        unsigned int shift;		/* amount to shift aliased reg by */
+    char name[MAX_REGNAME];
+    enum x86_reg_type type;         /* what register is used for */
+    unsigned int size;              /* size of register in bytes */
+    unsigned int id;                /* register ID #, for quick compares */
+    unsigned int alias;		/* ID of reg this is an alias for */
+    unsigned int shift;		/* amount to shift aliased reg by */
     x86_reg_t * aliased_reg( ) {
         x86_reg_t * reg = (x86_reg_t * )calloc( sizeof(x86_reg_t), 1 );
         reg->x86_reg_from_id( id );
@@ -158,11 +158,11 @@ typedef struct {
 
 /* x86_absolute_t : an X86 segment:offset address (descriptor) */
 typedef struct {
-        unsigned short	segment;	/* loaded directly into CS */
-        union {
-                unsigned short	off16;	/* loaded directly into IP */
-                uint32_t		off32;	/* loaded directly into EIP */
-        } offset;
+    unsigned short	segment;	/* loaded directly into CS */
+    union {
+        unsigned short	off16;	/* loaded directly into IP */
+        uint32_t		off32;	/* loaded directly into EIP */
+    } offset;
 } x86_absolute_t;
 
 enum x86_op_type {      /* mutually exclusive */
@@ -210,7 +210,7 @@ enum x86_op_datatype {          /* these use Intel's lame terminology */
         op_fpustate32 = 23,	/* 108 byte FPU state (env & reg stack) */
         op_fpregset = 24,	/* 512 bytes: register set */
         op_fpreg = 25,		/* FPU register */
-    op_none = 0xFF,     /* operand without a datatype (INVLPG) */
+        op_none = 0xFF     /* operand without a datatype (INVLPG) */
 };
 
 enum x86_op_access {    /* ORed together */
@@ -250,49 +250,45 @@ struct x86_op_flags {     /* ORed together, but segs are mutually exclusive */
 /* x86_op_t : an X86 instruction operand */
 struct x86_op_t{
     friend struct x86_insn_t;
-        enum x86_op_type        type;           /* operand type */
-        enum x86_op_datatype    datatype;       /* operand size */
-        enum x86_op_access      access;         /* operand access [RWX] */
-        x86_op_flags       flags;          /* misc flags */
-        union {
-                /* sizeof will have to work on these union members! */
-                /* immediate values */
-                char            sbyte;
-                short           sword;
-                int32_t         sdword;
-                qword_t         sqword;
-                unsigned char   byte;
-                unsigned short  word;
-                uint32_t        dword;
-                qword_t         qword;
-                float           sreal;
-                double          dreal;
-                /* misc large/non-native types */
-                unsigned char   extreal[10];
-                unsigned char   bcd[10];
-                qword_t         dqword[2];
-                unsigned char   simd[16];
-                unsigned char   fpuenv[28];
-                /* offset from segment */
-                uint32_t        offset;
-                /* ID of CPU register */
-                x86_reg_t       reg;
-                /* offsets from current insn */
-                char            relative_near;
-                int32_t         relative_far;
-                /* segment:offset */
-                x86_absolute_t	absolute;
-                /* effective address [expression] */
-                x86_ea_t        expression;
-        } data;
-        /* this is needed to make formatting operands more sane */
-        void * insn;		/* pointer to x86_insn_t owning operand */
+    enum x86_op_type        type;           /* operand type */
+    enum x86_op_datatype    datatype;       /* operand size */
+    enum x86_op_access      access;         /* operand access [RWX] */
+    x86_op_flags       flags;          /* misc flags */
+    union {
+        /* sizeof will have to work on these union members! */
+        /* immediate values */
+        char            sbyte;
+        short           sword;
+        int32_t         sdword;
+        qword_t         sqword;
+        unsigned char   byte;
+        unsigned short  word;
+        uint32_t        dword;
+        qword_t         qword;
+        float           sreal;
+        double          dreal;
+        /* misc large/non-native types */
+        unsigned char   extreal[10];
+        unsigned char   bcd[10];
+        qword_t         dqword[2];
+        unsigned char   simd[16];
+        unsigned char   fpuenv[28];
+        /* offset from segment */
+        uint32_t        offset;
+        x86_reg_t       reg;            /* ID of CPU register */
+        char            relative_near; /* offsets from current insn */
+        int32_t         relative_far;
+        x86_absolute_t	absolute;   /* segment:offset */
+        x86_ea_t        expression; /* effective address [expression] */
+    } data;
+    /* this is needed to make formatting operands more sane */
+    void * insn;		/* pointer to x86_insn_t owning operand */
     size_t size()
     {
-        return x86_operand_size();
+        return operand_size();
     }
     /* get size of operand data in bytes */
-    size_t x86_operand_size();
+    size_t operand_size();
     /* format (sprintf) an operand into 'buf' using specified syntax */
     int x86_format_operand(char *buf, int len, enum x86_asm_format format );
     bool is_address( ) {
@@ -302,9 +298,9 @@ struct x86_op_t{
         return ( type == op_relative_near || type == op_relative_far );
     }
     char * format( enum x86_asm_format format );
-    x86_op_t * copy() {
+    x86_op_t * copy()
+    {
         x86_op_t *op = (x86_op_t *) calloc( sizeof(x86_op_t), 1 );
-
         if ( op ) {
             memcpy( op, this, sizeof(x86_op_t) );
         }
@@ -524,6 +520,7 @@ enum x86_insn_prefix {
 
 
 /* TODO: maybe provide insn_new/free(), and have disasm return new insn_t */
+
 /* FOREACH types: these are used to limit the foreach results to
  * operands which match a certain "type" (implicit or explicit)
  * or which are accessed in certain ways (e.g. read or write). Note
@@ -575,11 +572,11 @@ private:
     void x86_oplist_append(x86_oplist_t *op);
 public:
     /* information about the instruction */
-    uint32_t addr;             /* load address */
-    uint32_t offset;           /* offset into file/buffer */
-    enum x86_insn_group group;      /* meta-type, e.g. INS_EXEC */
-    enum x86_insn_type type;        /* type, e.g. INS_BRANCH */
-    enum x86_insn_note note;	/* note, e.g. RING0 */
+    uint32_t addr;              /* load address */
+    uint32_t offset;            /* offset into file/buffer */
+    x86_insn_group group;       /* meta-type, e.g. INS_EXEC */
+    x86_insn_type type;         /* type, e.g. INS_BRANCH */
+    x86_insn_note note;         /* note, e.g. RING0 */
     unsigned char bytes[MAX_INSN_SIZE];
     unsigned char size;             /* size of insn in bytes */
     /* 16/32-bit mode settings */
@@ -607,58 +604,29 @@ public:
     void *block;                    /* code block containing this insn */
     void *function;                 /* function containing this insn */
     int tag;			/* tag the insn as seen/processed */
-    x86_op_t *x86_operand_new();
-    /* convenience routine: returns count of operands matching 'type' */
-    size_t x86_operand_count( enum x86_op_foreach_type type );
+    x86_op_t *  x86_operand_new();
+    size_t      x86_operand_count( enum x86_op_foreach_type type );
     /* accessor functions for the operands */
-    x86_op_t * x86_operand_1st( );
-    x86_op_t * x86_operand_2nd( );
-    x86_op_t * x86_operand_3rd( );
-    /* Get Relative Offset: return as a sign-extended int32_t the near or far
-     * relative offset operand, or 0 if there is none. There can be only one
-     * relaive offset operand in an instruction. */
-    int32_t x86_get_rel_offset( );
-    /* Get Branch Target: return the x86_op_t containing the target of
-     * a jump or call operand, or NULL if there is no branch target.
-     * Internally, a 'branch target' is defined as any operand with
-     * Execute Access set. There can be only one branch target per instruction. */
-    x86_op_t * x86_get_branch_target( );
-    /* Get Immediate: return the x86_op_t containing the immediate operand
-     * for this instruction, or NULL if there is no immediate operand. There
-     * can be only one immediate operand per instruction */
-    x86_op_t * x86_get_imm( );
-    /* Get Raw Immediate Data: returns a pointer to the immediate data encoded
-     * in the instruction. This is useful for large data types [>32 bits] currently
-     * not supported by libdisasm, or for determining if the disassembler
-     * screwed up the conversion of the immediate data. Note that 'imm' in this
-     * context refers to immediate data encoded at the end of an instruction as
-     * detailed in the Intel Manual Vol II Chapter 2; it does not refer to the
-     * 'op_imm' operand (the third operand in instructions like 'mul' */
-    unsigned char * x86_get_raw_imm( );
+    x86_op_t *  x86_operand_1st( );
+    x86_op_t *  x86_operand_2nd( );
+    x86_op_t *  x86_operand_3rd( );
+    x86_op_t *  get_dest();
+    int32_t     x86_get_rel_offset( );
+    x86_op_t *  x86_get_branch_target( );
+    x86_op_t *  x86_get_imm( );
+    uint8_t *   x86_get_raw_imm( );
     /* More accessor fuctions, this time for user-defined info... */
-    /* set the address (usually RVA) of the insn */
-    void x86_set_insn_addr( uint32_t addr );
-    /* format (sprintf) an instruction mnemonic into 'buf' using specified syntax */
-    int x86_format_mnemonic( char *buf, int len, enum x86_asm_format format);
-    /* format (sprintf) an instruction into 'buf' using specified syntax;
-     * this includes formatting all operands */
-    int x86_format_insn( char *buf, int len, enum x86_asm_format);
-    /* free the operand list associated with an instruction -- useful for
-     * preventing memory leaks when free()ing an x86_insn_t */
-    void x86_oplist_free( );
-    /* returns 0 if an instruction is invalid, 1 if valid */
-    int x86_insn_is_valid( );
-    /* Get Address: return the value of an offset operand, or the offset of
-     * a segment:offset absolute address */
+    void    x86_set_insn_addr( uint32_t addr );
+    int     x86_format_mnemonic( char *buf, int len, enum x86_asm_format format);
+    int     x86_format_insn( char *buf, int len, enum x86_asm_format);
+    void    x86_oplist_free( );
+    bool    is_valid( );
     uint32_t x86_get_address( );
-    void make_invalid(unsigned char *buf);
+    void    make_invalid(unsigned char *buf);
     /* instruction tagging: these routines allow the programmer to mark
      * instructions as "seen" in a DFS, for example. libdisasm does not use
      * the tag field.*/
-    /* set insn->tag to 1 */
     void x86_tag_insn( );
-
-    /* return insn->tag */
     int x86_insn_is_tagged();
     /* set insn->tag to 0 */
     void x86_untag_insn();
