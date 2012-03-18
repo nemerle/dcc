@@ -84,9 +84,9 @@ CondJumps:
                     if (ll->testFlags(SWITCH))
                     {
                         //pBB = BB::Create(start, ip, MULTI_BRANCH, ll->caseTbl.numEntries, this);
-                        pBB = BB::Create(iStart, pIcode, MULTI_BRANCH, ll->caseTbl.numEntries, this);
-                        for (i = 0; i < ll->caseTbl.numEntries; i++)
-                            pBB->edges[i].ip = ll->caseTbl.entries[i];
+                        pBB = BB::Create(iStart, pIcode, MULTI_BRANCH, ll->caseTbl2.size(), this);
+                        for (i = 0; i < ll->caseTbl2.size(); i++)
+                            pBB->edges[i].ip = ll->caseTbl2[i];
                         hasCase = true;
                     }
                     else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
@@ -173,15 +173,14 @@ CondJumps:
 void Function::markImpure()
 {
     PROG &prog(Project::get()->prog);
-    SYM * psym;
     for(ICODE &icod : Icode)
     {
         if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
         //assert that case tbl has less entries then symbol table ????
         //WARNING: Case entries are held in symbol table !
-        assert(g_proj.validSymIdx(icod.ll()->caseTbl.numEntries));
-        const SYM &psym(g_proj.getSymByIdx(icod.ll()->caseTbl.numEntries));
+        assert(g_proj.validSymIdx(icod.ll()->caseEntry));
+        const SYM &psym(g_proj.getSymByIdx(icod.ll()->caseEntry));
         for (int c = (int)psym.label; c < (int)psym.label+psym.size; c++)
         {
             if (BITMAP(c, BM_CODE))

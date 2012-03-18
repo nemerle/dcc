@@ -71,7 +71,7 @@ static const char *szFlops3C[] =
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
 static void  formatRM(ostringstream &p, uint32_t flg, const LLOperand &pm);
-static ostringstream &strDst(ostringstream &os, uint32_t flg, LLOperand &pm);
+static ostringstream &strDst(ostringstream &os, uint32_t flg, const LLOperand &pm);
 
 static char *strHex(uint32_t d);
 //static int   checkScanned(uint32_t pcCur);
@@ -492,7 +492,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     {
         if (inst.testFlags(CASE))
         {
-            result_stream << ";Case l"<< inst.caseTbl.numEntries;
+            result_stream << ";Case l"<< inst.caseEntry;
         }
         if (inst.testFlags(SWITCH))
         {
@@ -589,7 +589,7 @@ static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
 /*****************************************************************************
  * strDst
  ****************************************************************************/
-static ostringstream & strDst(ostringstream &os,uint32_t flg, LLOperand &pm)
+static ostringstream & strDst(ostringstream &os,uint32_t flg, const LLOperand &pm)
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);

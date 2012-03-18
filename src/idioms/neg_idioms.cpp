@@ -22,7 +22,7 @@ bool Idiom11::match (iICODE picode)
         return false;
     for(int i=0; i<3; ++i)
         m_icodes[i]=picode++;
-    type = m_icodes[0]->idType(DST);
+    type = m_icodes[0]->ll()->idType(DST);
     if(type==CONSTANT || type == OTHER)
         return false;
     /* Check NEG reg/mem

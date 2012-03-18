@@ -62,8 +62,6 @@ typedef struct {            /* Command line option flags */
 extern OPTION option;       /* Command line options             */
 
 #include "BinaryImage.h"
-
-//extern PROG prog;   		/* Loaded program image parameters  */
 extern std::bitset<32> duReg[30];   /* def/use bits for registers		*/
 
 //extern uint32_t duReg[30];		/* def/use bits for registers		*/

@@ -150,7 +150,7 @@ public:
     void findImmedDom();
     void FollowCtrl(CALL_GRAPH *pcallGraph, STATE *pstate);
     void process_operands(ICODE &pIcode, STATE *pstate);
-    boolT process_JMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
+    bool process_JMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     boolT process_CALL(ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
     void freeCFG();
     void codeGen(std::ostream &fs);
@@ -168,6 +168,8 @@ public:
 
     void preprocessReturnDU(std::bitset<32> &_liveOut);
 protected:
+    void extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &table);
+    bool followAllTableEntries(JumpTable &table, uint32_t cs, ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
     bool removeInEdge_Flag_and_ProcessLatch(BB *pbb, BB *a, BB *b);
     bool Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB);
     bool Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB);

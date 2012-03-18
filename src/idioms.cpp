@@ -223,8 +223,6 @@ void Function::bindIcodeOff()
 {
 
     iICODE pIcode;            /* ptr icode array      */
-    uint32_t *p;                 /* for case table       */
-
     if (Icode.empty())        /* No Icode */
         return;
     pIcode = Icode.begin();
@@ -261,9 +259,9 @@ void Function::bindIcodeOff()
         }
         else if (ll->testFlags(SWITCH) )
         {
-            p = ll->caseTbl.entries;
-            for (int j = 0; j < ll->caseTbl.numEntries; j++, p++)
-                Icode.labelSrch(*p, *p);
+            /* for case table       */
+            for (uint32_t &p : ll->caseTbl2)
+                Icode.labelSrch(p, p); // for each entry in caseTable replace it with target insn Idx
         }
     }
 }

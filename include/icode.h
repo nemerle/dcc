@@ -31,7 +31,7 @@ struct bundle;
 typedef std::list<ICODE>::iterator iICODE;
 typedef std::list<ICODE>::reverse_iterator riICODE;
 typedef boost::iterator_range<iICODE> rCODE;
-
+extern std::bitset<32> duReg[30];
 /* uint8_t and uint16_t registers */
 
 /* Def/use of flags - low 4 bits represent flags */
@@ -214,19 +214,15 @@ struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
 protected:
     uint32_t     flg;            /* icode flags                  */
-//    llIcode      opcode;         /* llIcode instruction          */
+    LLOperand    m_src;            /* source operand               */
 public:
     int          codeIdx;    	/* Index into cCode.code            */
     uint8_t      numBytes;       /* Number of bytes this instr   */
     uint32_t     label;          /* offset in image (20-bit adr) */
     LLOperand    dst;            /* destination operand          */
-    LLOperand    m_src;            /* source operand               */
     DU           flagDU;         /* def/use of flags				*/
-    struct {                    /* Case table if op==JMP && !I  */
-        int     numEntries;     /*   # entries in case table    */
-        uint32_t  *entries;        /*   array of offsets           */
-
-    }           caseTbl;
+        int caseEntry;
+    std::vector<uint32_t> caseTbl2;
     int         hllLabNum;      /* label # for hll codegen      */
     bool conditionalJump()
     {
@@ -295,8 +291,6 @@ public:
     HLTYPE createCall();
     LLInst(ICODE *container) : flg(0),codeIdx(0),numBytes(0),m_link(container)
     {
-        caseTbl.entries=0;
-        caseTbl.numEntries=0;
         setOpcode(0);
     }
     const LLOperand &src() const {return m_src;}
@@ -322,6 +316,7 @@ public:
         dst = LLOperand::CreateReg2(r);
     }
     ICODE *m_link;
+    condId idType(opLoc sd) const;
     const LLOperand *   get(opLoc sd) const { return (sd == SRC) ? &src() : &dst; }
     LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &dst; }
 };
@@ -370,6 +365,12 @@ public:
         std::bitset<32> def;        // For Registers: position in bitset is reg index
         std::bitset<32> use;	// For Registers: position in uint32_t is reg index
         std::bitset<32> lastDefRegi;// Bit set if last def of this register in BB
+        void addDefinedAndUsed(eReg r)
+        {
+            def |= duReg[r];
+            use |= duReg[r];
+
+        }
     };
     struct DU1
     {

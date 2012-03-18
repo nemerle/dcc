@@ -424,11 +424,11 @@ COND_EXPR *COND_EXPR::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICO
 
 
 /* Returns the identifier type */
-condId ICODE::idType(opLoc sd)
+condId LLInst::idType(opLoc sd) const
 {
-    LLOperand &pm(*ll()->get(sd));
+    const LLOperand &pm((sd == SRC) ? src() : dst);
 
-    if ((sd == SRC) && ll()->testFlags(I))
+    if ((sd == SRC) && testFlags(I))
         return (CONSTANT);
     else if (pm.regi == 0)
         return (GLOB_VAR);
