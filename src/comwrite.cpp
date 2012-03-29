@@ -244,6 +244,9 @@ void Function::writeProcComments(std::ostream &ostr)
                 case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
                     ostr << " * Return value in registers dx:ax.\n";
                     break;
+                default:
+                    fprintf(stderr,"Unknown retval type %d",this->retVal.type);
+                    break;
             } /* eos */
     }
 

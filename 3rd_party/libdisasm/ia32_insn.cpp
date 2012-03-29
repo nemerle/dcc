@@ -240,7 +240,7 @@ void Ia32_Decoder::ia32_handle_prefix( unsigned int prefixes ) {
 }
 
 
-static void reg_32_to_16( x86_op_t *op, x86_insn_t *insn, void *arg ) {
+static void reg_32_to_16( x86_op_t *op, x86_insn_t */*insn*/, void */*arg*/ ) {
 
     /* if this is a 32-bit register and it is a general register ... */
     if ( op->type == op_register && op->data.reg.size == 4 &&
@@ -539,12 +539,12 @@ size_t ia32_table_lookup( unsigned char *buf, size_t buf_len,
 
 size_t Ia32_Decoder::handle_insn_suffix( unsigned char *buf, size_t buf_len,
                                          ia32_insn_t *raw_insn ) {
-    ia32_table_desc_t *table_desc;
+//    ia32_table_desc_t *table_desc;
     ia32_insn_t *sfx_insn;
     size_t size;
     unsigned int prefixes = 0;
 
-    table_desc = &ia32_tables[raw_insn->table];
+//    table_desc = &ia32_tables[raw_insn->table];
     size = ia32_table_lookup( buf, buf_len, raw_insn->table, &sfx_insn,
                               &prefixes );
     if (size == INVALID_INSN || sfx_insn->mnem_flag == INS_INVALID ) {

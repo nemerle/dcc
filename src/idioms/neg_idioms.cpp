@@ -16,7 +16,7 @@ using namespace std;
  ****************************************************************************/
 bool Idiom11::match (iICODE picode)
 {
-    const char *matchstring="(oNEG rH) (oNEG rL) (SBB \rH i0)";
+    //const char *matchstring="(oNEG rH) (oNEG rL) (SBB \rH i0)";
     condId type;          /* type of argument */
     if(distance(picode,m_end)<3)
         return false;
@@ -31,20 +31,22 @@ bool Idiom11::match (iICODE picode)
         return false;
     switch (type)
     {
-    case GLOB_VAR:
-        if ((m_icodes[2]->ll()->dst.segValue == m_icodes[0]->ll()->dst.segValue) &&
-                (m_icodes[2]->ll()->dst.off == m_icodes[0]->ll()->dst.off))
-            return true;
-        break;
-    case REGISTER:
-        if (m_icodes[2]->ll()->dst.regi == m_icodes[0]->ll()->dst.regi)
-            return true;
-        break;
-    case PARAM:
-    case LOCAL_VAR:
-        if (m_icodes[2]->ll()->dst.off == m_icodes[0]->ll()->dst.off)
-            return true;
-        break;
+        case GLOB_VAR:
+            if ((m_icodes[2]->ll()->dst.segValue == m_icodes[0]->ll()->dst.segValue) &&
+                    (m_icodes[2]->ll()->dst.off == m_icodes[0]->ll()->dst.off))
+                return true;
+            break;
+        case REGISTER:
+            if (m_icodes[2]->ll()->dst.regi == m_icodes[0]->ll()->dst.regi)
+                return true;
+            break;
+        case PARAM:
+        case LOCAL_VAR:
+            if (m_icodes[2]->ll()->dst.off == m_icodes[0]->ll()->dst.off)
+                return true;
+            break;
+        default:
+            fprintf(stderr,"Idiom11::match unhandled type %d\n",type);
     }
     return false;
 }
@@ -73,7 +75,7 @@ int Idiom11::action()
  ****************************************************************************/
 bool Idiom16::match (iICODE picode)
 {
-    const char *matchstring="(oNEG rR) (oSBB rR rR) (oINC rR)";
+    //const char *matchstring="(oNEG rR) (oSBB rR rR) (oINC rR)";
     if(distance(picode,m_end)<3)
         return false;
     for(int i=0; i<3; ++i)

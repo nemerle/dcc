@@ -103,7 +103,7 @@ void derSeq_Entry::findIntervals (Function *c)
     BB *h,           /* Node being processed         */
             *header,          /* Current interval's header node   */
             *succ;            /* Successor basic block        */
-    int i;           /* Counter              */
+    //int i;           /* Counter              */
     queue H;            /* Queue of possible header nodes   */
     boolT first = true;       /* First pass through the loop      */
 
@@ -125,7 +125,7 @@ void derSeq_Entry::findIntervals (Function *c)
         while ((h = pI->firstOfInt()) != NULL)
         {
             /* Check all immediate successors of h */
-            for (i = 0; i < h->edges.size(); i++)
+            for (size_t i = 0; i < h->edges.size(); i++)
             {
                 succ = h->edges[i].BBptr;
                 succ->inEdgeCount--;
@@ -176,11 +176,11 @@ static void displayIntervals (interval *pI)
 
     while (pI)
     {
-        printf ("  Interval #: %ld\t#OutEdges: %ld\n", pI->numInt, pI->numOutEdges);
+        printf ("  Interval #: %d\t#OutEdges: %d\n", pI->numInt, pI->numOutEdges);
         for(BB *node : pI->nodes)
         {
             if (node->correspInt == NULL)    /* real BBs */
-                printf ("    Node: %ld\n", node->begin()->loc_ip);
+                printf ("    Node: %d\n", node->begin()->loc_ip);
             else             // BBs represent intervals
                 printf ("   Node (corresp int): %d\n", node->correspInt->numInt);
         }
@@ -190,17 +190,17 @@ static void displayIntervals (interval *pI)
 
 
 /* Allocates space for a new derSeq node. */
-static derSeq_Entry *newDerivedSeq()
-{
-    return new derSeq_Entry;
-}
+//static derSeq_Entry *newDerivedSeq()
+//{
+//    return new derSeq_Entry;
+//}
 
 
 /* Frees the storage allocated for the queue q*/
-static void freeQueue (queue &q)
-{
-    q.clear();
-}
+//static void freeQueue (queue &q)
+//{
+//    q.clear();
+//}
 
 
 /* Frees the storage allocated for the interval pI */
@@ -237,12 +237,12 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
 {
     interval *Ii;   /* Interval being processed         */
     BB *BBnode,     /* New basic block of intervals         */
-            *curr,      /* BB being checked for out edges       */
+            //*curr,      /* BB being checked for out edges       */
             *succ       /* Successor node               */
             ;
     //queue *listIi;    /* List of intervals                */
-    int i,        /* Index to outEdges array          */
-        j;        /* Index to successors              */
+    int i;        /* Index to outEdges array          */
+        /*j;*/        /* Index to successors              */
     boolT   sameGraph; /* Boolean, isomorphic graphs           */
 
     /* Process Gi's intervals */
@@ -271,7 +271,7 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
         {
             for(BB *curr :  listIi)
             {
-                for (j = 0; j < curr->edges.size(); j++)
+                for (size_t j = 0; j < curr->edges.size(); j++)
                 {
                     succ = curr->edges[j].BBptr;
                     if (succ->inInterval != curr->inInterval)
@@ -287,7 +287,8 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
     /* Convert list of pointers to intervals into a real graph.
      * Determines the number of in edges to each new BB, and places it
      * in numInEdges and inEdgeCount for later interval processing. */
-    curr = new_entry.Gi = bbs.front();
+    //curr = new_entry.Gi = bbs.front();
+    new_entry.Gi = bbs.front();
     for(BB *curr : bbs)
     {
         for(TYPEADR_TYPE &edge : curr->edges)
@@ -315,6 +316,7 @@ uint8_t Function::findDerivedSeq (derSeq &derivedGi)
     BB *Gi;      /* Current derived sequence graph       */
 
     derSeq::iterator iter=derivedGi.begin();
+    assert(iter!=derivedGi.end());
     Gi = iter->Gi;
     while (! trivialGraph (Gi))
     {
@@ -343,7 +345,7 @@ uint8_t Function::findDerivedSeq (derSeq &derivedGi)
 
 /* Converts the irreducible graph G into an equivalent reducible one, by
  * means of node splitting.  */
-static void nodeSplitting (std::list<BB *> &G)
+static void nodeSplitting (std::list<BB *> &/*G*/)
 {
     fprintf(stderr,"Attempt to perform node splitting: NOT IMPLEMENTED\n");
 }
@@ -356,7 +358,7 @@ void derSeq::display()
     derSeq::iterator iter=this->begin();
     while (iter!=this->end())
     {
-        printf ("\nIntervals for G%lX\n", n++);
+        printf ("\nIntervals for G%X\n", n++);
         displayIntervals (iter->Ii);
         ++iter;
     }

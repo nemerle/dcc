@@ -178,11 +178,12 @@ static void writeHeader (std::ostream &_ios, char *fileName)
 }
 
 // Note: Not currently called!
-/* Checks the given icode to determine whether it has a label associated
+/** Checks the given icode to determine whether it has a label associated
  * to it.  If so, a goto is emitted to this label; otherwise, a new label
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be forward on
  *		 the code; that is, the target code has not been traversed yet. */
+#if 0
 static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 {
     if ( not pt->ll()->testFlags(HLL_LABEL)) /* node hasn't got a lab */
@@ -193,7 +194,7 @@ static void emitFwdGotoLabel (ICODE * pt, int indLevel)
     }
     cCode.appendCode( "%sgoto l%ld;\n", indentStr(indLevel), pt->ll()->hllLabNum);
 }
-
+#endif
 
 /* Writes the procedure's declaration (including arguments), local variables,
  * and invokes the procedure that writes the code of the given record *hli */

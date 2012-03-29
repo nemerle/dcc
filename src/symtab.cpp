@@ -133,7 +133,7 @@ void destroySymTables(void)
 }
 
 /* Using the value, read the symbolic name */
-boolT readVal(std::ostringstream &symName, uint32_t symOff, Function * symProc)
+boolT readVal(std::ostringstream &/*symName*/, uint32_t /*symOff*/, Function * /*symProc*/)
 {
     return false; // no symbolic names for now
 }
@@ -142,7 +142,6 @@ boolT readVal(std::ostringstream &symName, uint32_t symOff, Function * symProc)
  * if necessary (0 means no update necessary).      */
 void SYMTAB::updateSymType (uint32_t symbol,const TypeContainer &tc)
 {
-    int i;
     auto iter=findByLabel(symbol);
     if(iter==end())
         return;

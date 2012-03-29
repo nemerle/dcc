@@ -300,13 +300,12 @@ void Function::structLoops(derSeq *derivedG)
             {
                 pred = intHead->inEdges[i];
                 if (inInt(pred, intNodes) && isBackEdge(pred, intHead))
+                {
                     if (! latchNode)
                         latchNode = pred;
-                    else
-                    {
-                        if (pred->dfsLastNum > latchNode->dfsLastNum)
-                            latchNode = pred;
-                    }
+                    else if (pred->dfsLastNum > latchNode->dfsLastNum)
+                        latchNode = pred;
+                }
             }
 
             /* Find nodes in the loop and the type of loop */
@@ -352,8 +351,7 @@ static bool successor (int s, int h, Function * pProc)
  * case).                               */
 static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
 {
-    int current,      /* index to current node */
-            i;
+    int current;      /* index to current node */
 
     pBB->traversed = DFS_CASE;
     current = pBB->dfsLastNum;
@@ -374,44 +372,46 @@ static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
  * has a case node.                         */
 void Function::structCases()
 {
-    int i, j;
-    BB * caseHeader;       		/* case header node         */
     int exitNode = NO_NODE;   	/* case exit node           */
     nodeList caseNodes;   /* temporary: list of nodes in case */
 
     /* Linear scan of the nodes in reverse dfsLast order, searching for
      * case nodes                           */
-    for (i = numBBs - 1; i >= 0; i--)
-        if (m_dfsLast[i]->nodeType == MULTI_BRANCH)
-        {
-            caseHeader = m_dfsLast[i];
+    for (int i = numBBs - 1; i >= 0; i--)
+    {
+        if ((m_dfsLast[i]->nodeType != MULTI_BRANCH))
+            continue;
+        BB * caseHeader = m_dfsLast[i];;    /* case header node         */
 
-            /* Find descendant node which has as immediate predecessor
+        /* Find descendant node which has as immediate predecessor
                          * the current header node, and is not a successor.    */
-            for (j = i + 2; j < numBBs; j++)
+        for (size_t j = i + 2; j < numBBs; j++)
+        {
+            if ((!successor(j, i, this)) && (m_dfsLast[j]->immedDom == i))
             {
-                if ((!successor(j, i, this)) &&
-                    (m_dfsLast[j]->immedDom == i))
-                    if (exitNode == NO_NODE)
-                        exitNode = j;
-                    else if (m_dfsLast[exitNode]->inEdges.size() < m_dfsLast[j]->inEdges.size())
-                        exitNode = j;
+                if (exitNode == NO_NODE)
+                {
+                    exitNode = j;
+                }
+                else if (m_dfsLast[exitNode]->inEdges.size() < m_dfsLast[j]->inEdges.size())
+                    exitNode = j;
             }
-            m_dfsLast[i]->caseTail = exitNode;
-
-            /* Tag nodes that belong to the case by recording the
-                         * header field with caseHeader.           */
-            insertList (caseNodes, i);
-            m_dfsLast[i]->caseHead = i;
-            for(TYPEADR_TYPE &pb : caseHeader->edges)
-            {
-                tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);
-            }
-            //for (j = 0; j < caseHeader->edges[j]; j++)
-            //    tagNodesInCase (caseHeader->edges[j].BBptr, caseNodes, i, exitNode);
-            if (exitNode != NO_NODE)
-                m_dfsLast[exitNode]->caseHead = i;
         }
+        m_dfsLast[i]->caseTail = exitNode;
+
+        /* Tag nodes that belong to the case by recording the
+                         * header field with caseHeader.           */
+        insertList (caseNodes, i);
+        m_dfsLast[i]->caseHead = i;
+        for(TYPEADR_TYPE &pb : caseHeader->edges)
+        {
+            tagNodesInCase(pb.BBptr, caseNodes, i, exitNode);
+        }
+        //for (j = 0; j < caseHeader->edges[j]; j++)
+        //    tagNodesInCase (caseHeader->edges[j].BBptr, caseNodes, i, exitNode);
+        if (exitNode != NO_NODE)
+            m_dfsLast[exitNode]->caseHead = i;
+    }
 }
 
 
@@ -432,7 +432,7 @@ static void flagNodes (nodeList &l, int f, Function * pProc)
 void Function::structIfs ()
 {
     int curr,    				/* Index for linear scan of nodes   	*/
-            desc,    				/* Index for descendant         		*/
+            /*desc,*/ 				/* Index for descendant         		*/
             followInEdges,			/* Largest # in-edges so far 			*/
             follow;  				/* Possible follow node 				*/
     nodeList domDesc,    /* List of nodes dominated by curr  	*/
@@ -454,7 +454,7 @@ void Function::structIfs ()
             follow = 0;
 
             /* Find all nodes that have this node as immediate dominator */
-            for (desc = curr+1; desc < numBBs; desc++)
+            for (size_t desc = curr+1; desc < numBBs; desc++)
             {
                 if (m_dfsLast[desc]->immedDom == curr)
                 {
@@ -603,7 +603,7 @@ void Function::compoundCond()
 
         /* Traverse nodes in postorder, this way, the header node of a
          * compound condition is analysed first */
-        for (int i = 0; i < this->numBBs; i++)
+        for (size_t i = 0; i < this->numBBs; i++)
         {
             pbb = this->m_dfsLast[i];
             if (pbb->flg & INVALID_BB)

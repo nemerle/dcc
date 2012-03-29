@@ -14,7 +14,7 @@
 #define S_EXT       0x000200    /* sign extend   */
 #define OP386       0x000400    /* 386 op-code   */
 #define NSP         0x000800    /* NOT_HLL if SP is src or dst */
-#define ICODEMASK   0xFF00FF    /* Masks off parser flags */
+// defined in Enums.h #define ICODEMASK   0xFF00FF    /* Masks off parser flags */
 
 static void rm(int i);
 static void modrm(int i);
@@ -408,7 +408,12 @@ LLOperand convertOperand(const x86_op_t &from)
             break;
         case op_register:
             return LLOperand::CreateReg2(convertRegister(from.data.reg));
+        case op_immediate:
+            return LLOperand::CreateImm2(from.data.sdword);
+        default:
+            fprintf(stderr,"convertOperand does not know how to convert %d\n",from.type);
     }
+    return LLOperand::CreateImm2(0);
 }
 eErrorId scan(uint32_t ip, ICODE &p)
 {

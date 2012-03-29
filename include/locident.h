@@ -99,7 +99,7 @@ struct ID
     void setLocalName(int i)
     {
         char buf[32];
-        sprintf (buf, "loc%ld", i);
+        sprintf (buf, "loc%d", i);
         name=buf;
     }
 };
@@ -121,7 +121,7 @@ public:
     std::vector<ID>::iterator end() {return id_arr.end();}
     int newByteWordReg(hlType t, eReg regi);
     int newByteWordStk(hlType t, int off, uint8_t regOff);
-    int newIntIdx(int16_t seg, int16_t off, eReg regi, int ix, hlType t);
+    int newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t);
     int newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);

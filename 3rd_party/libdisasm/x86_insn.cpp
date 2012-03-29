@@ -17,7 +17,6 @@ int x86_insn_is_valid( x86_insn_t *insn ) {
     return 0;
 }
 
-/** \returns false if an instruction is invalid, true if valid */
 bool x86_insn_t::is_valid( )
 {
     if ( this && this->type != insn_invalid && this->size > 0 )
@@ -203,13 +202,12 @@ size_t x86_op_t::operand_size() {
     return(4);      /* default size */
 }
 
-/** set the address (usually RVA) of the insn */
 void x86_insn_t::x86_set_insn_addr( uint32_t _addr ) {
     addr = _addr;
 }
 
-void x86_insn_t::x86_set_insn_offset( unsigned int offset ){
-    offset = offset;
+void x86_insn_t::x86_set_insn_offset( unsigned int _offset ){
+    offset = _offset;
 }
 
 void x86_insn_t::x86_set_insn_function( void * func ){
@@ -220,7 +218,6 @@ void x86_insn_t::x86_set_insn_block( void * _block ){
     block = _block;
 }
 
-/** set insn->tag to 1 */
 void x86_insn_t::x86_tag_insn(){
     tag = 1;
 }
@@ -229,7 +226,6 @@ void x86_insn_t::x86_untag_insn(){
     tag = 0;
 }
 
-/** \return insn->tag */
 int x86_insn_t::x86_insn_is_tagged(){
     return tag;
 }

@@ -1,7 +1,38 @@
 #include <utility>
+#include "dcc.h"
 #include "project.h"
 #include "Procedure.h"
-Project g_proj;
+using namespace std;
+//Project g_proj;
+char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
+SYMTAB  symtab;             /* Global symbol table      			  */
+STATS   stats;              /* cfg statistics       				  */
+//PROG    prog;               /* programs fields      				  */
+OPTION  option;             /* Command line options     			  */
+Project *Project::s_instance = 0;
+Project::Project() : callGraph(nullptr)
+{
+
+}
+void Project::initialize()
+{
+    delete callGraph;
+    callGraph = nullptr;
+}
+void Project::create(const string &a)
+{
+    m_fname=a;
+    string::size_type ext_loc=a.find_last_of('.');
+    string::size_type slash_loc=a.find_last_of('/',ext_loc);
+    if(slash_loc==string::npos)
+        slash_loc=0;
+    else
+        slash_loc++;
+    if(ext_loc!=string::npos)
+        m_project_name = a.substr(slash_loc,(ext_loc-slash_loc));
+    else
+        m_project_name = a.substr(slash_loc);
+}
 bool Project::valid(ilFunction iter)
 {
     return iter!=pProcList.end();
@@ -63,7 +94,10 @@ const std::string &Project::symbolName(size_t idx)
 }
 Project *Project::get()
 {
-    return &g_proj;
+    //WARNING: poor man's singleton, not thread safe
+    if(s_instance==0)
+        s_instance=new Project;
+    return s_instance;
 }
 
 
@@ -71,3 +105,4 @@ SourceMachine *Project::machine()
 {
     return nullptr;
 }
+

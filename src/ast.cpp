@@ -13,7 +13,6 @@
 #include "dcc.h"
 #include "machine_x86.h"
 #include "project.h"
-extern Project g_proj;
 using namespace std;
 // Conditional operator symbols in C.  Index by condOp enumeration type
 static const char * const condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
@@ -122,8 +121,8 @@ COND_EXPR *GlobalVariable::Create(int16_t segValue, int16_t off)
     newExp = new COND_EXPR(IDENTIFIER);
     newExp->expr.ident.idType = GLOB_VAR;
     adr = opAdr(segValue, off);
-    auto i=g_proj.getSymIdxByAdd(adr);
-    if ( not g_proj.validSymIdx(i) )
+    auto i=Project::get()->getSymIdxByAdd(adr);
+    if ( not Project::get()->validSymIdx(i) )
     {
         printf ("Error, glob var not found in symtab\n");
         delete newExp;
@@ -477,7 +476,7 @@ int hlTypeSize (const COND_EXPR *expr, Function * pproc)
         switch (expr->expr.ident.idType)
         {
         case GLOB_VAR:
-            return (g_proj.symbolSize(expr->expr.ident.idNode.globIdx));
+            return (Project::get()->symbolSize(expr->expr.ident.idNode.globIdx));
         case REGISTER:
             if (expr->expr.ident.regiType == BYTE_REG)
                 return (1);
@@ -500,6 +499,9 @@ int hlTypeSize (const COND_EXPR *expr, Function * pproc)
         case OTHER:
             return (2);
         } /* eos */
+        break;
+    default:
+        fprintf(stderr,"hlTypeSize queried for Unkown type %d \n",expr->m_type);
         break;
     }
     return 2;			// CC: is this correct?
@@ -540,7 +542,7 @@ hlType COND_EXPR::expType(Function * pproc) const
         switch (expr.ident.idType)
         {
         case GLOB_VAR:
-            return g_proj.symbolType(expr.ident.idNode.globIdx);
+            return Project::get()->symbolType(expr.ident.idNode.globIdx);
         case REGISTER:
             if (expr.ident.regiType == BYTE_REG)
                 return (TYPE_BYTE_SIGN);
@@ -580,23 +582,26 @@ void HlTypeSupport::performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *t
     eReg otherRegi;         /* high or low part of long register */
 
     switch (tree->m_type) {
-    case BOOLEAN_OP:
-        break;
-    case POST_INC: case POST_DEC:
-    case PRE_INC: case PRE_DEC:
-    case NEGATION: case ADDRESSOF:
-    case DEREFERENCE:
-        break;
-    case IDENTIFIER:
-        ident = &tree->expr.ident;
-        if (ident->idType == LONG_VAR)
-        {
-            otherRegi = otherLongRegi (regi, ident->idNode.longIdx, locId);
-            ident->idType = REGISTER;
-            ident->regiType = WORD_REG;
-            ident->idNode.regiIdx = locId->newByteWordReg(TYPE_WORD_SIGN,otherRegi);
-        }
-        break;
+        case BOOLEAN_OP:
+            break;
+        case POST_INC: case POST_DEC:
+        case PRE_INC: case PRE_DEC:
+        case NEGATION: case ADDRESSOF:
+        case DEREFERENCE:
+            break;
+        case IDENTIFIER:
+            ident = &tree->expr.ident;
+            if (ident->idType == LONG_VAR)
+            {
+                otherRegi = otherLongRegi (regi, ident->idNode.longIdx, locId);
+                ident->idType = REGISTER;
+                ident->regiType = WORD_REG;
+                ident->idNode.regiIdx = locId->newByteWordReg(TYPE_WORD_SIGN,otherRegi);
+            }
+            break;
+        default:
+            fprintf(stderr,"performLongRemoval attemped on %d\n",tree->m_type);
+            break;
     }
 }
 
@@ -634,154 +639,159 @@ string walkCondExpr (const COND_EXPR* expr, Function * pProc, int* numLoc)
     needBracket = true;
     switch (expr->m_type)
     {
-    case BOOLEAN_OP:
-        outStr << "(";
-        outStr << walkCondExpr(expr->lhs(), pProc, numLoc);
-        outStr << condOpSym[expr->op()];
-        outStr << walkCondExpr(expr->rhs(), pProc, numLoc);
-        outStr << ")";
-        break;
-
-    case NEGATION:
-        if (expr->expr.unaryExp->m_type == IDENTIFIER)
-        {
-            needBracket = false;
-            outStr << "!";
-        }
-        else
-            outStr << "! (";
-        outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        if (needBracket == true)
-            outStr << ")";
-        break;
-
-    case ADDRESSOF:
-        if (expr->expr.unaryExp->m_type == IDENTIFIER)
-        {
-            needBracket = false;
-            outStr << "&";
-        }
-        else
-            outStr << "&(";
-        outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        if (needBracket == true)
-            outStr << ")";
-        break;
-
-    case DEREFERENCE:
-        outStr << "*";
-        if (expr->expr.unaryExp->m_type == IDENTIFIER)
-            needBracket = false;
-        else
+        case BOOLEAN_OP:
             outStr << "(";
-        outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        if (needBracket == true)
+            outStr << walkCondExpr(expr->lhs(), pProc, numLoc);
+            outStr << condOpSym[expr->op()];
+            outStr << walkCondExpr(expr->rhs(), pProc, numLoc);
             outStr << ")";
-        break;
+            break;
 
-    case POST_INC:
-        outStr <<  walkCondExpr (expr->expr.unaryExp, pProc, numLoc) << "++";
-        break;
+        case NEGATION:
+            if (expr->expr.unaryExp->m_type == IDENTIFIER)
+            {
+                needBracket = false;
+                outStr << "!";
+            }
+            else
+                outStr << "! (";
+            outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
+            if (needBracket == true)
+                outStr << ")";
+            break;
 
-    case POST_DEC:
-        outStr <<  walkCondExpr (expr->expr.unaryExp, pProc, numLoc) << "--";
-        break;
+        case ADDRESSOF:
+            if (expr->expr.unaryExp->m_type == IDENTIFIER)
+            {
+                needBracket = false;
+                outStr << "&";
+            }
+            else
+                outStr << "&(";
+            outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
+            if (needBracket == true)
+                outStr << ")";
+            break;
 
-    case PRE_INC:
-        outStr << "++"<< walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        break;
+        case DEREFERENCE:
+            outStr << "*";
+            if (expr->expr.unaryExp->m_type == IDENTIFIER)
+                needBracket = false;
+            else
+                outStr << "(";
+            outStr << walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
+            if (needBracket == true)
+                outStr << ")";
+            break;
 
-    case PRE_DEC:
-        outStr << "--"<< walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
-        break;
+        case POST_INC:
+            outStr <<  walkCondExpr (expr->expr.unaryExp, pProc, numLoc) << "++";
+            break;
 
-    case IDENTIFIER:
-        std::ostringstream o;
-        switch (expr->expr.ident.idType)
+        case POST_DEC:
+            outStr <<  walkCondExpr (expr->expr.unaryExp, pProc, numLoc) << "--";
+            break;
+
+        case PRE_INC:
+            outStr << "++"<< walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
+            break;
+
+        case PRE_DEC:
+            outStr << "--"<< walkCondExpr (expr->expr.unaryExp, pProc, numLoc);
+            break;
+
+        case IDENTIFIER:
         {
-        case GLOB_VAR:
-            o << g_proj.symtab[expr->expr.ident.idNode.globIdx].name;
-            break;
-        case REGISTER:
-            id = &pProc->localId.id_arr[expr->expr.ident.idNode.regiIdx];
-            if (id->name[0] == '\0')	/* no name */
+            std::ostringstream o;
+            switch (expr->expr.ident.idType)
             {
-                id->setLocalName(++(*numLoc));
-                codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
-                codeOut <<"/* "<<Machine_X86::regName(id->id.regi)<<" */\n";
-            }
-            if (id->hasMacro)
-                o << id->macro << "("<<id->name<<")";
-            else
-                o << id->name;
-            break;
+                case GLOB_VAR:
+                    o << Project::get()->symtab[expr->expr.ident.idNode.globIdx].name;
+                    break;
+                case REGISTER:
+                    id = &pProc->localId.id_arr[expr->expr.ident.idNode.regiIdx];
+                    if (id->name[0] == '\0')	/* no name */
+                    {
+                        id->setLocalName(++(*numLoc));
+                        codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
+                        codeOut <<"/* "<<Machine_X86::regName(id->id.regi)<<" */\n";
+                    }
+                    if (id->hasMacro)
+                        o << id->macro << "("<<id->name<<")";
+                    else
+                        o << id->name;
+                    break;
 
-        case LOCAL_VAR:
-            o << pProc->localId.id_arr[expr->expr.ident.idNode.localIdx].name;
-            break;
+                case LOCAL_VAR:
+                    o << pProc->localId.id_arr[expr->expr.ident.idNode.localIdx].name;
+                    break;
 
-        case PARAM:
-            psym = &pProc->args[expr->expr.ident.idNode.paramIdx];
-            if (psym->hasMacro)
-                o << psym->macro<<"("<<psym->name<< ")";
-            else
-                o << psym->name;
-            break;
+                case PARAM:
+                    psym = &pProc->args[expr->expr.ident.idNode.paramIdx];
+                    if (psym->hasMacro)
+                        o << psym->macro<<"("<<psym->name<< ")";
+                    else
+                        o << psym->name;
+                    break;
 
-        case GLOB_VAR_IDX:
-            bwGlb = &pProc->localId.id_arr[expr->expr.ident.idNode.idxGlbIdx].id.bwGlb;
-            o << (bwGlb->seg << 4) + bwGlb->off <<  "["<<Machine_X86::regName(bwGlb->regi)<<"]";
-            break;
+                case GLOB_VAR_IDX:
+                    bwGlb = &pProc->localId.id_arr[expr->expr.ident.idNode.idxGlbIdx].id.bwGlb;
+                    o << (bwGlb->seg << 4) + bwGlb->off <<  "["<<Machine_X86::regName(bwGlb->regi)<<"]";
+                    break;
 
-        case CONSTANT:
-            if (expr->expr.ident.idNode.kte.kte < 1000)
-                o << expr->expr.ident.idNode.kte.kte;
-            else
-                o << "0x"<<std::hex << expr->expr.ident.idNode.kte.kte;
-            break;
+                case CONSTANT:
+                    if (expr->expr.ident.idNode.kte.kte < 1000)
+                        o << expr->expr.ident.idNode.kte.kte;
+                    else
+                        o << "0x"<<std::hex << expr->expr.ident.idNode.kte.kte;
+                    break;
 
-        case STRING:
-            o << getString (expr->expr.ident.idNode.strIdx);
-            break;
+                case STRING:
+                    o << getString (expr->expr.ident.idNode.strIdx);
+                    break;
 
-        case LONG_VAR:
-            id = &pProc->localId.id_arr[expr->expr.ident.idNode.longIdx];
-            if (id->name[0] != '\0') /* STK_FRAME & REG w/name*/
-                o << id->name;
-            else if (id->loc == REG_FRAME)
-            {
-                id->setLocalName(++(*numLoc));
-                codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
-                codeOut <<"/* "<<Machine_X86::regName(id->id.longId.h) << ":" <<
-                            Machine_X86::regName(id->id.longId.l) << " */\n";
-                o << id->name;
-                pProc->localId.propLongId (id->id.longId.l,id->id.longId.h, id->name.c_str());
-            }
-            else    /* GLB_FRAME */
-            {
-                if (id->id.longGlb.regi == 0)  /* not indexed */
-                    o << "[" << (id->id.longGlb.seg<<4) + id->id.longGlb.offH <<"]";
-                else if (id->id.longGlb.regi == rBX)
-                    o << "[" << (id->id.longGlb.seg<<4) + id->id.longGlb.offH <<"][bx]";
-            }
-            break;
+                case LONG_VAR:
+                    id = &pProc->localId.id_arr[expr->expr.ident.idNode.longIdx];
+                    if (id->name[0] != '\0') /* STK_FRAME & REG w/name*/
+                        o << id->name;
+                    else if (id->loc == REG_FRAME)
+                    {
+                        id->setLocalName(++(*numLoc));
+                        codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
+                        codeOut <<"/* "<<Machine_X86::regName(id->id.longId.h) << ":" <<
+                                  Machine_X86::regName(id->id.longId.l) << " */\n";
+                        o << id->name;
+                        pProc->localId.propLongId (id->id.longId.l,id->id.longId.h, id->name.c_str());
+                    }
+                    else    /* GLB_FRAME */
+                    {
+                        if (id->id.longGlb.regi == 0)  /* not indexed */
+                            o << "[" << (id->id.longGlb.seg<<4) + id->id.longGlb.offH <<"]";
+                        else if (id->id.longGlb.regi == rBX)
+                            o << "[" << (id->id.longGlb.seg<<4) + id->id.longGlb.offH <<"][bx]";
+                    }
+                    break;
 
-        case FUNCTION:
-            o << writeCall (expr->expr.ident.idNode.call.proc,*expr->expr.ident.idNode.call.args, pProc, numLoc);
-            break;
+                case FUNCTION:
+                    o << writeCall (expr->expr.ident.idNode.call.proc,*expr->expr.ident.idNode.call.args, pProc, numLoc);
+                    break;
 
-        case OTHER:
-            off = expr->expr.ident.idNode.other.off;
-            o << Machine_X86::regName(expr->expr.ident.idNode.other.seg)<< "[";
-            o << Machine_X86::regName(expr->expr.ident.idNode.other.regi);
-            if (off < 0)
-                o << "-"<< hexStr (-off);
-            else if (off>0)
-                o << "+"<< hexStr (off);
-            o << "]";
-        } /* eos */
-        outStr << o.str();
-        break;
+                case OTHER:
+                    off = expr->expr.ident.idNode.other.off;
+                    o << Machine_X86::regName(expr->expr.ident.idNode.other.seg)<< "[";
+                    o << Machine_X86::regName(expr->expr.ident.idNode.other.regi);
+                    if (off < 0)
+                        o << "-"<< hexStr (-off);
+                    else if (off>0)
+                        o << "+"<< hexStr (off);
+                    o << "]";
+            } /* eos */
+            outStr << o.str();
+            break;
+        }
+        default:
+            fprintf(stderr,"walkCondExpr attemped on %d\n",expr->m_type);
+            break;
     }
     cCode.appendDecl(codeOut.str());
     return outStr.str();
@@ -796,21 +806,23 @@ COND_EXPR *COND_EXPR::clone() const
 
     switch (m_type)
     {
-    case BOOLEAN_OP:
-        newExp = new COND_EXPR(*this);
-        newExp->boolExpr.lhs = lhs()->clone();
-        newExp->boolExpr.rhs = rhs()->clone();
-        break;
+        case BOOLEAN_OP:
+            newExp = new COND_EXPR(*this);
+            newExp->boolExpr.lhs = lhs()->clone();
+            newExp->boolExpr.rhs = rhs()->clone();
+            break;
 
-    case NEGATION:
-    case ADDRESSOF:
-    case DEREFERENCE:
-        newExp = new COND_EXPR(*this);
-        newExp->expr.unaryExp = expr.unaryExp->clone();
-        break;
+        case NEGATION:
+        case ADDRESSOF:
+        case DEREFERENCE:
+            newExp = new COND_EXPR(*this);
+            newExp->expr.unaryExp = expr.unaryExp->clone();
+            break;
 
-    case IDENTIFIER:
-        return new COND_EXPR(*this);
+        case IDENTIFIER:
+            return new COND_EXPR(*this);
+        default:
+            fprintf(stderr,"Clone attempt on unhandled type %d\n",m_type);
     }
     return (newExp);
 }
@@ -857,7 +869,7 @@ COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,const LOCAL_
                 return _expr;
             }
         }
-        return false;
+        return nullptr;
 
     case BOOLEAN_OP:
         temp = lhs()->insertSubTreeReg( _expr, regi, locsym);
@@ -884,11 +896,14 @@ COND_EXPR *COND_EXPR::insertSubTreeReg (COND_EXPR *_expr, eReg regi,const LOCAL_
             return this;
         }
         return nullptr;
+    default:
+        fprintf(stderr,"insertSubTreeReg attempt on unhandled type %d\n",m_type);
+
     }
 
     return nullptr;
 }
-COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym)
+COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym)
 {
     COND_EXPR *r;
     r=m_lhs->insertSubTreeReg(_expr,regi,locsym);
@@ -957,6 +972,8 @@ COND_EXPR *COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
             return this;
         }
         return nullptr;
+    default:
+        fprintf(stderr,"insertSubTreeLongReg attempt on unhandled type %d\n",m_type);
     }
     return nullptr;
 }
@@ -993,13 +1010,15 @@ void COND_EXPR::release()
     case DEREFERENCE:
         expr.unaryExp->release();
         break;
+    default:
+        fprintf(stderr,"release attempt on unhandled type %d\n",m_type);
     }
     delete (this);
 }
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
 
-COND_EXPR *BinaryOperator::clone()
+COND_EXPR *BinaryOperator::clone() const
 {
     BinaryOperator* newExp=new BinaryOperator(m_op);        /* Expression node copy */
     newExp->m_lhs = m_lhs->clone();
@@ -1007,7 +1026,7 @@ COND_EXPR *BinaryOperator::clone()
     return newExp;
 }
 
-COND_EXPR *BinaryOperator::inverse()
+COND_EXPR *BinaryOperator::inverse() const
 {
     static condOp invCondOp[] = {GREATER, GREATER_EQUAL, NOT_EQUAL, EQUAL,
                                  LESS_EQUAL, LESS, DUMMY,DUMMY,DUMMY,DUMMY,
@@ -1030,6 +1049,8 @@ COND_EXPR *BinaryOperator::inverse()
         res->m_lhs=m_lhs->inverse ();
         res->m_rhs=m_rhs->inverse ();
         return res;
+    default:
+        fprintf(stderr,"BinaryOperator::inverse attempt on unhandled op %d\n",m_op);
     } /* eos */
     assert(false);
     return res;

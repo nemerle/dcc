@@ -53,9 +53,9 @@ struct eDuVal
         USE=2,
         VAL=4
     };
-    int def :1; /* Variable was first defined than used          */
-    int use :1;      /* Variable was first used than defined          */
-    int val :1;      /* Variable has an initial value.  2 cases:
+    uint8_t def :1; /* Variable was first defined than used          */
+    uint8_t use :1;      /* Variable was first used than defined          */
+    uint8_t val :1;      /* Variable has an initial value.  2 cases:
                     * 1. When variable is used first (ie. global)
                     * 2. When a value is moved into the variable
                     *    for the first time.                        */
@@ -65,7 +65,7 @@ struct eDuVal
         use = x&USE;
         val = x&VAL;
     }
-    bool isUSE_VAL() {return use&&val;}            /* Use and Val                                   */
+    bool isUSE_VAL() {return use&&val;}            /* Use and Val */
 };
 static constexpr const char * hlTypes[13] = {
     "", "char", "unsigned char", "int", "unsigned int",
@@ -88,6 +88,12 @@ struct TypeContainer
             return 2;
             case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
             return 1;
+            case TYPE_LONG_SIGN:  case TYPE_LONG_UNSIGN:
+                return 4;
+            case TYPE_FLOAT:
+                return 4;
+            default:
+                return ~0;
         }
         return 0;
     }

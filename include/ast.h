@@ -123,10 +123,10 @@ struct BinaryOperator : public COND_EXPR
     }
     static BinaryOperator *Create(condOp o,COND_EXPR *l,COND_EXPR *r);
     static BinaryOperator *CreateAdd(COND_EXPR *l,COND_EXPR *r);
-    virtual COND_EXPR *inverse();
-    virtual COND_EXPR *clone();
+    virtual COND_EXPR *inverse() const;
+    virtual COND_EXPR *clone() const;
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
-    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, LOCAL_ID *locsym);
+    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
     virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
 
     COND_EXPR *lhs()
@@ -157,8 +157,8 @@ struct UnaryOperator : public COND_EXPR
 {
     condOp      op;
     COND_EXPR *unaryExp;
-    virtual COND_EXPR *inverse();
-    virtual COND_EXPR *clone();
+    virtual COND_EXPR *inverse() const;
+    virtual COND_EXPR *clone() const;
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
     static UnaryOperator *Create(condNodeType t, COND_EXPR *sub_expr)
     {

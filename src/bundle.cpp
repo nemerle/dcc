@@ -26,7 +26,7 @@ void strTable::addLabelBundle (int idx, int label)
     if(at(idx).size()<4)
         at(idx)=s;
     else
-        at(idx) = string(s)+at(idx).substr(4);
+    at(idx) = string(s)+at(idx).substr(4);
 }
 
 

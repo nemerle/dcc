@@ -236,7 +236,7 @@ void Function::propLongStk (int i, const ID &pLocId)
     iICODE l23;
     /* Check all icodes for offHi:offLo */
     pEnd = Icode.end();
-    int stat_size=Icode.size();
+    size_t stat_size=Icode.size();
 //    for (idx = 0; idx < (Icode.size() - 1); idx++)
     for(auto pIcode = Icode.begin(); ;++pIcode)
     {
@@ -459,7 +459,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         {
             if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn, *long_loc->ll()))
             {
-                                // reduce the advance by 1 here (loop increases) ?
+                // reduce the advance by 1 here (loop increases) ?
                 advance(pIcode,longJCond23 (asgn, pIcode, arc, long_loc));
             }
         }
@@ -476,9 +476,9 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         }
 
         /* Check for OR regH, regL
-             *			 JX lab
-             *		=> HLI_JCOND (regH:regL X 0) lab
-             * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
+         *           JX lab
+         *      => HLI_JCOND (regH:regL X 0) lab
+         * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
         else if (pIcode->ll()->match(iOR) && (next1 != pEnd) && (isJCond ((llIcode)next1->ll()->getOpcode())))
         {
             if (pLocId.id.longId.srcDstRegMatch(pIcode,pIcode))
@@ -492,6 +492,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             }
         }
     } /* end for */
+    return 0;
 }
 
 /** Finds the definition of the long register pointed to by pLocId, and
@@ -504,8 +505,8 @@ void Function::propLongReg (int loc_ident_idx, const ID &pLocId)
 {
     /* Process all definitions/uses of long registers at an icode position */
     // WARNING: this loop modifies the iterated-over container.
-    size_t initial_size=pLocId.idx.size();
-    for (int j = 0; j < pLocId.idx.size(); j++)
+    //size_t initial_size=pLocId.idx.size();
+    for (size_t j = 0; j < pLocId.idx.size(); j++)
     {
         auto idx_iter=pLocId.idx.begin();
         std::advance(idx_iter,j);
@@ -524,7 +525,7 @@ void Function::propLongReg (int loc_ident_idx, const ID &pLocId)
 
 /* Propagates the long global address across all LOW_LEVEL icodes.
  * Transforms some LOW_LEVEL icodes into HIGH_LEVEL     */
-void Function::propLongGlb (int i, const ID &pLocId)
+void Function::propLongGlb (int /*i*/, const ID &/*pLocId*/)
 {
     printf("WARN: Function::propLongGlb not implemented");
 }
@@ -534,10 +535,9 @@ void Function::propLongGlb (int i, const ID &pLocId)
  * into HIGH_LEVEL icodes.  */
 void Function::propLong()
 {
-    int i;
     /* Pointer to current local identifier */
-
-    for (i = 0; i < localId.csym(); i++)
+    //TODO: change into range based for
+    for (size_t i = 0; i < localId.csym(); i++)
     {
         const ID &pLocId(localId.id_arr[i]);
         if ((pLocId.type==TYPE_LONG_SIGN) || (pLocId.type==TYPE_LONG_UNSIGN))

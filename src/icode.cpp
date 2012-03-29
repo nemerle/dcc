@@ -57,9 +57,9 @@ CIcodeRec::iterator CIcodeRec::labelSrch(uint32_t target)
 {
     return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ll()->label==target;});
 }
-ICODE * CIcodeRec::GetIcode(int ip)
+ICODE * CIcodeRec::GetIcode(size_t ip)
 {
-    assert(ip>=0 && ip<size());
+    assert(ip<size());
     iICODE res=begin();
     advance(res,ip);
     return &(*res);

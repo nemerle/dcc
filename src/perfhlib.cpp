@@ -14,14 +14,14 @@
 static  uint16_t    *T1, *T2;   /* Pointers to T1[i], T2[i] */
 static  short   *g;         /* g[] */
 
-static  int     numEdges;   /* An edge counter */
+//static  int     numEdges;   /* An edge counter */
 //static  bool    *visited;   /* Array of bools: whether visited */
 
 /* Private prototypes */
-static void initGraph(void);
-static void addToGraph(int e, int v1, int v2);
-static bool isCycle(void);
-static void duplicateKeys(int v1, int v2);
+//static void initGraph(void);
+//static void addToGraph(int e, int v1, int v2);
+//static bool isCycle(void);
+//static void duplicateKeys(int v1, int v2);
 PatternHasher g_pattern_hasher;
 
 void

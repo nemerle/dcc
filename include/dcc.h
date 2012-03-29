@@ -20,7 +20,7 @@
 #include "bundle.h"
 #include "Procedure.h"
 #include "BasicBlock.h"
-struct Project;
+class Project;
 /* CALL GRAPH NODE */
 struct CALL_GRAPH
 {
@@ -116,7 +116,7 @@ void    parse (CALL_GRAPH * *);                             /* parser.c     */
 
 int     strSize (uint8_t *, char);                          /* parser.c     */
 //void    disassem(int pass, Function * pProc);             /* disassem.c   */
-void    interactDis(Function * initProc, int initIC);       /* disassem.c   */
+void    interactDis(Function *, int initIC);       /* disassem.c   */
 bool    JmpInst(llIcode opcode);                            /* idioms.c     */
 queue::iterator  appendQueue(queue &Q, BB *node);           /* reducible.c  */
 

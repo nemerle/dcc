@@ -27,7 +27,7 @@ struct SYM : public SymbolCommon
     {
 
     }
-    int32_t    label;      /* physical address (20 bit)    */
+    uint32_t    label;      /* physical address (20 bit)    */
     uint32_t     flg;       /* SEG_IMMED, IMPURE, WORD_OFF  */
 };
 /* STACK FRAME */
@@ -60,13 +60,13 @@ class SymbolTableCommon : public std::vector<T>
 public:
     typedef typename std::vector<T>::iterator iterator;
     typedef typename std::vector<T>::const_iterator const_iterator;
-    iterator findByLabel(int lab)
+    iterator findByLabel(uint32_t lab)
     {
         auto iter = std::find_if(this->begin(),this->end(),
                                  [lab](T &s)->bool {return s.label==lab;});
         return iter;
     }
-    const_iterator findByLabel(int lab) const
+    const_iterator findByLabel(uint32_t lab) const
     {
         auto iter = std::find_if(this->begin(),this->end(),
                                  [lab](const T &s)->bool {return s.label==lab;});
@@ -102,9 +102,9 @@ struct SYMTABLE
 enum tableType                     /* The table types */
 {
     Label=0,                        /* The label table */
-    Comment,                        /* The comment table */
-    NUM_TABLE_TYPES                 /* Number of entries: must be last */
+    Comment                        /* The comment table */
 };
+constexpr int NUM_TABLE_TYPES = int(Comment)+1; /* Number of entries: must be last */
 
 void    createSymTables(void);
 void    destroySymTables(void);

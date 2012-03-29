@@ -10,8 +10,8 @@
 #include "project.h"
 extern Project g_proj;
 //static BB *  rmJMP(Function * pProc, int marker, BB * pBB);
-static void mergeFallThrough(Function * pProc, BB * pBB);
-static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, int *first, int *last);
+//static void mergeFallThrough(Function * pProc, BB * pBB);
+//static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, int *first, int *last);
 
 /*****************************************************************************
  * createCFG - Create the basic control flow graph
@@ -30,7 +30,6 @@ void Function::createCFG()
      * 6) End of procedure
      */
     int		i;
-    int		ip;
     BB *        psBB;
     BB *        pBB;
     iICODE 	pIcode = Icode.begin();
@@ -85,7 +84,7 @@ CondJumps:
                     {
                         //pBB = BB::Create(start, ip, MULTI_BRANCH, ll->caseTbl.numEntries, this);
                         pBB = BB::Create(iStart, pIcode, MULTI_BRANCH, ll->caseTbl2.size(), this);
-                        for (i = 0; i < ll->caseTbl2.size(); i++)
+                        for (size_t i = 0; i < ll->caseTbl2.size(); i++)
                             pBB->edges[i].ip = ll->caseTbl2[i];
                         hasCase = true;
                     }
@@ -153,7 +152,7 @@ CondJumps:
         pBB = *iter;
         for (size_t edeg_idx = 0; edeg_idx < pBB->edges.size(); edeg_idx++)
         {
-            uint32_t ip = pBB->edges[edeg_idx].ip;
+            int32_t ip = pBB->edges[edeg_idx].ip;
             if (ip >= SYNTHESIZED_MIN)
             {
                 fatalError (INVALID_SYNTHETIC_BB);
@@ -179,8 +178,8 @@ void Function::markImpure()
             continue;
         //assert that case tbl has less entries then symbol table ????
         //WARNING: Case entries are held in symbol table !
-        assert(g_proj.validSymIdx(icod.ll()->caseEntry));
-        const SYM &psym(g_proj.getSymByIdx(icod.ll()->caseEntry));
+        assert(Project::get()->validSymIdx(icod.ll()->caseEntry));
+        const SYM &psym(Project::get()->getSymByIdx(icod.ll()->caseEntry));
         for (int c = (int)psym.label; c < (int)psym.label+psym.size; c++)
         {
             if (BITMAP(c, BM_CODE))
@@ -335,8 +334,6 @@ BB *BB::rmJMP(int marker, BB * pBB)
 void BB::mergeFallThrough( CIcodeRec &Icode)
 {
     BB *	pChild;
-    int	i;
-
     if (!this)
     {
         printf("mergeFallThrough on empty BB!\n");
@@ -375,9 +372,11 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
     traversed = DFS_MERGE;
 
     /* Process all out edges recursively */
-    for (i = 0; i < edges.size(); i++)
-    if (edges[i].BBptr->traversed != DFS_MERGE)
-    edges[i].BBptr->mergeFallThrough(Icode);
+    for (size_t i = 0; i < edges.size(); i++)
+    {
+        if (edges[i].BBptr->traversed != DFS_MERGE)
+            edges[i].BBptr->mergeFallThrough(Icode);
+    }
 }
 
 
@@ -399,7 +398,7 @@ void BB::dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last)
         pChild->inEdges[pChild->index++] = this;
 
         /* Is this the last visit? */
-        if (pChild->index == pChild->inEdges.size())
+        if (pChild->index == int(pChild->inEdges.size()))
             pChild->index = UN_INIT;
 
         if (pChild->traversed != DFS_NUM)

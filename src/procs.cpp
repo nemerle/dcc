@@ -43,8 +43,6 @@ void CALL_GRAPH::insertArc (ilFunction newProc)
 /* Inserts a (caller, callee) arc in the call graph tree. */
 bool CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
 {
-    int i;
-
     if (proc == caller)
     {
         insertArc (callee);
@@ -52,8 +50,8 @@ bool CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
     }
     else
     {
-        for (i = 0; i < outEdges.size(); i++)
-            if (outEdges[i]->insertCallGraph (caller, callee))
+        for (CALL_GRAPH *edg : outEdges)
+            if (edg->insertCallGraph (caller, callee))
                 return true;
         return (false);
     }
@@ -61,7 +59,7 @@ bool CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
 
 bool CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
 {
-    return insertCallGraph(g_proj.funcIter(caller),callee);
+    return insertCallGraph(Project::get()->funcIter(caller),callee);
 }
 
 
@@ -69,11 +67,9 @@ bool CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
  * the nodes the procedure invokes. */
 void CALL_GRAPH::writeNodeCallGraph(int indIdx)
 {
-    int i;
-
     printf ("%s%s\n", indentStr(indIdx), proc->name.c_str());
-    for (i = 0; i < outEdges.size(); i++)
-        outEdges[i]->writeNodeCallGraph (indIdx + 1);
+    for (CALL_GRAPH *cg : outEdges)
+        cg->writeNodeCallGraph (indIdx + 1);
 }
 
 
@@ -205,6 +201,8 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
             picode->du.def &= maskDuReg[id->id.longId.l];
             newsym.type = TYPE_LONG_SIGN;
             break;
+        default:
+            fprintf(stderr,"LOCAL_ID::newRegArg unhandled type %d in masking low\n",type);
     }
     call_args_stackframe->push_back(newsym);
     call_args_stackframe->numArgs++;
@@ -228,10 +226,12 @@ bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
         {
             regi =  pproc->localId.id_arr[exp->expr.ident.idNode.regiIdx].id.regi;
             if ((regi >= rES) && (regi <= rDS))
+            {
                 if (opcode == iCALLF)
                     return false;
                 else
                     return true;
+            }
         }
     }
 
@@ -308,8 +308,12 @@ void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
                 case TYPE_WORD_SIGN:
 
                     break;
+                default:
+                    fprintf(stderr,"adjustForArgType unhandled actType_ %d \n",actType);
             } /* eos */
             break;
+        default:
+            fprintf(stderr,"adjustForArgType unhandled forType %d \n",forType);
     }
 }
 
@@ -317,11 +321,11 @@ void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
 /* Determines whether the formal argument has the same type as the given
  * type (type of the actual argument).  If not, the formal argument is
  * changed its type */
-void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
+void STKFRAME::adjustForArgType(size_t numArg_, hlType actType_)
 {
     hlType forType;
     STKSYM * psym, * nsym;
-    int off, i;
+    int off;
     /* If formal argument does not exist, do not create new ones, just
      * ignore actual argument
      */
@@ -330,7 +334,7 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
 
     /* Find stack offset for this argument */
     off = m_minOff;
-    i=0;
+    size_t i=0;
     for(STKSYM &s : *this) // walk formal arguments upto numArg_
     {
         if(i>=numArg_)
@@ -343,7 +347,7 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
     //psym = &at(numArg_);
     //i = numArg_;
         //auto iter=std::find_if(sym.begin(),sym.end(),[off](STKSYM &s)->bool {s.off==off;});
-    auto iter=std::find_if(begin()+numArg_,end(),[off](STKSYM &s)->bool {s.label==off;});
+    auto iter=std::find_if(begin()+numArg_,end(),[off](STKSYM &s)->bool {return s.label==off;});
     if(iter==end()) // symbol not found
             return;
         psym = &(*iter);
@@ -380,6 +384,8 @@ void STKFRAME::adjustForArgType(int numArg_, hlType actType_)
             case TYPE_CONST:
             case TYPE_STR:
                 break;
+            default:
+                fprintf(stderr,"STKFRAME::adjustForArgType unhandled actType_ %d \n",actType_);
         } /* eos */
     }
 }

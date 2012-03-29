@@ -219,8 +219,8 @@ static uint8_t pattMainSmall[] =
     0xFF, 0x36, WILD, WILD,                 /* Push argv */
     0xFF, 0x36, WILD, WILD,                 /* Push argc */
     0xE8, WILD, WILD						/* call _main */
-    /*  0x50,                                   /* push ax... not in Borland V3 */
-    /*  0xE8                                    /* call _exit */
+    //  0x50,                                   /* push ax... not in Borland V3 */
+    //  0xE8                                    /* call _exit */
 };
 /* Num bytes from start pattern to the relative offset of main() */
 #define OFFMAINSMALL 13
@@ -232,9 +232,9 @@ static uint8_t pattMainMedium[] =
     0xFF, 0x36, WILD, WILD,                 /* Push argv */
     0xFF, 0x36, WILD, WILD,                 /* Push argc */
     0x9A, WILD, WILD, WILD, WILD            /* call far _main */
-    /*  0x50                                /* push ax */
-    /*  0x0E,                               /* push cs NB not tested Borland */
-    /*  0xE8                                /* call _exit */
+    //  0x50                                /* push ax */
+    //  0x0E,                               /* push cs NB not tested Borland */
+    //  0xE8                                /* call _exit */
 };
 /* Num bytes from start pattern to the relative offset of main() */
 #define OFFMAINMEDIUM 13
@@ -248,8 +248,8 @@ static uint8_t pattMainCompact[] =
     0xFF, 0x36, WILD, WILD,                 /* Push argv hi */
     0xFF, 0x36, WILD, WILD,                 /* Push argc */
     0xE8, WILD, WILD,                       /* call _main */
-    /*  0x50,                                   /* push ax */
-    /*  0xE8                                    /* call _exit */
+    //  0x50,                                   /* push ax */
+    //  0xE8                                    /* call _exit */
 };
 /* Num bytes from start pattern to the relative offset of main() */
 #define OFFMAINCOMPACT 21
@@ -263,9 +263,9 @@ static uint8_t pattMainLarge[] =
     0xFF, 0x36, WILD, WILD,                 /* Push argv hi */
     0xFF, 0x36, WILD, WILD,                 /* Push argc */
     0x9A, WILD, WILD, WILD, WILD            /* call far _main */
-    /*  0x50                                    /* push ax */
-    /*  0x0E,                                   /* push cs */
-    /*  0xE8                                    /* call _exit */
+    //  0x50                                    /* push ax */
+    //  0x0E,                                   /* push cs */
+    //  0xE8                                    /* call _exit */
 };
 /* Num bytes from start pattern to the relative offset of main() */
 #define OFFMAINLARGE 21
@@ -502,6 +502,8 @@ bool LibCheck(Function & pProc)
                         case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
                             pProc.liveOut = duReg[rAL];
                             break;
+                        default:
+                            fprintf(stderr,"Unknown retval type %d in LibCheck\n",pProc.retVal.type);
                             /*** other types are not considered yet ***/
                     }
                 }
@@ -569,12 +571,12 @@ readFileSection(uint16_t* p, int len, FILE* f)
 }
 
 /* The following two functions are dummies, since we don't call map() */
-void getKey(int i, uint8_t **keys)
+void getKey(int /*i*/, uint8_t **/*keys*/)
 {
 
 }
 
-void dispKey(int i)
+void dispKey(int /*i*/)
 {
 
 }
@@ -695,7 +697,7 @@ void STATE::checkStartup()
         but decides the model required. Note: must do the far data models
         (large and compact) before the others, since they are the same pattern
         as near data, just more pushes at the start. */
-    if(prog.cbImage>startOff+0x180+sizeof(pattMainLarge))
+    if(prog.cbImage>int(startOff+0x180+sizeof(pattMainLarge)))
     {
         if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainLarge,sizeof(pattMainLarge), &i))
         {

@@ -2,7 +2,7 @@
 #include "dcc.h"
 
 /*****************************************************************************
-/* checkStkVars - Checks for PUSH SI
+ * checkStkVars - Checks for PUSH SI
  *                          [PUSH DI]
  *                or         PUSH DI
  *                          [PUSH SI]
@@ -115,7 +115,7 @@ bool Idiom1::match(iICODE picode)
     else // push di [push si] / push si [push di]
     {
         size_t n = checkStkVars (picode);
-        for(int i=0; i<n; ++i)
+        for(size_t i=0; i<n; ++i)
             m_icodes.push_back(picode++);
 
     }

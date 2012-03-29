@@ -5,3 +5,5 @@ tests/outputs/*
 tests/errors
 *.autosave
 bld*
+*.user
+*.idb

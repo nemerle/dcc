@@ -12,8 +12,8 @@
 #include "project.h"
 
 extern Project g_proj;
-static void displayCFG(Function * pProc);
-static void displayDfs(BB * pBB);
+//static void displayCFG(Function * pProc);
+//static void displayDfs(BB * pBB);
 
 /****************************************************************************
  * udm
@@ -73,7 +73,7 @@ void udm(void)
     /* Build the control flow graph, find idioms, and convert low-level
      * icodes to high-level ones */
     Disassembler ds(2);
-    for (auto iter = g_proj.pProcList.rbegin(); iter!=g_proj.pProcList.rend(); ++iter)
+    for (auto iter = Project::get()->pProcList.rbegin(); iter!=Project::get()->pProcList.rend(); ++iter)
     {
         iter->buildCFG(ds);
     }
@@ -83,10 +83,10 @@ void udm(void)
      * and intermediate instructions.  Find expressions by forward
      * substitution algorithm */
     std::bitset<32> live_regs;
-    g_proj.pProcList.front().dataFlow (live_regs);
+    Project::get()->pProcList.front().dataFlow (live_regs);
 
     /* Control flow analysis - structuring algorithm */
-    for (auto iter = g_proj.pProcList.rbegin(); iter!=g_proj.pProcList.rend(); ++iter)
+    for (auto iter = Project::get()->pProcList.rbegin(); iter!=Project::get()->pProcList.rend(); ++iter)
     {
         iter->controlFlowAnalysis();
     }

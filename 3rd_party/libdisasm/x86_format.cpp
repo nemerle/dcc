@@ -46,7 +46,7 @@
         }                                                        \
 } while( 0 )
 
-static char *prefix_strings[] = {
+static const char *prefix_strings[] = {
         "",     /* no prefix */
         "repz ", /* the trailing spaces make it easy to prepend to mnemonic */
         "repnz ",
@@ -115,7 +115,7 @@ static void get_operand_data_str( x86_op_t *op, char *str, int len ){
 static void get_operand_regtype_str( int regtype, char *str, int len )
 {
         static struct {
-                char *name;
+                const char *name;
                 int value;
         } operand_regtypes[] = {
                 {"reg_gen"    , 0x00001},
@@ -284,7 +284,7 @@ static int format_expr( x86_ea_t *ea, char *buf, int len,
 static int format_seg( x86_op_t *op, char *buf, int len,
                        enum x86_asm_format format ) {
         int len_orig = len;
-        char *reg = "";
+        const char *reg = "";
 
         if (! op || ! buf || ! len || ! op->flags.whole) {
                 return(0);
@@ -295,8 +295,9 @@ static int format_seg( x86_op_t *op, char *buf, int len,
         if (! (int) op->flags.op_seg) {
                 return(0);
         }
-
-        switch (op->flags.op_seg) {
+        uint16_t seg_ov=uint16_t(op->flags.op_seg)<<8;
+        switch (seg_ov)
+        {
                 case x86_op_flags::op_es_seg: reg = "es"; break;
                 case x86_op_flags::op_cs_seg: reg = "cs"; break;
                 case x86_op_flags::op_ss_seg: reg = "ss"; break;
@@ -328,9 +329,9 @@ static int format_seg( x86_op_t *op, char *buf, int len,
         return( len_orig - len ); /* return length of appended string */
 }
 
-static char *get_operand_datatype_str( x86_op_t *op ){
+static const char *get_operand_datatype_str( x86_op_t *op ){
 
-        static char *types[] = {
+        static const char *types[] = {
                 "sbyte",		/* 0 */
                 "sword",
                 "sqword",
@@ -405,7 +406,7 @@ static int format_insn_eflags_str( enum x86_flag_status flags, char *buf,
                                    int len) {
 
         static struct {
-                char *name;
+                const char *name;
                 int  value;
         } insn_flags[] = {
                 { "carry_set ",                 0x0001 },
@@ -440,9 +441,9 @@ static int format_insn_eflags_str( enum x86_flag_status flags, char *buf,
         return( len_orig - len );
 }
 
-static char *get_insn_group_str( enum x86_insn_t::x86_insn_group gp ) {
+static const char *get_insn_group_str( enum x86_insn_t::x86_insn_group gp ) {
 
-        static char *types[] = {
+        static const char *types[] = {
                 "",           // 0
                 "controlflow",// 1
                 "arithmetic", // 2
@@ -467,10 +468,10 @@ static char *get_insn_group_str( enum x86_insn_t::x86_insn_group gp ) {
         return types[gp];
 }
 
-static char *get_insn_type_str( enum x86_insn_type type ) {
+static const char *get_insn_type_str( enum x86_insn_type type ) {
 
         static struct {
-                char *name;
+                const char *name;
                 int  value;
         } types[] = {
                 /* insn_controlflow */
@@ -592,8 +593,8 @@ static char *get_insn_type_str( enum x86_insn_type type ) {
         return "";
 }
 
-static char *get_insn_cpu_str( enum x86_insn_cpu cpu ) {
-        static char *intel[] = {
+static const char *get_insn_cpu_str( enum x86_insn_cpu cpu ) {
+        static const char *intel[] = {
                 "",           		// 0
                 "8086",           	// 1
                 "80286",           	// 2
@@ -620,8 +621,8 @@ static char *get_insn_cpu_str( enum x86_insn_cpu cpu ) {
         return "";
 }
 
-static char *get_insn_isa_str( enum x86_insn_isa isa ) {
-        static char *subset[] = {
+static const char *get_insn_isa_str( enum x86_insn_isa isa ) {
+        static const char *subset[] = {
                 NULL,				// 0
                 "General Purpose",           	// 1
                 "Floating Point",           	// 2
@@ -880,11 +881,11 @@ static int format_operand_xml( x86_op_t *op, x86_insn_t *insn, char *buf,
         return( strlen( buf ) );
 }
 
-static int format_operand_raw( x86_op_t *op, x86_insn_t *insn, char *buf,
+static int format_operand_raw( x86_op_t *op, x86_insn_t */*insn*/, char *buf,
                                int len){
 
         char str[MAX_OP_RAW_STRING];
-        char *datatype = get_operand_datatype_str(op);
+        const char *datatype = get_operand_datatype_str(op);
 
         switch (op->type) {
                 case op_register:
@@ -1042,7 +1043,7 @@ char * x86_op_t::format( enum x86_asm_format format ) {
 
 static int format_att_mnemonic( x86_insn_t *insn, char *buf, int len) {
         int size = 0;
-        char *suffix;
+        const char *suffix;
 
         if (! insn || ! buf || ! len )
                 return(0);
@@ -1094,7 +1095,6 @@ static int format_att_mnemonic( x86_insn_t *insn, char *buf, int len) {
         return ( strlen( buf ) );
 }
 
-/** format (sprintf) an instruction mnemonic into 'buf' using specified syntax */
 int x86_format_mnemonic(x86_insn_t *insn, char *buf, int len,
                         enum x86_asm_format format){
         char str[MAX_OP_STRING];
@@ -1137,7 +1137,7 @@ static int format_insn_note(x86_insn_t *insn, char *buf, int len){
         return( len_orig - len );
 }
 
-static int format_raw_insn( x86_insn_t *insn, char *buf, int len ){
+static int format_raw_insn( x86_insn_t *insn, char *buf, size_t len ){
     struct op_string opstr = { buf, len };
     int i;
 

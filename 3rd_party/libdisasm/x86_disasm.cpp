@@ -52,7 +52,7 @@ unsigned int X86_Disasm::x86_disasm( unsigned char *buf, unsigned int buf_len,
     /* copy enough bytes for disassembly into buffer : this
     * helps prevent buffer overruns at the end of a file */
     memset( bytes, 0, MAX_INSTRUCTION_SIZE );
-    memcpy( bytes, &buf[offset], (len < MAX_INSTRUCTION_SIZE) ? len : 
+    memcpy( bytes, &buf[offset], (len < MAX_INSTRUCTION_SIZE) ? len :
         MAX_INSTRUCTION_SIZE );
 
     /* actually do the disassembly */
@@ -104,7 +104,7 @@ unsigned int X86_Disasm::x86_disasm_range( unsigned char *buf, uint32_t buf_rva,
                         bytes++;        /* try next byte */
                 }
 
-		insn.x86_oplist_free();
+                insn.x86_oplist_free();
         }
 
         return( count );
@@ -127,9 +127,9 @@ static int32_t internal_resolver( x86_op_t *op, x86_insn_t *insn ){
         if ( x86_optype_is_address(op->type) ) {
                 next_addr = op->data.sdword;
         } else if ( op->type == op_relative_near ) {
-		next_addr = insn->addr + insn->size + op->data.relative_near;
+                next_addr = insn->addr + insn->size + op->data.relative_near;
         } else if ( op->type == op_relative_far ) {
-		next_addr = insn->addr + insn->size + op->data.relative_far;
+                next_addr = insn->addr + insn->size + op->data.relative_far;
         }
         return( next_addr );
 }
@@ -141,7 +141,7 @@ unsigned int X86_Disasm::x86_disasm_forward( unsigned char *buf, unsigned int bu
         x86_insn_t insn;
         x86_op_t *op;
         int32_t next_addr;
-        uint32_t next_offset;
+        int32_t next_offset;
         unsigned int size, count = 0, bytes = 0, cont = 1;
 
         while ( cont && bytes < buf_len ) {
@@ -175,8 +175,8 @@ unsigned int X86_Disasm::x86_disasm_forward( unsigned char *buf, unsigned int bu
                         if (next_addr != -1 ) {
                                 next_offset = next_addr - buf_rva;
                                 /* if offset is in this buffer... */
-                                if ( next_offset >= 0 &&
-                                     next_offset < buf_len ) {
+                                if ( next_offset >= 0 && next_offset < int(buf_len) )
+                                {
                                         /* go ahead and disassemble */
                                         count += x86_disasm_forward( buf,
                                                             buf_len,
@@ -197,24 +197,24 @@ unsigned int X86_Disasm::x86_disasm_forward( unsigned char *buf, unsigned int bu
                         cont = 0;
                 }
 
-		insn.x86_oplist_free( );
+                insn.x86_oplist_free( );
         }
         return( count );
 }
 
 /* invariant instruction representation */
-size_t x86_invariant_disasm( unsigned char *buf, int buf_len, 
-		x86_invariant_t *inv ){
-	if (! buf || ! buf_len || ! inv  ) {
-		return(0);
-	}
+size_t x86_invariant_disasm( unsigned char *buf, int buf_len,
+                x86_invariant_t *inv ){
+        if (! buf || ! buf_len || ! inv  ) {
+                return(0);
+        }
 
-	return ia32_disasm_invariant(buf, buf_len, inv);
+        return ia32_disasm_invariant(buf, buf_len, inv);
 }
 size_t x86_size_disasm( unsigned char *buf, unsigned int buf_len ) {
-	if (! buf || ! buf_len  ) {
-		return(0);
-	}
+        if (! buf || ! buf_len  ) {
+                return(0);
+        }
 
-	return ia32_disasm_size(buf, buf_len);
+        return ia32_disasm_size(buf, buf_len);
 }

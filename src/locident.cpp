@@ -12,7 +12,7 @@ bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 {
     return (a->ll()->src().getReg2()==l) and (b->ll()->dst.getReg2()==h);
 }
-	
+
 
 ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
 {
@@ -72,7 +72,6 @@ int LOCAL_ID::newByteWordReg(hlType t, eReg regi)
  *       flagging this entry as illegal is all that can be done.    */
 void LOCAL_ID::flagByteWordId (int off)
 {
-    int idx;
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off](ID &en)->bool {
      //if (((en.type == TYPE_WORD_SIGN) || (en.type == TYPE_BYTE_SIGN)) &&
      if ((en.typeBitsize()<=16) &&
@@ -121,12 +120,10 @@ int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
  *            regi: indexed register into global variable
  *            ix: index into icode array
  *            t: HIGH_LEVEL type            */
-int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, int ix, hlType t)
+int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t)
 {
-    int idx;
-
     /* Check for entry in the table */
-    for (idx = 0; idx < id_arr.size(); idx++)
+    for (size_t idx = 0; idx < id_arr.size(); idx++)
     {
         if (/*(locSym->id[idx].type == t) &&   Not checking type */
             (id_arr[idx].id.bwGlb.seg == seg) &&
@@ -137,11 +134,10 @@ int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, int ix, hlType t)
 
     /* Not in the table, create new identifier */
     newIdent (t, GLB_FRAME);
-    idx = id_arr.size() - 1;
-    id_arr[idx].id.bwGlb.seg = seg;
-    id_arr[idx].id.bwGlb.off = off;
-    id_arr[idx].id.bwGlb.regi = regi;
-    return (idx);
+    id_arr.back().id.bwGlb.seg = seg;
+    id_arr.back().id.bwGlb.off = off;
+    id_arr.back().id.bwGlb.regi = regi;
+    return id_arr.size() - 1;
 }
 
 
@@ -279,7 +275,7 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
 {
     size_t idx;
     const LLOperand *pmH, *pmL;
-	LLInst &p_ll(*pIcode->ll());
+        LLInst &p_ll(*pIcode->ll());
     if (f == LOW_FIRST)
     {
         pmL = p_ll.get(sd);

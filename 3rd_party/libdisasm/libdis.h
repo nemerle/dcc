@@ -89,7 +89,7 @@ enum x86_options {		/* these can be ORed together */
         opt_none= 0,
         opt_ignore_nulls=1,     /* ignore sequences of > 4 NULL bytes */
         opt_16_bit=2,           /* 16-bit/DOS disassembly */
-        opt_att_mnemonics=4,    /* use AT&T syntax names for alternate opcode mnemonics */
+        opt_att_mnemonics=4    /* use AT&T syntax names for alternate opcode mnemonics */
 };
 
 /* ========================================= Instruction Representation */
@@ -133,12 +133,12 @@ enum x86_reg_type {     /* NOTE: these may be ORed together */
 
 /* x86_reg_t : an X86 CPU register */
 struct x86_reg_t {
-    char name[MAX_REGNAME];
-    enum x86_reg_type type;         /* what register is used for */
-    unsigned int size;              /* size of register in bytes */
-    unsigned int id;                /* register ID #, for quick compares */
-    unsigned int alias;		/* ID of reg this is an alias for */
-    unsigned int shift;		/* amount to shift aliased reg by */
+        char name[MAX_REGNAME];
+        enum x86_reg_type type;         /* what register is used for */
+        unsigned int size;              /* size of register in bytes */
+        unsigned int id;                /* register ID #, for quick compares */
+        unsigned int alias;		/* ID of reg this is an alias for */
+        unsigned int shift;		/* amount to shift aliased reg by */
     x86_reg_t * aliased_reg( ) {
         x86_reg_t * reg = (x86_reg_t * )calloc( sizeof(x86_reg_t), 1 );
         reg->x86_reg_from_id( id );
@@ -158,11 +158,11 @@ typedef struct {
 
 /* x86_absolute_t : an X86 segment:offset address (descriptor) */
 typedef struct {
-    unsigned short	segment;	/* loaded directly into CS */
-    union {
-        unsigned short	off16;	/* loaded directly into IP */
-        uint32_t		off32;	/* loaded directly into EIP */
-    } offset;
+        unsigned short	segment;	/* loaded directly into CS */
+        union {
+                unsigned short	off16;	/* loaded directly into IP */
+                uint32_t		off32;	/* loaded directly into EIP */
+        } offset;
 } x86_absolute_t;
 
 enum x86_op_type {      /* mutually exclusive */
@@ -250,39 +250,43 @@ struct x86_op_flags {     /* ORed together, but segs are mutually exclusive */
 /* x86_op_t : an X86 instruction operand */
 struct x86_op_t{
     friend struct x86_insn_t;
-    enum x86_op_type        type;           /* operand type */
-    enum x86_op_datatype    datatype;       /* operand size */
-    enum x86_op_access      access;         /* operand access [RWX] */
-    x86_op_flags       flags;          /* misc flags */
-    union {
-        /* sizeof will have to work on these union members! */
-        /* immediate values */
-        char            sbyte;
-        short           sword;
-        int32_t         sdword;
-        qword_t         sqword;
-        unsigned char   byte;
-        unsigned short  word;
-        uint32_t        dword;
-        qword_t         qword;
-        float           sreal;
-        double          dreal;
-        /* misc large/non-native types */
-        unsigned char   extreal[10];
-        unsigned char   bcd[10];
-        qword_t         dqword[2];
-        unsigned char   simd[16];
-        unsigned char   fpuenv[28];
-        /* offset from segment */
-        uint32_t        offset;
-        x86_reg_t       reg;            /* ID of CPU register */
-        char            relative_near; /* offsets from current insn */
-        int32_t         relative_far;
-        x86_absolute_t	absolute;   /* segment:offset */
-        x86_ea_t        expression; /* effective address [expression] */
-    } data;
-    /* this is needed to make formatting operands more sane */
-    void * insn;		/* pointer to x86_insn_t owning operand */
+        enum x86_op_type        type;           /* operand type */
+        enum x86_op_datatype    datatype;       /* operand size */
+        enum x86_op_access      access;         /* operand access [RWX] */
+        x86_op_flags       flags;          /* misc flags */
+        union {
+                /* sizeof will have to work on these union members! */
+                /* immediate values */
+                char            sbyte;
+                short           sword;
+                int32_t         sdword;
+                qword_t         sqword;
+                unsigned char   byte;
+                unsigned short  word;
+                uint32_t        dword;
+                qword_t         qword;
+                float           sreal;
+                double          dreal;
+                /* misc large/non-native types */
+                unsigned char   extreal[10];
+                unsigned char   bcd[10];
+                qword_t         dqword[2];
+                unsigned char   simd[16];
+                unsigned char   fpuenv[28];
+                /* offset from segment */
+                uint32_t        offset;
+                /* ID of CPU register */
+                x86_reg_t       reg;
+                /* offsets from current insn */
+                char            relative_near;
+                int32_t         relative_far;
+                /* segment:offset */
+                x86_absolute_t	absolute;
+                /* effective address [expression] */
+                x86_ea_t        expression;
+        } data;
+        /* this is needed to make formatting operands more sane */
+        void * insn;		/* pointer to x86_insn_t owning operand */
     size_t size()
     {
         return operand_size();
@@ -301,6 +305,7 @@ struct x86_op_t{
     x86_op_t * copy()
     {
         x86_op_t *op = (x86_op_t *) calloc( sizeof(x86_op_t), 1 );
+
         if ( op ) {
             memcpy( op, this, sizeof(x86_op_t) );
         }
@@ -439,7 +444,7 @@ enum x86_insn_note {
         insn_note_smm		= 2,	/* "" in System Management Mode */
         insn_note_serial	= 4,	/* Serializing instruction */
         insn_note_nonswap	= 8,	/* Does not swap arguments in att-style formatting */
-        insn_note_nosuffix  = 16,	/* Does not have size suffix in att-style formatting */
+        insn_note_nosuffix  = 16	/* Does not have size suffix in att-style formatting */
 };
 
 /* This specifies what effects the instruction has on the %eflags register */
@@ -520,7 +525,6 @@ enum x86_insn_prefix {
 
 
 /* TODO: maybe provide insn_new/free(), and have disasm return new insn_t */
-
 /* FOREACH types: these are used to limit the foreach results to
  * operands which match a certain "type" (implicit or explicit)
  * or which are accessed in certain ways (e.g. read or write). Note
@@ -572,8 +576,8 @@ private:
     void x86_oplist_append(x86_oplist_t *op);
 public:
     /* information about the instruction */
-    uint32_t addr;              /* load address */
-    uint32_t offset;            /* offset into file/buffer */
+    uint32_t addr;             /* load address */
+    uint32_t offset;           /* offset into file/buffer */
     x86_insn_group group;       /* meta-type, e.g. INS_EXEC */
     x86_insn_type type;         /* type, e.g. INS_BRANCH */
     x86_insn_note note;         /* note, e.g. RING0 */
@@ -604,29 +608,36 @@ public:
     void *block;                    /* code block containing this insn */
     void *function;                 /* function containing this insn */
     int tag;			/* tag the insn as seen/processed */
-    x86_op_t *  x86_operand_new();
-    size_t      x86_operand_count( enum x86_op_foreach_type type );
+    x86_op_t *x86_operand_new();
+    /* convenience routine: returns count of operands matching 'type' */
+    size_t x86_operand_count( enum x86_op_foreach_type type );
     /* accessor functions for the operands */
-    x86_op_t *  x86_operand_1st( );
-    x86_op_t *  x86_operand_2nd( );
-    x86_op_t *  x86_operand_3rd( );
+    x86_op_t * x86_operand_1st( );
+    x86_op_t * x86_operand_2nd( );
+    x86_op_t * x86_operand_3rd( );
     x86_op_t *  get_dest();
-    int32_t     x86_get_rel_offset( );
-    x86_op_t *  x86_get_branch_target( );
-    x86_op_t *  x86_get_imm( );
-    uint8_t *   x86_get_raw_imm( );
+    int32_t x86_get_rel_offset( );
+    x86_op_t * x86_get_branch_target( );
+    x86_op_t * x86_get_imm( );
     /* More accessor fuctions, this time for user-defined info... */
-    void    x86_set_insn_addr( uint32_t addr );
-    int     x86_format_mnemonic( char *buf, int len, enum x86_asm_format format);
-    int     x86_format_insn( char *buf, int len, enum x86_asm_format);
-    void    x86_oplist_free( );
+    uint8_t *   x86_get_raw_imm( );
+    /* set the address (usually RVA) of the insn */
+    void x86_set_insn_addr( uint32_t addr );
+    /* format (sprintf) an instruction mnemonic into 'buf' using specified syntax */
+    int x86_format_mnemonic( char *buf, int len, enum x86_asm_format format);
+    int x86_format_insn( char *buf, int len, enum x86_asm_format);
+    void x86_oplist_free( );
+    /* returns 0 if an instruction is invalid, 1 if valid */
     bool    is_valid( );
     uint32_t x86_get_address( );
-    void    make_invalid(unsigned char *buf);
+    void make_invalid(unsigned char *buf);
     /* instruction tagging: these routines allow the programmer to mark
      * instructions as "seen" in a DFS, for example. libdisasm does not use
      * the tag field.*/
+    /* set insn->tag to 1 */
     void x86_tag_insn( );
+
+    /* return insn->tag */
     int x86_insn_is_tagged();
     /* set insn->tag to 0 */
     void x86_untag_insn();
@@ -803,9 +814,10 @@ public:
  *   void x86_get_aliased_reg( x86_reg_t *alias_reg, x86_reg_t *output_reg )
  * where 'alias_reg' is a reg operand and 'output_reg' is filled with the
  * register that the operand is an alias for */
-//#define x86_get_aliased_reg( alias_reg, output_reg )			\
-//	x86_reg_from_id( alias_reg->alias, output_reg )
-
+/*
+#define x86_get_aliased_reg( alias_reg, output_reg )			\
+        x86_reg_from_id( alias_reg->alias, output_reg )
+*/
 
 /* ================================== Invariant Instruction Representation */
 /* Invariant instructions are used for generating binary signatures;

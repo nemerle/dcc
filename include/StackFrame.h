@@ -13,7 +13,7 @@ struct STKFRAME : public SymbolTableCommon<STKSYM>
     int16_t       maxOff;     /* Maximum offset in stack frame*/
     int         cb;         /* Number of bytes in arguments */
     int         numArgs;    /* No. of arguments in the table*/
-    void        adjustForArgType(int numArg_, hlType actType_);
+    void        adjustForArgType(size_t numArg_, hlType actType_);
     STKFRAME() : m_minOff(0),maxOff(0),cb(0),numArgs(0)
     {
 

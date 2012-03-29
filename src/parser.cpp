@@ -2,7 +2,8 @@
  *          dcc project procedure list builder
  * (C) Cristina Cifuentes, Mike van Emmerik, Jeff Ledermann
  ****************************************************************************/
-
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>		/* For exit() */
 #include <sstream>
@@ -12,9 +13,8 @@
 #include "dcc.h"
 #include "project.h"
 using namespace std;
-extern Project g_proj;
+
 //static void     FollowCtrl (Function * pProc, CALL_GRAPH * pcallGraph, STATE * pstate);
-static boolT    process_JMP (ICODE * pIcode, STATE * pstate, CALL_GRAPH * pcallGraph);
 static void     setBits(int16_t type, uint32_t start, uint32_t len);
 static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
@@ -38,7 +38,7 @@ void DccFrontend::parse(Project &proj)
     SynthLab = SYNTHESIZED_MIN;
 
     // default-construct a Function object !
-    auto func = proj.createFunction();
+    /*auto func = */proj.createFunction();
 
     /* Check for special settings of initial state, based on idioms of the
           startup code */
@@ -102,7 +102,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     uint32_t   offset;
     eErrorId err;
     bool   done = false;
-    SYMTAB &global_symbol_table(g_proj.symtab);
+    SYMTAB &global_symbol_table(Project::get()->symtab);
     if (name.find("chkstk") != string::npos)
     {
         // Danger! Dcc will likely fall over in this code.
@@ -115,7 +115,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     }
     if (option.VeryVerbose)
     {
-        printf("Parsing proc %s at %lX\n", name.c_str(), pstate->IP);
+        printf("Parsing proc %s at %X\n", name.c_str(), pstate->IP);
     }
 
     while (! done && ! (err = scan(pstate->IP, _Icode)))
@@ -337,10 +337,12 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
             case iSHL:
                 if (pstate->JCond.regi == ll->dst.regi)
+                {
                     if ((ll->testFlags(I)) && ll->src().getImm2() == 1)
                         pstate->JCond.immed *= 2;
                     else
                         pstate->JCond.regi = 0;
+                }
                 break;
 
             case iLEA:
@@ -404,7 +406,7 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
     pIcode.ll()->caseTbl2.resize( table.size() );
     assert(pIcode.ll()->caseTbl2.size()<512);
     uint32_t k=0;
-    for (int i = table.start; i < table.finish; i += 2)
+    for (size_t i = table.start; i < table.finish; i += 2)
     {
         StCopy = *pstate;
         StCopy.IP = cs + LH(&prog.Image[i]);
@@ -417,6 +419,7 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
         last_current_insn->ll()->setFlags(CASE);
         pIcode.ll()->caseTbl2.push_back( last_current_insn->ll()->GetLlLabel() );
     }
+    return true;
 }
 
 bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
@@ -426,14 +429,14 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
     ICODE       _Icode;
     uint32_t       cs, offTable, endTable;
     uint32_t       i, k, seg, target;
-    uint32_t         tmp;
 
     if (pIcode.ll()->testFlags(I))
     {
         if (pIcode.ll()->getOpcode() == iJMPF)
             pstate->setState( rCS, LH(prog.Image + pIcode.ll()->label + 3));
-        uint32_t i = pstate->IP = pIcode.ll()->src().getImm2();
-        if ((long)i < 0)
+        pstate->IP = pIcode.ll()->src().getImm2();
+        int64_t i = pIcode.ll()->src().getImm2();
+        if (i < 0)
         {
             exit(1);
         }
@@ -501,8 +504,8 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
         {
             assert(((endTable - offTable) / 2)<512);
             STATE   StCopy;
-            int     ip;
-            uint32_t  *psw;
+            //int     ip;
+            //uint32_t  *psw;
 
             setBits(BM_DATA, offTable, endTable - offTable);
 
@@ -514,7 +517,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
                 StCopy = *pstate;
                 StCopy.IP = cs + LH(&prog.Image[i]);
                 iICODE last_current_insn = (++Icode.rbegin()).base();
-                ip = Icode.size();
+                //ip = Icode.size();
 
                 FollowCtrl (pcallGraph, &StCopy);
                 ++last_current_insn;
@@ -600,9 +603,9 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
                  * previous offset into the program image */
         uint32_t tgtAddr=0;
         if (pIcode.ll()->getOpcode() == iCALLF)
-            tgtAddr= LH(&prog.Image[off]) + (uint32_t)(LH(&prog.Image[off+2])) << 4;
+            tgtAddr= LH(&prog.Image[off]) + ((uint32_t)(LH(&prog.Image[off+2])) << 4);
         else
-            tgtAddr= LH(&prog.Image[off]) + (uint32_t)(uint16_t)state.r[rCS] << 4;
+            tgtAddr= LH(&prog.Image[off]) + ((uint32_t)(uint16_t)state.r[rCS] << 4);
         pIcode.ll()->replaceSrc(LLOperand::CreateImm2( tgtAddr ) );
         pIcode.ll()->setFlags(I);
         indirect = true;
@@ -612,12 +615,12 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
     if (pIcode.ll()->testFlags(I))
     {
         /* Search procedure list for one with appropriate entry point */
-        ilFunction iter = g_proj.findByEntry(pIcode.ll()->src().getImm2());
+        ilFunction iter = Project::get()->findByEntry(pIcode.ll()->src().getImm2());
 
         /* Create a new procedure node and save copy of the state */
-        if ( not g_proj.valid(iter) )
+        if ( not Project::get()->valid(iter) )
         {
-            iter = g_proj.createFunction();
+            iter = Project::get()->createFunction();
             Function &x(*iter);
             x.procEntry = pIcode.ll()->src().getImm2();
             LibCheck(x);
@@ -665,7 +668,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
 
         }
         else
-            g_proj.callGraph->insertCallGraph (this, iter);
+            Project::get()->callGraph->insertCallGraph (this, iter);
 
         last_insn.ll()->src().proc.proc = &(*iter); // ^ target proc
 
@@ -707,6 +710,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
             size=1;
         psym = lookupAddr (&ll.dst, pstate, size, eDEF);
         if (psym && ! (psym->duVal.val))      /* no initial value yet */
+        {
             if (ll.testFlags(I))   /* immediate */
             {
                 prog.Image[psym->label] = (uint8_t)ll.src().getImm2();
@@ -733,6 +737,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
                     prog.Image[psym->label+1] = (uint8_t)(pstate->r[srcReg] >> 8);
                 psym->duVal.setFlags(eDuVal::DEF);
             }
+        }
     }
 }
 
@@ -742,8 +747,6 @@ static void process_MOV(LLInst & ll, STATE * pstate)
  * and returns a pointer to such entry. */
 void STKFRAME::updateFrameOff ( int16_t off, int _size, uint16_t duFlag)
 {
-    int   i;
-
     /* Check for symbol in stack frame table */
     auto iter=findByLabel(off);
     if(iter!=end())
@@ -751,14 +754,14 @@ void STKFRAME::updateFrameOff ( int16_t off, int _size, uint16_t duFlag)
         if (iter->size < _size)
         {
             iter->size = _size;
-            }
         }
+    }
     else
     {
         char nm[16];
         STKSYM new_sym;
 
-        sprintf (nm, "arg%ld", size());
+        sprintf (nm, "arg%" PRIu64, uint64_t(size()));
         new_sym.name = nm;
         new_sym.label= off;
         new_sym.size = _size;
@@ -800,13 +803,13 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
     if (pm->segValue)  /* there is a value in the seg field */
     {
             operand = opAdr (pm->segValue, pm->off);
-        psym = g_proj.symtab.updateGlobSym (operand, size, duFlag,created_new);
+        psym = Project::get()->symtab.updateGlobSym (operand, size, duFlag,created_new);
         }
     else if (pstate->f[pm->seg]) /* new value */
     {
             pm->segValue = pstate->r[pm->seg];
             operand = opAdr(pm->segValue, pm->off);
-        psym = g_proj.symtab.updateGlobSym (operand, size, duFlag,created_new);
+        psym = Project::get()->symtab.updateGlobSym (operand, size, duFlag,created_new);
 
             /* Flag new memory locations that are segment values */
         if (created_new)
@@ -821,7 +824,7 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
             }
         }
     /* Check for out of bounds */
-    if (psym && (psym->label>=0) and (psym->label < (uint32_t)prog.cbImage))
+    if (psym and (psym->label < (uint32_t)prog.cbImage))
         return psym;
     return nullptr;
 }
@@ -903,7 +906,7 @@ std::bitset<32> duReg[] = { 0x00,
  *            pstate: ptr to current procedure state
  *            size  : size of the operand
  *            ix    : current index into icode array    */
-static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int size, int ix)
+static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int size)
 {
     const LLOperand * pm = pIcode.ll()->get(d) ;
     SYM *  psym;
@@ -927,17 +930,21 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
             if ((pm->seg == rDS) && (pm->regi == INDEX_BX))    /* bx */
             {
                 if (pm->off > 0)    /* global indexed variable */
-                    pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,ix, TYPE_WORD_SIGN);
+                    pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,TYPE_WORD_SIGN);
             }
             pIcode.du.use |= duReg[pm->regi];
         }
 
-        else if (psym = lookupAddr(const_cast<LLOperand *>(pm), pstate, size, eDuVal::USE))
+        else
         {
-            setBits (BM_DATA, psym->label, (uint32_t)size);
-            pIcode.ll()->setFlags(SYM_USE);
-            pIcode.ll()->caseEntry = distance(&g_proj.symtab[0],psym); //WARNING: was setting case count
+            psym = lookupAddr(const_cast<LLOperand *>(pm), pstate, size, eDuVal::USE);
+            if( nullptr != psym )
+            {
+                setBits (BM_DATA, psym->label, (uint32_t)size);
+                pIcode.ll()->setFlags(SYM_USE);
+                pIcode.ll()->caseEntry = distance(&Project::get()->symtab[0],psym); //WARNING: was setting case count
 
+            }
         }
     }
 
@@ -950,13 +957,21 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
 /* Checks which registers were defined (ie. got a new value) and updates the
  * du.d flag.
  * Places local variables in the local symbol table.    */
-static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int size,
-                 int ix)
+static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int size)
 {
     LLOperand *pm   = pIcode.ll()->get(d);
-    SYM *  psym;
-
-    if (pm->regi == 0 || pm->regi >= INDEX_BX_SI)
+    if (pm->regi==0)
+    {
+        SYM *  psym;
+        psym = lookupAddr(pm, pstate, size, eDEF);
+        if (nullptr!=psym)
+        {
+            setBits(BM_DATA, psym->label, (uint32_t)size);
+            pIcode.ll()->setFlags(SYM_DEF);
+            pIcode.ll()->caseEntry = distance(&Project::get()->symtab[0],psym); // WARNING: was setting Case count
+        }
+    }
+    else if (pm->regi >= INDEX_BX_SI)
     {
         if (pm->regi == INDEX_BP)      /* indexed on bp */
         {
@@ -977,19 +992,11 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
             if ((pm->seg == rDS) && (pm->regi == INDEX_BX))    /* bx */
             {
                 if (pm->off > 0)        /* global var */
-                    pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,ix, TYPE_WORD_SIGN);
+                    pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,TYPE_WORD_SIGN);
             }
             pIcode.du.use |= duReg[pm->regi];
         }
-
-        else if (psym = lookupAddr(pm, pstate, size, eDEF))
-        {
-            setBits(BM_DATA, psym->label, (uint32_t)size);
-            pIcode.ll()->setFlags(SYM_DEF);
-            pIcode.ll()->caseEntry = distance(&g_proj.symtab[0],psym); // WARNING: was setting Case count
-        }
     }
-
     /* Definition of register */
     else if ((d == DST) || ((d == SRC) && (not pIcode.ll()->testFlags(I))))
     {
@@ -1002,12 +1009,11 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
 /* use_def - operand is both use and def'd.
  * Note: the destination will always be a register, stack variable, or global
  *       variable.      */
-static void use_def(opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int cb,
-                    int ix)
+static void use_def(opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int cb)
 {
     const LLOperand *  pm = pIcode.ll()->get(d);
 
-    use (d, pIcode, pProc, pstate, cb, ix);
+    use (d, pIcode, pProc, pstate, cb);
 
     if (pm->regi < INDEX_BX_SI)                   /* register */
     {
@@ -1022,7 +1028,6 @@ static void use_def(opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, i
 extern LLOperand convertOperand(const x86_op_t &from);
 void Function::process_operands(ICODE & pIcode,  STATE * pstate)
 {
-    int  ix=Icode.size();
     LLInst &ll_ins(*pIcode.ll());
 
     int   sseg = (ll_ins.src().seg)? ll_ins.src().seg: rDS;
@@ -1036,39 +1041,39 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
         case iRCL:  case iRCR:  case iROL:  case iROR:
         case iADD:  case iADC:  case iSUB:  case iSBB:
             if (! Imm) {
-                use(SRC, pIcode, this, pstate, cb, ix);
+                use(SRC, pIcode, this, pstate, cb);
             }
         case iINC:  case iDEC:  case iNEG:  case iNOT:
         case iAAA:  case iAAD:  case iAAM:  case iAAS:
         case iDAA:  case iDAS:
-            use_def(DST, pIcode, this, pstate, cb, ix);
+            use_def(DST, pIcode, this, pstate, cb);
             break;
 
         case iXCHG:
             /* This instruction is replaced by 3 instructions, only need
                          * to define the src operand and use the destination operand
                          * in the mean time.	*/
-            use(SRC, pIcode, this, pstate, cb, ix);
-            def(DST, pIcode, this, pstate, cb, ix);
+            use(SRC, pIcode, this, pstate, cb);
+            def(DST, pIcode, this, pstate, cb);
             break;
 
         case iTEST: case iCMP:
             if (! Imm)
-                use(SRC, pIcode, this, pstate, cb, ix);
-            use(DST, pIcode, this, pstate, cb, ix);
+                use(SRC, pIcode, this, pstate, cb);
+            use(DST, pIcode, this, pstate, cb);
             break;
 
         case iDIV:  case iIDIV:
-            use(SRC, pIcode, this, pstate, cb, ix);
+            use(SRC, pIcode, this, pstate, cb);
             if (cb == 1)
                 pIcode.du.use |= duReg[rTMP];
             break;
 
         case iMUL:  case iIMUL:
-            use(SRC, pIcode, this, pstate, cb, ix);
+            use(SRC, pIcode, this, pstate, cb);
             if (! Imm)
             {
-                use (DST, pIcode, this, pstate, cb, ix);
+                use (DST, pIcode, this, pstate, cb);
                 if (cb == 1)
                 {
                     pIcode.du.def |= duReg[rAX];
@@ -1081,7 +1086,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
                 }
             }
             else
-                def (DST, pIcode, this, pstate, cb, ix);
+                def (DST, pIcode, this, pstate, cb);
             break;
 
         case iSIGNEX:
@@ -1105,14 +1110,14 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
         case iCALL:  case iPUSH:  case iPOP:
             if (! Imm) {
                 if (pIcode.ll()->getOpcode() == iPOP)
-                    def(DST, pIcode, this, pstate, cb, ix);
+                    def(DST, pIcode, this, pstate, cb);
                 else
-                    use(DST, pIcode, this, pstate, cb, ix);
+                    use(DST, pIcode, this, pstate, cb);
             }
             break;
 
         case iESC:  /* operands may be larger */
-            use(DST, pIcode, this, pstate, cb, ix);
+            use(DST, pIcode, this, pstate, cb);
             break;
 
         case iLDS:  case iLES:
@@ -1120,25 +1125,25 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             pIcode.du1.numRegsDef++;
             cb = 4;
         case iMOV:
-            use(SRC, pIcode, this, pstate, cb, ix);
-            def(DST, pIcode, this, pstate, cb, ix);
+            use(SRC, pIcode, this, pstate, cb);
+            def(DST, pIcode, this, pstate, cb);
             break;
 
         case iLEA:
-            use(SRC, pIcode, this, pstate, 2, ix);
-            def(DST, pIcode, this, pstate, 2, ix);
+            use(SRC, pIcode, this, pstate, 2);
+            def(DST, pIcode, this, pstate, 2);
             break;
 
         case iBOUND:
-            use(SRC, pIcode, this, pstate, 4, ix);
-            use(DST, pIcode, this, pstate, cb, ix);
+            use(SRC, pIcode, this, pstate, 4);
+            use(DST, pIcode, this, pstate, cb);
             break;
 
         case iJMPF:
             cb = 4;
         case iJMP:
             if (! Imm)
-                use(SRC, pIcode, this, pstate, cb, ix);
+                use(SRC, pIcode, this, pstate, cb);
             break;
 
         case iLOOP:  case iLOOPE:  case iLOOPNE:
@@ -1194,7 +1199,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             break;
 
         case iIN:  case iOUT:
-            def(DST, pIcode, this, pstate, cb, ix);
+            def(DST, pIcode, this, pstate, cb);
             if (! Imm)
             {
                 pIcode.du.use |= duReg[rDX];

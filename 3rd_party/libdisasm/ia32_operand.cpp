@@ -20,17 +20,17 @@ static void apply_seg( x86_op_t *op, unsigned int prefixes ) {
     switch ( prefixes & PREFIX_REG_MASK ) {
         /* NOTE: that op->flags for segment override are not a bitfield */
         case PREFIX_CS:
-            op->flags.op_seg = x86_op_flags::op_cs_seg; break;
+            op->flags.op_seg = x86_op_flags::op_cs_seg>>8; break;
         case PREFIX_SS:
-            op->flags.op_seg = x86_op_flags::op_ss_seg; break;
+            op->flags.op_seg = x86_op_flags::op_ss_seg>>8; break;
         case PREFIX_DS:
-            op->flags.op_seg = x86_op_flags::op_ds_seg; break;
+            op->flags.op_seg = x86_op_flags::op_ds_seg>>8; break;
         case PREFIX_ES:
-            op->flags.op_seg = x86_op_flags::op_es_seg; break;
+            op->flags.op_seg = x86_op_flags::op_es_seg>>8; break;
         case PREFIX_FS:
-            op->flags.op_seg = x86_op_flags::op_fs_seg; break;
+            op->flags.op_seg = x86_op_flags::op_fs_seg>>8; break;
         case PREFIX_GS:
-            op->flags.op_seg = x86_op_flags::op_gs_seg; break;
+            op->flags.op_seg = x86_op_flags::op_gs_seg>>8; break;
     }
 
     return;
@@ -172,7 +172,7 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
         case ADDRMETH_X:	/* Memory addressed by DS:SI [string] */
             op->type = op_expression;
             op->flags.op_hardcode = true;
-            op->flags.op_seg = x86_op_flags::op_ds_seg;
+            op->flags.op_seg = x86_op_flags::op_ds_seg>>8;
             op->flags.op_pointer = true;
             op->flags.op_string = true;
             ia32_handle_register( &op->data.expression.base,
@@ -181,7 +181,7 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
         case ADDRMETH_Y:	/* Memory addressed by ES:DI [string] */
             op->type = op_expression;
             op->flags.op_hardcode = true;
-            op->flags.op_seg = x86_op_flags::op_es_seg;
+            op->flags.op_seg = x86_op_flags::op_es_seg>>8;
             op->flags.op_pointer = true;
             op->flags.op_string = true;
             ia32_handle_register( &op->data.expression.base,

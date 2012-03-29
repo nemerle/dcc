@@ -207,7 +207,9 @@ bool Idiom19::match(iICODE picode)
             return true;
     }
     else	/* indexed */
-        /* not supported yet */ ;
+    {
+        /* not supported yet */
+    }
     return false;
 }
 int Idiom19::action()

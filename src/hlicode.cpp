@@ -282,7 +282,7 @@ HLTYPE LLInst::toHighLevel(COND_EXPR *lhs,COND_EXPR *rhs,Function *func)
  *       refines the HIGH_LEVEL icodes. */
 void Function::highLevelGen()
 {
-    int numIcode;         /* number of icode instructions */
+    size_t numIcode;         /* number of icode instructions */
     iICODE pIcode;        /* ptr to current icode node */
     COND_EXPR *lhs, *rhs; /* left- and right-hand side of expression */
     uint32_t _flg;          /* icode flags */
@@ -473,6 +473,8 @@ COND_EXPR *COND_EXPR::inverse () const
                 res->boolExpr.lhs=lhs()->inverse ();
                 res->boolExpr.rhs=rhs()->inverse ();
                 return res;
+            default:
+                fprintf(stderr,"COND_EXPR::inverse unhandled op %d",op());
         } /* eos */
 
     }
@@ -488,8 +490,7 @@ COND_EXPR *COND_EXPR::inverse () const
  * actual parameters) */
 std::string writeCall (Function * tproc, STKFRAME & args, Function * pproc, int *numLoc)
 {
-    int i;                        /* counter of # arguments       */
-    string condExp;
+    //string condExp;
     ostringstream ostr;
     ostr<<tproc->name<<" (";
     for(const STKSYM &sym : args)
@@ -585,6 +586,10 @@ string HLTYPE::write1HlIcode (Function * pProc, int *numLoc)
             ostr << p->writeOut(pProc,numLoc);
             ostr << "\n";
             break;
+        case HLI_JCOND: //Handled elsewhere
+            break;
+        default:
+            fprintf(stderr," HLTYPE::write1HlIcode - Unhandled opcode %d\n",opcode);
     }
     return ostr.str();
 }

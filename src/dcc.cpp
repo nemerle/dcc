@@ -9,11 +9,11 @@
 #include <string.h>
 
 /* Global variables - extern to other modules */
-char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
-SYMTAB  symtab;             /* Global symbol table      			  */
-STATS   stats;              /* cfg statistics       				  */
+extern char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
+extern SYMTAB  symtab;             /* Global symbol table      			  */
+extern STATS   stats;              /* cfg statistics       				  */
 //PROG    prog;               /* programs fields      				  */
-OPTION  option;             /* Command line options     			  */
+extern OPTION  option;             /* Command line options     			  */
 //Function *   pProcList;			/* List of procedures, topologically sort */
 //Function *	pLastProc;			/* Pointer to last node in procedure list */
 //FunctionListType pProcList;
@@ -27,7 +27,6 @@ static void displayTotalStats(void);
  * main
  ***************************************************************************/
 #include <iostream>
-extern Project g_proj;
 int main(int argc, char *argv[])
 {
 //     llvm::MCOperand op=llvm::MCOperand::CreateImm(11);
@@ -56,9 +55,9 @@ int main(int argc, char *argv[])
      * analysis, data flow etc. and outputs it to output file ready for
      * re-compilation.
     */
-    BackEnd(option.filename, g_proj.callGraph);
+    BackEnd(option.filename, Project::get()->callGraph);
 
-    g_proj.callGraph->write();
+    Project::get()->callGraph->write();
 
     if (option.Stats)
         displayTotalStats();
@@ -153,8 +152,8 @@ displayTotalStats ()
 /* Displays final statistics for the complete program */
 {
     printf ("\nFinal Program Statistics\n");
-    printf ("  Total number of low-level Icodes : %ld\n", stats.totalLL);
-    printf ("  Total number of high-level Icodes: %ld\n", stats.totalHL);
+    printf ("  Total number of low-level Icodes : %d\n", stats.totalLL);
+    printf ("  Total number of high-level Icodes: %d\n", stats.totalHL);
     printf ("  Total reduction of instructions  : %2.2f%%\n", 100.0 -
             (stats.totalHL * 100.0) / stats.totalLL);
 }

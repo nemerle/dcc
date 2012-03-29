@@ -94,7 +94,7 @@ struct POSSTACK_ENTRY
     Function *   pProc;              /* A pointer to a PROCEDURE structure */
 } ;
 static vector<POSSTACK_ENTRY> posStack; /* position stack */
-static uint8_t              iPS;          /* Index into the stack */
+//static uint8_t              iPS;          /* Index into the stack */
 
 
 // These are "curses equivalent" functions. (Used to use curses for all this,
@@ -552,7 +552,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
+static void formatRM(std::ostringstream &p, uint32_t /*flg*/, const LLOperand &pm)
 {
     //char    seg[4];
 
@@ -627,14 +627,14 @@ static char *strHex(uint32_t d)
     static char buf[10];
 
     d &= 0xFFFF;
-    sprintf(buf, "0%lX%s", d, (d > 9)? "h": "");
+    sprintf(buf, "0%X%s", d, (d > 9)? "h": "");
     return (buf + (buf[1] <= '9'));
 }
 
 /****************************************************************************
  *          interactDis - interactive disassembler                          *
  ****************************************************************************/
-void interactDis(Function * initProc, int initIC)
+void interactDis(Function * /*initProc*/, int /*initIC*/)
 {
     printf("Sorry - interactive disasassembler option not available for Unix\n");
     return;
@@ -643,7 +643,7 @@ void interactDis(Function * initProc, int initIC)
 /* Handle the floating point opcodes (icode iESC) */
 void LLInst::flops(std::ostringstream &out)
 {
-    char bf[30];
+    //char bf[30];
     uint8_t op = (uint8_t)src().getImm2();
 
     /* Note that op is set to the escape number, e.g.

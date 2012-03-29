@@ -114,7 +114,7 @@ public:
     void    writeBB(std::ostream &ostr, int lev, Function *pProc, int *numLoc);
     BB *    rmJMP(int marker, BB *pBB);
     void    genDU1();
-    int     findBBExps(LOCAL_ID &locals, Function *f);
+    void findBBExps(LOCAL_ID &locals, Function *f);
     bool    valid() {return 0==(flg & INVALID_BB); }
     bool    wasTraversedAtLevel(int l) const {return traversed==l;}
     ICODE * writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, boolT &repCond);

@@ -114,7 +114,7 @@ static COND_EXPR *dstIdent (const LLInst & ll_insn, Function * pProc, iICODE i, 
 /* Eliminates all condition codes and generates new hlIcode instructions */
 void Function::elimCondCodes ()
 {
-    int i;
+//    int i;
 
     uint8_t use;           /* Used flags bit vector                  */
     uint8_t def;           /* Defined flags bit vector               */
@@ -122,15 +122,19 @@ void Function::elimCondCodes ()
     COND_EXPR *rhs;     /* Source operand                         */
     COND_EXPR *lhs;     /* Destination operand                    */
     COND_EXPR *_expr;   /* Boolean expression                     */
-    BB * pBB;           /* Pointer to BBs in dfs last ordering    */
+    //BB * pBB;           /* Pointer to BBs in dfs last ordering    */
     riICODE useAt;      /* Instruction that used flag    */
     riICODE defAt;      /* Instruction that defined flag */
         //lhs=rhs=_expr=0;
-    for (i = 0; i < numBBs; i++)
+    auto valid_reversed_bbs = (m_dfsLast | reversed | filtered(BB::ValidFunctor()) );
+    for( BB * pBB : valid_reversed_bbs)
     {
-        pBB = m_dfsLast[i];
-        if (pBB->flg & INVALID_BB)
-            continue; /* Do not process invalid BBs */
+
+//    for (size_t i = 0; i < numBBs; i++)
+//    {
+//        pBB = m_dfsLast[i];
+//        if (pBB->flg & INVALID_BB)
+//            continue; /* Do not process invalid BBs */
         //        auto v(pBB | boost::adaptors::reversed);
         //        for (const ICODE &useAt : v)
         //        {}
@@ -245,11 +249,10 @@ void Function::elimCondCodes ()
  *       is not really meant to be a register that is used before defined). */
 void Function::genLiveKtes ()
 {
-    int i;
     BB * pbb;
     bitset<32> liveUse, def;
 
-    for (i = 0; i < numBBs; i++)
+    for (size_t i = 0; i < numBBs; i++)
     {
         liveUse.reset();
         def.reset();
@@ -617,42 +620,45 @@ bool COND_EXPR::xClear (rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID
 
     switch (m_type)
     {
-    case IDENTIFIER:
-        if (expr.ident.idType == REGISTER)
-        {
-            regi= locId.id_arr[expr.ident.idNode.regiIdx].id.regi;
-            range_to_check.advance_begin(1);
-            auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::select_valid_high_level);
-            for (ICODE &i : all_valid_and_high_level_after_start)
-                if ((i.du.def & duReg[regi]).any())
-                    return false;
-            if (all_valid_and_high_level_after_start.end().base() != lastBBinst)
+        case IDENTIFIER:
+            if (expr.ident.idType == REGISTER)
+            {
+                regi= locId.id_arr[expr.ident.idNode.regiIdx].id.regi;
+                range_to_check.advance_begin(1);
+                auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::select_valid_high_level);
+                for (ICODE &i : all_valid_and_high_level_after_start)
+                    if ((i.du.def & duReg[regi]).any())
+                        return false;
+                if (all_valid_and_high_level_after_start.end().base() != lastBBinst)
+                    return true;
+                return false;
+            }
+            else
                 return true;
-            return false;
-        }
-        else
-            return true;
-        /* else if (rhs->expr.ident.idType == LONG_VAR)
+            /* else if (rhs->expr.ident.idType == LONG_VAR)
                         {
                             missing all other identifiers ****
                         } */
 
-    case BOOLEAN_OP:
-        if(0==rhs())
-            return false;
-        res = rhs()->xClear ( range_to_check, lastBBinst, locId);
-        if (res == false)
-            return false;
-        if(0==lhs())
-            return false;
-        return lhs()->xClear ( range_to_check, lastBBinst, locId);
+        case BOOLEAN_OP:
+            if(0==rhs())
+                return false;
+            res = rhs()->xClear ( range_to_check, lastBBinst, locId);
+            if (res == false)
+                return false;
+            if(0==lhs())
+                return false;
+            return lhs()->xClear ( range_to_check, lastBBinst, locId);
 
-    case NEGATION:
-    case ADDRESSOF:
-    case DEREFERENCE:
-        if(0==expr.unaryExp)
-            return false;
-        return expr.unaryExp->xClear ( range_to_check, lastBBinst, locId);
+        case NEGATION:
+        case ADDRESSOF:
+        case DEREFERENCE:
+            if(0==expr.unaryExp)
+                return false;
+            return expr.unaryExp->xClear ( range_to_check, lastBBinst, locId);
+        default:
+            fprintf(stderr,"COND_EXPR::xClear unhandled type %d\n",m_type);
+
     } /* eos */
     return false;
 }
@@ -677,7 +683,7 @@ bool BinaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCA
  * whenever possible, and then places the actual argument on the procedure's
  * argument list.	*/
 /// @returns the type size of the stored Arg
-static int processCArg (Function * pp, Function * pProc, ICODE * picode, int numArgs)
+static int processCArg (Function * pp, Function * pProc, ICODE * picode, size_t numArgs)
 {
     COND_EXPR *_exp;
     bool res;
@@ -689,6 +695,7 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, int num
     if (pp->flg & PROC_ISLIB) /* library function */
     {
         if (pp->args.numArgs > 0)
+        {
             if (pp->flg & PROC_VARARG)
             {
                 if (numArgs < pp->args.size())
@@ -696,6 +703,7 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, int num
             }
             else
                 adjustActArgType (_exp, pp->args[numArgs].type, pProc);
+        }
     }
     else			/* user function */
     {
@@ -765,6 +773,9 @@ void LOCAL_ID::processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode
         picode->invalidate();
         numHlIcodes--;
         break;
+    default:
+        fprintf(stderr,"unhandled LOCAL_ID::processTargetIcode opcode %d\n",t_hl.opcode);
+
     }
 }
 
@@ -831,7 +842,7 @@ void Function::processHliCall(COND_EXPR *_exp, iICODE picode)
 }
 
 
-int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
+void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
 {
     bool res;
 
@@ -907,12 +918,15 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 }
                                 break;
 
-                                /****case HLI_CALL:    /* register arguments
+                                /****case HLI_CALL:    // register arguments
                         newRegArg (pProc, picode, ticode);
                         picode->invalidate();
                         numHlIcodes--;
                         break;	*/
-                        } /* eos */
+                            default:
+                                fprintf(stderr,"unhandled BB::findBBExps target opcode %d\n",ticode->hl()->opcode);
+
+                        } // eos
                         break;
 
                     case HLI_CALL:
@@ -953,8 +967,12 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                     picode->setAsgn(lhs, _exp);
                                 }
                                 break;
+                            default:
+                                fprintf(stderr,"unhandled BB::findBBExps HLI_CALL target opcode %d\n",ti_hl->opcode);
                         } /* eos */
                         break;
+                    default:
+                        fprintf(stderr,"BB::findBBExps Unhandled HLI %d\n",_icHl.opcode);
                 } /* eos */
             }
         }
@@ -1009,6 +1027,8 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                     break;
                                 case HLI_CALL:	/*** missing ***/
                                     break;
+                                default:
+                                    fprintf(stderr,"BB::findBBExps Unhandled target op %d\n",ticode->hl()->opcode);
                             } /* eos */
                         }
                         break;
@@ -1052,7 +1072,13 @@ int BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                     picode->setAsgn(lhs, _exp);
                                 }
                                 break;
+                            default:
+                                fprintf(stderr,"BB::findBBExps Unhandled target op %d\n",ticode->hl()->opcode);
                         } /* eos */
+                        break;
+                    default:
+                        fprintf(stderr,"BB::findBBExps Unhandled HLI %d\n",_icHl.opcode);
+
                 } /* eos */
             }
         }
@@ -1115,7 +1141,7 @@ void Function::preprocessReturnDU(std::bitset<32> &_liveOut)
 {
     if (_liveOut.any())
     {
-        int idx;
+//        int idx;
         bool isAx, isBx, isCx, isDx;
         flg |= PROC_IS_FUNC;
         isAx = _liveOut.test(rAX - rAX);
@@ -1157,7 +1183,7 @@ void Function::preprocessReturnDU(std::bitset<32> &_liveOut)
             retVal.loc = REG_FRAME;
             retVal.id.longId.h = rDX;
             retVal.id.longId.l = rAX;
-            idx = localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, Icode.begin()/*0*/);
+            /*idx = */localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, Icode.begin()/*0*/);
             localId.propLongId (rAX, rDX, "\0");
         }
         else if (isAx || isBx || isCx || isDx)	/* uint16_t */
@@ -1172,7 +1198,7 @@ void Function::preprocessReturnDU(std::bitset<32> &_liveOut)
                 retVal.id.regi = rCX;
             else
                 retVal.id.regi = rDX;
-            idx = localId.newByteWordReg(TYPE_WORD_SIGN,retVal.id.regi);
+            /*idx = */localId.newByteWordReg(TYPE_WORD_SIGN,retVal.id.regi);
         }
         else if(isAL||isBL||isCL||isDL)
         {
@@ -1186,7 +1212,7 @@ void Function::preprocessReturnDU(std::bitset<32> &_liveOut)
                 retVal.id.regi = rCL;
             else
                 retVal.id.regi = rDL;
-            idx = localId.newByteWordReg(TYPE_BYTE_SIGN,retVal.id.regi);
+            /*idx = */localId.newByteWordReg(TYPE_BYTE_SIGN,retVal.id.regi);
 
         }
     }

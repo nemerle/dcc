@@ -9,7 +9,7 @@
 using namespace std;
 using namespace boost;
 
-BB *BB::Create(void *ctx, const string &s, Function *parent, BB *insertBefore)
+BB *BB::Create(void */*ctx*/, const string &/*s*/, Function *parent, BB */*insertBefore*/)
 {
     BB *pnewBB = new BB;
     pnewBB->Parent = parent;
@@ -81,14 +81,14 @@ static const char *const s_loopType[] = {"noLoop", "while", "repeat", "loop", "f
 void BB::display()
 {
     printf("\nnode type = %s, ", s_nodeType[nodeType]);
-    printf("start = %ld, length = %ld, #out edges = %ld\n", begin()->loc_ip, size(), edges.size());
+    printf("start = %d, length = %zd, #out edges = %zd\n", begin()->loc_ip, size(), edges.size());
 
     for (size_t i = 0; i < edges.size(); i++)
     {
         if(edges[i].BBptr==0)
-            printf(" outEdge[%2d] = Unlinked out edge to %d\n",i, edges[i].ip);
+            printf(" outEdge[%2zd] = Unlinked out edge to %d\n",i, edges[i].ip);
         else
-            printf(" outEdge[%2d] = %d\n",i, edges[i].BBptr->begin()->loc_ip);
+            printf(" outEdge[%2zd] = %d\n",i, edges[i].BBptr->begin()->loc_ip);
     }
 }
 /*****************************************************************************
@@ -101,29 +101,29 @@ void BB::displayDfs()
     traversed = DFS_DISP;
 
     printf("node type = %s, ", s_nodeType[nodeType]);
-    printf("start = %ld, length = %ld, #in-edges = %ld, #out-edges = %ld\n",
+    printf("start = %d, length = %zd, #in-edges = %zd, #out-edges = %zd\n",
            begin()->loc_ip, size(), inEdges.size(), edges.size());
-    printf("dfsFirst = %ld, dfsLast = %ld, immed dom = %ld\n",
+    printf("dfsFirst = %d, dfsLast = %d, immed dom = %d\n",
            dfsFirstNum, dfsLastNum,
            immedDom == MAX ? -1 : immedDom);
-    printf("loopType = %s, loopHead = %ld, latchNode = %ld, follow = %ld\n",
+    printf("loopType = %s, loopHead = %d, latchNode = %d, follow = %d\n",
            s_loopType[loopType],
            loopHead == MAX ? -1 : loopHead,
            latchNode == MAX ? -1 : latchNode,
            loopFollow == MAX ? -1 : loopFollow);
-    printf ("ifFollow = %ld, caseHead = %ld, caseTail = %ld\n",
+    printf ("ifFollow = %d, caseHead = %d, caseTail = %d\n",
             ifFollow == MAX ? -1 : ifFollow,
             caseHead == MAX ? -1 : caseHead,
             caseTail == MAX ? -1 : caseTail);
 
     if (nodeType == INTERVAL_NODE)
-        printf("corresponding interval = %ld\n", correspInt->numInt);
+        printf("corresponding interval = %d\n", correspInt->numInt);
     else
     {
         int edge_idx=0;
         for(BB *node : inEdges)
         {
-            printf ("  inEdge[%ld] = %ld\n", edge_idx, node->begin()->loc_ip);
+            printf ("  inEdge[%d] = %d\n", edge_idx, node->begin()->loc_ip);
             edge_idx++;
         }
     }
@@ -132,9 +132,9 @@ void BB::displayDfs()
     for(TYPEADR_TYPE &edg : edges)
     {
         if (nodeType == INTERVAL_NODE)
-            printf(" outEdge[%ld] = %ld\n", i, edg.BBptr->correspInt->numInt);
+            printf(" outEdge[%d] = %d\n", i, edg.BBptr->correspInt->numInt);
         else
-            printf(" outEdge[%d] = %ld\n", i, edg.BBptr->begin()->loc_ip);
+            printf(" outEdge[%d] = %d\n", i, edg.BBptr->begin()->loc_ip);
         ++i;
     }
     printf("----\n");

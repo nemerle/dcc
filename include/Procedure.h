@@ -122,12 +122,12 @@ public:
     std::bitset<32>     liveOut;	/* Registers that may be used in successors	 */
     bool                liveAnal;	/* Procedure has been analysed already		 */
 
-    Function(void *ty=0) : procEntry(0),depth(0),flg(0),cbParam(0),m_cfg(0),m_dfsLast(0),numBBs(0),
+    Function(void */*ty*/=0) : procEntry(0),depth(0),flg(0),cbParam(0),m_cfg(0),m_dfsLast(0),numBBs(0),
         hasCase(false),liveIn(0),liveOut(0),liveAnal(0)//,next(0),prev(0)
     {
     }
 public:
-    static Function *Create(void *ty=0,int Linkage=0,const std::string &nm="",void *module=0)
+    static Function *Create(void *ty=0,int /*Linkage*/=0,const std::string &nm="",void */*module*/=0)
     {
         Function *r=new Function(ty);
         r->name = nm;

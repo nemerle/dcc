@@ -25,12 +25,13 @@ struct LOCAL_ID;
 struct BB;
 struct Function;
 struct STKFRAME;
-struct CIcodeRec;
+class CIcodeRec;
 struct ICODE;
 struct bundle;
 typedef std::list<ICODE>::iterator iICODE;
 typedef std::list<ICODE>::reverse_iterator riICODE;
 typedef boost::iterator_range<iICODE> rCODE;
+
 extern std::bitset<32> duReg[30];
 /* uint8_t and uint16_t registers */
 
@@ -65,7 +66,7 @@ struct CallType : public HlTypeSupport
     void placeStkArg(COND_EXPR *exp, int pos);
     virtual COND_EXPR * toId();
 public:
-    bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
+    bool removeRegFromLong(eReg /*regi*/, LOCAL_ID */*locId*/)
     {
         printf("CallType : removeRegFromLong not supproted");
         return false;
@@ -106,34 +107,16 @@ public:
     hlIcode         opcode;    /* hlIcode opcode           */
     AssignType      asgn;
     CallType        call;
-    HlTypeSupport *get()
-    {
-        switch(opcode)
-        {
-        case HLI_ASSIGN: return &asgn;
-        case HLI_RET:
-        case HLI_POP:
-        case HLI_JCOND:
-        case HLI_PUSH:   return &exp;
-        case HLI_CALL:   return &call;
-        default:
-            return 0;
-        }
-    }
+    HlTypeSupport *get();
 
     void expr(COND_EXPR *e)
     {
         assert(e);
         exp.v=e;
     }
-    void replaceExpr(COND_EXPR *e)
-    {
-        assert(e);
-        delete exp.v;
-        exp.v=e;
-    }
+    void replaceExpr(COND_EXPR *e);
     COND_EXPR * expr() { return exp.v;}
-    const COND_EXPR * const expr() const  { return exp.v;}
+    const COND_EXPR * expr() const  { return exp.v;}
     void set(hlIcode i,COND_EXPR *e)
     {
         if(i!=HLI_RET)
@@ -180,7 +163,7 @@ struct LLOperand
         Function *proc;     /*   pointer to target proc (for CALL(F))*/
         int     cb;		/*   # actual arg bytes			*/
     } proc;
-    LLOperand() : seg(rUNDEF),segValue(0),segOver(rUNDEF),regi(rUNDEF),off(0),opz(0)
+    LLOperand() : seg(rUNDEF),segOver(rUNDEF),segValue(0),regi(rUNDEF),off(0),opz(0)
     {
         proc.proc=0;
         proc.cb=0;
@@ -214,6 +197,11 @@ struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
 protected:
     uint32_t     flg;            /* icode flags                  */
+//    LLOperand &get(int idx)
+//    {
+//        assert(idx<size());
+//        return getOperand(idx);
+//    }
     LLOperand    m_src;            /* source operand               */
 public:
     int          codeIdx;    	/* Index into cCode.code            */
@@ -456,7 +444,7 @@ public:
     {
         return hl()->call.newStkArg(exp,opcode,pproc);
     }
-    ICODE() : m_ll(this),type(NOT_SCANNED),Parent(0),loc_ip(0),invalid(false)
+    ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT_SCANNED),loc_ip(0)
     {
     }
 public:
@@ -485,6 +473,6 @@ public:
     void	SetInBB(rCODE &rang, BB* pnewBB);
     bool	labelSrch(uint32_t target, uint32_t &pIndex);
     iterator    labelSrch(uint32_t target);
-    ICODE *	GetIcode(int ip);
+    ICODE *	GetIcode(size_t ip);
     bool        alreadyDecoded(uint32_t target);
 };

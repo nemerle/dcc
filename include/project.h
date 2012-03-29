@@ -6,55 +6,40 @@
 #include <llvm/ADT/ilist.h>
 #include "symtab.h"
 #include "BinaryImage.h"
-struct Function;
-struct SourceMachine;
+#include "Procedure.h"
+class SourceMachine;
 struct CALL_GRAPH;
+class IProject
+{
+    virtual PROG *binary()=0;
+    virtual const std::string & project_name() const =0;
+    virtual const std::string & binary_path() const =0;
+};
+class Project : public IProject
+{
+    static Project *s_instance;
+    std::string m_fname;
+    std::string m_project_name;
+public:
 
 typedef llvm::iplist<Function> FunctionListType;
 typedef FunctionListType lFunction;
-typedef lFunction::iterator ilFunction;
-
-
-struct Project
-{
+    typedef FunctionListType::iterator ilFunction;
     SYMTAB symtab;       /* Global symbol table              */
 
-    std::string m_fname;
     FunctionListType pProcList;
     CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
     PROG prog;   		/* Loaded program image parameters  */
-    Project() {}
     // no copies
     Project(const Project&) = delete;
     const Project &operator=(const Project & l) =delete;
     // only moves
-    Project(Project && l)
-    {
-        m_fname  =l.m_fname;
-        size_t before=l.pProcList.size();
-        pProcList.splice(pProcList.end(),l.pProcList);
-        callGraph=l.callGraph;
-        l.m_fname.clear();
-        l.pProcList.clear();
-        l.callGraph=0;
-        assert(before==pProcList.size());
-    }
-    Project &operator=(Project && l)
-    {
-        if(this == &l)
-            return *this;
-        m_fname  =l.m_fname;
-        size_t before=l.pProcList.size();
-        pProcList.splice(pProcList.end(),l.pProcList);
-        callGraph=l.callGraph;
-        l.m_fname.clear();
-        l.pProcList.clear();
-        l.callGraph=0;
-        assert(before==pProcList.size());
-        return *this;
-    }
+    Project(); // default constructor,
 
 public:
+    void create(const std::string & a);
+    const std::string &project_name() const {return m_project_name;}
+    const std::string &binary_path() const {return m_fname;}
     ilFunction funcIter(Function *to_find);
     ilFunction findByEntry(uint32_t entry);
     ilFunction createFunction();
@@ -72,6 +57,7 @@ public:
     SourceMachine *machine();
 
 protected:
+    void initialize();
     void writeGlobSymTable();
 };
 //extern Project g_proj;
