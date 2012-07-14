@@ -23,6 +23,7 @@ struct SymbolCommon
 };
 struct SYM : public SymbolCommon
 {
+    typedef uint32_t tLabel;
     SYM() : label(0),flg(0)
     {
 
@@ -33,9 +34,10 @@ struct SYM : public SymbolCommon
 /* STACK FRAME */
 struct STKSYM : public SymbolCommon
 {
+    typedef int16_t tLabel;
     COND_EXPR	*actual;	/* Expression tree of actual parameter 		*/
     COND_EXPR 	*regs;		/* For register arguments only				*/
-    int16_t      label;        /* Immediate off from BP (+:args, -:params) */
+    tLabel      label;        /* Immediate off from BP (+:args, -:params) */
     uint8_t     regOff;     /* Offset is a register (e.g. SI, DI)       */
     bool        hasMacro;	/* This type needs a macro					*/
     std::string macro;  	/* Macro name								*/
@@ -60,13 +62,13 @@ class SymbolTableCommon : public std::vector<T>
 public:
     typedef typename std::vector<T>::iterator iterator;
     typedef typename std::vector<T>::const_iterator const_iterator;
-    iterator findByLabel(uint32_t lab)
+    iterator findByLabel(typename T::tLabel lab)
     {
         auto iter = std::find_if(this->begin(),this->end(),
                                  [lab](T &s)->bool {return s.label==lab;});
         return iter;
     }
-    const_iterator findByLabel(uint32_t lab) const
+    const_iterator findByLabel(typename T::tLabel lab) const
     {
         auto iter = std::find_if(this->begin(),this->end(),
                                  [lab](const T &s)->bool {return s.label==lab;});

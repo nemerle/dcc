@@ -814,10 +814,9 @@ public:
  *   void x86_get_aliased_reg( x86_reg_t *alias_reg, x86_reg_t *output_reg )
  * where 'alias_reg' is a reg operand and 'output_reg' is filled with the
  * register that the operand is an alias for */
-/*
-#define x86_get_aliased_reg( alias_reg, output_reg )			\
-        x86_reg_from_id( alias_reg->alias, output_reg )
-*/
+//#define x86_get_aliased_reg( alias_reg, output_reg )
+//	x86_reg_from_id( alias_reg->alias, output_reg )
+
 
 /* ================================== Invariant Instruction Representation */
 /* Invariant instructions are used for generating binary signatures;

@@ -357,8 +357,7 @@ static void fixFloatEmulation(x86_insn_t &insn)
     if ((wOp < 0x34) || (wOp > 0x3B))
         return;
     uint8_t buf[16];
-    /* This is a Borland/Microsoft floating point emulation instruction.
-       Treat as if it is an ESC opcode */
+    /* This is a Borland/Microsoft floating point emulation instruction. Treat as if it is an ESC opcode */
 
     int actual_valid_bytes=std::min(16U,prog.cbImage-insn.offset);
     memcpy(buf,prog.Image+insn.offset,actual_valid_bytes);

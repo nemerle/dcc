@@ -19,7 +19,7 @@ BB *BB::Create(void */*ctx*/, const string &/*s*/, Function *parent, BB */*inser
  *  @arg start - basic block starts here, might be parent->Icode.end()
  *  @arg fin - last of basic block's instructions
 */
-BB *BB::Create(iICODE start, iICODE fin, uint8_t _nodeType, int numOutEdges, Function *parent)
+BB *BB::Create(const rCODE &r,uint8_t _nodeType, Function *parent)
 {
     BB* pnewBB;
     pnewBB = new BB;
@@ -27,47 +27,28 @@ BB *BB::Create(iICODE start, iICODE fin, uint8_t _nodeType, int numOutEdges, Fun
     pnewBB->immedDom = NO_DOM;
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
     pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
-    pnewBB->instructions = make_iterator_range(start,fin);
-    if(start==parent->Icode.end())
-    {
-        pnewBB->instructions = make_iterator_range(parent->Icode.end(),parent->Icode.end());
-    }
-    else
-    {
-        pnewBB->instructions.advance_end(1); // 1 after fin, to create range where fin is inclusive
-    }
-    if (numOutEdges)
-        pnewBB->edges.resize(numOutEdges);
+    pnewBB->instructions = r;
 
     /* Mark the basic block to which the icodes belong to, but only for
-         * real code basic blocks (ie. not interval bbs) */
+     * real code basic blocks (ie. not interval bbs) */
     if(parent)
     {
-        if (start != parent->Icode.end())
-            parent->Icode.SetInBB(pnewBB->instructions, pnewBB);
+        //setInBB should automatically handle if our range is empty
+        parent->Icode.SetInBB(pnewBB->instructions, pnewBB);
         parent->heldBBs.push_back(pnewBB);
         parent->m_cfg.push_back(pnewBB);
         pnewBB->Parent = parent;
     }
-    if ( start != parent->Icode.end() )		/* Only for code BB's */
+
+    if ( r.begin() != parent->Icode.end() )		/* Only for code BB's */
         stats.numBBbef++;
     return pnewBB;
+
 }
-BB *BB::Create(int start, int ip, uint8_t _nodeType, int numOutEdges, Function *parent)
+BB *BB::CreateIntervalBB(Function *parent)
 {
-    iICODE st(parent->Icode.begin());
-    iICODE fin(parent->Icode.begin());
-    if(start==-1)
-    {
-        st  = parent->Icode.end();
-        fin = parent->Icode.end();
-    }
-    else
-    {
-        advance(st,start);
-        advance(fin,ip);
-    }
-    return Create(st,fin,_nodeType,numOutEdges,parent);
+    iICODE endOfParent = parent->Icode.end();
+    return Create(make_iterator_range(endOfParent,endOfParent),INTERVAL_NODE,parent);
 }
 
 static const char *const s_nodeType[] = {"branch", "if", "case", "fall", "return", "call",

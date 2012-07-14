@@ -236,29 +236,23 @@ derSeq_Entry::~derSeq_Entry()
 bool Function::nextOrderGraph (derSeq &derivedGi)
 {
     interval *Ii;   /* Interval being processed         */
-    BB *BBnode,     /* New basic block of intervals         */
-            //*curr,      /* BB being checked for out edges       */
-            *succ       /* Successor node               */
-            ;
-    //queue *listIi;    /* List of intervals                */
-    int i;        /* Index to outEdges array          */
-        /*j;*/        /* Index to successors              */
-    boolT   sameGraph; /* Boolean, isomorphic graphs           */
+    BB *BBnode;     /* New basic block of intervals         */
+    bool   sameGraph; /* Boolean, isomorphic graphs           */
 
     /* Process Gi's intervals */
     derSeq_Entry &prev_entry(derivedGi.back());
     derivedGi.push_back(derSeq_Entry());
     derSeq_Entry &new_entry(derivedGi.back());
-    Ii = prev_entry.Ii;
+
     sameGraph = true;
     BBnode = 0;
     std::vector<BB *> bbs;
-    while (Ii)
+    for(Ii = prev_entry.Ii; Ii != nullptr; Ii = Ii->next)
     {
-        i = 0;
-        bbs.push_back(BB::Create(-1, -1, INTERVAL_NODE, Ii->numOutEdges, this));
-        BBnode = bbs.back();
+
+        BBnode = BB::CreateIntervalBB(this);
         BBnode->correspInt = Ii;
+        bbs.push_back(BBnode);
         const queue &listIi(Ii->nodes);
 
         /* Check for more than 1 interval */
@@ -267,21 +261,17 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
 
         /* Find out edges */
 
-        if (BBnode->edges.size() > 0)
+        if (Ii->numOutEdges <= 0)
+            continue;
+        for(BB *curr :  listIi)
         {
-            for(BB *curr :  listIi)
+            for (size_t j = 0; j < curr->edges.size(); j++)
             {
-                for (size_t j = 0; j < curr->edges.size(); j++)
-                {
-                    succ = curr->edges[j].BBptr;
-                    if (succ->inInterval != curr->inInterval)
-                        BBnode->edges[i++].intPtr = succ->inInterval;
-                }
+                BB *successor_node = curr->edges[j].BBptr;
+                if (successor_node->inInterval != curr->inInterval)
+                    BBnode->addOutEdgeInterval(successor_node->inInterval);
             }
         }
-
-        /* Next interval */
-        Ii = Ii->next;
     }
 
     /* Convert list of pointers to intervals into a real graph.
@@ -303,7 +293,7 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
             (*iter)->inEdgeCount++;
         }
     }
-    return (boolT)(! sameGraph);
+    return not sameGraph;
 }
 
 

@@ -16,16 +16,21 @@ class CIcodeRec;
 struct BB;
 struct LOCAL_ID;
 struct interval;
-
+//TODO: consider default address value -> INVALID
 struct TYPEADR_TYPE
 {
     uint32_t         ip;             /* Out edge icode address       */
     BB *          BBptr;          /* Out edge pointer to next BB  */
     interval     *intPtr;         /* Out edge ptr to next interval*/
+    TYPEADR_TYPE(uint32_t addr=0) : ip(addr),BBptr(nullptr),intPtr(nullptr)
+    {}
+    TYPEADR_TYPE(interval *v) : ip(0),BBptr(nullptr),intPtr(v)
+    {}
 };
 
 struct BB : public llvm::ilist_node<BB>
 {
+
 private:
     BB(const BB&);
     BB() : nodeType(0),traversed(DFS_NONE),
@@ -76,7 +81,7 @@ public:
                                      * derived graph Gi-1       	*/
 
     /* For live register analysis
-         * LiveIn(b) = LiveUse(b) U (LiveOut(b) - Def(b))	*/
+     * LiveIn(b) = LiveUse(b) U (LiveOut(b) - Def(b)) */
     std::bitset<32> liveUse;		/* LiveUse(b)					*/
     std::bitset<32> def;			/* Def(b)						*/
     std::bitset<32> liveIn;			/* LiveIn(b)					*/
@@ -90,9 +95,8 @@ public:
     int             ifFollow;       /* node that ends the if        */
     int             loopType;       /* Type of loop (if any)        */
     int             latchNode;      /* latching node of the loop    */
-    int             numBackEdges;	/* # of back edges				*/
-    int             loopHead;       /* most nested loop head to which
-                                     * thcis node belongs (dfsLast)  */
+    size_t          numBackEdges;   /* # of back edges              */
+    int             loopHead;       /* most nested loop head to which this node belongs (dfsLast)  */
     int             loopFollow;     /* node that follows the loop   */
     int             caseHead;       /* most nested case to which this
                                         node belongs (dfsLast)      */
@@ -100,8 +104,8 @@ public:
 
     int             index;          /* Index, used in several ways  */
     static BB * Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
-    static BB * Create(int start, int ip, uint8_t nodeType, int numOutEdges, Function * parent);
-    static BB * Create(iICODE start, iICODE fin, uint8_t _nodeType, int numOutEdges, Function *parent);
+    static BB * CreateIntervalBB(Function *parent);
+    static BB * Create(const rCODE &r, uint8_t _nodeType, Function *parent);
     void    writeCode(int indLevel, Function *pProc, int *numLoc, int latchNode, int ifFollow);
     void    mergeFallThrough(CIcodeRec &Icode);
     void    dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last);
@@ -118,10 +122,15 @@ public:
     bool    valid() {return 0==(flg & INVALID_BB); }
     bool    wasTraversedAtLevel(int l) const {return traversed==l;}
     ICODE * writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, boolT &repCond);
-    void addOutEdge(uint32_t ip)  // TODO: fix this
+    void    addOutEdge(uint32_t ip)  // TODO: fix this
     {
-        edges[0].ip = ip;
+        edges.push_back(TYPEADR_TYPE(ip));
     }
+    void    addOutEdgeInterval(interval *i)  // TODO: fix this
+    {
+        edges.push_back(TYPEADR_TYPE(i));
+    }
+
     void RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode);
 private:
     bool    FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at);

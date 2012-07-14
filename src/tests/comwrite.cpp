@@ -1,6 +1,6 @@
+#include "dcc.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "dcc.h"
 
 TEST(CowriteTest, HandlesZeroInput) {
   EXPECT_EQ(1, 1);

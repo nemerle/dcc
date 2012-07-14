@@ -45,10 +45,10 @@ protected:
     } boolExpr;
 
 public:
-    condNodeType            m_type;       /* Conditional Expression Node Type */
+    condNodeType            m_type;     /* Conditional Expression Node Type */
     union _exprNode {                   /* Different cond expr nodes        */
-        COND_EXPR    *unaryExp;  /* for NEGATION,ADDRESSOF,DEREFERENCE*/
-        IDENTTYPE   ident;     /* for IDENTIFIER                   */
+        COND_EXPR    *unaryExp;         /* for NEGATION,ADDRESSOF,DEREFERENCE*/
+        IDENTTYPE   ident;              /* for IDENTIFIER                   */
     }   expr;
     COND_EXPR *lhs()
     {
@@ -72,19 +72,19 @@ public:
     }
     condOp op() const { return boolExpr.op;}
 public:
-    static COND_EXPR *idRegIdx(int idx, regType reg_type);
-    static COND_EXPR *idKte(uint32_t kte, uint8_t size);
-    static COND_EXPR *idLoc(int off, LOCAL_ID *localId);
-    static COND_EXPR *idReg(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
-    static COND_EXPR *idLongIdx(int idx);
-    static COND_EXPR *idOther(eReg seg, eReg regi, int16_t off);
-    static COND_EXPR *idParam(int off, const STKFRAME *argSymtab);
-    static COND_EXPR *unary(condNodeType t, COND_EXPR *sub_expr);
-    static COND_EXPR *idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);
-    static COND_EXPR *idFunc(Function *pproc, STKFRAME *args);
-    static COND_EXPR *idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
+    static COND_EXPR *  idRegIdx(int idx, regType reg_type);
+    static COND_EXPR *  idKte(uint32_t kte, uint8_t size);
+    static COND_EXPR *  idLoc(int off, LOCAL_ID *localId);
+    static COND_EXPR *  idReg(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
+    static COND_EXPR *  idLongIdx(int idx);
+    static COND_EXPR *  idOther(eReg seg, eReg regi, int16_t off);
+    static COND_EXPR *  idParam(int off, const STKFRAME *argSymtab);
+    static COND_EXPR *  unary(condNodeType t, COND_EXPR *sub_expr);
+    static COND_EXPR *  idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);
+    static COND_EXPR *  idFunc(Function *pproc, STKFRAME *args);
+    static COND_EXPR *  idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
     static COND_EXPR *  id(const LLInst &ll_insn, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
-    static COND_EXPR *boolOp(COND_EXPR *_lhs, COND_EXPR *_rhs, condOp _op);
+    static COND_EXPR *  boolOp(COND_EXPR *_lhs, COND_EXPR *_rhs, condOp _op);
     static bool         insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR **tree, int longIdx);
     static bool         insertSubTreeReg(COND_EXPR *&tree, COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
 public:

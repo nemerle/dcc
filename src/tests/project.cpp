@@ -13,8 +13,8 @@ TEST(Project, NewProjectIsInitalized) {
 
 TEST(Project, CreatedProjectHasValidNames) {
     Project p;
-    std::vector<std::string> strs     = {"./Project1.EXE","/home/Project2.EXE","/home/Pro ject3"};
-    std::vector<std::string> expected = {"Project1","Project2","Pro ject3"};
+    std::vector<std::string> strs     = {"./Project1.EXE","/home/Project2.EXE","/home/Pro\\ ject3"};
+    std::vector<std::string> expected = {"Project1","Project2","Pro\\ ject3"};
     for(size_t i=0; i<strs.size(); i++)
     {
         p.create(strs[i]);

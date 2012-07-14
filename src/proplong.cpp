@@ -540,20 +540,19 @@ void Function::propLong()
     for (size_t i = 0; i < localId.csym(); i++)
     {
         const ID &pLocId(localId.id_arr[i]);
-        if ((pLocId.type==TYPE_LONG_SIGN) || (pLocId.type==TYPE_LONG_UNSIGN))
+        if ((pLocId.type!=TYPE_LONG_SIGN) and (pLocId.type!=TYPE_LONG_UNSIGN))
+            continue;
+        switch (pLocId.loc)
         {
-            switch (pLocId.loc)
-            {
-            case STK_FRAME:
-                propLongStk (i, pLocId);
-                break;
-            case REG_FRAME:
-                propLongReg (i, pLocId);
-                break;
-            case GLB_FRAME:
-                propLongGlb (i, pLocId);
-                break;
-            }
+        case STK_FRAME:
+            propLongStk (i, pLocId);
+            break;
+        case REG_FRAME:
+            propLongReg (i, pLocId);
+            break;
+        case GLB_FRAME:
+            propLongGlb (i, pLocId);
+            break;
         }
     }
 }

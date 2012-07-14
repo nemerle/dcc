@@ -12,7 +12,7 @@ OPTION  option;             /* Command line options     			  */
 Project *Project::s_instance = 0;
 Project::Project() : callGraph(nullptr)
 {
-
+    memset(&prog,0,sizeof(prog));
 }
 void Project::initialize()
 {
@@ -49,8 +49,7 @@ ilFunction Project::findByEntry(uint32_t entry)
 {
     /* Search procedure list for one with appropriate entry point */
     ilFunction iter= std::find_if(pProcList.begin(),pProcList.end(),
-        [entry](const Function &f) ->
-            bool { return f.procEntry==entry; });
+        [entry](const Function &f)  { return f.procEntry==entry; });
 return iter;
 }
 

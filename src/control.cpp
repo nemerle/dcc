@@ -336,9 +336,7 @@ void Function::structLoops(derSeq *derivedG)
  * h.  Note that h is a case node.                  */
 static bool successor (int s, int h, Function * pProc)
 {
-    BB * header;
-
-    header = pProc->m_dfsLast[h];
+    BB * header = pProc->m_dfsLast[h];
     auto iter = std::find_if(header->edges.begin(),
                              header->edges.end(),
                              [s](const TYPEADR_TYPE &te)->bool{ return te.BBptr->dfsLastNum == s;});
@@ -431,9 +429,9 @@ static void flagNodes (nodeList &l, int f, Function * pProc)
 /* Structures if statements */
 void Function::structIfs ()
 {
+    size_t followInEdges;			/* Largest # in-edges so far 			*/
     int curr,    				/* Index for linear scan of nodes   	*/
             /*desc,*/ 				/* Index for descendant         		*/
-            followInEdges,			/* Largest # in-edges so far 			*/
             follow;  				/* Possible follow node 				*/
     nodeList domDesc,    /* List of nodes dominated by curr  	*/
             unresolved 	/* List of unresolved if nodes  		*/

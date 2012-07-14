@@ -9,8 +9,8 @@
 
 
 #ifdef _MSC_VER
-        #define snprintf        _snprintf
-        #define inline          __inline
+#define snprintf        _snprintf
+#define inline          __inline
 #endif
 void x86_insn_t::make_invalid(unsigned char *buf)
 {
@@ -22,8 +22,8 @@ void x86_insn_t::make_invalid(unsigned char *buf)
     memcpy( bytes, buf, 1 );
 }
 unsigned int X86_Disasm::x86_disasm( unsigned char *buf, unsigned int buf_len,
-                uint32_t buf_rva, unsigned int offset,
-                x86_insn_t *insn ){
+                                     uint32_t buf_rva, unsigned int offset,
+                                     x86_insn_t *insn ){
     int len, size;
     unsigned char bytes[MAX_INSTRUCTION_SIZE];
 
@@ -53,7 +53,7 @@ unsigned int X86_Disasm::x86_disasm( unsigned char *buf, unsigned int buf_len,
     * helps prevent buffer overruns at the end of a file */
     memset( bytes, 0, MAX_INSTRUCTION_SIZE );
     memcpy( bytes, &buf[offset], (len < MAX_INSTRUCTION_SIZE) ? len :
-        MAX_INSTRUCTION_SIZE );
+                                                                MAX_INSTRUCTION_SIZE );
 
     /* actually do the disassembly */
     /* TODO: allow switching when more disassemblers are added */
@@ -81,140 +81,139 @@ unsigned int X86_Disasm::x86_disasm( unsigned char *buf, unsigned int buf_len,
 }
 
 unsigned int X86_Disasm::x86_disasm_range( unsigned char *buf, uint32_t buf_rva,
-                      unsigned int offset, unsigned int len,
-                      DISASM_CALLBACK func, void *arg ) {
-        x86_insn_t insn;
-        unsigned int buf_len, size, count = 0, bytes = 0;
+                                           unsigned int offset, unsigned int len,
+                                           DISASM_CALLBACK func, void *arg ) {
+    x86_insn_t insn;
+    unsigned int buf_len, size, count = 0, bytes = 0;
 
-        /* buf_len is implied by the arguments */
-        buf_len = len + offset;
+    /* buf_len is implied by the arguments */
+    buf_len = len + offset;
 
-        while ( bytes < len ) {
-                size = x86_disasm( buf, buf_len, buf_rva, offset + bytes,
-                                   &insn );
-                if ( size ) {
-                        /* invoke callback if it exists */
-                        if ( func ) {
-                                (*func)( &insn, arg );
-                        }
-                        bytes += size;
-                        count ++;
-                } else {
-                        /* error */
-                        bytes++;        /* try next byte */
-                }
-
-                insn.x86_oplist_free();
+    while ( bytes < len ) {
+        size = x86_disasm( buf, buf_len, buf_rva, offset + bytes,
+                           &insn );
+        if ( size ) {
+            /* invoke callback if it exists */
+            if ( func ) {
+                (*func)( &insn, arg );
+            }
+            bytes += size;
+            count ++;
+        } else {
+            /* error */
+            bytes++;        /* try next byte */
         }
 
-        return( count );
+        insn.x86_oplist_free();
+    }
+
+    return( count );
 }
 
 static inline int follow_insn_dest( x86_insn_t *insn ) {
-        if ( insn->type == insn_jmp || insn->type == insn_jcc ||
-             insn->type == insn_call || insn->type == insn_callcc ) {
-                return(1);
-        }
-        return(0);
+    if ( insn->type == insn_jmp || insn->type == insn_jcc ||
+         insn->type == insn_call || insn->type == insn_callcc ) {
+        return(1);
+    }
+    return(0);
 }
 
 static inline int insn_doesnt_return( x86_insn_t *insn ) {
-        return( (insn->type == insn_jmp || insn->type == insn_return) ? 1: 0 );
+    return( (insn->type == insn_jmp || insn->type == insn_return) ? 1: 0 );
 }
 
 static int32_t internal_resolver( x86_op_t *op, x86_insn_t *insn ){
-        int32_t next_addr = -1;
-        if ( x86_optype_is_address(op->type) ) {
-                next_addr = op->data.sdword;
-        } else if ( op->type == op_relative_near ) {
-                next_addr = insn->addr + insn->size + op->data.relative_near;
-        } else if ( op->type == op_relative_far ) {
-                next_addr = insn->addr + insn->size + op->data.relative_far;
-        }
-        return( next_addr );
+    int32_t next_addr = -1;
+    if ( x86_optype_is_address(op->type) ) {
+        next_addr = op->data.sdword;
+    } else if ( op->type == op_relative_near ) {
+        next_addr = insn->addr + insn->size + op->data.relative_near;
+    } else if ( op->type == op_relative_far ) {
+        next_addr = insn->addr + insn->size + op->data.relative_far;
+    }
+    return( next_addr );
 }
 
 unsigned int X86_Disasm::x86_disasm_forward( unsigned char *buf, unsigned int buf_len,
-                        uint32_t buf_rva, unsigned int offset,
-                        DISASM_CALLBACK func, void *arg,
-                        DISASM_RESOLVER resolver, void *r_arg ){
-        x86_insn_t insn;
-        x86_op_t *op;
-        int32_t next_addr;
-        int32_t next_offset;
-        unsigned int size, count = 0, bytes = 0, cont = 1;
+                                             uint32_t buf_rva, unsigned int offset,
+                                             DISASM_CALLBACK func, void *arg,
+                                             DISASM_RESOLVER resolver, void *r_arg ){
+    x86_insn_t insn;
+    x86_op_t *op;
+    int32_t next_addr;
+    int32_t next_offset;
+    unsigned int size, count = 0, bytes = 0, cont = 1;
 
-        while ( cont && bytes < buf_len ) {
-                size = x86_disasm( buf, buf_len, buf_rva, offset + bytes,
+    while ( cont && bytes < buf_len ) {
+        size = x86_disasm( buf, buf_len, buf_rva, offset + bytes,
                            &insn );
 
-                if ( size ) {
-                        /* invoke callback if it exists */
-                        if ( func ) {
-                                (*func)( &insn, arg );
-                        }
-                        bytes += size;
-                        count ++;
-                } else {
-                        /* error */
-                        bytes++;        /* try next byte */
-                }
-
-                if ( follow_insn_dest(&insn) ) {
-                        op = insn.x86_operand_1st();//x86_get_dest_operand
-                        next_addr = -1;
-
-                        /* if caller supplied a resolver, use it to determine
-                         * the address to disassemble */
-                        if ( resolver ) {
-                                next_addr = resolver(op, &insn, r_arg);
-                        } else {
-                                next_addr = internal_resolver(op, &insn);
-                        }
-
-                        if (next_addr != -1 ) {
-                                next_offset = next_addr - buf_rva;
-                                /* if offset is in this buffer... */
-                                if ( next_offset >= 0 && next_offset < int(buf_len) )
-                                {
-                                        /* go ahead and disassemble */
-                                        count += x86_disasm_forward( buf,
-                                                            buf_len,
-                                                            buf_rva,
-                                                            next_offset,
-                                                            func, arg,
-                                                            resolver, r_arg );
-                                } else  {
-                                        /* report unresolved address */
-                                        x86_report_error( report_disasm_bounds,
-                                                     (void*)(long)next_addr );
-                                }
-                        }
-                } /* end follow_insn */
-
-                if ( insn_doesnt_return(&insn) ) {
-                        /* stop disassembling */
-                        cont = 0;
-                }
-
-                insn.x86_oplist_free( );
+        if ( size ) {
+            /* invoke callback if it exists */
+            if ( func ) {
+                (*func)( &insn, arg );
+            }
+            bytes += size;
+            count ++;
+        } else {
+            /* error */
+            bytes++;        /* try next byte */
         }
-        return( count );
+
+        if ( follow_insn_dest(&insn) ) {
+            op = insn.x86_operand_1st();//x86_get_dest_operand
+            next_addr = -1;
+
+            /* if caller supplied a resolver, use it to determine
+                         * the address to disassemble */
+            if ( resolver ) {
+                next_addr = resolver(op, &insn, r_arg);
+            } else {
+                next_addr = internal_resolver(op, &insn);
+            }
+
+            if (next_addr != -1 ) {
+                next_offset = next_addr - buf_rva;
+                /* if offset is in this buffer... */
+                if ( next_offset >= 0 && next_offset < buf_len ) {
+                    /* go ahead and disassemble */
+                    count += x86_disasm_forward( buf,
+                                                 buf_len,
+                                                 buf_rva,
+                                                 next_offset,
+                                                 func, arg,
+                                                 resolver, r_arg );
+                } else  {
+                    /* report unresolved address */
+                    x86_report_error( report_disasm_bounds,
+                                      (void*)(long)next_addr );
+                }
+            }
+        } /* end follow_insn */
+
+        if ( insn_doesnt_return(&insn) ) {
+            /* stop disassembling */
+            cont = 0;
+        }
+
+        insn.x86_oplist_free( );
+    }
+    return( count );
 }
 
 /* invariant instruction representation */
 size_t x86_invariant_disasm( unsigned char *buf, int buf_len,
-                x86_invariant_t *inv ){
-        if (! buf || ! buf_len || ! inv  ) {
-                return(0);
-        }
+                             x86_invariant_t *inv ){
+    if (! buf || ! buf_len || ! inv  ) {
+        return(0);
+    }
 
-        return ia32_disasm_invariant(buf, buf_len, inv);
+    return ia32_disasm_invariant(buf, buf_len, inv);
 }
 size_t x86_size_disasm( unsigned char *buf, unsigned int buf_len ) {
-        if (! buf || ! buf_len  ) {
-                return(0);
-        }
+    if (! buf || ! buf_len  ) {
+        return(0);
+    }
 
-        return ia32_disasm_size(buf, buf_len);
+    return ia32_disasm_size(buf, buf_len);
 }
