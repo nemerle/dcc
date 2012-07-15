@@ -1,8 +1,11 @@
-/***************************************************************************
+/*
+
+=**************************************************************************
  * File     : dosdcc.h
  * Purpose  : include file for files decompiled by dcc.
  * Copyright (c) Cristina Cifuentes - QUT - 1992
- **************************************************************************/
+ *************************************************************************
+*/
 
 /* Type definitions for intel 80x86 architecture */
 typedef unsigned int    uint16_t;       /* 16 bits */
@@ -18,7 +21,7 @@ typedef struct {
     uint16_t    lowBitWord  : 1;
     uint16_t    filler1     : 6;
     uint16_t    highBitByte : 1;
-    /* high uint8_t */ 
+    /* high uint8_t */
     uint16_t    lowBitByte  : 1;
     uint16_t    filler2     : 6;
     uint16_t    highBitWord : 1;

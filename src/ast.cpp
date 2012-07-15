@@ -43,15 +43,14 @@ void ICODE::setRegDU (eReg regi, operDu du_in)
     switch (du_in)
     {
     case eDEF:
-        du.def |= duReg[regi];
+        du.def.addReg(regi);
         du1.numRegsDef++;
         break;
     case eUSE:
-        du.use |= duReg[regi];
+        du.use.addReg(regi);
         break;
     case USE_DEF:
-        du.def |= duReg[regi];
-        du.use |= duReg[regi];
+        du.addDefinedAndUsed(regi);
         du1.numRegsDef++;
         break;
     case NONE:    /* do nothing */

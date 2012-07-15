@@ -30,7 +30,7 @@
 #define TABLESIZE 16                /* Number of entries added each expansion */
 /* Probably has to be a power of 2 */
 #define STRTABSIZE 256              /* Size string table is inc'd by */
-#define NIL ((uint16_t)-1)
+
 using namespace std;
 static  char *pStrTab;              /* Pointer to the current string table */
 static  int   strTabNext;           /* Next free index into pStrTab */

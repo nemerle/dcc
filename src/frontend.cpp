@@ -3,10 +3,11 @@
 * Loads a program into simulated main memory and builds the procedure list.
 * (C) Cristina Cifuentes
 ****************************************************************************/
-#define __STDC_FORMAT_MACROS
+
 #include "dcc.h"
 #include "disassem.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>

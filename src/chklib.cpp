@@ -337,8 +337,7 @@ void SetupLibCheck(void)
                     PatLen,                 /* The length of the pattern to be hashed */
                     256,                    /* The character set of the pattern (0-FF) */
                     0,                      /* Minimum pattern character value */
-                    numVert);               /* Specifies c, the sparseness of the graph.
-                                    See Czech, Havas and Majewski for details */
+                    numVert);               /* Specifies c, the sparseness of the graph. See Czech, Havas and Majewski for details */
     T1base  = g_pattern_hasher.readT1();
     T2base  = g_pattern_hasher.readT2();
     g       = g_pattern_hasher.readG();
@@ -462,8 +461,7 @@ bool LibCheck(Function & pProc)
     //memmove(pat, &prog.Image[fileOffset], PATLEN);
     fixWildCards(pat);                  /* Fix wild cards in the copy */
     h = g_pattern_hasher.hash(pat);                      /* Hash the found proc */
-    /* We always have to compare keys, because the hash function will
-        always return a valid index */
+    /* We always have to compare keys, because the hash function will always return a valid index */
     if (memcmp(ht[h].htPat, pat, PATLEN) == 0)
     {
         /* We have a match. Save the name, if not already set */
@@ -494,13 +492,13 @@ bool LibCheck(Function & pProc)
                     pProc.flg |= PROC_IS_FUNC;
                     switch (pProc.retVal.type) {
                         case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
-                            pProc.liveOut = duReg[rDX] | duReg[rAX];
+                            pProc.liveOut.setReg(rDX) |= duReg[rAX];
                             break;
                         case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
-                            pProc.liveOut = duReg[rAX];
+                            pProc.liveOut.setReg(rAX);
                             break;
                         case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
-                            pProc.liveOut = duReg[rAL];
+                            pProc.liveOut.setReg(rAL);
                             break;
                         default:
                             fprintf(stderr,"Unknown retval type %d in LibCheck\n",pProc.retVal.type);

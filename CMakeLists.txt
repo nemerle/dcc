@@ -3,7 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 OPTION(dcc_build_tests "Enable unit tests." OFF)
 
-ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS)
+ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
 IF(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE)
     ADD_DEFINITIONS(/W4)
@@ -14,7 +14,7 @@ ELSE()
 ENDIF()
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
-
+include(cotire)
 FIND_PACKAGE(LLVM)
 FIND_PACKAGE(Boost)
 IF(dcc_build_tests)
@@ -59,6 +59,7 @@ set(dcc_LIB_SOURCES
     src/idioms/shift_idioms.cpp
     src/idioms/xor_idioms.cpp
     src/locident.cpp
+    src/liveness_set.cpp
     src/parser.cpp
     src/perfhlib.cpp
     src/procs.cpp
@@ -110,11 +111,11 @@ SOURCE_GROUP(Source FILES ${dcc_SOURCES})
 SOURCE_GROUP(Headers FILES ${dcc_HEADERS})
 
 ADD_LIBRARY(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
+cotire(dcc_lib)
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
 TARGET_LINK_LIBRARIES(dcc_original dcc_lib disasm_s ${REQ_LLVM_LIBRARIES})
-
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)
 endif()

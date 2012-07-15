@@ -1,10 +1,13 @@
-/*****************************************************************************
+/*
+ ****************************************************************************
  *      CFG, BB and interval related definitions
- * (C) Cristina Cifuentes
- ****************************************************************************/
+ * ( C ) Cristina Cifuentes
+ ****************************************************************************
+ */
 #pragma once
+#include <stdint.h>
 #include <list>
-#include <vector>
+
 struct Function;
 /* Types of basic block nodes */
 /* Real basic blocks: type defined according to their out-edges */
@@ -55,6 +58,7 @@ enum eNodeHeaderType
 #define ELSE            1   /* else edge            */
 
 /* Basic Block (BB) flags */
+
 #define INVALID_BB      0x0001		/* BB is not valid any more 		 */
 #define IS_LATCH_NODE	0x0002		/* BB is the latching node of a loop */
 
@@ -64,8 +68,8 @@ typedef std::list<BB *> queue;
 
 struct interval
 {
-    uint8_t            numInt;         /* # of the interval    */
-    uint8_t            numOutEdges;    /* Number of out edges  */
+    uint8_t         numInt;         /* # of the interval    */
+    uint8_t         numOutEdges;    /* Number of out edges  */
     queue           nodes;         /* Nodes of the interval*/
     queue::iterator currNode;      /* Current node     */
     interval *next;          /* Next interval    */
@@ -76,6 +80,7 @@ struct interval
         currNode=nodes.end();
         next=0;
     }
+    void appendNodeInt(queue &pqH, BB *node);
 };
 
 
@@ -83,6 +88,7 @@ struct interval
 struct derSeq_Entry
 {
     BB *                Gi;        /* Graph pointer        */
+    std::list<interval *> m_intervals;
     interval *          Ii;        /* Interval list of Gi  */
     derSeq_Entry() : Gi(0),Ii(0)
     {

@@ -16,13 +16,11 @@ bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 
 ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
 {
-    name[0]=0;
     macro[0]=0;
     memset(&id,0,sizeof(id));
 }
 ID::ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
 {
-    name[0]=0;
     macro[0]=0;
     memset(&id,0,sizeof(id));
     loc=f;
@@ -273,7 +271,7 @@ int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
  *       number in an expression record.    */
 int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, LLInst &atOffset)
 {
-    size_t idx;
+    size_t idx = ~0; //WARNING: clients of this method might propagate this bogus value!
     const LLOperand *pmH, *pmL;
         LLInst &p_ll(*pIcode->ll());
     if (f == LOW_FIRST)

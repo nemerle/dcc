@@ -60,7 +60,8 @@ void Function::controlFlowAnalysis()
     if (option.verbose)
     {
         printf("\nDepth first traversal - Proc %s\n", name.c_str());
-        m_cfg.front()->displayDfs();
+        (*m_actual_cfg.begin())->displayDfs();
+        //m_cfg.front()->displayDfs();
     }
 
     /* Free storage occupied by this procedure */
@@ -82,7 +83,7 @@ void udm(void)
     /* Data flow analysis - eliminate condition codes, extraneous registers
      * and intermediate instructions.  Find expressions by forward
      * substitution algorithm */
-    std::bitset<32> live_regs;
+    LivenessSet live_regs;
     Project::get()->pProcList.front().dataFlow (live_regs);
 
     /* Control flow analysis - structuring algorithm */
@@ -98,7 +99,7 @@ void udm(void)
 void Function::displayCFG()
 {
     printf("\nBasic Block List - Proc %s", name.c_str());
-    for (BB *pBB : m_cfg)
+    for (BB *pBB : /*m_cfg*/m_actual_cfg)
     {
         pBB->display();
     }

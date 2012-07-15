@@ -9,12 +9,9 @@
 #include <bitset>
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
-#include <llvm/CodeGen/MachineInstr.h>
 #include <llvm/MC/MCInst.h>
-#include <llvm/MC/MCAsmInfo.h>
-#include <llvm/Value.h>
 #include <llvm/Instruction.h>
-#include <boost/range.hpp>
+#include <boost/range/iterator_range.hpp>
 #include "libdis.h"
 #include "Enums.h"
 #include "state.h"			// State depends on INDEXBASE, but later need STATE
@@ -32,7 +29,45 @@ typedef std::list<ICODE>::iterator iICODE;
 typedef std::list<ICODE>::reverse_iterator riICODE;
 typedef boost::iterator_range<iICODE> rCODE;
 
-extern std::bitset<32> duReg[30];
+struct LivenessSet : public std::bitset<32>
+{
+    LivenessSet(int val=0) : std::bitset<32>(val) {}
+    LivenessSet(const LivenessSet &other)
+    {
+        (std::bitset<32> &)*this = (std::bitset<32> &)other;
+    }
+    LivenessSet(const std::bitset<32> &other)
+    {
+        (std::bitset<32> &)*this = other;
+    }
+//    LivenessSet(LivenessSet &&other) : LivenessSet()
+//    {
+//        swap(*this,other);
+//    }
+    LivenessSet &operator=(LivenessSet other)
+    {
+        swap(*this,other);
+        return *this;
+    }
+    friend void swap(LivenessSet& first, LivenessSet& second) // nothrow
+    {
+        // enable ADL (not necessary in our case, but good practice)
+        using std::swap;
+
+        // by swapping the members of two classes,
+        // the two classes are effectively swapped
+        swap((std::bitset<32> &)first, (std::bitset<32> &)second);
+    }
+
+    LivenessSet &setReg(int r);
+    LivenessSet &addReg(int r);
+    bool testReg(int r)
+    {
+        return test(r-rAX);
+    }
+};
+
+extern LivenessSet duReg[30];
 /* uint8_t and uint16_t registers */
 
 /* Def/use of flags - low 4 bits represent flags */
@@ -350,14 +385,13 @@ public:
             use.reset();
             lastDefRegi.reset();
         }
-        std::bitset<32> def;        // For Registers: position in bitset is reg index
-        std::bitset<32> use;	// For Registers: position in uint32_t is reg index
-        std::bitset<32> lastDefRegi;// Bit set if last def of this register in BB
+        LivenessSet def;        // For Registers: position in bitset is reg index
+        LivenessSet use;	// For Registers: position in uint32_t is reg index
+        LivenessSet lastDefRegi;// Bit set if last def of this register in BB
         void addDefinedAndUsed(eReg r)
         {
-            def |= duReg[r];
-            use |= duReg[r];
-
+            def.addReg(r);
+            use.addReg(r);
         }
     };
     struct DU1

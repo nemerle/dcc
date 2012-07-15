@@ -5,7 +5,7 @@
 #include <string>
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
-#include <boost/range.hpp>
+#include <boost/range/iterator_range.hpp>
 #include "icode.h"
 #include "types.h"
 #include "graph.h"
@@ -27,10 +27,9 @@ struct TYPEADR_TYPE
     TYPEADR_TYPE(interval *v) : ip(0),BBptr(nullptr),intPtr(v)
     {}
 };
-
 struct BB : public llvm::ilist_node<BB>
 {
-
+    friend struct Function;
 private:
     BB(const BB&);
     BB() : nodeType(0),traversed(DFS_NONE),
@@ -46,6 +45,7 @@ private:
     //friend class SymbolTableListTraits<BB, Function>;
     typedef boost::iterator_range<iICODE> rCODE;
     rCODE instructions;
+    rCODE &my_range() {return instructions;}
 
 public:
     struct ValidFunctor
@@ -77,29 +77,25 @@ public:
     interval       *inInterval;     /* Node's interval              */
 
     /* For derived sequence construction */
-    interval       *correspInt;     /* Corresponding interval in
-                                     * derived graph Gi-1       	*/
-
-    /* For live register analysis
-     * LiveIn(b) = LiveUse(b) U (LiveOut(b) - Def(b)) */
-    std::bitset<32> liveUse;		/* LiveUse(b)					*/
-    std::bitset<32> def;			/* Def(b)						*/
-    std::bitset<32> liveIn;			/* LiveIn(b)					*/
-    std::bitset<32> liveOut;		/* LiveOut(b)					*/
+    interval       *correspInt;     //!< Corresponding interval in derived graph Gi-1
+    // For live register analysis
+    //  LiveIn(b) = LiveUse(b) U (LiveOut(b) - Def(b))
+    LivenessSet liveUse;		/* LiveUse(b)					*/
+    LivenessSet def;                /* Def(b)						*/
+    LivenessSet liveIn;             /* LiveIn(b)					*/
+    LivenessSet liveOut;		/* LiveOut(b)					*/
 
     /* For structuring analysis */
     int             dfsFirstNum;    /* DFS #: first visit of node   */
     int             dfsLastNum;     /* DFS #: last visit of node    */
-    int             immedDom;       /* Immediate dominator (dfsLast
-                                     * index)                       */
+    int             immedDom;       /* Immediate dominator (dfsLast index) */
     int             ifFollow;       /* node that ends the if        */
     int             loopType;       /* Type of loop (if any)        */
     int             latchNode;      /* latching node of the loop    */
     size_t          numBackEdges;   /* # of back edges              */
     int             loopHead;       /* most nested loop head to which this node belongs (dfsLast)  */
     int             loopFollow;     /* node that follows the loop   */
-    int             caseHead;       /* most nested case to which this
-                                        node belongs (dfsLast)      */
+    int             caseHead;       /* most nested case to which this node belongs (dfsLast)      */
     int             caseTail;       /* tail node for the case       */
 
     int             index;          /* Index, used in several ways  */
@@ -134,7 +130,7 @@ public:
     void RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode);
 private:
     bool    FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at);
-    void    ProcessUseDefForFunc(eReg regi, int defRegIdx, iICODE picode);
+    void    ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode);
     bool    isEndOfPath(int latch_node_idx) const;
     Function *Parent;
 

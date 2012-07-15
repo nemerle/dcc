@@ -5,10 +5,10 @@
  ********************************************************************/
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
+#include <cstring>
+#include <stdint.h>
 #include "dcc.h"
-#include <stdio.h>
-#include <malloc.h>		/* For free() */
-#include <string.h>
 
 static int      numInt;     /* Number of intervals      */
 
@@ -66,16 +66,16 @@ BB *interval::firstOfInt ()
  * node->inInterval.
  * Note: nodes are added to the interval list in interval order (which
  * topsorts the dominance relation).                    */
-static void appendNodeInt (queue &pqH, BB *node, interval *pI)
+void interval::appendNodeInt(queue &pqH, BB *node)
 {
     queue::iterator pq;        /* Pointer to current node of the list      */
 
     /* Append node if it is not already in the interval list */
-    pq = appendQueue (pI->nodes, node);
+    pq = appendQueue (nodes, node);
 
     /* Update currNode if necessary */
-    if (pI->currNode == pI->nodes.end())
-        pI->currNode = pq;
+    if (currNode == nodes.end())
+        currNode = pq;
 
     /* Check header list for occurrence of node, if found, remove it
      * and decrement number of out-edges from this interval.    */
@@ -84,12 +84,12 @@ static void appendNodeInt (queue &pqH, BB *node, interval *pI)
         auto found_iter=std::find(pqH.begin(),pqH.end(),node);
         if(found_iter!=pqH.end())
         {
-            pI->numOutEdges -= (uint8_t)(*found_iter)->inEdges.size() - 1;
+            numOutEdges -= (uint8_t)(*found_iter)->inEdges.size() - 1;
             pqH.erase(found_iter);
         }
     }
     /* Update interval header information for this basic block */
-    node->inInterval = pI;
+    node->inInterval = this;
 }
 
 
@@ -99,11 +99,10 @@ static void appendNodeInt (queue &pqH, BB *node, interval *pI)
 void derSeq_Entry::findIntervals (Function *c)
 {
     interval *pI,        /* Interval being processed         */
-            *J;         /* ^ last interval in derivedGi->Ii */
+             *J;         /* ^ last interval in derivedGi->Ii */
     BB *h,           /* Node being processed         */
             *header,          /* Current interval's header node   */
             *succ;            /* Successor basic block        */
-    //int i;           /* Counter              */
     queue H;            /* Queue of possible header nodes   */
     boolT first = true;       /* First pass through the loop      */
 
@@ -118,8 +117,11 @@ void derSeq_Entry::findIntervals (Function *c)
         pI = new interval;
         pI->numInt = (uint8_t)numInt++;
         if (first)               /* ^ to first interval  */
+        {
             Ii = J = pI;
-        appendNodeInt (H, header, pI);   /* pI(header) = {header} */
+            m_intervals.push_back(pI);
+        }
+        pI->appendNodeInt (H, header);   /* pI(header) = {header} */
 
         /* Process all nodes in the current interval list */
         while ((h = pI->firstOfInt()) != NULL)
@@ -134,7 +136,7 @@ void derSeq_Entry::findIntervals (Function *c)
                 {
                     succ->reachingInt = header;
                     if (succ->inEdgeCount == 0)
-                        appendNodeInt (H, succ, pI);
+                        pI->appendNodeInt (H, succ);
                     else if (! succ->beenOnH) /* out edge */
                     {
                         appendQueue (H, succ);
@@ -148,7 +150,7 @@ void derSeq_Entry::findIntervals (Function *c)
                         if (succ->reachingInt == header || succ->inInterval == pI) /* same interval */
                         {
                             if (succ != header)
-                                appendNodeInt (H, succ, pI);
+                                pI->appendNodeInt (H, succ);
                         }
                         else            /* out edge */
                             pI->numOutEdges++;
@@ -161,6 +163,7 @@ void derSeq_Entry::findIntervals (Function *c)
         /* Link interval I to list of intervals */
         if (! first)
         {
+            m_intervals.push_back(pI);
             J->next = pI;
             J = pI;
         }
@@ -333,13 +336,6 @@ uint8_t Function::findDerivedSeq (derSeq &derivedGi)
     return true;
 }
 
-/* Converts the irreducible graph G into an equivalent reducible one, by
- * means of node splitting.  */
-static void nodeSplitting (std::list<BB *> &/*G*/)
-{
-    fprintf(stderr,"Attempt to perform node splitting: NOT IMPLEMENTED\n");
-}
-
 /* Displays the derived sequence and intervals of the graph G */
 void derSeq::display()
 {
@@ -369,13 +365,13 @@ derSeq * Function::checkReducibility()
     stats.nOrder = 1;   /* nOrder(cfg) = 1      */
     der_seq = new derSeq;
     der_seq->resize(1);
-    der_seq->back().Gi = m_cfg.front();
+    der_seq->back().Gi = *m_actual_cfg.begin(); /*m_cfg.front()*/;
     reducible = findDerivedSeq(*der_seq);
 
     if (! reducible)
     {
         flg |= GRAPH_IRRED;
-        nodeSplitting (m_cfg);
+        m_actual_cfg.nodeSplitting();
     }
     return der_seq;
 }

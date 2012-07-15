@@ -62,10 +62,10 @@ typedef struct {            /* Command line option flags */
 extern OPTION option;       /* Command line options             */
 
 #include "BinaryImage.h"
-extern std::bitset<32> duReg[30];   /* def/use bits for registers		*/
+extern LivenessSet duReg[30];   /* def/use bits for registers		*/
 
 //extern uint32_t duReg[30];		/* def/use bits for registers		*/
-extern std::bitset<32> maskDuReg[30];	/* masks off du bits for regs		*/
+extern LivenessSet maskDuReg[30];	/* masks off du bits for regs		*/
 
 /* Registers used by icode instructions */
 

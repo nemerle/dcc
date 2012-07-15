@@ -266,7 +266,7 @@ void Function::codeGen (std::ostream &fs)
     }
     else							/* generate C */
     {
-        m_cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);
+        m_actual_cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);
     }
 
     cCode.appendCode( "}\n\n");

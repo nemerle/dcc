@@ -86,7 +86,26 @@ struct JumpTable
     size_t entrySize() { return 2;}
     void pruneEntries(uint16_t cs);
 };
-
+class FunctionCfg
+{
+    std::list<BB*> m_listBB;      /* Ptr. to BB list/CFG                  	 */
+public:
+    typedef std::list<BB*>::iterator iterator;
+    iterator	begin() {
+        return m_listBB.begin();
+    }
+    iterator	end()	 {
+        return m_listBB.end();
+    }
+    BB * &front() { return m_listBB.front();}
+    void nodeSplitting()
+    {
+        /* Converts the irreducible graph G into an equivalent reducible one, by
+         * means of node splitting.  */
+        fprintf(stderr,"Attempt to perform node splitting: NOT IMPLEMENTED\n");
+    }
+    void push_back(BB *v) { m_listBB.push_back(v);}
+};
 struct Function : public llvm::ilist_node<Function>
 {
     typedef llvm::iplist<BB> BasicBlockListType;
@@ -109,6 +128,7 @@ public:
 
         /* Icodes and control flow graph */
     CIcodeRec	 Icode;     /* Object with ICODE records                 */
+    FunctionCfg     m_actual_cfg;
     std::list<BB*> m_cfg;      /* Ptr. to BB list/CFG                  	 */
     std::vector<BB*> m_dfsLast;
     std::list<BB*> heldBBs;
@@ -118,9 +138,9 @@ public:
     bool         hasCase;   /* Procedure has a case node            	 */
 
     /* For interprocedural live analysis */
-    std::bitset<32>     liveIn;	/* Registers used before defined                 */
-    std::bitset<32>     liveOut;	/* Registers that may be used in successors	 */
-    bool                liveAnal;	/* Procedure has been analysed already		 */
+    LivenessSet     liveIn;	/* Registers used before defined                 */
+    LivenessSet     liveOut;	/* Registers that may be used in successors	 */
+    bool            liveAnal;	/* Procedure has been analysed already		 */
 
     Function(void */*ty*/=0) : procEntry(0),depth(0),flg(0),cbParam(0),m_cfg(0),m_dfsLast(0),numBBs(0),
         hasCase(false),liveIn(0),liveOut(0),liveAnal(0)//,next(0),prev(0)
@@ -140,7 +160,7 @@ public:
     void writeProcComments();
     void lowLevelAnalysis();
     void bindIcodeOff();
-    void dataFlow(std::bitset<32> &liveOut);
+    void dataFlow(LivenessSet &liveOut);
     void compressCFG();
     void highLevelGen();
     void structure(derSeq *derivedG);
@@ -166,7 +186,7 @@ public:
     void displayStats();
     void processHliCall(COND_EXPR *exp, iICODE picode);
 
-    void preprocessReturnDU(std::bitset<32> &_liveOut);
+    void preprocessReturnDU(LivenessSet &_liveOut);
 protected:
     void extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &table);
     bool followAllTableEntries(JumpTable &table, uint32_t cs, ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
@@ -190,7 +210,7 @@ protected:
     void    findExps();
     void    genDU1();
     void    elimCondCodes();
-    void    liveRegAnalysis(std::bitset<32> &in_liveOut);
+    void    liveRegAnalysis(LivenessSet &in_liveOut);
     void    findIdioms();
     void    propLong();
     void    genLiveKtes();

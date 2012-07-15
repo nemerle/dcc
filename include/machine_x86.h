@@ -73,7 +73,7 @@ public:
                 ostr << regName(eReg(j))<<" ";
         }
     }
-    static eReg subRegH(eReg reg); //TODO: move these into machine_x86
+    static eReg subRegH(eReg reg);
     static eReg subRegL(eReg reg);
 
     static bool isMemOff(eReg r);

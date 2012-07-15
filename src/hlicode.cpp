@@ -10,18 +10,28 @@
 #include <sstream>
 #include "dcc.h"
 using namespace std;
-#define ICODE_DELTA 25
+
 
 /* Masks off bits set by duReg[] */
-std::bitset<32> maskDuReg[] = { 0x00,
-                                0xFEEFFE, 0xFDDFFD, 0xFBB00B, 0xF77007, /* uint16_t regs */
-                                0xFFFFEF, 0xFFFFDF, 0xFFFFBF, 0xFFFF7F,
-                                0xFFFEFF, 0xFFFDFF, 0xFFFBFF, 0xFFF7FF, /* seg regs  */
-                                0xFFEFFF, 0xFFDFFF, 0xFFBFFF, 0xFF7FFF, /* uint8_t regs */
-                                0xFEFFFF, 0xFDFFFF, 0xFBFFFF, 0xF7FFFF,
-                                0xEFFFFF,                               /* tmp reg   */
-                                0xFFFFB7, 0xFFFF77, 0xFFFF9F, 0xFFFF5F, /* index regs */
-                                0xFFFFBF, 0xFFFF7F, 0xFFFFDF, 0xFFFFF7 };
+LivenessSet maskDuReg[] = { 0x00,
+                            /* uint16_t regs */
+                            0xFEEFFE, //rAX
+                            0xFDDFFD, //rCX
+                            0xFBB00B, //rDX
+                            0xF77007, //rBX
+                            0xFFFFEF, //rSP
+                            0xFFFFDF, //rBP
+                            0xFFFFBF, //rSI
+                            0xFFFF7F, //rDI
+                            0xFFFEFF,
+                            0xFFFDFF,
+                            0xFFFBFF,
+                            0xFFF7FF, /* seg regs  */
+                            0xFFEFFF, 0xFFDFFF, 0xFFBFFF, 0xFF7FFF, /* uint8_t regs */
+                            0xFEFFFF, 0xFDFFFF, 0xFBFFFF, 0xF7FFFF,
+                            0xEFFFFF,                               /* tmp reg   */
+                            0xFFFFB7, 0xFFFF77, 0xFFFF9F, 0xFFFF5F, /* index regs */
+                            0xFFFFBF, 0xFFFF7F, 0xFFFFDF, 0xFFFFF7 };
 
 static char buf[lineSize];     /* Line buffer for hl icode output */
 

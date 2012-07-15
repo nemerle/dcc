@@ -3,10 +3,7 @@
     hashing functions
  * (C) Mike van Emmerik
  */
-
-//#define bool unsigned char
-#define uint8_t unsigned char
-#define uint16_t unsigned short
+#include <stdint.h>
 
 /* Prototypes */
 void hashCleanup(void);         /* Frees memory allocated by hashParams() */

@@ -2,15 +2,12 @@
 // (C) 1997 Mike Van Emmerik
 
 #include <stdlib.h>
-#include <malloc.h>
-#include <memory.h>
 
 #include "dcc.h"
 #include "types.h"		// Common types like uint8_t, etc
 #include "ast.h"		// Some icode types depend on these
 #include "icode.h"
 
-#define ICODE_DELTA 25		// Amount to allocate for new chunk
 
 ICODE::TypeFilter<HIGH_LEVEL> ICODE::select_high_level;
 ICODE::TypeAndValidFilter<HIGH_LEVEL> ICODE::select_valid_high_level;
@@ -31,9 +28,7 @@ ICODE * CIcodeRec::addIcode(ICODE *pIcode)
 void CIcodeRec::SetInBB(rCODE &rang, BB *pnewBB)
 {
     for(ICODE &ic : rang)
-    {
         ic.setParent(pnewBB);
-    }
 }
 
 /* labelSrchRepl - Searches the icodes for instruction with label = target, and

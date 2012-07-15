@@ -36,7 +36,7 @@ BB *BB::Create(const rCODE &r,uint8_t _nodeType, Function *parent)
         //setInBB should automatically handle if our range is empty
         parent->Icode.SetInBB(pnewBB->instructions, pnewBB);
         parent->heldBBs.push_back(pnewBB);
-        parent->m_cfg.push_back(pnewBB);
+        parent->m_actual_cfg.push_back(pnewBB);
         pnewBB->Parent = parent;
     }
 
@@ -127,13 +127,11 @@ void BB::displayDfs()
             pb.BBptr->displayDfs();
     }
 }
-/* Recursive procedure that writes the code for the given procedure, pointed
- * to by pBB.
- * Parameters:	pBB:	pointer to the cfg.
- *				Icode:	pointer to the Icode array for the cfg graph of the
- *						current procedure.
- *				indLevel: indentation level - used for formatting.
- *				numLoc: last # assigned to local variables 				*/
+/** Recursive procedure that writes the code for the given procedure, pointed
+  to by pBB.
+  \param indLevel indentation level - used for formatting.
+  \param numLoc: last # assigned to local variables
+*/
 ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, boolT &repCond)
 {
     latch = pProc->m_dfsLast[this->latchNode];
@@ -177,6 +175,7 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
 
         case ENDLESS_TYPE:
             ostr << "\n"<<indentStr(indLevel)<<"for (;;) {\n";
+            picode = &latch->back();
     }
     cCode.appendCode(ostr.str());
     stats.numHLIcode += 1;
@@ -226,7 +225,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
         return;
 
     /* Check type of loop/node and process code */
-    if (    loopType)	/* there is a loop */
+    if ( loopType )	/* there is a loop */
     {
         assert(latch);
         if (this != latch)		/* loop is over several bbs */
@@ -391,16 +390,16 @@ void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
 
 iICODE BB::begin()
 {
-    return instructions.begin();//range_start;
+    return instructions.begin();
 }
 
 iICODE BB::end() const
 {
-    return instructions.end();//range_end
+    return instructions.end();
 }
 ICODE &BB::back()
 {
-    return instructions.back();//*rbegin();
+    return instructions.back();
 }
 
 size_t BB::size()
@@ -411,7 +410,7 @@ size_t BB::size()
 
 ICODE &BB::front()
 {
-    return instructions.front();//*begin();
+    return instructions.front();
 }
 
 riICODE BB::rbegin()

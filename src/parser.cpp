@@ -2,7 +2,7 @@
  *          dcc project procedure list builder
  * (C) Cristina Cifuentes, Mike van Emmerik, Jeff Ledermann
  ****************************************************************************/
-#define __STDC_FORMAT_MACROS
+
 #include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>		/* For exit() */
@@ -886,7 +886,7 @@ static void setBits(int16_t type, uint32_t start, uint32_t len)
 }
 
 /* DU bit definitions for each reg value - including index registers */
-std::bitset<32> duReg[] = { 0x00,
+LivenessSet duReg[] = { 0x00,
                   //AH AL . . AX, BH
                   0x11001, 0x22002, 0x44004, 0x88008, /* uint16_t regs    */
                   0x10, 0x20, 0x40, 0x80,
@@ -1066,7 +1066,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
         case iDIV:  case iIDIV:
             use(SRC, pIcode, this, pstate, cb);
             if (cb == 1)
-                pIcode.du.use |= duReg[rTMP];
+                pIcode.du.use.addReg(rTMP);
             break;
 
         case iMUL:  case iIMUL:
@@ -1076,12 +1076,12 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
                 use (DST, pIcode, this, pstate, cb);
                 if (cb == 1)
                 {
-                    pIcode.du.def |= duReg[rAX];
+                    pIcode.du.def.addReg(rAX);
                     pIcode.du1.numRegsDef++;
                 }
                 else
                 {
-                    pIcode.du.def |= (duReg[rAX] | duReg[rDX]);
+                    pIcode.du.def.addReg(rAX).addReg(rDX);
                     pIcode.du1.numRegsDef += 2;
                 }
             }
@@ -1093,15 +1093,15 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             cb = pIcode.ll()->testFlags(SRC_B) ? 1 : 2;
             if (cb == 1)                    /* uint8_t */
             {
-                pIcode.du.def |= duReg[rAX];
+                pIcode.du.def.addReg(rAX);
                 pIcode.du1.numRegsDef++;
-                pIcode.du.use |= duReg[rAL];
+                pIcode.du.use.addReg(rAL);
             }
             else                            /* uint16_t */
             {
-                pIcode.du.def |= (duReg[rDX] | duReg[rAX]);
+                pIcode.du.def.addReg(rDX).addReg(rAX);
                 pIcode.du1.numRegsDef += 2;
-                pIcode.du.use |= duReg[rAX];
+                pIcode.du.use.addReg(rAX);
             }
             break;
 
@@ -1121,7 +1121,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             break;
 
         case iLDS:  case iLES:
-            pIcode.du.def |= duReg[(pIcode.ll()->getOpcode() == iLDS) ? rDS : rES];
+            pIcode.du.def.addReg(((pIcode.ll()->getOpcode() == iLDS) ? rDS : rES));
             pIcode.du1.numRegsDef++;
             cb = 4;
         case iMOV:
@@ -1147,10 +1147,10 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             break;
 
         case iLOOP:  case iLOOPE:  case iLOOPNE:
-            pIcode.du.def |= duReg[rCX];
+            pIcode.du.def.addReg(rCX);
             pIcode.du1.numRegsDef++;
         case iJCXZ:
-            pIcode.du.use |= duReg[rCX];
+            pIcode.du.use.addReg(rCX);
             break;
 
         case iREPNE_CMPS: case iREPE_CMPS:  case iREP_MOVS:
@@ -1160,22 +1160,22 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             pIcode.du.addDefinedAndUsed(rSI);
             pIcode.du.addDefinedAndUsed(rDI);
             pIcode.du1.numRegsDef += 2;
-            pIcode.du.use |= duReg[rES] | duReg[sseg];
+            pIcode.du.use.addReg(rES).addReg(sseg);
             break;
 
         case iREPNE_SCAS: case iREPE_SCAS:  case iREP_STOS:  case iREP_INS:
             pIcode.du.addDefinedAndUsed(rCX);
             pIcode.du1.numRegsDef++;
         case iSCAS:  case iSTOS:  case iINS:
-            pIcode.du.def |= duReg[rDI];
+            pIcode.du.def.addReg(rDI);
             pIcode.du1.numRegsDef++;
             if (pIcode.ll()->getOpcode() == iREP_INS || pIcode.ll()->getOpcode()== iINS)
             {
-                pIcode.du.use |= duReg[rDI] | duReg[rES] | duReg[rDX];
+                pIcode.du.use.addReg(rDI).addReg(rES).addReg(rDX);
             }
             else
             {
-                pIcode.du.use |= duReg[rDI] | duReg[rES] | duReg[(cb == 2)? rAX: rAL];
+                pIcode.du.use.addReg(rDI).addReg(rES).addReg((cb == 2)? rAX: rAL);
             }
             break;
 

@@ -7,8 +7,8 @@
 #pragma once
 #include <cstring>
 #include <list>
+#include <boost/range/iterator_range.hpp>
 #include "Enums.h"
-#include <boost/range.hpp>
 static const int operandSize=20;
 /* The following definitions and types define the Conditional Expression
  * attributed syntax tree, as defined by the following EBNF:
