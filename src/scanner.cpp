@@ -350,6 +350,8 @@ static void convertUsedFlags(x86_insn_t &from,ICODE &to)
  ****************************************************************************/
 static void fixFloatEmulation(x86_insn_t &insn)
 {
+    if(insn.operand_count==0)
+        return;
     if(insn.group!=x86_insn_t::insn_interrupt)
         return;
     PROG &prog(Project::get()->prog);

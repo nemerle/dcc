@@ -17,7 +17,7 @@ static const std::string regNames[] = {
 Machine_X86::Machine_X86()
 {
     static_assert((sizeof(regNames)/sizeof(std::string))==LAST_REG,
-            "Reg count not equal number of strings");
+                  "Reg count not equal number of strings");
 }
 
 const std::string &Machine_X86::regName(eReg r)
@@ -108,4 +108,27 @@ bool Machine_X86::isSubRegisterOf(eReg reg,eReg parent)
     if ((parent < rAX) || (parent > rBX))
         return false; // only AX -> BX are coverede by subregisters
     return ((reg==subRegH(parent)) || (reg == subRegL(parent)));
+}
+bool Machine_X86::hasSubregisters(eReg reg)
+{
+    return ((reg >= rAX) && (reg <= rBX));
+}
+
+bool Machine_X86::isPartOfComposite(eReg reg)
+{
+    return ((reg >= rAL) && (reg <= rBH));
+}
+
+eReg Machine_X86::compositeParent(eReg reg)
+{
+    switch(reg)
+    {
+        case rAL: case rAH: return rAX;
+        case rCL: case rCH: return rCX;
+        case rDL: case rDH: return rDX;
+        case rBL: case rBH: return rBX;
+        default:
+            return rUNDEF;
+    }
+    return rUNDEF;
 }

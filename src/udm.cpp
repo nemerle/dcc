@@ -31,6 +31,7 @@ void Function::buildCFG(Disassembler &ds)
     if (option.asm2)
     {
         ds.disassem(this); // Print 2nd pass assembler listing
+        return;
     }
 
     /* Idiom analysis and propagation of long type */
@@ -78,6 +79,8 @@ void udm(void)
     {
         iter->buildCFG(ds);
     }
+    if (option.asm2)
+        return;
 
 
     /* Data flow analysis - eliminate condition codes, extraneous registers

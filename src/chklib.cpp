@@ -492,7 +492,7 @@ bool LibCheck(Function & pProc)
                     pProc.flg |= PROC_IS_FUNC;
                     switch (pProc.retVal.type) {
                         case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
-                            pProc.liveOut.setReg(rDX) |= duReg[rAX];
+                            pProc.liveOut.setReg(rDX).addReg(rAX);
                             break;
                         case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
                             pProc.liveOut.setReg(rAX);
@@ -500,8 +500,12 @@ bool LibCheck(Function & pProc)
                         case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
                             pProc.liveOut.setReg(rAL);
                             break;
+                        case TYPE_PTR:
+                            fprintf(stderr,"Warning assuming Large memory model\n");
+                            pProc.liveOut.setReg(rAX).addReg(rDS);
+                            break;
                         default:
-                            fprintf(stderr,"Unknown retval type %d in LibCheck\n",pProc.retVal.type);
+                            fprintf(stderr,"Unknown retval type %d for %s in LibCheck\n",pProc.retVal.type,pProc.name.c_str());
                             /*** other types are not considered yet ***/
                     }
                 }

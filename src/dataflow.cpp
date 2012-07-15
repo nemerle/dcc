@@ -4,16 +4,18 @@
  * Purpose: Data flow analysis module.
  * (C) Cristina Cifuentes
  ****************************************************************************/
-
-#include "dcc.h"
+#include <stdint.h>
+#include <cstring>
+#include <iostream>
+#include <iomanip>
+#include <cstdio>
 #include <boost/range.hpp>
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/assign.hpp>
-#include <string.h>
-#include <iostream>
-#include <iomanip>
-#include <stdio.h>
+
+#include "dcc.h"
+
 using namespace boost;
 using namespace boost::adaptors;
 struct ExpStack
@@ -232,11 +234,11 @@ void Function::elimCondCodes ()
 
 
 /** Generates the LiveUse() and Def() sets for each basic block in the graph.
- * Note: these sets are constant and could have been constructed during
- *       the construction of the graph, but since the code hasn't been
- *       analyzed yet for idioms, the procedure preamble misleads the
- *       analysis (eg: push si, would include si in LiveUse; although it
- *       is not really meant to be a register that is used before defined). */
+  \note these sets are constant and could have been constructed during
+        the construction of the graph, but since the code hasn't been
+        analyzed yet for idioms, the procedure preamble misleads the
+        analysis (eg: push si, would include si in LiveUse; although it
+        is not really meant to be a register that is used before defined). */
 void Function::genLiveKtes ()
 {
     BB * pbb;
@@ -291,7 +293,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
         {
 
             /* Get current liveIn() and liveOut() sets */
-            prevLiveIn = pbb->liveIn;
+            prevLiveIn  = pbb->liveIn;
             prevLiveOut = pbb->liveOut;
 
             /* liveOut(b) = U LiveIn(s); where s is successor(b)
@@ -503,22 +505,22 @@ void BB::genDU1()
     assert(0!=Parent);
     ICODE::TypeFilter<HIGH_LEVEL> select_high_level;
     auto all_high_levels =  instructions | filtered(select_high_level);
-    printf("\n");
     for (auto picode=all_high_levels.begin(); picode!=all_high_levels.end(); ++picode)
     {
+        ICODE &ic = *picode;
         int defRegIdx = 0;
         // foreach defined register
-        for (int k = 0; k < INDEX_BX_SI; k++)
+        for (int k = rAX; k < INDEX_BX_SI; k++)
         {
-            if (not picode->du.def.test(k))
+            if (not ic.du.def.testReg(k))
                 continue;
-            eReg regi = (eReg)(k + 1);      /* Register that was defined */
+            eReg regi = (eReg)(k);      /* Register that was defined */
             picode->du1.regi[defRegIdx] = regi;
 
             if(FindUseBeforeDef(regi,defRegIdx, picode.base()))
                 continue;
 
-            ProcessUseDefForFunc(regi, defRegIdx,*picode);
+            ProcessUseDefForFunc(regi, defRegIdx,ic);
             RemoveUnusedDefs(regi, defRegIdx, picode.base());
 
             defRegIdx++;
@@ -541,8 +543,7 @@ void Function::genDU1 ()
 
 }
 
-/* Substitutes the rhs (or lhs if rhs not possible) of ticode for the rhs
- * of picode. */
+/* Substitutes the rhs (or lhs if rhs not possible) of ticode for the rhs of picode. */
 void LOCAL_ID::forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode, iICODE ticode, int &numHlIcodes) const
 {
     bool res;
@@ -570,8 +571,7 @@ void LOCAL_ID::forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode, iICOD
 }
 
 
-/* Substitutes the rhs (or lhs if rhs not possible) of ticode for the
- * expression exp given */
+/* Substitutes the rhs (or lhs if rhs not possible) of ticode for the expression exp given */
 static void forwardSubsLong (int longIdx, COND_EXPR *_exp, iICODE picode, iICODE ticode, int *numHlIcodes)
 {
     bool res;

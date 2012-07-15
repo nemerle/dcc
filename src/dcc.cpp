@@ -44,18 +44,21 @@ int main(int argc, char *argv[])
     DccFrontend fe(option.filename);
     if(false==fe.FrontEnd ())
         return -1;
-
+    if(option.asm1)
+        return 0;
     /* In the middle is a so called Universal Decompiling Machine.
      * It processes the procedure list and I-code and attaches where it can
      * to each procedure an optimised cfg and ud lists
     */
     udm();
+    if(option.asm2)
+        return 0;
 
     /* Back end converts each procedure into C using I-code, interval
      * analysis, data flow etc. and outputs it to output file ready for
      * re-compilation.
     */
-    BackEnd(option.filename, Project::get()->callGraph);
+    BackEnd(asm1_name ? asm1_name:option.filename, Project::get()->callGraph);
 
     Project::get()->callGraph->write();
 

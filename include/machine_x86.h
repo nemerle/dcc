@@ -75,8 +75,11 @@ public:
     }
     static eReg subRegH(eReg reg);
     static eReg subRegL(eReg reg);
-
     static bool isMemOff(eReg r);
     static bool isSubRegisterOf(eReg reg, eReg parent);
+    static bool hasSubregisters(eReg reg);
+
+    static bool isPartOfComposite(eReg reg);
+    static eReg compositeParent(eReg reg);
 
 };

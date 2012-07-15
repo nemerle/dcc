@@ -95,65 +95,68 @@ bool Idiom18::match(iICODE picode)
     for(int i=0; i<4; ++i)
         m_icodes[i] =picode++;
 
+    m_idiom_type=-1;
     m_is_dec = m_icodes[1]->ll()->match(iDEC);
-    int type = -1;	/* type of variable: 1 = reg-var, 2 = local */
+
     uint8_t regi;		/* register of the MOV */
 
     /* Get variable */
     if (m_icodes[1]->ll()->dst.regi == 0)	/* global variable */
     {
         /* not supported yet */
-        type = 0;
+        m_idiom_type = 0;
     }
     else if ( m_icodes[1]->ll()->dst.isReg() )	/* register */
     {
         if ((m_icodes[1]->ll()->dst.regi == rSI) && (m_func->flg & SI_REGVAR))
-            type = 1;
+            m_idiom_type = 1;
         else if ((m_icodes[1]->ll()->dst.regi == rDI) && (m_func->flg & DI_REGVAR))
-            type = 1;
+            m_idiom_type = 1;
     }
     else if (m_icodes[1]->ll()->dst.off)		/* local variable */
-        type = 2;
+        m_idiom_type = 2;
     else		/* indexed */
     {
-        type=3;
+        m_idiom_type=3;
         /* not supported yet */
-        printf("Unsupported idiom18 type: indexed");
+        ICODE &ic(*picode);
+        const Function *my_proc(ic.getParent()->getParent());
+        printf("Unsupported idiom18 type at %x in %s:%x : indexed\n",ic.loc_ip,my_proc->name.c_str(),my_proc->procEntry);
     }
 
-    switch(type)
+    switch(m_idiom_type)
     {
-    case 0: // global
-        printf("Unsupported idiom18 type: global variable");
-        break;
-    case 1:  /* register variable */
-        /* Check previous instruction for a MOV */
-        if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src().regi == m_icodes[1]->ll()->dst.regi))
-        {
-            regi = m_icodes[0]->ll()->dst.regi;
-            if ( m_icodes[0]->ll()->dst.isReg() )
+        case 0: // global
+            printf("Unsupported idiom18 type at %x : global variable\n",picode->loc_ip);
+            break;
+        case 1:  /* register variable */
+            /* Check previous instruction for a MOV */
+            if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src().regi == m_icodes[1]->ll()->dst.regi))
             {
-                if ( m_icodes[2]->ll()->match(iCMP) && (m_icodes[2]->ll()->dst.regi == regi) &&
-                     m_icodes[3]->ll()->conditionalJump() )
-                    return true;
+                regi = m_icodes[0]->ll()->dst.regi;
+                if ( m_icodes[0]->ll()->dst.isReg() )
+                {
+                    if ( m_icodes[2]->ll()->match(iCMP) && (m_icodes[2]->ll()->dst.regi == regi) &&
+                         m_icodes[3]->ll()->conditionalJump() )
+                        return true;
+                }
             }
-        }
-        break;
-    case 2: /* local */
-        if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src().off == m_icodes[1]->ll()->dst.off))
-        {
-            regi = m_icodes[0]->ll()->dst.regi;
-            if ( m_icodes[0]->ll()->dst.isReg() )
+            break;
+        case 2: /* local */
+            if (m_icodes[0]->ll()->match(iMOV) && (m_icodes[0]->ll()->src().off == m_icodes[1]->ll()->dst.off))
             {
-                if ( m_icodes[2]->ll()->match(iCMP) && (m_icodes[2]->ll()->dst.regi == regi) &&
-                     m_icodes[3]->ll()->conditionalJump() )
-                    return true;
+                regi = m_icodes[0]->ll()->dst.regi;
+                if ( m_icodes[0]->ll()->dst.isReg() )
+                {
+                    if ( m_icodes[2]->ll()->match(iCMP) && (m_icodes[2]->ll()->dst.regi == regi) &&
+                         m_icodes[3]->ll()->conditionalJump() )
+                        return true;
+                }
             }
-        }
-        break;
-    case 3: // indexed
-        printf("Unsupported idiom18 type: indexed");
-        break;
+            break;
+        case 3: // indexed
+            printf("Unsupported idiom18 type: indexed");
+            break;
     }
     return false;
 }
@@ -188,6 +191,7 @@ bool Idiom19::match(iICODE picode)
 {
     if(std::distance(picode,m_end)<2)
         return false;
+    ICODE &ic(*picode);
 
     for(int i=0; i<2; ++i)
         m_icodes[i] =picode++;
@@ -215,7 +219,8 @@ bool Idiom19::match(iICODE picode)
 int Idiom19::action()
 {
     COND_EXPR *lhs,*rhs,*expr;
-    lhs = COND_EXPR::id (*m_icodes[1]->ll(), DST, m_func, m_icodes[0], *m_icodes[1], eUSE);
+    ICODE &ic1(*m_icodes[1]);
+    lhs = COND_EXPR::id (*m_icodes[0]->ll(), DST, m_func, m_icodes[0], *m_icodes[1], eUSE);
     lhs = COND_EXPR::unary (m_is_dec ? PRE_DEC : PRE_INC, lhs);
     rhs = COND_EXPR::idKte (0, 2);
     expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[1]->ll()->getOpcode() - iJB]);
@@ -248,7 +253,7 @@ bool Idiom20::match(iICODE picode)
     for(int i=0; i<4; ++i)
         m_icodes[i] =picode++;
 
-    m_is_dec = m_icodes[0]->ll()->match(iDEC);
+    m_is_dec = m_icodes[0]->ll()->match(iDEC) ? PRE_DEC : PRE_INC;
 
     LLOperand &ll_dest(m_icodes[0]->ll()->dst);
     /* Get variable */
@@ -306,7 +311,7 @@ int Idiom20::action()
 {
     COND_EXPR *lhs,*rhs,*expr;
     lhs  = COND_EXPR::id (*m_icodes[1]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], eUSE);
-    lhs  = COND_EXPR::unary (m_is_dec ? PRE_DEC : PRE_INC, lhs);
+    lhs  = COND_EXPR::unary (m_is_dec, lhs);
     rhs  = COND_EXPR::id (*m_icodes[2]->ll(), SRC, m_func, m_icodes[0], *m_icodes[3], eUSE);
     expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ll()->getOpcode() - iJB]);
     m_icodes[3]->setJCond(expr);

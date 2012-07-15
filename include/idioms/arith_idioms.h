@@ -37,6 +37,8 @@ struct Idiom18 : public Idiom
 protected:
     iICODE m_icodes[4];
     bool m_is_dec;
+    /* type of variable: 1 = reg-var, 2 = local */
+    int m_idiom_type;
 public:
     Idiom18(Function *f) : Idiom(f)
     {
@@ -64,7 +66,7 @@ struct Idiom20 : public Idiom
 {
 protected:
     iICODE m_icodes[4];
-    bool m_is_dec;
+    condNodeType m_is_dec;
 public:
     Idiom20(Function *f) : Idiom(f)
     {

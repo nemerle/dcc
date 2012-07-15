@@ -161,7 +161,6 @@ int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
             {
                 /* Insert icode index in list */
                 entry.idx.push_back(ix_);
-                //entry.idx.insert(ix_);
                 return (idx);
             }
         }
@@ -169,7 +168,7 @@ int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
 
     /* Not in the table, create new identifier */
     newIdent (t, REG_FRAME);
-    id_arr[id_arr.size()-1].idx.push_back(ix_);//insert(ix_);
+    id_arr[id_arr.size()-1].idx.push_back(ix_);
     idx = id_arr.size() - 1;
     id_arr[idx].id.longId.h = regH;
     id_arr[idx].id.longId.l = regL;

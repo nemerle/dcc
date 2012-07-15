@@ -65,6 +65,8 @@ struct LivenessSet : public std::bitset<32>
     {
         return test(r-rAX);
     }
+private:
+    void postProcessCompositeRegs();
 };
 
 extern LivenessSet duReg[30];

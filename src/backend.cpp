@@ -297,7 +297,7 @@ void Function::codeGen (std::ostream &fs)
 
 /* Recursive procedure. Displays the procedure's code in depth-first order
  * of the call graph.	*/
-static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &_ios)
+static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
 {
 
     //	IFace.Yield();			/* This is a good place to yield to other apps */
@@ -311,7 +311,7 @@ static void backBackEnd (char *filename, CALL_GRAPH * pcallGraph, std::ostream &
     /* Dfs if this procedure has any successors */
     for (size_t i = 0; i < pcallGraph->outEdges.size(); i++)
     {
-        backBackEnd (filename, pcallGraph->outEdges[i], _ios);
+        backBackEnd (pcallGraph->outEdges[i], _ios);
     }
 
     /* Generate code for this procedure */
@@ -346,14 +346,14 @@ void BackEnd (char *fileName, CALL_GRAPH * pcallGraph)
     printf ("dcc: Writing C beta file %s\n", outNam.c_str());
 
     /* Header information */
-    writeHeader (fs, fileName);
+    writeHeader (fs, option.filename);
 
     /* Initialize total Icode instructions statistics */
     stats.totalLL = 0;
     stats.totalHL = 0;
 
     /* Process each procedure at a time */
-    backBackEnd (fileName, pcallGraph, fs);
+    backBackEnd (pcallGraph, fs);
 
     /* Close output file */
     fs.close();
