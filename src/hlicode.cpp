@@ -40,6 +40,7 @@ static char buf[lineSize];     /* Line buffer for hl icode output */
 /* Places the new HLI_ASSIGN high-level operand in the high-level icode array */
 void HLTYPE::setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
 {
+    assert(lhs);
     set(lhs,rhs);
 
 }
@@ -51,14 +52,12 @@ void ICODE::checkHlCall()
 void ICODE::newCallHl()
 {
     type = HIGH_LEVEL;
-    hl()->opcode = HLI_CALL;
-    hl()->call.proc = ll()->src().proc.proc;
-    hl()->call.args = new STKFRAME;
+    hlU()->setCall(ll()->src().proc.proc);
 
     if (ll()->src().proc.cb != 0)
-        hl()->call.args->cb = ll()->src().proc.cb;
+        hlU()->call.args->cb = ll()->src().proc.cb;
     else if(hl()->call.proc)
-        hl()->call.args->cb =hl()->call.proc->cbParam;
+        hlU()->call.args->cb = hl()->call.proc->cbParam;
     else
     {
         printf("Function with no cb set, and no valid oper.call.proc , probaby indirect call\n");
@@ -72,7 +71,7 @@ void ICODE::newCallHl()
 void ICODE::setUnary(hlIcode op, COND_EXPR *_exp)
 {
     type = HIGH_LEVEL;
-    hl()->set(op,_exp);
+    hlU()->set(op,_exp);
 }
 
 
@@ -80,7 +79,7 @@ void ICODE::setUnary(hlIcode op, COND_EXPR *_exp)
 void ICODE::setJCond(COND_EXPR *cexp)
 {
     type = HIGH_LEVEL;
-    hl()->set(HLI_JCOND,cexp);
+    hlU()->set(HLI_JCOND,cexp);
 }
 
 
@@ -116,7 +115,7 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
         invalidate();
         return true;
     }
-    HlTypeSupport *p=hl()->get();
+    HlTypeSupport *p=hlU()->get();
     if(p and p->removeRegFromLong(regi,locId))
     {
         du1.numRegsDef--;
@@ -168,7 +167,7 @@ HLTYPE LLInst::toHighLevel(COND_EXPR *lhs,COND_EXPR *rhs,Function *func)
             break;
 
         case iDEC:
-            rhs = COND_EXPR::idKte (1, 2);
+            rhs = AstIdent::idKte (1, 2);
             rhs = COND_EXPR::boolOp (lhs, rhs, SUB);
             res.setAsgn(lhs, rhs);
             break;
@@ -178,12 +177,12 @@ HLTYPE LLInst::toHighLevel(COND_EXPR *lhs,COND_EXPR *rhs,Function *func)
             rhs = COND_EXPR::boolOp (lhs, rhs, DIV);
             if ( ll->testFlags(B) )
             {
-                lhs = COND_EXPR::idReg (rAL, 0, &localId);
+                lhs = AstIdent::idReg (rAL, 0, &localId);
                 pIcode->setRegDU( rAL, eDEF);
             }
             else
             {
-                lhs = COND_EXPR::idReg (rAX, 0, &localId);
+                lhs = AstIdent::idReg (rAX, 0, &localId);
                 pIcode->setRegDU( rAX, eDEF);
             }
             res.setAsgn(lhs, rhs);
@@ -191,12 +190,12 @@ HLTYPE LLInst::toHighLevel(COND_EXPR *lhs,COND_EXPR *rhs,Function *func)
 
         case iIMUL:
             rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
-            lhs = COND_EXPR::id (*pIcode, LHS_OP, func, i, *pIcode, NONE);
+            lhs = AstIdent::id (*pIcode, LHS_OP, func, i, *pIcode, NONE);
             res.setAsgn(lhs, rhs);
             break;
 
         case iINC:
-            rhs = COND_EXPR::idKte (1, 2);
+            rhs = AstIdent::idKte (1, 2);
             rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
             res.setAsgn(lhs, rhs);
             break;
@@ -210,12 +209,12 @@ HLTYPE LLInst::toHighLevel(COND_EXPR *lhs,COND_EXPR *rhs,Function *func)
             rhs = COND_EXPR::boolOp (lhs, rhs, MOD);
             if ( ll->testFlags(B) )
             {
-                lhs = COND_EXPR::idReg (rAH, 0, &localId);
+                lhs = AstIdent::idReg (rAH, 0, &localId);
                 pIcode->setRegDU( rAH, eDEF);
             }
             else
             {
-                lhs = COND_EXPR::idReg (rDX, 0, &localId);
+                lhs = AstIdent::idReg (rDX, 0, &localId);
                 pIcode->setRegDU( rDX, eDEF);
             }
             res.setAsgn(lhs, rhs);
@@ -226,7 +225,7 @@ HLTYPE LLInst::toHighLevel(COND_EXPR *lhs,COND_EXPR *rhs,Function *func)
 
         case iMUL:
             rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
-            lhs = COND_EXPR::id (*pIcode, LHS_OP, this, i, *pIcode, NONE);
+            lhs = AstIdent::id (*pIcode, LHS_OP, this, i, *pIcode, NONE);
             res.setAsgn(lhs, rhs);
             break;
 
@@ -294,7 +293,8 @@ void Function::highLevelGen()
 {
     size_t numIcode;         /* number of icode instructions */
     iICODE pIcode;        /* ptr to current icode node */
-    COND_EXPR *lhs, *rhs; /* left- and right-hand side of expression */
+    COND_EXPR *lhs;
+    COND_EXPR *rhs; /* left- and right-hand side of expression */
     uint32_t _flg;          /* icode flags */
     numIcode = Icode.size();
     for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
@@ -311,18 +311,18 @@ void Function::highLevelGen()
             if ((_flg & NO_OPS) != NO_OPS)       /* if there are opers */
             {
                 if ( not ll->testFlags(NO_SRC) )   /* if there is src op */
-                    rhs = COND_EXPR::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
-                lhs = COND_EXPR::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
+                    rhs = AstIdent::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
+                lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
             }
         switch (ll->getOpcode())
         {
             case iADD:
-                rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
+                rhs = new BinaryOperator(ADD,lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iAND:
-                rhs = COND_EXPR::boolOp (lhs, rhs, AND);
+                rhs = BinaryOperator::And(lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -333,54 +333,54 @@ void Function::highLevelGen()
                 break;
 
             case iDEC:
-                rhs = COND_EXPR::idKte (1, 2);
-                rhs = COND_EXPR::boolOp (lhs, rhs, SUB);
+                rhs = AstIdent::Kte (1, 2);
+                rhs = new BinaryOperator(SUB,lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iDIV:
             case iIDIV:/* should be signed div */
-                rhs = COND_EXPR::boolOp (lhs, rhs, DIV);
+                rhs = new BinaryOperator(DIV,lhs, rhs);
                 if ( ll->testFlags(B) )
                 {
-                    lhs = COND_EXPR::idReg (rAL, 0, &localId);
+                    lhs = AstIdent::Reg (rAL, 0, &localId);
                     pIcode->setRegDU( rAL, eDEF);
                 }
                 else
                 {
-                    lhs = COND_EXPR::idReg (rAX, 0, &localId);
+                    lhs = AstIdent::Reg (rAX, 0, &localId);
                     pIcode->setRegDU( rAX, eDEF);
                 }
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iIMUL:
-                rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
-                lhs = COND_EXPR::id (*ll, LHS_OP, this, i, *pIcode, NONE);
+                rhs = new BinaryOperator(MUL,lhs, rhs);
+                lhs = AstIdent::id (*ll, LHS_OP, this, i, *pIcode, NONE);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iINC:
-                rhs = COND_EXPR::idKte (1, 2);
-                rhs = COND_EXPR::boolOp (lhs, rhs, ADD);
+                rhs = AstIdent::Kte (1, 2);
+                rhs = new BinaryOperator(ADD,lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iLEA:
-                rhs = COND_EXPR::unary (ADDRESSOF, rhs);
+                rhs =UnaryOperator::Create(ADDRESSOF, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iMOD:
-                rhs = COND_EXPR::boolOp (lhs, rhs, MOD);
+                rhs = new BinaryOperator(MOD,lhs, rhs);
                 if ( ll->testFlags(B) )
                 {
-                    lhs = COND_EXPR::idReg (rAH, 0, &localId);
+                    lhs = AstIdent::Reg (rAH, 0, &localId);
                     pIcode->setRegDU( rAH, eDEF);
                 }
                 else
                 {
-                    lhs = COND_EXPR::idReg (rDX, 0, &localId);
+                    lhs = AstIdent::Reg (rDX, 0, &localId);
                     pIcode->setRegDU( rDX, eDEF);
                 }
                 pIcode->setAsgn(lhs, rhs);
@@ -390,23 +390,23 @@ void Function::highLevelGen()
                 break;
 
             case iMUL:
-                rhs = COND_EXPR::boolOp (lhs, rhs, MUL);
-                lhs = COND_EXPR::id (*ll, LHS_OP, this, i, *pIcode, NONE);
+                rhs = new BinaryOperator(MUL,lhs, rhs);
+                lhs = AstIdent::id (*ll, LHS_OP, this, i, *pIcode, NONE);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iNEG:
-                rhs = COND_EXPR::unary (NEGATION, lhs);
+                rhs = UnaryOperator::Create(NEGATION, lhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iNOT:
-                rhs = COND_EXPR::boolOp (NULL, rhs, NOT);
+                rhs = new BinaryOperator(NOT,NULL, rhs); // TODO: change this to unary NOT ?
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iOR:
-                rhs = COND_EXPR::boolOp (lhs, rhs, OR);
+                rhs = new BinaryOperator(OR,lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -421,13 +421,13 @@ void Function::highLevelGen()
                 break;
 
             case iSHL:
-                rhs = COND_EXPR::boolOp (lhs, rhs, SHL);
+                rhs = new BinaryOperator(SHL,lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
             case iSAR:    /* signed */
             case iSHR:
-                rhs = COND_EXPR::boolOp (lhs, rhs, SHR); /* unsigned*/
+                rhs = new BinaryOperator(SHR,lhs, rhs); /* unsigned*/
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -435,7 +435,7 @@ void Function::highLevelGen()
                 break;
 
             case iSUB:
-                rhs = COND_EXPR::boolOp (lhs, rhs, SUB);
+                rhs = new BinaryOperator(SUB,lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -443,7 +443,7 @@ void Function::highLevelGen()
                 break;
 
             case iXOR:
-                rhs = COND_EXPR::boolOp (lhs, rhs, XOR);
+                rhs = new BinaryOperator(XOR,lhs, rhs);
                 pIcode->setAsgn(lhs, rhs);
                 break;
         }
@@ -452,49 +452,13 @@ void Function::highLevelGen()
 }
 
 
-/* Modifies the given conditional operator to its inverse.  This is used
- * in if..then[..else] statements, to reflect the condition that takes the
- * then part. 	*/
-COND_EXPR *COND_EXPR::inverse () const
-{
-    static condOp invCondOp[] = {GREATER, GREATER_EQUAL, NOT_EQUAL, EQUAL,
-                                 LESS_EQUAL, LESS, DUMMY,DUMMY,DUMMY,DUMMY,
-                                 DUMMY, DUMMY, DUMMY, DUMMY, DUMMY, DUMMY,
-                                 DUMMY, DBL_OR, DBL_AND};
-    COND_EXPR *res=0;
-    if (m_type == BOOLEAN_OP)
-    {
-        switch ( op() )
-        {
-            case LESS_EQUAL: case LESS: case EQUAL:
-            case NOT_EQUAL: case GREATER: case GREATER_EQUAL:
-                res = this->clone();
-                res->boolExpr.op = invCondOp[op()];
-                return res;
+/**
+ \fn COND_EXPR::inverse
+ Modifies the given conditional operator to its inverse.  This is used
+ in if..then[..else] statements, to reflect the condition that takes the
+ then part.
+*/
 
-            case AND: case OR: case XOR: case NOT: case ADD:
-            case SUB: case MUL: case DIV: case SHR: case SHL: case MOD:
-                return COND_EXPR::unary (NEGATION, this->clone());
-
-            case DBL_AND: case DBL_OR:
-            // Binary::Create(invertop,lhs->inverse(),rhs->inverse());
-                res = this->clone();
-                res->boolExpr.op = invCondOp[op()];
-                res->boolExpr.lhs=lhs()->inverse ();
-                res->boolExpr.rhs=rhs()->inverse ();
-                return res;
-            default:
-                fprintf(stderr,"COND_EXPR::inverse unhandled op %d",op());
-        } /* eos */
-
-    }
-    else if (m_type == NEGATION) //TODO: memleak here
-    {
-        return expr.unaryExp->clone();
-    }
-    return this->clone();
-    /* other types are left unmodified */
-}
 
 /* Returns the string that represents the procedure call of tproc (ie. with
  * actual parameters) */
@@ -505,7 +469,10 @@ std::string writeCall (Function * tproc, STKFRAME & args, Function * pproc, int 
     ostr<<tproc->name<<" (";
     for(const STKSYM &sym : args)
     {
-        ostr << walkCondExpr (sym.actual, pproc, numLoc);
+        if(sym.actual)
+            ostr << sym.actual->walkCondExpr (pproc, numLoc);
+        else
+            ostr <<  "";
         if((&sym)!=&(args.back()))
             ostr << ", ";
     }
@@ -523,7 +490,7 @@ char *writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
     strcat (buf, "if ");
     COND_EXPR *inverted=h.expr()->inverse();
     //inverseCondOp (&h.exp);
-    std::string e = walkCondExpr (inverted, pProc, numLoc);
+    std::string e = inverted->walkCondExpr (pProc, numLoc);
     delete inverted;
     strcat (buf, e.c_str());
     strcat (buf, " {\n");
@@ -539,42 +506,53 @@ char *writeJcondInv (HLTYPE h, Function * pProc, int *numLoc)
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
     strcat (buf, "if ");
-    std::string e = walkCondExpr (h.expr(), pProc, numLoc);
+    std::string e = h.expr()->walkCondExpr (pProc, numLoc);
     strcat (buf, e.c_str());
     strcat (buf, " {\n");
     return (buf);
 }
 
-string AssignType::writeOut(Function *pProc, int *numLoc)
+string AssignType::writeOut(Function *pProc, int *numLoc) const
 {
     ostringstream ostr;
-    ostr << walkCondExpr (lhs, pProc, numLoc);
+    ostr << lhs->walkCondExpr (pProc, numLoc);
     ostr << " = ";
-    ostr << walkCondExpr (rhs, pProc, numLoc);
+    ostr << rhs->walkCondExpr (pProc, numLoc);
     ostr << ";\n";
     return ostr.str();
 }
-string CallType::writeOut(Function *pProc, int *numLoc)
+string CallType::writeOut(Function *pProc, int *numLoc) const
 {
     ostringstream ostr;
     ostr << writeCall (proc, *args, pProc,numLoc);
     ostr << ";\n";
     return ostr.str();
 }
-string ExpType::writeOut(Function *pProc, int *numLoc)
+string ExpType::writeOut(Function *pProc, int *numLoc) const
 {
-    return walkCondExpr (v, pProc, numLoc);
+    if(v==nullptr)
+        return "";
+    return v->walkCondExpr (pProc, numLoc);
 }
 
+void HLTYPE::set(COND_EXPR *l, COND_EXPR *r)
+{
+    assert(l);
+    assert(r);
+    opcode = HLI_ASSIGN;
+    assert((asgn.lhs==0) and (asgn.rhs==0)); //prevent memory leaks
+    asgn.lhs=l;
+    asgn.rhs=r;
+}
 /* Returns a string with the contents of the current high-level icode.
  * Note: this routine does not output the contens of HLI_JCOND icodes.  This is
  * 		 done in a separate routine to be able to support the removal of
  *		 empty THEN clauses on an if..then..else.	*/
-string HLTYPE::write1HlIcode (Function * pProc, int *numLoc)
+string HLTYPE::write1HlIcode (Function * pProc, int *numLoc) const
 {
     string e;
     ostringstream ostr;
-    HlTypeSupport *p = get();
+    const HlTypeSupport *p = get();
     switch (opcode)
     {
         case HLI_ASSIGN:

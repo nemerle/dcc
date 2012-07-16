@@ -176,9 +176,9 @@ int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
 }
 /* Returns an identifier conditional expression node of type TYPE_LONG or
  * TYPE_WORD_SIGN	*/
-COND_EXPR * LOCAL_ID::createId(const ID *retVal, iICODE ix_)
+AstIdent * LOCAL_ID::createId(const ID *retVal, iICODE ix_)
 {
-    return COND_EXPR::idID(retVal,this,ix_);
+    return AstIdent::idID(retVal,this,ix_);
 }
 
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
@@ -337,18 +337,18 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pPro
 
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
-        asgn.lhs = COND_EXPR::idLongIdx (i);
+        asgn.lhs = AstIdent::LongIdx (i);
 
         if ( not pIcode->ll()->testFlags(NO_SRC) )
         {
-            asgn.rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, atOffset);
+            asgn.rhs = AstIdent::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, atOffset);
         }
         return true;
     }
     else if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
     {
-        asgn.lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, atOffset);
-        asgn.rhs = COND_EXPR::idLongIdx (i);
+        asgn.lhs = AstIdent::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, atOffset);
+        asgn.rhs = AstIdent::LongIdx (i);
         return true;
     }
     return false;
@@ -377,17 +377,17 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
 
     if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
     {
-        asgn.lhs = COND_EXPR::idLongIdx (i);
+        asgn.lhs = AstIdent::LongIdx (i);
         if ( not pIcode->ll()->testFlags(NO_SRC) )
         {
-            asgn.rhs = COND_EXPR::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, atOffset);
+            asgn.rhs = AstIdent::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, atOffset);
         }
         return true;
     }
     else if ((longId.h == pmHsrc->regi) && (longId.l == pmLsrc->regi))
     {
-        asgn.lhs = COND_EXPR::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, atOffset);
-        asgn.rhs = COND_EXPR::idLongIdx (i);
+        asgn.lhs = AstIdent::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, atOffset);
+        asgn.rhs = AstIdent::LongIdx (i);
         return true;
     }
     return false;

@@ -505,14 +505,14 @@ void Function::replaceInEdge(BB* where, BB* which,BB* with)
 }
 bool Function::Case_notX_or_Y(BB* pbb, BB* thenBB, BB* elseBB)
 {
-    HLTYPE &hl1(*pbb->back().hl());
-    HLTYPE &hl2(*thenBB->back().hl());
+    HLTYPE &hl1(*pbb->back().hlU());
+    HLTYPE &hl2(*thenBB->back().hlU());
 
     BB* obb = elseBB->edges[THEN].BBptr;
 
     /* Construct compound DBL_OR expression */
     hl1.replaceExpr(hl1.expr()->inverse());
-    hl1.expr(COND_EXPR::boolOp (hl1.expr(), hl2.expr(), DBL_OR));
+    hl1.expr(BinaryOperator::Create(DBL_OR,hl1.expr(), hl2.expr()));
 
     /* Replace in-edge to obb from e to pbb */
     replaceInEdge(obb,elseBB,pbb);
@@ -526,12 +526,12 @@ bool Function::Case_notX_or_Y(BB* pbb, BB* thenBB, BB* elseBB)
 }
 bool Function::Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB)
 {
-    HLTYPE &hl1(*pbb->back().hl());
-    HLTYPE &hl2(*thenBB->back().hl());
+    HLTYPE &hl1(*pbb->back().hlU());
+    HLTYPE &hl2(*thenBB->back().hlU());
     BB* obb = elseBB->edges[ELSE].BBptr;
 
     /* Construct compound DBL_AND expression */
-    hl1.expr(COND_EXPR::boolOp (hl1.expr(),hl2.expr(), DBL_AND));
+    hl1.expr(BinaryOperator::Create(DBL_AND,hl1.expr(),hl2.expr()));
 
     /* Replace in-edge to obb from e to pbb */
     replaceInEdge(obb,elseBB,pbb);
@@ -545,15 +545,15 @@ bool Function::Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB)
 
 bool Function::Case_notX_and_Y(BB* pbb, BB* thenBB, BB* elseBB)
 {
-    HLTYPE &hl1(*pbb->back().hl());
-    HLTYPE &hl2(*thenBB->back().hl());
+    HLTYPE &hl1(*pbb->back().hlU());
+    HLTYPE &hl2(*thenBB->back().hlU());
 
     BB* obb = thenBB->edges[ELSE].BBptr;
 
     /* Construct compound DBL_AND expression */
 
     hl1.replaceExpr(hl1.expr()->inverse());
-    hl1.expr(COND_EXPR::boolOp (hl1.expr(), hl2.expr(), DBL_AND));
+    hl1.expr(BinaryOperator::LogicAnd(hl1.expr(), hl2.expr()));
 
     /* Replace in-edge to obb from t to pbb */
     replaceInEdge(obb,thenBB,pbb);
@@ -568,13 +568,13 @@ bool Function::Case_notX_and_Y(BB* pbb, BB* thenBB, BB* elseBB)
 
 bool Function::Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB)
 {
-    HLTYPE &hl1(*pbb->back().hl());
-    HLTYPE &hl2(*thenBB->back().hl());
+    HLTYPE &hl1(*pbb->back().hlU());
+    HLTYPE &hl2(*thenBB->back().hlU());
 
     BB * obb = thenBB->edges[THEN].BBptr;
 
     /* Construct compound DBL_OR expression */
-    hl1.expr(COND_EXPR::boolOp (hl1.expr(), hl2.expr(), DBL_OR));
+    hl1.expr(BinaryOperator::LogicOr(hl1.expr(), hl2.expr()));
 
     /* Replace in-edge to obb from t to pbb */
 

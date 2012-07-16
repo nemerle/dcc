@@ -142,7 +142,8 @@ static int longJCond23 (Assignment &asgn, iICODE pIcode, int arc, iICODE atOffse
     iICODE atOffset1(atOffset),next1(++iICODE(pIcode));
     advance(atOffset1,1);
     /* Create new HLI_JCOND and condition */
-    asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[atOffset1->ll()->getOpcode()-iJB]);
+    condOp oper=condOpJCond[atOffset1->ll()->getOpcode()-iJB];
+    asgn.lhs = new BinaryOperator(oper,asgn.lhs, asgn.rhs);
     next1->setJCond(asgn.lhs);
     next1->copyDU(*pIcode, eUSE, eUSE);
     next1->du.use |= atOffset->du.use;
@@ -177,7 +178,8 @@ static int longJCond22 (Assignment &asgn, iICODE pIcode,iICODE pEnd)
     iICODE icodes[] = { pIcode++,pIcode++,pIcode++,pIcode++ };
 
     /* Form conditional expression */
-    asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[icodes[3]->ll()->getOpcode() - iJB]);
+    condOp oper=condOpJCond[icodes[3]->ll()->getOpcode() - iJB];
+    asgn.lhs = new BinaryOperator(oper,asgn.lhs, asgn.rhs);
     icodes[1]->setJCond(asgn.lhs);
     icodes[1]->copyDU (*icodes[0], eUSE, eUSE);
     icodes[1]->du.use |= icodes[2]->du.use;
@@ -253,20 +255,27 @@ void Function::propLongStk (int i, const ID &pLocId)
                 switch (pIcode->ll()->getOpcode())
                 {
                 case iMOV:
-                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
+                    pIcode->setAsgn(dynamic_cast<AstIdent *>(asgn.lhs), asgn.rhs);
                     next1->invalidate();
                     break;
 
                 case iAND: case iOR: case iXOR:
-                    switch (pIcode->ll()->getOpcode())
                     {
-                    case iAND: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND); break;
-                    case iOR: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR); break;
-                    case iXOR: 	asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR); break;
+                        condOp oper = DUMMY;
+                        switch (pIcode->ll()->getOpcode())
+                        {
+                            case iAND: 	oper=AND; break;
+                            case iOR: 	oper=OR;  break;
+                            case iXOR: 	oper=XOR; break;
+                        }
+                        if(DUMMY!=oper)
+                        {
+                            asgn.rhs = new BinaryOperator(oper,asgn.lhs, asgn.rhs);
+                        }
+                        pIcode->setAsgn(dynamic_cast<AstIdent *>(asgn.lhs), asgn.rhs);
+                        next1->invalidate();
+                        break;
                     }
-                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
-                    next1->invalidate();
-                    break;
 
                 case iPUSH:
                     pIcode->setUnary( HLI_PUSH, asgn.lhs);
@@ -326,8 +335,8 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             {
                 localId.id_arr[loc_ident_idx].idx.push_back(pIcode);//idx-1//insert
                 icode.setRegDU( pmL->regi, eDEF);
-                asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, *next1->ll());
+                asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
+                asgn.rhs = AstIdent::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, *next1->ll());
                 icode.setAsgn(asgn.lhs, asgn.rhs);
                 next1->invalidate();
                 forced_finish=true; /* to exit the loop */
@@ -339,7 +348,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             pmL = &icode.ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
-                asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
                 icode.setRegDU( pmH->regi, eDEF);
                 icode.setUnary(HLI_POP, asgn.lhs);
                 next1->invalidate();
@@ -355,19 +364,18 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             pmH = &next1->ll()->dst;
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
-                asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode, LOW_FIRST, pIcode, eUSE, *next1->ll());
+                asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
+                asgn.rhs = AstIdent::idLong (&this->localId, SRC, pIcode, LOW_FIRST, pIcode, eUSE, *next1->ll());
                 icode.setRegDU( pmH->regi, USE_DEF);
+                condOp toCreate=DUMMY;
                 switch (icode.ll()->getOpcode())
                 {
-                case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
-                    break;
-                case iOR:
-                    asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR);
-                    break;
-                case iXOR: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR);
-                    break;
+                case iAND: toCreate = AND; break;
+                case iOR:  toCreate = OR;  break;
+                case iXOR: toCreate = XOR; break;
                 } /* eos */
+                if(toCreate != DUMMY)
+                    asgn.rhs = new BinaryOperator(toCreate,asgn.lhs, asgn.rhs);
                 icode.setAsgn(asgn.lhs, asgn.rhs);
                 next1->invalidate();
                 forced_finish=true;        /* to exit the loop */
@@ -398,31 +406,42 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             switch (pIcode->ll()->getOpcode())
             {
             case iMOV:
-                if ((pLocId.id.longId.h == pIcode->ll()->src().getReg2()) &&
-                        (pLocId.id.longId.l == next1->ll()->src().getReg2()))
                 {
-                    pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
+                    const LONGID_TYPE &ref_long(pLocId.id.longId);
+                    const LLOperand &src_op1(pIcode->ll()->src());
+                    const LLOperand &src_op2(next1->ll()->src());
+                    eReg srcReg1=src_op1.getReg2();
+                    eReg srcReg2=src_op2.getReg2();
+                    if ((ref_long.h == srcReg1) && (ref_long.l == srcReg2))
+                    {
+                        pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
 
-                    asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                    asgn.lhs = COND_EXPR::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, *next1->ll());
+                        asgn.rhs = AstIdent::LongIdx (loc_ident_idx);
+                        asgn.lhs = AstIdent::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, *next1->ll());
 
-                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
-                    next1->invalidate();
-                    forced_finish =true; /* to exit the loop */
+                        pIcode->setAsgn(dynamic_cast<AstIdent *>(asgn.lhs), asgn.rhs);
+                        next1->invalidate();
+                        forced_finish =true; /* to exit the loop */
+                    }
+                    break;
                 }
-                break;
 
             case iPUSH:
-                if ((pLocId.id.longId.h == pIcode->ll()->src().getReg2()) &&
-                        (pLocId.id.longId.l == next1->ll()->src().getReg2()))
                 {
-                    asgn.rhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                    pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
-                    pIcode->setUnary(HLI_PUSH, asgn.rhs);
-                    next1->invalidate();
+                    const LONGID_TYPE &ref_long(pLocId.id.longId);
+                    const LLOperand &src_op1(pIcode->ll()->src());
+                    const LLOperand &src_op2(next1->ll()->src());
+                    if ((ref_long.h == src_op1.getReg2()) &&
+                            (ref_long.l == src_op2.getReg2()))
+                    {
+                        asgn.rhs = AstIdent::LongIdx (loc_ident_idx);
+                        pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
+                        pIcode->setUnary(HLI_PUSH, asgn.rhs);
+                        next1->invalidate();
+                    }
+                    forced_finish =true; /* to exit the loop */
+                    break;
                 }
-                forced_finish =true; /* to exit the loop */
-                break;
 
                 /*** others missing ****/
 
@@ -432,19 +451,21 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                 if ((pLocId.id.longId.h == pmH->regi) &&
                         (pLocId.id.longId.l == pmL->regi))
                 {
-                    asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
+                    asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
                     pIcode->setRegDU( pmH->regi, USE_DEF);
-                    asgn.rhs = COND_EXPR::idLong (&this->localId, SRC, pIcode,
+                    asgn.rhs = AstIdent::idLong (&this->localId, SRC, pIcode,
                                                   LOW_FIRST, pIcode, eUSE, *next1->ll());
+                    condOp toCreate=DUMMY;
                     switch (pIcode->ll()->getOpcode()) {
-                    case iAND: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, AND);
-                        break;
-                    case iOR:  asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, OR);
-                        break;
-                    case iXOR: asgn.rhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, XOR);
-                        break;
+                    case iAND: toCreate=AND; break;
+                    case iOR:  toCreate=OR; break;
+                    case iXOR: toCreate= XOR; break;
                     }
-                    pIcode->setAsgn(asgn.lhs, asgn.rhs);
+                    if(DUMMY!=toCreate)
+                    {
+                        asgn.rhs = new BinaryOperator(toCreate,asgn.lhs, asgn.rhs);
+                    }
+                    pIcode->setAsgn(dynamic_cast<AstIdent *>(asgn.lhs), asgn.rhs);
                     next1->invalidate();
                     // ftw loop restart ????
                     //idx = 0;
@@ -483,9 +504,9 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         {
             if (pLocId.id.longId.srcDstRegMatch(pIcode,pIcode))
             {
-                asgn.lhs = COND_EXPR::idLongIdx (loc_ident_idx);
-                asgn.rhs = COND_EXPR::idKte (0, 4);	/* long 0 */
-                asgn.lhs = COND_EXPR::boolOp (asgn.lhs, asgn.rhs, condOpJCond[next1->ll()->getOpcode() - iJB]);
+                asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
+                asgn.rhs = AstIdent::Kte (0, 4);	/* long 0 */
+                asgn.lhs = new BinaryOperator(condOpJCond[next1->ll()->getOpcode() - iJB],asgn.lhs, asgn.rhs);
                 next1->setJCond(asgn.lhs);
                 next1->copyDU(*pIcode, eUSE, eUSE);
                 pIcode->invalidate();

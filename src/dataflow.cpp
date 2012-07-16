@@ -30,7 +30,7 @@ struct ExpStack
     boolT	empty();
     void processExpPush(int &numHlIcodes, iICODE picode)
     {
-        push(picode->hl()->expr());
+        push(picode->hlU()->expr());
         picode->invalidate();
         numHlIcodes--;
     }
@@ -96,11 +96,11 @@ static COND_EXPR *srcIdent (const LLInst &ll_insn, Function * pProc, iICODE i, I
     if (ll_insn.testFlags(I))   /* immediate operand */
     {
         if (ll_insn.testFlags(B))
-            return COND_EXPR::idKte (ll_insn.src().getImm2(), 1);
-        return COND_EXPR::idKte (ll_insn.src().getImm2(), 2);
+            return AstIdent::Kte (ll_insn.src().getImm2(), 1);
+        return AstIdent::Kte (ll_insn.src().getImm2(), 2);
     }
     // otherwise
-    return COND_EXPR::id (ll_insn, SRC, pProc, i, duIcode, du);
+    return AstIdent::id (ll_insn, SRC, pProc, i, duIcode, du);
 }
 
 
@@ -108,7 +108,7 @@ static COND_EXPR *srcIdent (const LLInst &ll_insn, Function * pProc, iICODE i, I
 static COND_EXPR *dstIdent (const LLInst & ll_insn, Function * pProc, iICODE i, ICODE & duIcode, operDu du)
 {
     COND_EXPR *n;
-    n = COND_EXPR::id (ll_insn, DST, pProc, i, duIcode, du);
+    n = AstIdent::id (ll_insn, DST, pProc, i, duIcode, du);
     /** Is it needed? (pIcode->ll()->flg) & NO_SRC_B **/
     return (n);
 }
@@ -122,7 +122,7 @@ void Function::elimCondCodes ()
     boolT notSup;       /* Use/def combination not supported      */
     COND_EXPR *rhs;     /* Source operand                         */
     COND_EXPR *lhs;     /* Destination operand                    */
-    COND_EXPR *_expr;   /* Boolean expression                     */
+    BinaryOperator *_expr;   /* Boolean expression                     */
     //BB * pBB;           /* Pointer to BBs in dfs last ordering    */
     riICODE useAt;      /* Instruction that used flag    */
     riICODE defAt;      /* Instruction that defined flag */
@@ -133,6 +133,7 @@ void Function::elimCondCodes ()
         //auto reversed_instructions = pBB->range() | reversed;
         for (useAt = pBB->rbegin(); useAt != pBB->rend(); useAt++)
         {
+            ICODE &useIcode(*useAt);
             llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
             if ((useAt->type != LOW_LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
@@ -142,6 +143,7 @@ void Function::elimCondCodes ()
             ++defAt;
             for (; defAt != pBB->rend(); defAt++)
             {
+                ICODE &defIcode(*defAt);
                 def = defAt->ll()->flagDU.d;
                 if ((use & def) != use)
                     continue;
@@ -160,21 +162,29 @@ void Function::elimCondCodes ()
                             lhs = defAt->hl()->asgn.lhs->clone();
                             useAt->copyDU(*defAt, eUSE, eDEF);
                             if (defAt->ll()->testFlags(B))
-                                rhs = COND_EXPR::idKte (0, 1);
+                                rhs = AstIdent::Kte (0, 1);
                             else
-                                rhs = COND_EXPR::idKte (0, 2);
+                                rhs = AstIdent::Kte (0, 2);
                             break;
 
                         case iTEST:
                             rhs = srcIdent (*defAt->ll(),this, befDefAt,*useAt, eUSE);
                             lhs = dstIdent (*defAt->ll(),this, befDefAt,*useAt, eUSE);
-                            lhs = COND_EXPR::boolOp (lhs, rhs, AND);
+                            lhs = BinaryOperator::And(lhs, rhs);
                             if (defAt->ll()->testFlags(B))
-                                rhs = COND_EXPR::idKte (0, 1);
+                                rhs = AstIdent::Kte (0, 1);
                             else
-                                rhs = COND_EXPR::idKte (0, 2);
+                                rhs = AstIdent::Kte (0, 2);
                             break;
-
+                        case iINC:
+                        case iDEC: //WARNING: verbatim copy from iOR needs fixing ?
+                            lhs = defAt->hl()->asgn.lhs->clone();
+                            useAt->copyDU(*defAt, eUSE, eDEF);
+                            if (defAt->ll()->testFlags(B))
+                                rhs = AstIdent::Kte (0, 1);
+                            else
+                                rhs = AstIdent::Kte (0, 2);
+                            break;
                         default:
                             notSup = true;
                             std::cout << hex<<defAt->loc_ip;
@@ -185,17 +195,17 @@ void Function::elimCondCodes ()
                     {
                         assert(lhs);
                         assert(rhs);
-                        _expr = COND_EXPR::boolOp (lhs, rhs,condOpJCond[useAtOp-iJB]);
+                        _expr = BinaryOperator::Create(condOpJCond[useAtOp-iJB],lhs,rhs);
                         useAt->setJCond(_expr);
                     }
                 }
 
                 else if (useAtOp == iJCXZ)
                 {
-                    lhs = COND_EXPR::idReg (rCX, 0, &localId);
+                    lhs = AstIdent::Reg (rCX, 0, &localId);
                     useAt->setRegDU (rCX, eUSE);
-                    rhs = COND_EXPR::idKte (0, 2);
-                    _expr = COND_EXPR::boolOp (lhs, rhs, EQUAL);
+                    rhs = AstIdent::Kte (0, 2);
+                    _expr = BinaryOperator::Create(EQUAL,lhs,rhs);
                     useAt->setJCond(_expr);
                 }
                 //                    else if (useAt->getOpcode() == iRCL)
@@ -217,7 +227,8 @@ void Function::elimCondCodes ()
                 ICODE & _prev(pBB->back()); /* For extended basic blocks - previous icode inst */
                 if (_prev.hl()->opcode == HLI_JCOND)
                 {
-                    _expr = _prev.hl()->expr()->clone();
+                    _expr = dynamic_cast<BinaryOperator *>(_prev.hl()->expr()->clone());
+                    assert(_expr);
                     _expr->changeBoolOp (condOpJCond[useAtOp-iJB]);
                     useAt->copyDU(_prev, eUSE, eUSE);
                     useAt->setJCond(_expr);
@@ -308,7 +319,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                     auto picode = pbb->rbegin(); /* icode of function return */
                     if (picode->hl()->opcode == HLI_RET)
                     {
-                        picode->hl()->expr(COND_EXPR::idID (&retVal, &localId, (++pbb->rbegin()).base()));
+                        picode->hlU()->expr(AstIdent::idID (&retVal, &localId, (++pbb->rbegin()).base()));
                         picode->du.use = in_liveOut;
                     }
                 }
@@ -547,12 +558,20 @@ void Function::genDU1 ()
 void LOCAL_ID::forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode, iICODE ticode, int &numHlIcodes) const
 {
     bool res;
-
+    UnaryOperator *lhs_unary;
+    while(lhs_unary = dynamic_cast<UnaryOperator *>(lhs))
+    {
+        if(dynamic_cast<AstIdent *>(lhs_unary))
+            break;
+        lhs = lhs_unary->unaryExp;
+    }
+    AstIdent * lhs_id=dynamic_cast<AstIdent *>(lhs_unary);
+    assert(lhs_id);
     if (rhs == NULL)        /* In case expression popped is NULL */
         return;
 
     /* Insert on rhs of ticode, if possible */
-    res = COND_EXPR::insertSubTreeReg (ticode->hl()->asgn.rhs,rhs, id_arr[lhs->expr.ident.idNode.regiIdx].id.regi, this);
+    res = COND_EXPR::insertSubTreeReg (ticode->hlU()->asgn.rhs,rhs, id_arr[lhs_id->ident.idNode.regiIdx].id.regi, this);
     if (res)
     {
         picode->invalidate();
@@ -561,7 +580,7 @@ void LOCAL_ID::forwardSubs (COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode, iICOD
     else
     {
         /* Try to insert it on lhs of ticode*/
-        res = COND_EXPR::insertSubTreeReg (ticode->hl()->asgn.lhs,rhs, id_arr[lhs->expr.ident.idNode.regiIdx].id.regi, this);
+        res = COND_EXPR::insertSubTreeReg (ticode->hlU()->asgn.lhs,rhs, id_arr[lhs_id->ident.idNode.regiIdx].id.regi, this);
         if (res)
         {
             picode->invalidate();
@@ -580,7 +599,7 @@ static void forwardSubsLong (int longIdx, COND_EXPR *_exp, iICODE picode, iICODE
         return;
 
     /* Insert on rhs of ticode, if possible */
-    res = COND_EXPR::insertSubTreeLongReg (_exp, &ticode->hl()->asgn.rhs, longIdx);
+    res = COND_EXPR::insertSubTreeLongReg (_exp, ticode->hlU()->asgn.rhs, longIdx);
     if (res)
     {
         picode->invalidate();
@@ -589,7 +608,7 @@ static void forwardSubsLong (int longIdx, COND_EXPR *_exp, iICODE picode, iICODE
     else
     {
         /* Try to insert it on lhs of ticode*/
-        res = COND_EXPR::insertSubTreeLongReg (_exp, &ticode->hl()->asgn.lhs, longIdx);
+        res = COND_EXPR::insertSubTreeLongReg (_exp, ticode->hlU()->asgn.lhs, longIdx);
         if (res)
         {
             picode->invalidate();
@@ -601,56 +620,6 @@ static void forwardSubsLong (int longIdx, COND_EXPR *_exp, iICODE picode, iICODE
 
 /* Returns whether the elements of the expression rhs are all x-clear from
  * instruction f up to instruction t.	*/
-bool COND_EXPR::xClear (rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID & locId)
-{
-    iICODE i;
-    boolT res;
-    uint8_t regi;
-
-    switch (m_type)
-    {
-        case IDENTIFIER:
-            if (expr.ident.idType == REGISTER)
-            {
-                regi= locId.id_arr[expr.ident.idNode.regiIdx].id.regi;
-                range_to_check.advance_begin(1);
-                auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::select_valid_high_level);
-                for (ICODE &i : all_valid_and_high_level_after_start)
-                    if ((i.du.def & duReg[regi]).any())
-                        return false;
-                if (all_valid_and_high_level_after_start.end().base() != lastBBinst)
-                    return true;
-                return false;
-            }
-            else
-                return true;
-            /* else if (rhs->expr.ident.idType == LONG_VAR)
-                        {
-                            missing all other identifiers ****
-                        } */
-
-        case BOOLEAN_OP:
-            if(0==rhs())
-                return false;
-            res = rhs()->xClear ( range_to_check, lastBBinst, locId);
-            if (res == false)
-                return false;
-            if(0==lhs())
-                return false;
-            return lhs()->xClear ( range_to_check, lastBBinst, locId);
-
-        case NEGATION:
-        case ADDRESSOF:
-        case DEREFERENCE:
-            if(0==expr.unaryExp)
-                return false;
-            return expr.unaryExp->xClear ( range_to_check, lastBBinst, locId);
-        default:
-            fprintf(stderr,"COND_EXPR::xClear unhandled type %d\n",m_type);
-
-    } /* eos */
-    return false;
-}
 bool UnaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs)
 {
     if(0==unaryExp)
@@ -667,6 +636,26 @@ bool BinaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCA
     if(0==m_lhs)
         return false;
     return m_lhs->xClear (range_to_check, lastBBinst, locs);
+}
+bool AstIdent::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId)
+{
+    iICODE i;
+    uint8_t regi;
+    if (ident.idType == REGISTER)
+    {
+        regi= locId.id_arr[ident.idNode.regiIdx].id.regi;
+        range_to_check.advance_begin(1);
+        auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::select_valid_high_level);
+        for (ICODE &i : all_valid_and_high_level_after_start)
+            if ((i.du.def & duReg[regi]).any())
+                return false;
+        if (all_valid_and_high_level_after_start.end().base() != lastBBinst)
+            return true;
+        return false;
+    }
+    else
+        return true;
+
 }
 /* Checks the type of the formal argument as against to the actual argument,
  * whenever possible, and then places the actual argument on the procedure's
@@ -709,7 +698,11 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, size_t 
     /* Do not update the size of k if the expression was a segment register
          * in a near call */
     if (res == false)
-        return hlTypeSize (_exp, pProc);
+    {
+        if(_exp==nullptr)
+            return 2;
+        return _exp->hlTypeSize (pProc);
+    }
     return 0; // be default we do not know the size of the argument
 }
 
@@ -719,35 +712,40 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, size_t 
 void LOCAL_ID::processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode,bool isLong) const
 {
     boolT res;
-    HLTYPE &p_hl(*picode->hl());
-    HLTYPE &t_hl(*ticode->hl());
+    HLTYPE &p_hl(*picode->hlU());
+    HLTYPE &t_hl(*ticode->hlU());
+    AstIdent *lhs_ident = dynamic_cast<AstIdent *>(p_hl.asgn.lhs);
+
     switch (t_hl.opcode)
     {
         case HLI_ASSIGN:
             if(isLong)
             {
-                forwardSubsLong (p_hl.asgn.lhs->expr.ident.idNode.longIdx,
+                assert(lhs_ident);
+                forwardSubsLong (lhs_ident->ident.idNode.longIdx,
                                  p_hl.asgn.rhs, picode,ticode,
                                  &numHlIcodes);
             }
             else
-                this->forwardSubs (p_hl.asgn.lhs, p_hl.asgn.rhs, picode, ticode, numHlIcodes);
+                this->forwardSubs (lhs_ident, p_hl.asgn.rhs, picode, ticode, numHlIcodes);
             break;
 
         case HLI_JCOND:  case HLI_PUSH:  case HLI_RET:
             if(isLong)
             {
+                assert(lhs_ident);
                 res = COND_EXPR::insertSubTreeLongReg (
                           p_hl.asgn.rhs,
-                          &t_hl.exp.v,
-                          p_hl.asgn.lhs->expr.ident.idNode.longIdx);
+                          t_hl.exp.v,
+                          lhs_ident->ident.idNode.longIdx);
             }
             else
             {
+                assert(lhs_ident);
                 res = COND_EXPR::insertSubTreeReg (
                           t_hl.exp.v,
                           p_hl.asgn.rhs,
-                          id_arr[p_hl.asgn.lhs->expr.ident.idNode.regiIdx].id.regi,
+                          id_arr[lhs_ident->ident.idNode.regiIdx].id.regi,
                         this);
             }
             if (res)
@@ -802,7 +800,7 @@ void Function::processHliCall(COND_EXPR *_exp, iICODE picode)
                 res = picode->newStkArg (_exp,(llIcode)picode->ll()->getOpcode(), this);
             }
             if (res == false)
-                k += hlTypeSize (_exp, this);
+                k += _exp->hlTypeSize (this);
             numArgs++;
         }
     }
@@ -846,7 +844,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
     for (auto picode = valid_and_highlevel.begin(); picode != valid_and_highlevel.end(); picode++)
     {
-        HLTYPE &_icHl(*picode->hl());
+        HLTYPE &_icHl(*picode->hlU());
         numHlIcodes++;
         if (picode->du1.numRegsDef == 1)    /* uint8_t/uint16_t regs */
         {
@@ -880,8 +878,12 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         break;
 
                     case HLI_POP:
+                        // TODO: sometimes picode->du1.idx[0].uses.front() points to next basic block ?
+                        // pop X
+                        // lab1:
+                        //   call F() <- somehow this is marked as user of POP ?
                         ticode = picode->du1.idx[0].uses.front();
-                        ti_hl = ticode->hl();
+                        ti_hl = ticode->hlU();
                         if ((picode->du.lastDefRegi & duReg[regi]).any() &&
                                 ((ti_hl->opcode != HLI_CALL) &&
                                  (ti_hl->opcode != HLI_RET)))
@@ -894,15 +896,19 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 break;
 
                             case HLI_JCOND: case HLI_PUSH: case HLI_RET:
+                            {
+                                AstIdent *v = dynamic_cast<AstIdent *>(_icHl.expr());
+                                assert(v);
                                 res = COND_EXPR::insertSubTreeReg (ti_hl->exp.v,
                                                                    _exp,
-                                                                   locals.id_arr[_icHl.expr()->expr.ident.idNode.regiIdx].id.regi,
+                                                                   locals.id_arr[v->ident.idNode.regiIdx].id.regi,
                                         &locals);
                                 if (res)
                                 {
                                     picode->invalidate();
                                     numHlIcodes--;
                                 }
+                            }
                                 break;
 
                                 /****case HLI_CALL:    // register arguments
@@ -918,7 +924,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
 
                     case HLI_CALL:
                         ticode = picode->du1.idx[0].uses.front();
-                        ti_hl = ticode->hl();
+                        ti_hl = ticode->hlU();
                         _retVal = &_icHl.call.proc->retVal;
                         switch (ti_hl->opcode)
                         {
@@ -949,8 +955,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 }
                                 else	/* cannot substitute function */
                                 {
-                                    //picode->loc_ip
-                                    lhs = COND_EXPR::idID(_retVal,&locals,picode.base());
+                                    auto lhs = AstIdent::idID(_retVal,&locals,picode.base());
                                     picode->setAsgn(lhs, _exp);
                                 }
                                 break;
@@ -999,13 +1004,13 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                             _exp = g_exp_stk.pop(); /* pop last exp pushed */
                             switch (ticode->hl()->opcode) {
                                 case HLI_ASSIGN:
-                                    forwardSubsLong (_icHl.expr()->expr.ident.idNode.longIdx,
+                                    forwardSubsLong (dynamic_cast<AstIdent *>(_icHl.expr())->ident.idNode.longIdx,
                                                      _exp, picode.base(), ticode, &numHlIcodes);
                                     break;
                                 case HLI_JCOND: case HLI_PUSH:
                                     res = COND_EXPR::insertSubTreeLongReg (_exp,
-                                                                           &ticode->hl()->exp.v,
-                                                                           _icHl.asgn.lhs->expr.ident.idNode.longIdx);
+                                                                           ticode->hlU()->exp.v,
+                                                                           dynamic_cast<AstIdent *>(_icHl.asgn.lhs)->ident.idNode.longIdx);
                                     if (res)
                                     {
                                         picode->invalidate();
@@ -1026,17 +1031,17 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         {
                             case HLI_ASSIGN:
                                 _exp = _icHl.call.toId();
-                                ticode->hl()->asgn.lhs =
-                                        COND_EXPR::idLong(&locals, DST,
+                                ticode->hlU()->asgn.lhs =
+                                        AstIdent::idLong(&locals, DST,
                                                           ticode,HIGH_FIRST, picode.base(),
                                                           eDEF, *(++iICODE(ticode))->ll());
-                                ticode->hl()->asgn.rhs = _exp;
+                                ticode->hlU()->asgn.rhs = _exp;
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
 
                             case HLI_PUSH:  case HLI_RET:
-                                ticode->hl()->expr( _icHl.call.toId() );
+                                ticode->hlU()->expr( _icHl.call.toId() );
                                 picode->invalidate();
                                 numHlIcodes--;
                                 break;
@@ -1045,7 +1050,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 _exp = _icHl.call.toId();
                                 _retVal = &picode->hl()->call.proc->retVal;
                                 res = COND_EXPR::insertSubTreeLongReg (_exp,
-                                                                       &ticode->hl()->exp.v,
+                                                                       ticode->hlU()->exp.v,
                                                                        locals.newLongReg ( _retVal->type, _retVal->id.longId.h,
                                                                                            _retVal->id.longId.l, picode.base()));
                                 if (res)	/* was substituted */
@@ -1055,7 +1060,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 }
                                 else	/* cannot substitute function */
                                 {
-                                    lhs = locals.createId(_retVal,picode.base());
+                                    auto lhs = locals.createId(_retVal,picode.base());
                                     picode->setAsgn(lhs, _exp);
                                 }
                                 break;
@@ -1093,8 +1098,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
              * assign it to the corresponding registers */
             if ( not _icHl.call.proc->isLibrary() and (not picode->du1.used(0)) and (picode->du1.numRegsDef > 0))
             {
-                _exp = COND_EXPR::idFunc (_icHl.call.proc, _icHl.call.args);
-                lhs = COND_EXPR::idID (&_icHl.call.proc->retVal, &locals, picode.base());
+                _exp = AstIdent::idFunc (_icHl.call.proc, _icHl.call.args);
+                auto lhs = AstIdent::idID (&_icHl.call.proc->retVal, &locals, picode.base());
                 picode->setAsgn(lhs, _exp);
             }
         }

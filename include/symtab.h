@@ -8,6 +8,7 @@
 #include "Enums.h"
 #include "types.h"
 struct COND_EXPR;
+struct AstIdent;
 struct TypeContainer;
 /* * * * * * * * * * * * * * * * * */
 /* Symbol table structs and protos */
@@ -36,7 +37,7 @@ struct STKSYM : public SymbolCommon
 {
     typedef int16_t tLabel;
     COND_EXPR	*actual;	/* Expression tree of actual parameter 		*/
-    COND_EXPR 	*regs;		/* For register arguments only				*/
+    AstIdent 	*regs;		/* For register arguments only				*/
     tLabel      label;        /* Immediate off from BP (+:args, -:params) */
     uint8_t     regOff;     /* Offset is a register (e.g. SI, DI)       */
     bool        hasMacro;	/* This type needs a macro					*/
@@ -44,7 +45,8 @@ struct STKSYM : public SymbolCommon
     bool        invalid;	/* Boolean: invalid entry in formal arg list*/
     STKSYM()
     {
-        actual=regs=0;
+        actual=0;
+        regs=0;
         label=0;
         regOff=0;
         invalid=hasMacro = false;

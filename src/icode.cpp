@@ -95,3 +95,14 @@ void LLOperand::addProcInformation(int param_count, uint32_t call_conv)
     proc.cb = param_count;
     proc.proc->flg |= call_conv;
 }
+void HLTYPE::setCall(Function *proc)
+{
+    opcode = HLI_CALL;
+    call.proc = proc;
+    call.args = new STKFRAME;
+}
+bool AssignType::removeRegFromLong(eReg regi, LOCAL_ID *locId)
+{
+    lhs->performLongRemoval(regi,locId);
+    return true;
+}

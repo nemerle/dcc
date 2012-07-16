@@ -31,19 +31,19 @@ enum condOp
     GREATER_EQUAL,  /* >=   */
     /* For general expressions */
     AND,            /* &    */
-    OR,				/* |	*/
-    XOR,			/* ^	*/
-    NOT,			/* ~	*/  /* 1's complement */
-    ADD,			/* +	*/
-    SUB,			/* -	*/
-    MUL,			/* *	*/
-    DIV,			/* /	*/
-    SHR,			/* >>	*/
-    SHL,			/* <<	*/
-    MOD,			/* %	*/
-    DBL_AND,		/* &&	*/
-    DBL_OR,			/* ||	*/
-    DUMMY			/*      */
+    OR,             /* |	*/
+    XOR,            /* ^	*/
+    NOT,            /* ~	*/  /* 1's complement */
+    ADD,            /* +	*/
+    SUB,            /* -	*/
+    MUL,            /* *	*/
+    DIV,            /* /	*/
+    SHR,            /* >>	*/
+    SHL,            /* <<	*/
+    MOD,            /* %	*/
+    DBL_AND,        /* &&	*/
+    DBL_OR,         /* ||	*/
+    DUMMY           /*      */
 };
 /* LOW_LEVEL operand location: source or destination */
 enum opLoc
@@ -216,6 +216,7 @@ enum condNodeType
 {
     UNKNOWN_OP=0,
     BOOLEAN_OP,         /* condOps  			*/
+
     NEGATION,           /* not (2's complement)	*/
     ADDRESSOF,          /* addressOf (&)		*/
     DEREFERENCE,        /* contents of (*) 		*/

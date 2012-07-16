@@ -19,6 +19,7 @@
 // this array has to stay in-order of addition i.e. not std::set<iICODE,std::less<iICODE> >
 // TODO: why ?
 struct COND_EXPR;
+struct AstIdent;
 struct ICODE;
 struct LLInst;
 typedef std::list<ICODE>::iterator iICODE;
@@ -132,7 +133,7 @@ public:
     void newRegArg(iICODE picode, iICODE ticode) const;
     void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong) const;
     void forwardSubs(COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode, iICODE ticode, int &numHlIcodes) const;
-    COND_EXPR *createId(const ID *retVal, iICODE ix_);
+    AstIdent *createId(const ID *retVal, iICODE ix_);
 };
 
 

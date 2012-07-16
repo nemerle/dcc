@@ -6,6 +6,9 @@
  ****************************************************************************/
 #include <cassert>
 #include <string>
+#include <boost/range.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm.hpp>
 
 #include "dcc.h"
 #include "disassem.h"
@@ -15,6 +18,8 @@
 #include <string.h>
 #include <stdio.h>
 #include "project.h"
+using namespace boost;
+using namespace boost::adaptors;
 bundle cCode;			/* Procedure declaration and code */
 using namespace std;
 
@@ -215,12 +220,16 @@ void Function::codeGen (std::ostream &fs)
         ostr<< "\nvoid "<<name<<" (";
 
     /* Write arguments */
-    for (size_t i = 0; i < args.size(); i++)
+    struct validArg
     {
-        if ( args[i].invalid )
-            continue;
-        ostr<<hlTypes[args[i].type]<<" "<<args[i].name;
-        if (i < (args.size() - 1))
+        bool operator()(STKSYM &s) { return s.invalid==false;}
+    };
+    auto valid_args = args | filtered(validArg());
+    int count_valid = std::distance(valid_args.begin(),valid_args.end());
+    for (STKSYM &arg : valid_args)
+    {
+        ostr<<hlTypes[arg.type]<<" "<<arg.name;
+        if(--count_valid!=0)
             ostr<<", ";
     }
     ostr<<")\n";

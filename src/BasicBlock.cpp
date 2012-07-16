@@ -158,10 +158,10 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
              * the THEN path of the header node */
             if (edges[ELSE].BBptr->dfsLastNum == loopFollow)
             {
-                picode->hl()->replaceExpr(picode->hl()->expr()->inverse());
+                picode->hlU()->replaceExpr(picode->hl()->expr()->inverse());
             }
             {
-                string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
+                string e=picode->hl()->expr()->walkCondExpr (pProc, numLoc);
                 ostr << "\n"<<indentStr(indLevel)<<"while ("<<e<<") {\n";
             }
             picode->invalidate();
@@ -262,12 +262,16 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             cCode.appendCode( "%s}	/* end of loop */\n",indentStr(indLevel));
         else if (loopType == REPEAT_TYPE)
         {
+            string e = "//*failed*//";
             if (picode->hl()->opcode != HLI_JCOND)
-                reportError (REPEAT_FAIL);
             {
-                string e=walkCondExpr (picode->hl()->expr(), pProc, numLoc);
-                cCode.appendCode( "%s} while (%s);\n", indentStr(indLevel),e.c_str());
+                reportError (REPEAT_FAIL);
             }
+            else
+            {
+                e=picode->hl()->expr()->walkCondExpr (pProc, numLoc);
+            }
+            cCode.appendCode( "%s} while (%s);\n", indentStr(indLevel),e.c_str());
         }
 
         /* Recurse on the loop follow */

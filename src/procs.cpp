@@ -90,7 +90,7 @@ void CALL_GRAPH::write()
  * Note: register(s) are only included once in the table.   */
 void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
 {
-    COND_EXPR *lhs;
+    AstIdent *lhs;
     STKFRAME * call_args_stackframe, *target_stackframe;
     const ID *id;
     int tidx;
@@ -106,11 +106,12 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     /* Get registers and index into target procedure's local list */
     call_args_stackframe = ticode->hl()->call.args;
     target_stackframe = &tproc->args;
-    lhs = picode->hl()->asgn.lhs;
-    type = lhs->expr.ident.idType;
+    lhs = dynamic_cast<AstIdent *>(picode->hl()->asgn.lhs);
+    assert(lhs);
+    type = lhs->ident.idType;
     if (type == REGISTER)
     {
-        regL = id_arr[lhs->expr.ident.idNode.regiIdx].id.regi;
+        regL = id_arr[lhs->ident.idNode.regiIdx].id.regi;
         if (regL < rAL)
             tidx = tproc->localId.newByteWordReg(TYPE_WORD_SIGN, regL);
         else
@@ -118,7 +119,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     }
     else if (type == LONG_VAR)
     {
-        int longIdx = lhs->expr.ident.idNode.longIdx;
+        int longIdx = lhs->ident.idNode.longIdx;
         regL = id_arr[longIdx].id.longId.l;
         regH = id_arr[longIdx].id.longId.h;
         tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, tproc->Icode.begin() /*0*/);
@@ -132,14 +133,14 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
             continue;
         if (type == REGISTER)
         {
-            if ( tgt_sym.regs->expr.ident.idNode.regiIdx == tidx )
+            if ( tgt_sym.regs->ident.idNode.regiIdx == tidx )
             {
                 regExist = true;
             }
         }
         else if (type == LONG_VAR)
         {
-            if ( tgt_sym.regs->expr.ident.idNode.longIdx == tidx )
+            if ( tgt_sym.regs->ident.idNode.longIdx == tidx )
             {
                 regExist = true;
             }
@@ -160,18 +161,18 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
             if (regL < rAL)
             {
                 newsym.type = TYPE_WORD_SIGN;
-                newsym.regs = COND_EXPR::idRegIdx(tidx, WORD_REG);
+                newsym.regs = AstIdent::RegIdx(tidx, WORD_REG);
             }
             else
             {
                 newsym.type = TYPE_BYTE_SIGN;
-                newsym.regs = COND_EXPR::idRegIdx(tidx, BYTE_REG);
+                newsym.regs = AstIdent::RegIdx(tidx, BYTE_REG);
             }
             tproc->localId.id_arr[tidx].name = newsym.name;
         }
         else if (type == LONG_VAR)
         {
-            newsym.regs = COND_EXPR::idLongIdx (tidx);
+            newsym.regs = AstIdent::LongIdx (tidx);
             newsym.type = TYPE_LONG_SIGN;
             tproc->localId.id_arr[tidx].name = newsym.name;
             tproc->localId.propLongId (regL, regH, tproc->localId.id_arr[tidx].name.c_str());
@@ -188,7 +189,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     /* Mask off high and low register(s) in picode */
     switch (type) {
         case REGISTER:
-            id = &id_arr[lhs->expr.ident.idNode.regiIdx];
+            id = &id_arr[lhs->ident.idNode.regiIdx];
             picode->du.def &= maskDuReg[id->id.regi];
             if (id->id.regi < rAL)
                 newsym.type = TYPE_WORD_SIGN;
@@ -196,7 +197,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
                 newsym.type = TYPE_BYTE_SIGN;
             break;
         case LONG_VAR:
-            id = &id_arr[lhs->expr.ident.idNode.longIdx];
+            id = &id_arr[lhs->ident.idNode.longIdx];
             picode->du.def &= maskDuReg[id->id.longId.h];
             picode->du.def &= maskDuReg[id->id.longId.l];
             newsym.type = TYPE_LONG_SIGN;
@@ -216,15 +217,17 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
 */
 bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
 {
+    AstIdent *expr = dynamic_cast<AstIdent *>(exp);
+
     uint8_t regi;
     /* Check for far procedure call, in which case, references to segment
          * registers are not be considered another parameter (i.e. they are
          * long references to another segment) */
-    if (exp)
+    if (expr)
     {
-        if ((exp->m_type == IDENTIFIER) && (exp->expr.ident.idType == REGISTER))
+        if (expr->ident.idType == REGISTER)
         {
-            regi =  pproc->localId.id_arr[exp->expr.ident.idNode.regiIdx].id.regi;
+            regi =  pproc->localId.id_arr[expr->ident.idNode.regiIdx].id.regi;
             if ((regi >= rES) && (regi <= rDS))
             {
                 if (opcode == iCALLF)
@@ -254,24 +257,25 @@ void CallType::placeStkArg (COND_EXPR *exp, int pos)
 
 COND_EXPR *CallType::toId()
 {
-    return COND_EXPR::idFunc( proc, args);
+    return AstIdent::idFunc( proc, args);
 }
 
 
 /* Checks to determine whether the expression (actual argument) has the
  * same type as the given type (from the procedure's formal list).  If not,
  * the actual argument gets modified */
-void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
+void adjustActArgType (COND_EXPR *_exp, hlType forType, Function * pproc)
 {
+    AstIdent *expr = dynamic_cast<AstIdent *>(_exp);
     PROG &prog(Project::get()->prog);
     hlType actType;
     int offset, offL;
 
-    if (exp == NULL)
+    if (expr == NULL)
         return;
 
-    actType = exp-> expType (pproc);
-    if (((actType == forType) || (exp->m_type != IDENTIFIER)))
+    actType = expr-> expType (pproc);
+    if (actType == forType)
         return;
     switch (forType)
     {
@@ -290,13 +294,13 @@ void adjustActArgType (COND_EXPR *exp, hlType forType, Function * pproc)
                 case TYPE_CONST:
                     /* It's an offset into image where a string is
                                          * found.  Point to the string.	*/
-                    offL = exp->expr.ident.idNode.kte.kte;
+                    offL = expr->ident.idNode.kte.kte;
                     if (prog.fCOM)
                         offset = (pproc->state.r[rDS]<<4) + offL + 0x100;
                     else
                         offset = (pproc->state.r[rDS]<<4) + offL;
-                    exp->expr.ident.idNode.strIdx = offset;
-                    exp->expr.ident.idType = STRING;
+                    expr->ident.idNode.strIdx = offset;
+                    expr->ident.idType = STRING;
                     break;
 
                 case TYPE_PTR:

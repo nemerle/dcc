@@ -229,7 +229,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iJE:   case iJNE:      case iJS:   case iJNS:
             case iJO:   case iJNO:      case iJP:   case iJNP:
             case iJCXZ:
-            {   STATE   StCopy;
+            {
+                STATE   StCopy;
                 int     ip      = Icode.size()-1;	/* Index of this jump */
                 ICODE  &prev(*(++Icode.rbegin())); /* Previous icode */
                 boolT   fBranch = false;
@@ -247,7 +248,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                     if (ll->getOpcode() == iJAE || ll->getOpcode() == iJA)
                         pstate->JCond.regi = prev.ll()->dst.regi;
                     fBranch = (bool)
-                            (ll->getOpcode() == iJB || ll->getOpcode() == iJBE);
+                              (ll->getOpcode() == iJB || ll->getOpcode() == iJBE);
                 }
                 StCopy = *pstate;
                 //memcpy(&StCopy, pstate, sizeof(STATE));
@@ -308,10 +309,10 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                         if (funcNum == 0x09)
                         {
                             operand = ((uint32_t)(uint16_t)pstate->r[rDS]<<4) +
-                                    (uint32_t)(uint16_t)pstate->r[rDX];
+                                      (uint32_t)(uint16_t)pstate->r[rDX];
                             size = prog.fCOM ?
-                                        strSize (&prog.Image[operand], '$') :
-                                        strSize (&prog.Image[operand], '$'); // + 0x100
+                                       strSize (&prog.Image[operand], '$') :
+                                       strSize (&prog.Image[operand], '$'); // + 0x100
                             global_symbol_table.updateSymType (operand, TypeContainer(TYPE_STR, size));
                         }
                 }
@@ -581,9 +582,9 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
         if(pIcode.ll()->dst.isReg())
         {
             if( not  pstate->isKnown(pIcode.ll()->dst.regi)
-                or
-                not  pstate->isKnown(pIcode.ll()->dst.seg)
-              )
+                    or
+                    not  pstate->isKnown(pIcode.ll()->dst.seg)
+                    )
             {
                 fprintf(stderr,"Indirect call with unkown register values\n");
                 return false;
@@ -596,7 +597,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
         else
         {
             off = (uint32_t)(uint16_t)pIcode.ll()->dst.off +
-                    ((uint32_t)(uint16_t)pIcode.ll()->dst.segValue << 4);
+                  ((uint32_t)(uint16_t)pIcode.ll()->dst.segValue << 4);
         }
 
         /* Address of function is given by 4 (CALLF) or 2 (CALL) bytes at
@@ -799,30 +800,30 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
     if (pm->regi != rUNDEF)
         return nullptr; // register or indexed
 
-        /* Global var */
+    /* Global var */
     if (pm->segValue)  /* there is a value in the seg field */
     {
-            operand = opAdr (pm->segValue, pm->off);
+        operand = opAdr (pm->segValue, pm->off);
         psym = Project::get()->symtab.updateGlobSym (operand, size, duFlag,created_new);
-        }
+    }
     else if (pstate->f[pm->seg]) /* new value */
     {
-            pm->segValue = pstate->r[pm->seg];
-            operand = opAdr(pm->segValue, pm->off);
+        pm->segValue = pstate->r[pm->seg];
+        operand = opAdr(pm->segValue, pm->off);
         psym = Project::get()->symtab.updateGlobSym (operand, size, duFlag,created_new);
 
-            /* Flag new memory locations that are segment values */
+        /* Flag new memory locations that are segment values */
         if (created_new)
-            {
-                if (size == 4)
-                    operand += 2;   /* High uint16_t */
-                for (i = 0; i < prog.cReloc; i++)
-                    if (prog.relocTable[i] == operand) {
-                        psym->flg = SEG_IMMED;
-                        break;
-                    }
-            }
+        {
+            if (size == 4)
+                operand += 2;   /* High uint16_t */
+            for (i = 0; i < prog.cReloc; i++)
+                if (prog.relocTable[i] == operand) {
+                    psym->flg = SEG_IMMED;
+                    break;
+                }
         }
+    }
     /* Check for out of bounds */
     if (psym and (psym->label < (uint32_t)prog.cbImage))
         return psym;
@@ -887,15 +888,15 @@ static void setBits(int16_t type, uint32_t start, uint32_t len)
 
 /* DU bit definitions for each reg value - including index registers */
 LivenessSet duReg[] = { 0x00,
-                  //AH AL . . AX, BH
-                  0x11001, 0x22002, 0x44004, 0x88008, /* uint16_t regs    */
-                  0x10, 0x20, 0x40, 0x80,
-                  0x100, 0x200, 0x400, 0x800,         /* seg regs     */
-                  0x1000, 0x2000, 0x4000, 0x8000,     /* uint8_t regs    */
-                  0x10000, 0x20000, 0x40000, 0x80000,
-                  0x100000,                           /* tmp reg      */
-                  0x48, 0x88, 0x60, 0xA0,             /* index regs   */
-                  0x40, 0x80, 0x20, 0x08 };
+                        //AH AL . . AX, BH
+                        0x11001, 0x22002, 0x44004, 0x88008, /* uint16_t regs    */
+                        0x10, 0x20, 0x40, 0x80,
+                        0x100, 0x200, 0x400, 0x800,         /* seg regs     */
+                        0x1000, 0x2000, 0x4000, 0x8000,     /* uint8_t regs    */
+                        0x10000, 0x20000, 0x40000, 0x80000,
+                        0x100000,                           /* tmp reg      */
+                        0x48, 0x88, 0x60, 0xA0,             /* index regs   */
+                        0x40, 0x80, 0x20, 0x08 };
 
 
 /* Checks which registers were used and updates the du.u flag.
@@ -1184,9 +1185,9 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             pIcode.du1.numRegsDef++;
         case iLODS:
             pIcode.du.addDefinedAndUsed(rSI);
-            pIcode.du.def |= duReg[(cb==2)? rAX: rAL];
+            pIcode.du.def.addReg((cb==2)? rAX: rAL);
             pIcode.du1.numRegsDef += 2;
-            pIcode.du.use |= duReg[sseg];
+            pIcode.du.use.addReg(sseg);
             break;
 
         case iREP_OUTS:

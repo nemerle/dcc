@@ -9,7 +9,6 @@ void HLTYPE::replaceExpr(COND_EXPR *e)
 }
 
 
-
 HlTypeSupport *HLTYPE::get()
 {
     switch(opcode)

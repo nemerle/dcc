@@ -25,10 +25,11 @@ bool Idiom5::match(iICODE pIcode)
 
 int Idiom5::action()
 {
-    COND_EXPR *rhs,*lhs,*expr;
-    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, *m_icodes[1]->ll());
-    rhs = COND_EXPR::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, *m_icodes[1]->ll());
-    expr = COND_EXPR::boolOp (lhs, rhs, ADD);
+    AstIdent *rhs,*lhs;
+    COND_EXPR *expr;
+    lhs = AstIdent::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, *m_icodes[1]->ll());
+    rhs = AstIdent::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, *m_icodes[1]->ll());
+    expr = new BinaryOperator(ADD,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;
@@ -58,10 +59,12 @@ bool Idiom6::match(iICODE pIcode)
 
 int Idiom6::action()
 {
-    COND_EXPR *rhs,*lhs,*expr;
-    lhs = COND_EXPR::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, *m_icodes[1]->ll());
-    rhs = COND_EXPR::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, *m_icodes[1]->ll());
-    expr = COND_EXPR::boolOp (lhs, rhs, SUB);
+
+    AstIdent *rhs,*lhs;
+    COND_EXPR *expr;
+    lhs = AstIdent::idLong (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, *m_icodes[1]->ll());
+    rhs = AstIdent::idLong (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, *m_icodes[1]->ll());
+    expr = new BinaryOperator(SUB,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;
@@ -163,12 +166,12 @@ bool Idiom18::match(iICODE picode)
 
 int Idiom18::action() // action length
 {
-    COND_EXPR *rhs, *lhs;   /* Pointers to left and right hand side exps */
+    COND_EXPR *rhs,*lhs;/* Pointers to left and right hand side exps */
     COND_EXPR *expr;
-    lhs     = COND_EXPR::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[1], *m_icodes[1], eUSE);
-    lhs     = COND_EXPR::unary ( m_is_dec ? POST_DEC : POST_INC, lhs);
-    rhs     = COND_EXPR::id (*m_icodes[2]->ll(), SRC, m_func, m_icodes[1], *m_icodes[3], eUSE);
-    expr    = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ll()->getOpcode() - iJB]);
+    lhs     = AstIdent::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[1], *m_icodes[1], eUSE);
+    lhs     = UnaryOperator::Create(m_is_dec ? POST_DEC : POST_INC, lhs);
+    rhs     = AstIdent::id (*m_icodes[2]->ll(), SRC, m_func, m_icodes[1], *m_icodes[3], eUSE);
+    expr    = new BinaryOperator(condOpJCond[m_icodes[3]->ll()->getOpcode() - iJB],lhs, rhs);
     m_icodes[3]->setJCond(expr);
 
     m_icodes[0]->invalidate();
@@ -220,10 +223,10 @@ int Idiom19::action()
 {
     COND_EXPR *lhs,*rhs,*expr;
     ICODE &ic1(*m_icodes[1]);
-    lhs = COND_EXPR::id (*m_icodes[0]->ll(), DST, m_func, m_icodes[0], *m_icodes[1], eUSE);
-    lhs = COND_EXPR::unary (m_is_dec ? PRE_DEC : PRE_INC, lhs);
-    rhs = COND_EXPR::idKte (0, 2);
-    expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[1]->ll()->getOpcode() - iJB]);
+    lhs = AstIdent::id (*m_icodes[0]->ll(), DST, m_func, m_icodes[0], *m_icodes[1], eUSE);
+    lhs = UnaryOperator::Create(m_is_dec ? PRE_DEC : PRE_INC, lhs);
+    rhs = AstIdent::Kte (0, 2);
+    expr = new BinaryOperator(condOpJCond[m_icodes[1]->ll()->getOpcode() - iJB],lhs, rhs);
     m_icodes[1]->setJCond(expr);
     m_icodes[0]->invalidate();
     return 2;
@@ -310,10 +313,10 @@ bool Idiom20::match(iICODE picode)
 int Idiom20::action()
 {
     COND_EXPR *lhs,*rhs,*expr;
-    lhs  = COND_EXPR::id (*m_icodes[1]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], eUSE);
-    lhs  = COND_EXPR::unary (m_is_dec, lhs);
-    rhs  = COND_EXPR::id (*m_icodes[2]->ll(), SRC, m_func, m_icodes[0], *m_icodes[3], eUSE);
-    expr = COND_EXPR::boolOp (lhs, rhs, condOpJCond[m_icodes[3]->ll()->getOpcode() - iJB]);
+    lhs  = AstIdent::id (*m_icodes[1]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], eUSE);
+    lhs  = UnaryOperator::Create(m_is_dec, lhs);
+    rhs  = AstIdent::id (*m_icodes[2]->ll(), SRC, m_func, m_icodes[0], *m_icodes[3], eUSE);
+    expr = new BinaryOperator(condOpJCond[m_icodes[3]->ll()->getOpcode() - iJB],lhs, rhs);
     m_icodes[3]->setJCond(expr);
     for(int i=0; i<3; ++i)
         m_icodes[i]->invalidate();

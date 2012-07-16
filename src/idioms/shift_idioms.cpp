@@ -28,16 +28,17 @@ bool Idiom8::match(iICODE pIcode)
 int Idiom8::action()
 {
     int idx;
-    COND_EXPR *rhs,*lhs,*expr;
+    AstIdent *lhs;
+    COND_EXPR *rhs,*expr;
     eReg regH,regL;
     regH=m_icodes[0]->ll()->dst.regi;
     regL=m_icodes[1]->ll()->dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, regH, regL, m_icodes[0]);
-    lhs = COND_EXPR::idLongIdx (idx);
+    lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU( regL, USE_DEF);
 
-    rhs = COND_EXPR::idKte(1,2);
-    expr = COND_EXPR::boolOp(lhs, rhs, SHR);
+    rhs = AstIdent::Kte(1,2);
+    expr = new BinaryOperator(SHR,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;
@@ -78,12 +79,14 @@ bool Idiom15::match(iICODE pIcode)
 
 int Idiom15::action()
 {
-    COND_EXPR *lhs,*rhs,*_exp;
-    lhs = COND_EXPR::idReg (m_icodes[0]->ll()->dst.regi,
+    AstIdent *lhs;
+
+    COND_EXPR *rhs,*_exp;
+    lhs = AstIdent::Reg (m_icodes[0]->ll()->dst.regi,
                             m_icodes[0]->ll()->getFlag() & NO_SRC_B,
                              &m_func->localId);
-    rhs = COND_EXPR::idKte (m_icodes.size(), 2);
-    _exp = COND_EXPR::boolOp (lhs, rhs, SHL);
+    rhs = AstIdent::Kte (m_icodes.size(), 2);
+    _exp = new BinaryOperator(SHL,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, _exp);
     for (size_t i=1; i<m_icodes.size()-1; ++i)
     {
@@ -116,16 +119,18 @@ bool Idiom12::match(iICODE pIcode)
 int Idiom12::action()
 {
     int idx;
-    COND_EXPR *rhs,*lhs,*expr;
+    COND_EXPR *rhs,*expr;
+    AstIdent *lhs;
+
     eReg regH,regL;
     regL=m_icodes[0]->ll()->dst.regi;
     regH=m_icodes[1]->ll()->dst.regi;
 
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN, regH, regL,m_icodes[0]);
-    lhs = COND_EXPR::idLongIdx (idx);
+    lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU( regH, USE_DEF);
-    rhs = COND_EXPR::idKte (1, 2);
-    expr = COND_EXPR::boolOp (lhs, rhs, SHL);
+    rhs = AstIdent::Kte (1, 2);
+    expr = new BinaryOperator(SHL,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;
@@ -155,15 +160,16 @@ bool Idiom9::match(iICODE pIcode)
 int Idiom9::action()
 {
     int idx;
-    COND_EXPR *rhs,*lhs,*expr;
+    AstIdent *lhs;
+    COND_EXPR *rhs,*expr;
     eReg regH,regL;
     regL=m_icodes[1]->ll()->dst.regi;
     regH=m_icodes[0]->ll()->dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN,regH,regL,m_icodes[0]);
-    lhs = COND_EXPR::idLongIdx (idx);
+    lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU(regL, USE_DEF);
-    rhs = COND_EXPR::idKte (1, 2);
-    expr = COND_EXPR::boolOp (lhs, rhs, SHR);
+    rhs = AstIdent::Kte (1, 2);
+    expr = new BinaryOperator(SHR,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;

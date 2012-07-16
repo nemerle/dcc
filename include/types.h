@@ -1,7 +1,9 @@
-/****************************************************************************
+/*
+ ***************************************************************************
  *          dcc project general header
  * (C) Cristina Cifuentes, Mike van Emmerik
- ****************************************************************************/
+ ***************************************************************************
+*/
 #pragma once
 #include <cassert>
 #include <stdint.h>
@@ -22,10 +24,10 @@ typedef unsigned char boolT; /* 8 bits   */
 #define PATLEN  23                  /* Length of proc patterns  */
 #define WILD    0xF4                /* The wild byte            */
 
-/****** MACROS *******/
+/* MACROS */
 
-/* Macro reads a LH word from the image regardless of host convention */
-/* Returns a 16 bit quantity, e.g. C000 is read into an Int as C000 */
+// Macro reads a LH word from the image regardless of host convention
+// Returns a 16 bit quantity, e.g. C000 is read into an Int as C000
 //#define LH(p)  ((int16)((byte *)(p))[0] + ((int16)((byte *)(p))[1] << 8))
 #define LH(p)    ((word)((byte *)(p))[0]  + ((word)((byte *)(p))[1] << 8))
 
@@ -53,19 +55,20 @@ struct eDuVal
         USE=2,
         VAL=4
     };
-    uint8_t def :1; /* Variable was first defined than used          */
-    uint8_t use :1;      /* Variable was first used than defined          */
+    uint8_t def :1; //!< Variable was first defined than used
+    uint8_t use :1; //!< Variable was first used than defined
     uint8_t val :1;      /* Variable has an initial value.  2 cases:
-                    * 1. When variable is used first (ie. global)
-                    * 2. When a value is moved into the variable
-                    *    for the first time.                        */
+                             1. When variable is used first (ie. global)
+                             2. When a value is moved into the variable
+                                for the first time.
+                        */
     void setFlags(uint16_t x)
     {
         def = x&DEF;
         use = x&USE;
         val = x&VAL;
     }
-    bool isUSE_VAL() {return use&&val;}            /* Use and Val */
+    bool isUSE_VAL() {return use&&val;}  //Use and Val
 };
 static constexpr const char * hlTypes[13] = {
     "", "char", "unsigned char", "int", "unsigned int",

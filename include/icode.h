@@ -84,11 +84,12 @@ struct DU
 
 
 struct COND_EXPR;
+struct AstIdent;
 struct HlTypeSupport
 {
     //hlIcode              opcode;    /* hlIcode opcode           */
     virtual bool        removeRegFromLong(eReg regi, LOCAL_ID *locId)=0;
-    virtual std::string writeOut(Function *pProc, int *numLoc)=0;
+    virtual std::string writeOut(Function *pProc, int *numLoc) const=0;
 protected:
     void performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *tree);
 };
@@ -108,7 +109,7 @@ public:
         printf("CallType : removeRegFromLong not supproted");
         return false;
     }
-    std::string writeOut(Function *pProc, int *numLoc);
+    std::string writeOut(Function *pProc, int *numLoc) const;
 };
 struct AssignType : public HlTypeSupport
 {
@@ -116,12 +117,8 @@ struct AssignType : public HlTypeSupport
     COND_EXPR    *lhs;
     COND_EXPR    *rhs;
     AssignType() : lhs(0),rhs(0) {}
-    bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
-    {
-        performLongRemoval(regi,locId,lhs);
-        return true;
-    }
-    std::string writeOut(Function *pProc, int *numLoc);
+    bool removeRegFromLong(eReg regi, LOCAL_ID *locId);
+    std::string writeOut(Function *pProc, int *numLoc) const;
 };
 struct ExpType : public HlTypeSupport
 {
@@ -133,7 +130,7 @@ struct ExpType : public HlTypeSupport
         performLongRemoval(regi,locId,v);
         return true;
     }
-    std::string writeOut(Function *pProc, int *numLoc);
+    std::string writeOut(Function *pProc, int *numLoc) const;
 };
 
 struct HLTYPE
@@ -145,6 +142,10 @@ public:
     AssignType      asgn;
     CallType        call;
     HlTypeSupport *get();
+    const HlTypeSupport *get() const
+    {
+        return const_cast<const HlTypeSupport *>(const_cast<HLTYPE*>(this)->get());
+    }
 
     void expr(COND_EXPR *e)
     {
@@ -162,27 +163,22 @@ public:
         opcode=i;
         exp.v=e;
     }
-    void set(COND_EXPR *l,COND_EXPR *r)
-    {
-        assert(l);
-        assert(r);
-        opcode = HLI_ASSIGN;
-        assert((asgn.lhs==0) and (asgn.rhs==0)); //prevent memory leaks
-        asgn.lhs=l;
-        asgn.rhs=r;
-    }
+    void set(COND_EXPR *l,COND_EXPR *r);
+    void setCall(Function *proc);
     HLTYPE(hlIcode op=HLI_INVALID) : opcode(op)
     {}
+//    HLTYPE() // help valgrind find uninitialized HLTYPES
+//    {}
     HLTYPE & operator=(const HLTYPE &l)
     {
-        exp=l.exp;
-        opcode=l.opcode;
-        asgn=l.asgn;
-        call=l.call;
+        exp     = l.exp;
+        opcode  = l.opcode;
+        asgn    = l.asgn;
+        call    = l.call;
         return *this;
     }
 public:
-    std::string write1HlIcode(Function *pProc, int *numLoc);
+    std::string write1HlIcode(Function *pProc, int *numLoc) const;
     void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs);
 } ;
 /* LOW_LEVEL icode operand record */
@@ -210,7 +206,7 @@ struct LLOperand
     {
         opz=dw;
     }
-    eReg getReg2() {return regi;}
+    eReg getReg2() const {return regi;}
     bool isReg() const;
     static LLOperand CreateImm2(int64_t Val)
     {
@@ -312,7 +308,7 @@ public:
 
     void flops(std::ostringstream &out);
     bool isJmpInst();
-    HLTYPE toHighLevel(COND_EXPR *lhs, COND_EXPR *rhs, Function *func);
+    //HLTYPE toHighLevel(COND_EXPR *lhs, COND_EXPR *rhs, Function *func);
     HLTYPE createCall();
     LLInst(ICODE *container) : flg(0),codeIdx(0),numBytes(0),m_link(container)
     {
@@ -450,8 +446,16 @@ public:
     LLInst *            ll() { return &m_ll;}
     const LLInst *      ll() const { return &m_ll;}
 
-    HLTYPE *            hl() { return &m_hl;}
-    const HLTYPE *      hl() const { return &m_hl;}
+    HLTYPE *            hlU() {
+//        assert(type==HIGH_LEVEL);
+//        assert(m_hl.opcode!=HLI_INVALID);
+        return &m_hl;
+    }
+    const HLTYPE *      hl() const {
+//        assert(type==HIGH_LEVEL);
+//        assert(m_hl.opcode!=HLI_INVALID);
+        return &m_hl;
+    }
     void                hl(const HLTYPE &v) { m_hl=v;}
 
     void setRegDU(eReg regi, operDu du_in);
@@ -464,7 +468,7 @@ public:
     void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
     {
         type=HIGH_LEVEL;
-        hl()->setAsgn(lhs,rhs);
+        hlU()->setAsgn(lhs,rhs);
     }
     void setUnary(hlIcode op, COND_EXPR *_exp);
     void setJCond(COND_EXPR *cexp);
@@ -478,7 +482,7 @@ public:
     void checkHlCall();
     bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc)
     {
-        return hl()->call.newStkArg(exp,opcode,pproc);
+        return hlU()->call.newStkArg(exp,opcode,pproc);
     }
     ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT_SCANNED),loc_ip(0)
     {

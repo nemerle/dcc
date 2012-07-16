@@ -207,14 +207,14 @@ void Function::writeProcComments(std::ostream &ostr)
         {
             psym = &this->args[i];
             ostr << " *     "<<psym->name<<" = ";
-            if (psym->regs->expr.ident.idType == REGISTER)
+            if (psym->regs->ident.idType == REGISTER)
             {
-                id = &this->localId.id_arr[psym->regs->expr.ident.idNode.regiIdx];
+                id = &this->localId.id_arr[psym->regs->ident.idNode.regiIdx];
                 ostr << Machine_X86::regName(id->id.regi);
             }
             else		/* long register */
             {
-                id = &this->localId.id_arr[psym->regs->expr.ident.idNode.longIdx];
+                id = &this->localId.id_arr[psym->regs->ident.idNode.longIdx];
                 ostr << Machine_X86::regName(id->id.longId.h) << ":";
                 ostr << Machine_X86::regName(id->id.longId.l);
             }

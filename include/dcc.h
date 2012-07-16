@@ -128,12 +128,6 @@ bool    LibCheck(Function &p);                              /* chklib.c     */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
 void	adjustActArgType (COND_EXPR *, hlType, Function *);
 
-/* Exported functions from ast.c */
-std::string walkCondExpr (const COND_EXPR *exp, Function * pProc, int *);
-int       hlTypeSize (const COND_EXPR *, Function *);
-//hlType	  expType (const COND_EXPR *, Function *);
-
-
 /* Exported functions from hlicode.c */
 std::string writeCall (Function *, STKFRAME &, Function *, int *);
 char 	*writeJcond (const HLTYPE &, Function *, int *);

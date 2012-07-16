@@ -218,7 +218,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
          * other than JMPs, that have been introduced for def/use analysis. */
     if ((option.asm1) &&
             ( inst.testFlags(NO_CODE) ||
-             (inst.testFlags(SYNTHETIC) && (inst.getOpcode() != iJMP))))
+              (inst.testFlags(SYNTHETIC) && (inst.getOpcode() != iJMP))))
     {
         return;
     }
@@ -339,15 +339,15 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         case iJMP: case iJMPF:
 
             /* Check if there is a symbol here */
-    {
-        ICODE *lab=pc.GetIcode(inst.src().getImm2());
+        {
+            ICODE *lab=pc.GetIcode(inst.src().getImm2());
             selectTable(Label);
-        if ((inst.src().getImm2() < (uint32_t)numIcode) &&  /* Ensure in range */
-                readVal(operands_s, lab->ll()->label, 0))
+            if ((inst.src().getImm2() < (uint32_t)numIcode) &&  /* Ensure in range */
+                    readVal(operands_s, lab->ll()->label, 0))
             {
                 break;                          /* Symbolic label. Done */
-        }
             }
+        }
 
             if (inst.testFlags(NO_LABEL))
             {
@@ -423,9 +423,9 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
                 else
                     operands_s<<szPtr[inst.getFlag() & B];
                 if (inst.getOpcode() == iLODS ||
-                    inst.getOpcode() == iREP_LODS ||
-                    inst.getOpcode() == iOUTS ||
-                    inst.getOpcode() == iREP_OUTS)
+                        inst.getOpcode() == iREP_LODS ||
+                        inst.getOpcode() == iOUTS ||
+                        inst.getOpcode() == iREP_OUTS)
                 {
                     operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
                 }
@@ -439,7 +439,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             {
                 (inst.getFlag() & B)? opcode_with_mods<< "B": opcode_with_mods<< "W";
             }
-        break;
+            break;
 
         case iXLAT:
             if (inst.src().segOver)
@@ -460,7 +460,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             std::string d2=((inst.getFlag() & B) ? ", al": ", ax");
             operands_s<<d1 << d2;
         }
-        break;
+            break;
 
         default:
             break;
