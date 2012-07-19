@@ -39,11 +39,11 @@ bool Idiom21::match (iICODE picode)
 }
 int Idiom21::action()
 {
-    COND_EXPR *rhs;
+    Expr *rhs;
     AstIdent *lhs;
 
-    lhs = AstIdent::idLong (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, *m_icodes[1]->ll());
-    rhs = AstIdent::Kte (m_icodes[1]->ll()->src().getImm2() , 4);
+    lhs = AstIdent::Long (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, *m_icodes[1]->ll());
+    rhs = new Constant(m_icodes[1]->ll()->src().getImm2(), 4);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[0]->du.use = 0;		/* clear register used in iXOR */
     m_icodes[1]->invalidate();
@@ -84,11 +84,9 @@ bool Idiom7::match(iICODE picode)
 }
 int Idiom7::action()
 {
-    COND_EXPR *lhs;
-    COND_EXPR *rhs;
+    Expr *lhs;
     lhs = AstIdent::id (*m_icode->ll(), DST, m_func, m_icode, *m_icode, NONE);
-    rhs = AstIdent::Kte (0, 2);
-    m_icode->setAsgn(dynamic_cast<AstIdent *>(lhs), rhs);
+    m_icode->setAsgn(dynamic_cast<AstIdent *>(lhs), new Constant(0, 2));
     m_icode->du.use = 0;    /* clear register used in iXOR */
     m_icode->ll()->setFlags(I);
     return 1;

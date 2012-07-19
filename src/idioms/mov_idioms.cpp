@@ -50,7 +50,7 @@ int Idiom14::action()
 {
     int idx;
     AstIdent *lhs;
-    COND_EXPR *rhs;
+    Expr *rhs;
 
     idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, m_regH, m_regL, m_icodes[0]);
     lhs = AstIdent::LongIdx (idx);
@@ -101,8 +101,8 @@ bool Idiom13::match(iICODE pIcode)
 int Idiom13::action()
 {
     AstIdent *lhs;
-    COND_EXPR *rhs;
-    lhs = AstIdent::Reg (m_loaded_reg, 0, &m_func->localId);
+    Expr *rhs;
+    lhs = new RegisterNode(m_loaded_reg, 0, &m_func->localId);
     m_icodes[0]->setRegDU( m_loaded_reg, eDEF);
     m_icodes[0]->du1.numRegsDef--;   	/* prev uint8_t reg def */
     rhs = AstIdent::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], NONE);

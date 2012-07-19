@@ -18,7 +18,7 @@
 /* Type definition */
 // this array has to stay in-order of addition i.e. not std::set<iICODE,std::less<iICODE> >
 // TODO: why ?
-struct COND_EXPR;
+struct Expr;
 struct AstIdent;
 struct ICODE;
 struct LLInst;
@@ -132,7 +132,7 @@ public:
     size_t csym() const {return id_arr.size();}
     void newRegArg(iICODE picode, iICODE ticode) const;
     void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong) const;
-    void forwardSubs(COND_EXPR *lhs, COND_EXPR *rhs, iICODE picode, iICODE ticode, int &numHlIcodes) const;
+    void forwardSubs(Expr *lhs, Expr *rhs, iICODE picode, iICODE ticode, int &numHlIcodes) const;
     AstIdent *createId(const ID *retVal, iICODE ix_);
 };
 

@@ -29,7 +29,7 @@ int Idiom8::action()
 {
     int idx;
     AstIdent *lhs;
-    COND_EXPR *rhs,*expr;
+    Expr *expr;
     eReg regH,regL;
     regH=m_icodes[0]->ll()->dst.regi;
     regL=m_icodes[1]->ll()->dst.regi;
@@ -37,8 +37,7 @@ int Idiom8::action()
     lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU( regL, USE_DEF);
 
-    rhs = AstIdent::Kte(1,2);
-    expr = new BinaryOperator(SHR,lhs, rhs);
+    expr = new BinaryOperator(SHR,lhs, new Constant(1, 2));
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;
@@ -81,11 +80,11 @@ int Idiom15::action()
 {
     AstIdent *lhs;
 
-    COND_EXPR *rhs,*_exp;
-    lhs = AstIdent::Reg (m_icodes[0]->ll()->dst.regi,
+    Expr *rhs,*_exp;
+    lhs = new RegisterNode(m_icodes[0]->ll()->dst.regi,
                             m_icodes[0]->ll()->getFlag() & NO_SRC_B,
                              &m_func->localId);
-    rhs = AstIdent::Kte (m_icodes.size(), 2);
+    rhs = new Constant(m_icodes.size(), 2);
     _exp = new BinaryOperator(SHL,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, _exp);
     for (size_t i=1; i<m_icodes.size()-1; ++i)
@@ -119,7 +118,7 @@ bool Idiom12::match(iICODE pIcode)
 int Idiom12::action()
 {
     int idx;
-    COND_EXPR *rhs,*expr;
+    Expr *expr;
     AstIdent *lhs;
 
     eReg regH,regL;
@@ -129,8 +128,7 @@ int Idiom12::action()
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN, regH, regL,m_icodes[0]);
     lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU( regH, USE_DEF);
-    rhs = AstIdent::Kte (1, 2);
-    expr = new BinaryOperator(SHL,lhs, rhs);
+    expr = new BinaryOperator(SHL,lhs, new Constant(1, 2));
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;
@@ -161,15 +159,14 @@ int Idiom9::action()
 {
     int idx;
     AstIdent *lhs;
-    COND_EXPR *rhs,*expr;
+    Expr *rhs,*expr;
     eReg regH,regL;
     regL=m_icodes[1]->ll()->dst.regi;
     regH=m_icodes[0]->ll()->dst.regi;
     idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN,regH,regL,m_icodes[0]);
     lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU(regL, USE_DEF);
-    rhs = AstIdent::Kte (1, 2);
-    expr = new BinaryOperator(SHR,lhs, rhs);
+    expr = new BinaryOperator(SHR,lhs, new Constant(1, 2));
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;

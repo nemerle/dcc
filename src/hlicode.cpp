@@ -11,7 +11,6 @@
 #include "dcc.h"
 using namespace std;
 
-
 /* Masks off bits set by duReg[] */
 LivenessSet maskDuReg[] = { 0x00,
                             /* uint16_t regs */
@@ -38,7 +37,7 @@ static char buf[lineSize];     /* Line buffer for hl icode output */
 
 
 /* Places the new HLI_ASSIGN high-level operand in the high-level icode array */
-void HLTYPE::setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
+void HLTYPE::setAsgn(Expr *lhs, Expr *rhs)
 {
     assert(lhs);
     set(lhs,rhs);
@@ -68,7 +67,7 @@ void ICODE::newCallHl()
 
 /* Places the new HLI_POP/HLI_PUSH/HLI_RET high-level operand in the high-level icode
  * array */
-void ICODE::setUnary(hlIcode op, COND_EXPR *_exp)
+void ICODE::setUnary(hlIcode op, Expr *_exp)
 {
     type = HIGH_LEVEL;
     hlU()->set(op,_exp);
@@ -76,7 +75,7 @@ void ICODE::setUnary(hlIcode op, COND_EXPR *_exp)
 
 
 /* Places the new HLI_JCOND high-level operand in the high-level icode array */
-void ICODE::setJCond(COND_EXPR *cexp)
+void ICODE::setJCond(Expr *cexp)
 {
     type = HIGH_LEVEL;
     hlU()->set(HLI_JCOND,cexp);
@@ -293,8 +292,8 @@ void Function::highLevelGen()
 {
     size_t numIcode;         /* number of icode instructions */
     iICODE pIcode;        /* ptr to current icode node */
-    COND_EXPR *lhs;
-    COND_EXPR *rhs; /* left- and right-hand side of expression */
+    Expr *lhs;
+    Expr *rhs; /* left- and right-hand side of expression */
     uint32_t _flg;          /* icode flags */
     numIcode = Icode.size();
     for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
@@ -333,8 +332,7 @@ void Function::highLevelGen()
                 break;
 
             case iDEC:
-                rhs = AstIdent::Kte (1, 2);
-                rhs = new BinaryOperator(SUB,lhs, rhs);
+                rhs = new BinaryOperator(SUB,lhs, new Constant(1, 2));
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -343,12 +341,12 @@ void Function::highLevelGen()
                 rhs = new BinaryOperator(DIV,lhs, rhs);
                 if ( ll->testFlags(B) )
                 {
-                    lhs = AstIdent::Reg (rAL, 0, &localId);
+                    lhs = new RegisterNode(rAL, 0, &localId);
                     pIcode->setRegDU( rAL, eDEF);
                 }
                 else
                 {
-                    lhs = AstIdent::Reg (rAX, 0, &localId);
+                    lhs = new RegisterNode(rAX, 0, &localId);
                     pIcode->setRegDU( rAX, eDEF);
                 }
                 pIcode->setAsgn(lhs, rhs);
@@ -361,8 +359,7 @@ void Function::highLevelGen()
                 break;
 
             case iINC:
-                rhs = AstIdent::Kte (1, 2);
-                rhs = new BinaryOperator(ADD,lhs, rhs);
+                rhs = new BinaryOperator(ADD,lhs, new Constant(1, 2));
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -373,16 +370,15 @@ void Function::highLevelGen()
 
             case iMOD:
                 rhs = new BinaryOperator(MOD,lhs, rhs);
+                eReg lhs_reg;
+
                 if ( ll->testFlags(B) )
-                {
-                    lhs = AstIdent::Reg (rAH, 0, &localId);
-                    pIcode->setRegDU( rAH, eDEF);
-                }
+                    lhs_reg = rAH;
                 else
-                {
-                    lhs = AstIdent::Reg (rDX, 0, &localId);
-                    pIcode->setRegDU( rDX, eDEF);
-                }
+                    lhs_reg = rDX;
+
+                lhs = new RegisterNode(lhs_reg, 0, &localId);
+                pIcode->setRegDU( lhs_reg, eDEF);
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -462,7 +458,7 @@ void Function::highLevelGen()
 
 /* Returns the string that represents the procedure call of tproc (ie. with
  * actual parameters) */
-std::string writeCall (Function * tproc, STKFRAME & args, Function * pproc, int *numLoc)
+std::string Function::writeCall (Function * tproc, STKFRAME & args, int *numLoc)
 {
     //string condExp;
     ostringstream ostr;
@@ -470,7 +466,7 @@ std::string writeCall (Function * tproc, STKFRAME & args, Function * pproc, int 
     for(const STKSYM &sym : args)
     {
         if(sym.actual)
-            ostr << sym.actual->walkCondExpr (pproc, numLoc);
+            ostr << sym.actual->walkCondExpr (this, numLoc);
         else
             ostr <<  "";
         if((&sym)!=&(args.back()))
@@ -484,11 +480,15 @@ std::string writeCall (Function * tproc, STKFRAME & args, Function * pproc, int 
 /* Displays the output of a HLI_JCOND icode. */
 char *writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
 {
-    assert(h.expr());
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
     strcat (buf, "if ");
-    COND_EXPR *inverted=h.expr()->inverse();
+    if(h.opcode==HLI_INVALID)
+    {
+        return "if (*HLI_INVALID*) {\n";
+    }
+    assert(h.expr());
+    Expr *inverted=h.expr()->inverse();
     //inverseCondOp (&h.exp);
     std::string e = inverted->walkCondExpr (pProc, numLoc);
     delete inverted;
@@ -506,7 +506,12 @@ char *writeJcondInv (HLTYPE h, Function * pProc, int *numLoc)
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
     strcat (buf, "if ");
-    std::string e = h.expr()->walkCondExpr (pProc, numLoc);
+    std::string e;
+    if(h.expr()==nullptr)
+        e = "( *failed condition recovery* )";
+    else
+        e = h.expr()->walkCondExpr (pProc, numLoc);
+
     strcat (buf, e.c_str());
     strcat (buf, " {\n");
     return (buf);
@@ -515,7 +520,7 @@ char *writeJcondInv (HLTYPE h, Function * pProc, int *numLoc)
 string AssignType::writeOut(Function *pProc, int *numLoc) const
 {
     ostringstream ostr;
-    ostr << lhs->walkCondExpr (pProc, numLoc);
+    ostr << m_lhs->walkCondExpr (pProc, numLoc);
     ostr << " = ";
     ostr << rhs->walkCondExpr (pProc, numLoc);
     ostr << ";\n";
@@ -524,7 +529,7 @@ string AssignType::writeOut(Function *pProc, int *numLoc) const
 string CallType::writeOut(Function *pProc, int *numLoc) const
 {
     ostringstream ostr;
-    ostr << writeCall (proc, *args, pProc,numLoc);
+    ostr << pProc->writeCall (proc, *args, numLoc);
     ostr << ";\n";
     return ostr.str();
 }
@@ -535,13 +540,14 @@ string ExpType::writeOut(Function *pProc, int *numLoc) const
     return v->walkCondExpr (pProc, numLoc);
 }
 
-void HLTYPE::set(COND_EXPR *l, COND_EXPR *r)
+void HLTYPE::set(Expr *l, Expr *r)
 {
     assert(l);
     assert(r);
     opcode = HLI_ASSIGN;
-    assert((asgn.lhs==0) and (asgn.rhs==0)); //prevent memory leaks
-    asgn.lhs=l;
+    //assert((asgn.lhs==0) and (asgn.rhs==0)); //prevent memory leaks
+    assert(dynamic_cast<UnaryOperator *>(l));
+    asgn.m_lhs=l;
     asgn.rhs=r;
 }
 /* Returns a string with the contents of the current high-level icode.

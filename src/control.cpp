@@ -529,9 +529,11 @@ bool Function::Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB)
     HLTYPE &hl1(*pbb->back().hlU());
     HLTYPE &hl2(*thenBB->back().hlU());
     BB* obb = elseBB->edges[ELSE].BBptr;
-
+    Expr * hl2_expr =  hl2.getMyExpr();
     /* Construct compound DBL_AND expression */
-    hl1.expr(BinaryOperator::Create(DBL_AND,hl1.expr(),hl2.expr()));
+    assert(hl1.expr());
+    assert(hl2_expr);
+    hl1.expr(BinaryOperator::Create(DBL_AND,hl1.expr(),hl2_expr));
 
     /* Replace in-edge to obb from e to pbb */
     replaceInEdge(obb,elseBB,pbb);

@@ -9,11 +9,24 @@
 #include <sstream>
 #include <iostream>
 #include <cassert>
+#include <boost/range.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm.hpp>
+#include <boost/assign.hpp>
+
 #include "types.h"
-#include "dcc.h"
+#include "ast.h"
+#include "bundle.h"
 #include "machine_x86.h"
 #include "project.h"
 using namespace std;
+using namespace boost;
+using namespace boost::adaptors;
+extern int     strSize (const uint8_t *, char);
+extern char   *cChar(uint8_t c);
+
+
+
 // Conditional operator symbols in C.  Index by condOp enumeration type
 static const char * const condOpSym[] = { " <= ", " < ", " == ", " != ", " > ", " >= ",
                                           " & ", " | ", " ^ ", " ~ ",
@@ -97,61 +110,27 @@ void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
 
 
 /* Returns an identifier conditional expression node of type GLOB_VAR */
-AstIdent *GlobalVariable::Create(int16_t segValue, int16_t off)
+GlobalVariable::GlobalVariable(int16_t segValue, int16_t off)
 {
-    AstIdent *newExp;
     uint32_t adr;
-
-    newExp = new AstIdent();
-    newExp->ident.idType = GLOB_VAR;
+    valid = true;
+    ident.idType = GLOB_VAR;
     adr = opAdr(segValue, off);
     auto i=Project::get()->getSymIdxByAdd(adr);
     if ( not Project::get()->validSymIdx(i) )
     {
         printf ("Error, glob var not found in symtab\n");
-        delete newExp;
-        return 0;
+        valid = false;
     }
-    newExp->ident.idNode.globIdx = i;
-    return (newExp);
+    globIdx = i;
 }
 
-
-/* Returns an identifier conditional expression node of type REGISTER */
-AstIdent *AstIdent::Reg(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym)
+string GlobalVariable::walkCondExpr(Function *, int *) const
 {
-    AstIdent *newExp;
-
-    newExp = new AstIdent();
-    newExp->ident.idType = REGISTER;
-    hlType type_sel;
-    regType reg_type;
-    if ((icodeFlg & B) || (icodeFlg & SRC_B))
-    {
-        type_sel = TYPE_BYTE_SIGN;
-        reg_type = BYTE_REG;
-    }
-    else    /* uint16_t */
-    {
-        type_sel = TYPE_WORD_SIGN;
-        reg_type = WORD_REG;
-    }
-    newExp->ident.idNode.regiIdx = locsym->newByteWordReg(type_sel, regi);
-    newExp->ident.regiType = reg_type;
-    return (newExp);
-}
-
-
-/* Returns an identifier conditional expression node of type REGISTER */
-AstIdent *AstIdent::RegIdx(int idx, regType reg_type)
-{
-    AstIdent *newExp;
-
-    newExp = new AstIdent();
-    newExp->ident.idType = REGISTER;
-    newExp->ident.regiType = reg_type;
-    newExp->ident.idNode.regiIdx = idx;
-    return (newExp);
+    if(valid)
+        return Project::get()->symtab[globIdx].name;
+    else
+        return "INVALID GlobalVariable";
 }
 
 /* Returns an identifier conditional expression node of type LOCAL_VAR */
@@ -177,7 +156,7 @@ AstIdent *AstIdent::Loc(int off, LOCAL_ID *localId)
 
 
 /* Returns an identifier conditional expression node of type PARAM */
-AstIdent *AstIdent::idParam(int off, const STKFRAME * argSymtab)
+AstIdent *AstIdent::Param(int off, const STKFRAME * argSymtab)
 {
     AstIdent *newExp;
 
@@ -193,11 +172,10 @@ AstIdent *AstIdent::idParam(int off, const STKFRAME * argSymtab)
 
 /* Returns an identifier conditional expression node of type GLOB_VAR_IDX.
  * This global variable is indexed by regi.     */
-AstIdent *idCondExpIdxGlob (int16_t segValue, int16_t off, uint8_t regi, const LOCAL_ID *locSym)
+GlobalVariableIdx::GlobalVariableIdx (int16_t segValue, int16_t off, uint8_t regi, const LOCAL_ID *locSym)
 {
     size_t i;
-    AstIdent *newExp  = new AstIdent();
-    newExp->ident.idType = GLOB_VAR_IDX;
+    ident.type(GLOB_VAR_IDX);
     for (i = 0; i < locSym->csym(); i++)
     {
         const BWGLB_TYPE &lID(locSym->id_arr[i].id.bwGlb);
@@ -206,19 +184,14 @@ AstIdent *idCondExpIdxGlob (int16_t segValue, int16_t off, uint8_t regi, const L
     }
     if (i == locSym->csym())
         printf ("Error, indexed-glob var not found in local id table\n");
-    newExp->ident.idNode.idxGlbIdx = i;
-    return (newExp);
+    idxGlbIdx = i;
 }
-
-
-/* Returns an identifier conditional expression node of type CONSTANT */
-AstIdent *AstIdent::Kte(uint32_t kte, uint8_t size)
+string GlobalVariableIdx::walkCondExpr(Function *pProc, int *) const
 {
-    AstIdent *newExp = new AstIdent();
-    newExp->ident.idType = CONSTANT;
-    newExp->ident.idNode.kte.kte = kte;
-    newExp->ident.idNode.kte.size = size;
-    return (newExp);
+    ostringstream o;
+    auto bwGlb = &pProc->localId.id_arr[idxGlbIdx].id.bwGlb;
+    o << (bwGlb->seg << 4) + bwGlb->off <<  "["<<Machine_X86::regName(bwGlb->regi)<<"]";
+    return o.str();
 }
 
 
@@ -232,46 +205,40 @@ AstIdent *AstIdent::LongIdx (int idx)
     return (newExp);
 }
 
+AstIdent *AstIdent::String(uint32_t idx)
+{
+    AstIdent *newExp = new AstIdent;
+    newExp->ident.idNode.strIdx = idx;
+    newExp->ident.type(STRING);
+    return newExp;
+}
+
 
 /* Returns an identifier conditional expression node of type LONG_VAR */
-AstIdent *AstIdent::idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset)
+AstIdent *AstIdent::Long(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset)
 {
     int idx;
-    AstIdent *newExp  = new AstIdent();
+    AstIdent *newExp;
     /* Check for long constant and save it as a constant expression */
     if ((sd == SRC) && pIcode->ll()->testFlags(I))  /* constant */
     {
-        newExp->ident.idType = CONSTANT;
         int value;
         if (f == HIGH_FIRST)
             value = (pIcode->ll()->src().getImm2() << 16) + atOffset.src().getImm2();
         else/* LOW_FIRST */
             value = (atOffset.src().getImm2() << 16)+ pIcode->ll()->src().getImm2();
-        newExp->ident.idNode.kte.kte = value;
-        newExp->ident.idNode.kte.size = 4;
+        newExp = new Constant(value,4);
     }
     /* Save it as a long expression (reg, stack or glob) */
     else
     {
+        newExp  = new AstIdent();
         idx = localId->newLong(sd, pIcode, f, ix, du, atOffset);
         newExp->ident.idType = LONG_VAR;
         newExp->ident.idNode.longIdx = idx;
     }
     return (newExp);
 }
-
-
-/* Returns an identifier conditional expression node of type FUNCTION */
-AstIdent *AstIdent::idFunc(Function * pproc, STKFRAME * args)
-{
-    AstIdent *newExp  = new AstIdent();
-
-    newExp->ident.idType = FUNCTION;
-    newExp->ident.idNode.call.proc = pproc;
-    newExp->ident.idNode.call.args = args;
-    return (newExp);
-}
-
 
 /* Returns an identifier conditional expression node of type OTHER.
  * Temporary solution, should really be encoded as an indexed type (eg.
@@ -291,20 +258,26 @@ AstIdent *AstIdent::Other(eReg seg, eReg regi, int16_t off)
  * TYPE_WORD_SIGN	*/
 AstIdent *AstIdent::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
 {
-    AstIdent *newExp  = new AstIdent();
     int idx;
-
-    if (retVal->type == TYPE_LONG_SIGN)
+    AstIdent *newExp=nullptr;
+    switch(retVal->type)
     {
-        idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->id.longId.h,retVal->id.longId.l, ix_);
-        newExp->ident.idType = LONG_VAR;
-        newExp->ident.idNode.longIdx = idx;
-    }
-    else if (retVal->type == TYPE_WORD_SIGN)
-    {
-        newExp->ident.idType = REGISTER;
-        newExp->ident.idNode.regiIdx = locsym->newByteWordReg(TYPE_WORD_SIGN, retVal->id.regi);
-        newExp->ident.regiType = WORD_REG;
+        case TYPE_LONG_SIGN:
+        {
+            newExp  = new AstIdent();
+            idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->id.longId.h,retVal->id.longId.l, ix_);
+            newExp->ident.idType = LONG_VAR;
+            newExp->ident.idNode.longIdx = idx;
+            break;
+        }
+        case TYPE_WORD_SIGN:
+            newExp = new RegisterNode(locsym->newByteWordReg(retVal->type, retVal->id.regi),WORD_REG);
+            break;
+        case TYPE_BYTE_SIGN:
+            newExp = new RegisterNode(locsym->newByteWordReg(retVal->type, retVal->id.regi),BYTE_REG);
+            break;
+        default:
+            fprintf(stderr,"AstIdent::idID unhandled type %d\n",retVal->type);
     }
     return (newExp);
 }
@@ -315,9 +288,9 @@ AstIdent *AstIdent::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
  * Arguments:
  *            duIcode: icode instruction that needs the du set.
  *            du: operand is defined or used in current instruction.    */
-COND_EXPR *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_,ICODE &duIcode, operDu du)
+Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_,ICODE &duIcode, operDu du)
 {
-    COND_EXPR *newExp;
+    Expr *newExp;
 
     int idx;          /* idx into pIcode->localId table */
 
@@ -335,35 +308,33 @@ COND_EXPR *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICOD
 
     else if ((sd == DST) && ll_insn.testFlags(IM_TMP_DST))
     {                                                   /* implicit tmp */
-        newExp = AstIdent::Reg (rTMP, 0, &pProc->localId);
+        newExp = new RegisterNode(rTMP, 0, &pProc->localId);
         duIcode.setRegDU(rTMP, (operDu)eUSE);
     }
 
     else if ((sd == SRC) && ll_insn.testFlags(I)) /* constant */
-        newExp = AstIdent::Kte (ll_insn.src().getImm2(), 2);
+        newExp = new Constant(ll_insn.src().getImm2(), 2);
     else if (pm.regi == rUNDEF) /* global variable */
-        newExp = GlobalVariable::Create(pm.segValue, pm.off);
+        newExp = new GlobalVariable(pm.segValue, pm.off);
     else if ( pm.isReg() )      /* register */
     {
-        newExp = AstIdent::Reg (pm.regi, (sd == SRC) ? ll_insn.getFlag() :
-                                                       ll_insn.getFlag() & NO_SRC_B,
-                                &pProc->localId);
+        newExp = new RegisterNode(pm.regi, (sd == SRC) ? ll_insn.getFlag() : ll_insn.getFlag() & NO_SRC_B, &pProc->localId);
         duIcode.setRegDU( pm.regi, du);
     }
 
     else if (pm.off)                                   /* offset */
-    {
+    { // TODO: this is ABI specific, should be actually based on Function calling conv
         if ((pm.seg == rSS) && (pm.regi == INDEX_BP)) /* idx on bp */
         {
             if (pm.off >= 0)                           /* argument */
-                newExp = AstIdent::idParam (pm.off, &pProc->args);
+                newExp = AstIdent::Param (pm.off, &pProc->args);
             else                                        /* local variable */
                 newExp = AstIdent::Loc (pm.off, &pProc->localId);
         }
         else if ((pm.seg == rDS) && (pm.regi == INDEX_BX)) /* bx */
         {
             if (pm.off > 0)        /* global variable */
-                newExp = idCondExpIdxGlob (pm.segValue, pm.off, rBX,&pProc->localId);
+                newExp = new GlobalVariableIdx(pm.segValue, pm.off, rBX,&pProc->localId);
             else
                 newExp = AstIdent::Other (pm.seg, pm.regi, pm.off);
             duIcode.setRegDU( rBX, eUSE);
@@ -377,26 +348,18 @@ COND_EXPR *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICOD
     {
         if ((pm.seg == rDS) && (pm.regi > INDEX_BP_DI)) /* dereference */
         {
+            eReg selected;
             switch (pm.regi) {
-                case INDEX_SI:
-                    newExp = AstIdent::Reg(rSI, 0, &pProc->localId);
-                    duIcode.setRegDU( rSI, du);
-                    break;
-                case INDEX_DI:
-                    newExp = AstIdent::Reg(rDI, 0, &pProc->localId);
-                    duIcode.setRegDU( rDI, du);
-                    break;
-                case INDEX_BP:
-                    newExp = AstIdent::Reg(rBP, 0, &pProc->localId);
-                    break;
-                case INDEX_BX:
-                    newExp = AstIdent::Reg(rBX, 0, &pProc->localId);
-                    duIcode.setRegDU( rBX, du);
-                    break;
+                case INDEX_SI: selected = rSI; break;
+                case INDEX_DI: selected = rDI; break;
+                case INDEX_BP: selected = rBP; break;
+                case INDEX_BX: selected = rBX; break;
                 default:
                     newExp = 0;
                     assert(false);
             }
+            newExp = new RegisterNode(selected, 0, &pProc->localId);
+            duIcode.setRegDU( selected, du);
             newExp = UnaryOperator::Create(DEREFERENCE, newExp);
         }
         else
@@ -433,30 +396,11 @@ condId LLInst::idType(opLoc sd) const
 /* Size of hl types */
 int hlSize[] = {2, 1, 1, 2, 2, 4, 4, 4, 2, 2, 1, 4, 4};
 
-int COND_EXPR::hlTypeSize(Function * pproc) const
+int Expr::hlTypeSize(Function * pproc) const
 {
     if (this == NULL)
         return (2);		/* for TYPE_UNKNOWN */
-
-    switch (m_type) {
-        case BOOLEAN_OP:
-            assert(false);
-            return 0;
-            //            return expr->hlTypeSize(pproc);
-        case NEGATION:	case ADDRESSOF:
-        case POST_INC:	case POST_DEC:
-        case PRE_INC:		case PRE_DEC:
-        case DEREFERENCE:
-            assert(false);
-            return 0;
-            //return expr->hlTypeSize(pproc);
-        case IDENTIFIER:
-            assert(false);
-            return 0;
-        default:
-            fprintf(stderr,"hlTypeSize queried for Unkown type %d \n",m_type);
-            break;
-    }
+    fprintf(stderr,"hlTypeSize queried for Unkown type %d \n",m_type);
     return 2;			// CC: is this correct?
 }
 
@@ -469,33 +413,35 @@ int UnaryOperator::hlTypeSize(Function *pproc) const
 {
     return (unaryExp->hlTypeSize (pproc));
 }
+int GlobalVariable::hlTypeSize(Function *pproc) const
+{
+    return (Project::get()->symbolSize(globIdx));
+}
+int GlobalVariableIdx::hlTypeSize(Function *pproc) const
+{
+    return (hlSize[pproc->localId.id_arr[idxGlbIdx].type]);
+}
+
 int AstIdent::hlTypeSize(Function *pproc) const
 {
     switch (ident.idType)
     {
         case GLOB_VAR:
-            return (Project::get()->symbolSize(ident.idNode.globIdx));
-        case REGISTER:
-            if (ident.regiType == BYTE_REG)
-                return (1);
-            else
-                return (2);
+            assert(false);
+            return 1;
         case LOCAL_VAR:
             return (hlSize[pproc->localId.id_arr[ident.idNode.localIdx].type]);
         case PARAM:
             return (hlSize[pproc->args[ident.idNode.paramIdx].type]);
-        case GLOB_VAR_IDX:
-            return (hlSize[pproc->localId.id_arr[ident.idNode.idxGlbIdx].type]);
-        case CONSTANT:
-            return (ident.idNode.kte.size);
         case STRING:
             return (2);
         case LONG_VAR:
             return (4);
-        case FUNCTION:
-            return (hlSize[ident.idNode.call.proc->retVal.type]);
         case OTHER:
             return (2);
+        default:
+            assert(false);
+            return -1;
     } /* eos */
 }
 hlType BinaryOperator::expType(Function *pproc) const
@@ -516,70 +462,47 @@ hlType UnaryOperator::expType(Function *pproc) const
 {
     return unaryExp->expType (pproc);
 }
+hlType GlobalVariable::expType(Function *pproc) const
+{
+    return Project::get()->symbolType(globIdx);
+}
+hlType GlobalVariableIdx::expType(Function *pproc) const
+{
+    return (pproc->localId.id_arr[idxGlbIdx].type);
+}
+
 hlType AstIdent::expType(Function *pproc) const
 {
     switch (ident.idType)
     {
-        case GLOB_VAR:
-            return Project::get()->symbolType(ident.idNode.globIdx);
+        case UNDEF:
+        case CONSTANT:
+        case FUNCTION:
         case REGISTER:
-            if (ident.regiType == BYTE_REG)
-                return (TYPE_BYTE_SIGN);
-            else
-                return (TYPE_WORD_SIGN);
+        case GLOB_VAR:
+        case GLOB_VAR_IDX:
+            assert(false);
+            return TYPE_UNKNOWN;
         case LOCAL_VAR:
             return (pproc->localId.id_arr[ident.idNode.localIdx].type);
         case PARAM:
             return (pproc->args[ident.idNode.paramIdx].type);
-        case GLOB_VAR_IDX:
-            return (pproc->localId.id_arr[ident.idNode.idxGlbIdx].type);
-        case CONSTANT:
-            return (TYPE_CONST);
         case STRING:
             return (TYPE_STR);
         case LONG_VAR:
             return (pproc->localId.id_arr[ident.idNode.longIdx].type);
-        case FUNCTION:
-            return (ident.idNode.call.proc->retVal.type);
         default:
             return (TYPE_UNKNOWN);
     } /* eos */
     return (TYPE_UNKNOWN);
 }
 /* Returns the type of the expression */
-hlType COND_EXPR::expType(Function * pproc) const
-{
-
-    if (this == nullptr)
-        return (TYPE_UNKNOWN);
-
-    switch (m_type)
-    {
-        case BOOLEAN_OP:
-            assert(false);
-            return TYPE_UNKNOWN;
-        case POST_INC: case POST_DEC:
-        case PRE_INC:  case PRE_DEC:
-        case NEGATION:
-            assert(false);
-            return TYPE_UNKNOWN;
-        case ADDRESSOF:	return (TYPE_PTR);		/***????****/
-        case DEREFERENCE:	return (TYPE_PTR);
-        case IDENTIFIER:
-            assert(false);
-            return TYPE_UNKNOWN;
-        case UNKNOWN_OP:
-            assert(false);
-            return (TYPE_UNKNOWN);
-    }
-    return TYPE_UNKNOWN;		// CC: Correct?
-}
 
 
 /* Removes the register from the tree.  If the register was part of a long
  * register (eg. dx:ax), the node gets transformed into an integer register
  * node.        */
-void HlTypeSupport::performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *tree)
+Expr * HlTypeSupport::performLongRemoval (eReg regi, LOCAL_ID *locId, Expr *tree)
 {
     switch (tree->m_type) {
         case BOOLEAN_OP:
@@ -588,12 +511,13 @@ void HlTypeSupport::performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *t
         case NEGATION: case ADDRESSOF:
         case DEREFERENCE:
         case IDENTIFIER:
-            tree->performLongRemoval(regi,locId);
+            return tree->performLongRemoval(regi,locId);
             break;
         default:
             fprintf(stderr,"performLongRemoval attemped on %d\n",tree->m_type);
             break;
     }
+    return tree;
 }
 
 /* Returns the string located in image, formatted in C format. */
@@ -603,10 +527,10 @@ static std::string getString (int offset)
     ostringstream o;
     int strLen, i;
 
-    strLen = strSize (&prog.Image[offset], '\0');
+    strLen = strSize (&prog.image()[offset], '\0');
     o << '"';
     for (i = 0; i < strLen; i++)
-        o<<cChar(prog.Image[offset+i]);
+        o<<cChar(prog.image()[offset+i]);
     o << "\"\0";
     return (o.str());
 }
@@ -614,7 +538,11 @@ string BinaryOperator::walkCondExpr(Function * pProc, int* numLoc) const
 {
     std::ostringstream outStr;
     outStr << "(";
-    outStr << lhs()->walkCondExpr(pProc, numLoc);
+    if(m_op!=NOT)
+    {
+        outStr << lhs()->walkCondExpr(pProc, numLoc);
+    }
+    assert(rhs());
     outStr << condOpSym[m_op];
     outStr << rhs()->walkCondExpr(pProc, numLoc);
     outStr << ")";
@@ -631,23 +559,6 @@ string AstIdent::walkCondExpr(Function *pProc, int *numLoc) const
     std::ostringstream o;
     switch (ident.idType)
     {
-        case GLOB_VAR:
-            o << Project::get()->symtab[ident.idNode.globIdx].name;
-            break;
-        case REGISTER:
-            id = &pProc->localId.id_arr[ident.idNode.regiIdx];
-            if (id->name[0] == '\0')	/* no name */
-            {
-                id->setLocalName(++(*numLoc));
-                codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
-                codeOut <<"/* "<<Machine_X86::regName(id->id.regi)<<" */\n";
-            }
-            if (id->hasMacro)
-                o << id->macro << "("<<id->name<<")";
-            else
-                o << id->name;
-            break;
-
         case LOCAL_VAR:
             o << pProc->localId.id_arr[ident.idNode.localIdx].name;
             break;
@@ -659,19 +570,6 @@ string AstIdent::walkCondExpr(Function *pProc, int *numLoc) const
             else
                 o << psym->name;
             break;
-
-        case GLOB_VAR_IDX:
-            bwGlb = &pProc->localId.id_arr[ident.idNode.idxGlbIdx].id.bwGlb;
-            o << (bwGlb->seg << 4) + bwGlb->off <<  "["<<Machine_X86::regName(bwGlb->regi)<<"]";
-            break;
-
-        case CONSTANT:
-            if (ident.idNode.kte.kte < 1000)
-                o << ident.idNode.kte.kte;
-            else
-                o << "0x"<<std::hex << ident.idNode.kte.kte;
-            break;
-
         case STRING:
             o << getString (ident.idNode.strIdx);
             break;
@@ -697,11 +595,6 @@ string AstIdent::walkCondExpr(Function *pProc, int *numLoc) const
                     o << "[" << (id->id.longGlb.seg<<4) + id->id.longGlb.offH <<"][bx]";
             }
             break;
-
-        case FUNCTION:
-            o << writeCall (ident.idNode.call.proc,*ident.idNode.call.args, pProc, numLoc);
-            break;
-
         case OTHER:
             off = ident.idNode.other.off;
             o << Machine_X86::regName(ident.idNode.other.seg)<< "[";
@@ -711,6 +604,12 @@ string AstIdent::walkCondExpr(Function *pProc, int *numLoc) const
             else if (off>0)
                 o << "+"<< hexStr (off);
             o << "]";
+            break;
+        default:
+            assert(false);
+            return "";
+
+
     } /* eos */
     outStr << o.str();
     cCode.appendDecl(codeOut.str());
@@ -783,35 +682,6 @@ string UnaryOperator::walkCondExpr(Function *pProc, int *numLoc) const
 
 
 
-/* Makes a copy of the given expression.  Allocates newExp storage for each
- * node.  Returns the copy. */
-COND_EXPR *COND_EXPR::clone() const
-{
-    COND_EXPR* newExp=nullptr;        /* Expression node copy */
-
-    switch (m_type)
-    {
-        case BOOLEAN_OP:
-            assert(false);
-            break;
-
-        case NEGATION:
-        case ADDRESSOF:
-        case DEREFERENCE:
-        case PRE_DEC: case POST_DEC:
-        case PRE_INC: case POST_INC:
-            assert(false);
-            break;
-
-        case IDENTIFIER:
-            assert(false);
-            break;
-
-        default:
-            fprintf(stderr,"Clone attempt on unhandled type %d\n",m_type);
-    }
-    return (newExp);
-}
 
 
 /* Changes the boolean conditional operator at the root of this expression */
@@ -819,9 +689,9 @@ void BinaryOperator::changeBoolOp (condOp newOp)
 {
     m_op = newOp;
 }
-bool COND_EXPR::insertSubTreeReg (AstIdent *&tree, COND_EXPR *_expr, eReg regi,const LOCAL_ID *locsym)
+bool Expr::insertSubTreeReg (AstIdent *&tree, Expr *_expr, eReg regi,const LOCAL_ID *locsym)
 {
-    COND_EXPR *nd = tree;
+    Expr *nd = tree;
     bool res=insertSubTreeReg (nd, _expr, regi,locsym);
     if(res)
     {
@@ -833,12 +703,12 @@ bool COND_EXPR::insertSubTreeReg (AstIdent *&tree, COND_EXPR *_expr, eReg regi,c
 }
 /* Inserts the expression exp into the tree at the location specified by the
  * register regi */
-bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,const LOCAL_ID *locsym)
+bool Expr::insertSubTreeReg (Expr *&tree, Expr *_expr, eReg regi,const LOCAL_ID *locsym)
 {
 
     if (tree == NULL)
         return false;
-    COND_EXPR *temp=tree->insertSubTreeReg(_expr,regi,locsym);
+    Expr *temp=tree->insertSubTreeReg(_expr,regi,locsym);
     if(nullptr!=temp)
     {
         tree=temp;
@@ -847,11 +717,9 @@ bool COND_EXPR::insertSubTreeReg (COND_EXPR *&tree, COND_EXPR *_expr, eReg regi,
     return false;
 }
 
-COND_EXPR *UnaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym)
+Expr *UnaryOperator::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)
 {
-
-    eReg treeReg;
-    COND_EXPR *temp;
+    Expr *temp;
 
     switch (m_type) {
         case NEGATION:
@@ -869,9 +737,9 @@ COND_EXPR *UnaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LO
     }
     return nullptr;
 }
-COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym)
+Expr *BinaryOperator::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)
 {
-    COND_EXPR *r;
+    Expr *r;
     if(this->op()!=NOT)
     {
         assert(m_lhs);
@@ -891,30 +759,21 @@ COND_EXPR *BinaryOperator::insertSubTreeReg(COND_EXPR *_expr, eReg regi, const L
     }
     return nullptr;
 }
-COND_EXPR *AstIdent::insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym)
+Expr *AstIdent::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)
 {
-    eReg treeReg;
     if (ident.idType == REGISTER)
     {
-        treeReg = locsym->id_arr[ident.idNode.regiIdx].id.regi;
-        if (treeReg == regi)                        /* uint16_t reg */
-        {
-            return _expr;
-        }
-        else if(Machine_X86::isSubRegisterOf(treeReg,regi))    /* uint16_t/uint8_t reg */
-        {
-            return _expr;
-        }
+        assert(false);
     }
     return nullptr;
 }
 /* Inserts the expression exp into the tree at the location specified by the
  * long register index longIdx*/
-bool COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, COND_EXPR *&tree, int longIdx)
+bool Expr::insertSubTreeLongReg(Expr *_expr, Expr *&tree, int longIdx)
 {
     if (tree == NULL)
         return false;
-    COND_EXPR *temp=tree->insertSubTreeLongReg(_expr,longIdx);
+    Expr *temp=tree->insertSubTreeLongReg(_expr,longIdx);
     if(nullptr!=temp)
     {
         tree=temp;
@@ -922,9 +781,9 @@ bool COND_EXPR::insertSubTreeLongReg(COND_EXPR *_expr, COND_EXPR *&tree, int lon
     }
     return false;
 }
-COND_EXPR *UnaryOperator::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
+Expr *UnaryOperator::insertSubTreeLongReg(Expr *_expr, int longIdx)
 {
-    COND_EXPR *temp = unaryExp->insertSubTreeLongReg(_expr,longIdx);
+    Expr *temp = unaryExp->insertSubTreeLongReg(_expr,longIdx);
     if (nullptr!=temp)
     {
         unaryExp = temp;
@@ -932,9 +791,9 @@ COND_EXPR *UnaryOperator::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
     }
     return nullptr;
 }
-COND_EXPR *BinaryOperator::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
+Expr *BinaryOperator::insertSubTreeLongReg(Expr *_expr, int longIdx)
 {
-    COND_EXPR *r;
+    Expr *r;
     if(m_op!=NOT)
     {
         r=m_lhs->insertSubTreeLongReg(_expr,longIdx);
@@ -952,7 +811,7 @@ COND_EXPR *BinaryOperator::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
     }
     return nullptr;
 }
-COND_EXPR *AstIdent::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
+Expr *AstIdent::insertSubTreeLongReg(Expr *_expr, int longIdx)
 {
     if (ident.idNode.longIdx == longIdx)
     {
@@ -962,24 +821,12 @@ COND_EXPR *AstIdent::insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)
 }
 
 /* Recursively deallocates the abstract syntax tree rooted at *exp */
-COND_EXPR::~COND_EXPR()
-{
-    switch (m_type)
-    {
-        case BOOLEAN_OP:
-        case NEGATION:
-        case ADDRESSOF:
-        case DEREFERENCE:
-        case IDENTIFIER:
-            break;
-        default:
-            fprintf(stderr,"release attempt on unhandled type %d\n",m_type);
-    }
-}
+Expr::~Expr(){}
+
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
 
-COND_EXPR *BinaryOperator::clone() const
+Expr *BinaryOperator::clone() const
 {
     BinaryOperator* newExp=new BinaryOperator(m_op);        /* Expression node copy */
     newExp->m_lhs = m_lhs->clone();
@@ -987,7 +834,7 @@ COND_EXPR *BinaryOperator::clone() const
     return newExp;
 }
 
-COND_EXPR *BinaryOperator::inverse() const
+Expr *BinaryOperator::inverse() const
 {
     static condOp invCondOp[] = {GREATER, GREATER_EQUAL, NOT_EQUAL, EQUAL,
                                  LESS_EQUAL, LESS, DUMMY,DUMMY,DUMMY,DUMMY,
@@ -1017,18 +864,17 @@ COND_EXPR *BinaryOperator::inverse() const
     return res;
 
 }
-void AstIdent::performLongRemoval(eReg regi, LOCAL_ID *locId)
+Expr *AstIdent::performLongRemoval(eReg regi, LOCAL_ID *locId)
 {
     eReg otherRegi;         /* high or low part of long register */
 
-    IDENTTYPE* ident_2 = &ident;
-    if (ident_2->idType == LONG_VAR)
+    if (ident.idType == LONG_VAR)
     {
-        otherRegi = otherLongRegi (regi, ident_2->idNode.longIdx, locId);
-        ident_2->idType = REGISTER;
-        ident_2->regiType = WORD_REG;
-        ident_2->idNode.regiIdx = locId->newByteWordReg(TYPE_WORD_SIGN,otherRegi);
+        otherRegi = otherLongRegi (regi, ident.idNode.longIdx, locId);
+        delete this;
+        return new RegisterNode(locId->newByteWordReg(TYPE_WORD_SIGN,otherRegi),WORD_REG);
     }
+    return this;
 }
 eReg AstIdent::otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
 {
@@ -1045,3 +891,42 @@ eReg AstIdent::otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
     }
     return rUNDEF;	// Cristina: please check this!
 }
+
+
+string Constant::walkCondExpr(Function *, int *) const
+{
+    ostringstream o;
+    if (kte.kte < 1000)
+        o << kte.kte;
+    else
+        o << "0x"<<std::hex << kte.kte;
+    return o.str();
+}
+
+int Constant::hlTypeSize(Function *) const
+{
+    return kte.size;
+}
+
+hlType Constant::expType(Function *pproc) const
+{
+    return TYPE_CONST;
+}
+
+string FuncNode::walkCondExpr(Function *pProc, int *numLoc) const
+{
+    return pProc->writeCall(call.proc,*call.args, numLoc);
+}
+
+int FuncNode::hlTypeSize(Function *) const
+{
+    return hlSize[call.proc->retVal.type];
+}
+
+hlType FuncNode::expType(Function *) const
+{
+    return call.proc->retVal.type;
+}
+
+
+

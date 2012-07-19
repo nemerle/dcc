@@ -37,9 +37,6 @@ public:
         bool insertCallGraph(Function *caller, ilFunction callee);
         void insertArc(ilFunction newProc);
 };
-//#define NUM_PROCS_DELTA		5		/* delta # procs a proc invokes		 	*/
-//extern std::list<Function> pProcList;
-//extern FunctionListType pProcList;
 //extern CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
 extern bundle cCode;			/* Output C procedure's declaration and code */
 
@@ -110,11 +107,11 @@ void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
 BB *    newBB(BB *, int, int, uint8_t, int, Function *);    /* graph.c      */
 void    BackEnd(char *filename, CALL_GRAPH *);              /* backend.c    */
-char   *cChar(uint8_t c);                                   /* backend.c    */
+extern char   *cChar(uint8_t c);                            /* backend.c    */
 eErrorId scan(uint32_t ip, ICODE &p);                       /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */
 
-int     strSize (uint8_t *, char);                          /* parser.c     */
+extern int     strSize (const uint8_t *, char);             /* parser.c     */
 //void    disassem(int pass, Function * pProc);             /* disassem.c   */
 void    interactDis(Function *, int initIC);       /* disassem.c   */
 bool    JmpInst(llIcode opcode);                            /* idioms.c     */
@@ -126,10 +123,8 @@ bool    LibCheck(Function &p);                              /* chklib.c     */
 
 /* Exported functions from procs.c */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
-void	adjustActArgType (COND_EXPR *, hlType, Function *);
 
 /* Exported functions from hlicode.c */
-std::string writeCall (Function *, STKFRAME &, Function *, int *);
 char 	*writeJcond (const HLTYPE &, Function *, int *);
 char 	*writeJcondInv (HLTYPE, Function *, int *);
 

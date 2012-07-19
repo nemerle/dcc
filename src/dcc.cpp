@@ -4,9 +4,9 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
+#include <cstring>
 #include "dcc.h"
 #include "project.h"
-#include <string.h>
 
 /* Global variables - extern to other modules */
 extern char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
@@ -22,18 +22,102 @@ extern OPTION  option;             /* Command line options     			  */
 static char *initargs(int argc, char *argv[]);
 static void displayTotalStats(void);
 #include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/PrettyStackTrace.h>
+#include <llvm/Support/Signals.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetInstrInfo.h>
+#include <llvm/MC/MCAsmInfo.h>
+#include <llvm/CodeGen/MachineInstrBuilder.h>
 
+#include <llvm/TableGen/Main.h>
+#include <llvm/TableGen/TableGenAction.h>
+#include <llvm/TableGen/Record.h>
 /****************************************************************************
  * main
  ***************************************************************************/
 #include <iostream>
-int main(int argc, char *argv[])
+using namespace llvm;
+class TVisitor : public TableGenAction {
+public:
+    virtual bool operator()(raw_ostream &OS, RecordKeeper &Records)
+    {
+        Record *rec = Records.getDef("ADD8i8");
+        if(rec)
+        {
+            if(not rec->getTemplateArgs().empty())
+                std::cout << "Has template args\n";
+            auto classes(rec->getSuperClasses());
+            for(auto val : rec->getSuperClasses())
+                std::cout << "Super "<<val->getName()<<"\n";
+
+//          DagInit * in = rec->getValueAsDag(val.getName());
+//          in->dump();
+            for(const RecordVal &val : rec->getValues())
+            {
+//                val.dump();
+            }
+            rec->dump();
+
+        }
+        //        rec = Records.getDef("CCR");
+        //        if(rec)
+        //            rec->dump();
+        for(auto val : Records.getDefs())
+        {
+            //std::cout<< "Def "<<val.first<<"\n";
+        }
+        return false;
+    }
+};
+int testTblGen(int argc, char **argv)
 {
-//     llvm::MCOperand op=llvm::MCOperand::CreateImm(11);
-//     llvm::MCAsmInfo info;
-//     llvm::raw_os_ostream wrap(std::cerr);
-//     op.print(wrap,&info);
-//     wrap.flush();
+    using namespace llvm;
+    sys::PrintStackTraceOnErrorSignal();
+    PrettyStackTraceProgram(argc,argv);
+    cl::ParseCommandLineOptions(argc,argv);
+    TVisitor tz;
+
+    return llvm::TableGenMain(argv[0],tz);
+    InitializeNativeTarget();
+    Triple TheTriple;
+    std::string  def = sys::getDefaultTargetTriple();
+    std::string MCPU="i386";
+    std::string MARCH="x86";
+    InitializeAllTargetInfos();
+    InitializeAllTargetMCs();
+    InitializeAllAsmPrinters();
+    InitializeAllAsmParsers();
+    InitializeAllDisassemblers();
+    std::string TargetTriple("i386-pc-linux-gnu");
+    TheTriple = Triple(Triple::normalize(TargetTriple));
+    MCOperand op=llvm::MCOperand::CreateImm(11);
+    MCAsmInfo info;
+    raw_os_ostream wrap(std::cerr);
+    op.print(wrap,&info);
+    wrap.flush();
+    std::cerr<<"\n";
+    std::string lookuperr;
+    TargetRegistry::printRegisteredTargetsForVersion();
+    const Target *t = TargetRegistry::lookupTarget(MARCH,TheTriple,lookuperr);
+    TargetOptions opts;
+    std::string Features;
+    opts.PrintMachineCode=1;
+    TargetMachine *tm = t->createTargetMachine(TheTriple.getTriple(),MCPU,Features,opts);
+    std::cerr<<tm->getInstrInfo()->getName(97)<<"\n";
+    const MCInstrDesc &ds(tm->getInstrInfo()->get(97));
+    const MCOperandInfo *op1=ds.OpInfo;
+    uint16_t impl_def = ds.getImplicitDefs()[0];
+    std::cerr<<lookuperr<<"\n";
+
+    exit(0);
+
+}
+int main(int argc, char **argv)
+{
     /* Extract switches and filename */
     strcpy(option.filename, initargs(argc, argv));
 

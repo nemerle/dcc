@@ -21,7 +21,7 @@ void x86_insn_t::make_invalid(unsigned char *buf)
     type = insn_invalid;
     memcpy( bytes, buf, 1 );
 }
-unsigned int X86_Disasm::x86_disasm( unsigned char *buf, unsigned int buf_len,
+unsigned int X86_Disasm::x86_disasm( const unsigned char *buf, unsigned int buf_len,
                                      uint32_t buf_rva, unsigned int offset,
                                      x86_insn_t *insn ){
     int len, size;

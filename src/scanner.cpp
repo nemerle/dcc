@@ -314,14 +314,29 @@ static struct {
 } ;
 
 static uint16_t    SegPrefix, RepPrefix;
-static uint8_t  *pInst;		/* Ptr. to current uint8_t of instruction */
+static const uint8_t  *pInst;		/* Ptr. to current uint8_t of instruction */
 static ICODE * pIcode;		/* Ptr to Icode record filled in by scan() */
 
 
-/*****************************************************************************
- Scans one machine instruction at offset ip in prog.Image and returns error.
- At the same time, fill in low-level icode details for the scanned inst.
- ****************************************************************************/
+static void decodeBranchTgt(x86_insn_t &insn)
+{
+    x86_op_t *tgt_op = insn.x86_get_branch_target();
+    if(tgt_op->type==op_expression)
+        return; // unhandled for now
+    if(tgt_op->type==op_register)
+        return; // unhandled for now
+    int32_t addr = tgt_op->getAddress();
+    if(tgt_op->is_relative())
+    {
+        addr +=  insn.addr+insn.size;
+    }
+    pIcode->ll()->replaceSrc((uint32_t)addr);
+    pIcode->ll()->setFlags(I);
+    //    PROG &prog(Project::get()->prog);
+    //    long off = (short)getWord();	/* Signed displacement */
+    //    assert(addr==(uint32_t)(off + (unsigned)(pInst - prog.image())));
+
+}
 
 static void convertUsedFlags(x86_insn_t &from,ICODE &to)
 {
@@ -345,6 +360,13 @@ static void convertUsedFlags(x86_insn_t &from,ICODE &to)
     if(from.containsFlag(insn_eflag_direction,from.flags_tested))
         to.ll()->flagDU.u |= Df;
 }
+static void convertPrefix(x86_insn_prefix prefix,ICODE &to)
+{
+    if(prefix ==insn_no_prefix)
+        return;
+    // insn_lock - no need to handle
+    RepPrefix = (uint16_t)prefix & ~insn_lock;
+}
 /****************************************************************************
  Checks for int 34 to int 3B - if so, converts to ESC nn instruction
  ****************************************************************************/
@@ -362,7 +384,7 @@ static void fixFloatEmulation(x86_insn_t &insn)
     /* This is a Borland/Microsoft floating point emulation instruction. Treat as if it is an ESC opcode */
 
     int actual_valid_bytes=std::min(16U,prog.cbImage-insn.offset);
-    memcpy(buf,prog.Image+insn.offset,actual_valid_bytes);
+    memcpy(buf,prog.image()+insn.offset,actual_valid_bytes);
     X86_Disasm ds(opt_16_bit);
     x86_insn_t patched_insn;
     //patch actual instruction into buffer;
@@ -378,7 +400,7 @@ int disassembleOneLibDisasm(uint32_t ip,x86_insn_t &l)
 {
     PROG &prog(Project::get()->prog);
     X86_Disasm ds(opt_16_bit);
-    int cnt=ds.x86_disasm(prog.Image,prog.cbImage,0,ip,&l);
+    int cnt=ds.x86_disasm(prog.image(),prog.cbImage,0,ip,&l);
     if(cnt && l.is_valid())
     {
         fixFloatEmulation(l); //can change 'l'
@@ -416,6 +438,11 @@ LLOperand convertOperand(const x86_op_t &from)
     }
     return LLOperand::CreateImm2(0);
 }
+/*****************************************************************************
+ Scans one machine instruction at offset ip in prog.Image and returns error.
+ At the same time, fill in low-level icode details for the scanned inst.
+ ****************************************************************************/
+
 eErrorId scan(uint32_t ip, ICODE &p)
 {
     PROG &prog(Project::get()->prog);
@@ -431,10 +458,12 @@ eErrorId scan(uint32_t ip, ICODE &p)
     if(cnt)
     {
         convertUsedFlags(p.insn,p);
+        convertPrefix(p.insn.prefix,p);
+
     }
 
     SegPrefix = RepPrefix = 0;
-    pInst    = prog.Image + ip;
+    pInst    = prog.image() + ip;
     pIcode   = &p;
 
     do
@@ -446,12 +475,20 @@ eErrorId scan(uint32_t ip, ICODE &p)
         (*stateTable[op].state2)(op);		/* Third state  */
 
     } while (stateTable[op].state1 == prefix);	/* Loop if prefix */
+    if(p.insn.group == x86_insn_t::insn_controlflow)
+    {
+        if(p.insn.x86_get_branch_target())
+            decodeBranchTgt(p.insn);
+    }
+//    LLOperand conv = convertOperand(*p.insn.get_dest());
+//    assert(conv==p.ll()->dst);
     if (p.ll()->getOpcode())
     {
         /* Save bytes of image used */
-        p.ll()->numBytes = (uint8_t)((pInst - prog.Image) - ip);
+        p.ll()->numBytes = (uint8_t)((pInst - prog.image()) - ip);
         if(p.insn.is_valid())
             assert(p.ll()->numBytes == p.insn.size);
+        p.ll()->numBytes = p.insn.size;
         return ((SegPrefix)? FUNNY_SEGOVR:  /* Seg. Override invalid */
                              (RepPrefix ? FUNNY_REP: NO_ERR));/* REP prefix invalid */
     }
@@ -462,11 +499,11 @@ eErrorId scan(uint32_t ip, ICODE &p)
 /***************************************************************************
  relocItem - returns true if uint16_t pointed at is in relocation table
  **************************************************************************/
-static bool relocItem(uint8_t *p)
+static bool relocItem(const uint8_t *p)
 {
     PROG &prog(Project::get()->prog);
     int		i;
-    uint32_t	off = p - prog.Image;
+    uint32_t	off = p - prog.image();
 
     for (i = 0; i < prog.cReloc; i++)
         if (prog.relocTable[i] == off)
@@ -501,13 +538,13 @@ static int signex(uint8_t b)
  * 	Note: fdst == true is for the r/m part of the field (dest, unless TO_REG)
  *	      fdst == false is for reg part of the field
  ***************************************************************************/
-static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t off)
+static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off)
 {
     LLOperand *pm;
 
     /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
     pm = (!(stateTable[i].flg & TO_REG) == fdst) ?
-             &pIcode->ll()->dst : &pIcode->ll()->src();
+                &pIcode->ll()->dst : &pIcode->ll()->src();
 
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
          * provide the value of this segment in the field segValue.  */
@@ -572,7 +609,7 @@ static void rm(int i)
             setAddress(i, true, 0, rm + rAX, 0);
             break;
     }
-
+    //pIcode->insn.get_dest()->
     if ((stateTable[i].flg & NSP) && (pIcode->ll()->src().getReg2()==rSP ||
                                       pIcode->ll()->dst.getReg2()==rSP))
         pIcode->ll()->setFlags(NOT_HLL);
@@ -739,7 +776,7 @@ static void arith(int i)
     uint8_t opcode;
     static llIcode arithTable[8] =
     {
-        iTEST , (llIcode)0, iNOT, iNEG,
+        iTEST,  (llIcode)0, iNOT, iNEG,
         iMUL ,       iIMUL, iDIV, iIDIV
     };
     opcode = arithTable[REG(*pInst)];
@@ -810,47 +847,40 @@ static void dispM(int i)
 {
     setAddress(i, false, SegPrefix, 0, getWord());
 }
-
-
 /****************************************************************************
  dispN - 2 uint8_t disp as immed relative to ip
  ****************************************************************************/
 static void dispN(int )
 {
-    PROG &prog(Project::get()->prog);
-    long off = (short)getWord();	/* Signed displacement */
+    //PROG &prog(Project::get()->prog);
+    /*long off = (short)*/getWord();	/* Signed displacement */
 
     /* Note: the result of the subtraction could be between 32k and 64k, and
         still be positive; it is an offset from prog.Image. So this must be
         treated as unsigned */
-    pIcode->ll()->replaceSrc((uint32_t)(off + (unsigned)(pInst - prog.Image)));
-    pIcode->ll()->setFlags(I);
+    //    decodeBranchTgt();
 }
 
 
 /***************************************************************************
- dispS - 1 uint8_t disp as immed relative to ip
+ dispS - 1 byte disp as immed relative to ip
  ***************************************************************************/
 static void dispS(int )
 {
-    PROG &prog(Project::get()->prog);
-    long off = signex(*pInst++); 	/* Signed displacement */
+    /*long off =*/ signex(*pInst++); 	/* Signed displacement */
 
-    pIcode->ll()->replaceSrc((uint32_t)(off + (unsigned)(pInst - prog.Image)));
-    pIcode->ll()->setFlags(I);
+    //    decodeBranchTgt();
 }
 
 
 /****************************************************************************
- dispF - 4 uint8_t disp as immed 20-bit target address
+ dispF - 4 byte disp as immed 20-bit target address
  ***************************************************************************/
 static void dispF(int )
 {
-    uint32_t off = (unsigned)getWord();
-    uint32_t seg = (unsigned)getWord();
-
-    pIcode->ll()->replaceSrc(off + ((uint32_t)(unsigned)seg << 4));
-    pIcode->ll()->setFlags(I);
+    /*off = */(unsigned)getWord();
+    /*seg = */(unsigned)getWord();
+    //    decodeBranchTgt();
 }
 
 
@@ -880,12 +910,19 @@ static void strop(int )
 {
     if (RepPrefix)
     {
-        //		pIcode->ll()->getOpcode() += ((pIcode->ll()->getOpcode() == iCMPS ||
-        //								  pIcode->ll()->getOpcode() == iSCAS)
-        //								&& RepPrefix == iREPE)? 2: 1;
-        if ((pIcode->ll()->match(iCMPS) || pIcode->ll()->match(iSCAS) ) && RepPrefix == iREPE)
-            BumpOpcode(*pIcode->ll());	// += 2
-        BumpOpcode(*pIcode->ll());		// else += 1
+        if ( pIcode->ll()->match(iCMPS) || pIcode->ll()->match(iSCAS) )
+        {
+            if(pIcode->insn.prefix &  insn_rep_zero)
+            {
+                BumpOpcode(*pIcode->ll()); // iCMPS -> iREPE_CMPS
+                BumpOpcode(*pIcode->ll());
+            }
+            else if(pIcode->insn.prefix &  insn_rep_notzero)
+                BumpOpcode(*pIcode->ll()); // iX -> iREPNE_X
+        }
+        else
+            if(pIcode->insn.prefix &  insn_rep_zero)
+                BumpOpcode(*pIcode->ll()); // iX -> iREPE_X
         if (pIcode->ll()->match(iREP_LODS) )
             pIcode->ll()->setFlags(NOT_HLL);
         RepPrefix = 0;

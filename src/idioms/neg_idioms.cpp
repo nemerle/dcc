@@ -53,8 +53,8 @@ bool Idiom11::match (iICODE picode)
 int Idiom11::action()
 {
     AstIdent *lhs;
-    COND_EXPR *rhs;
-    lhs = AstIdent::idLong (&m_func->localId, DST, m_icodes[0], HIGH_FIRST,m_icodes[0], USE_DEF, *m_icodes[1]->ll());
+    Expr *rhs;
+    lhs = AstIdent::Long (&m_func->localId, DST, m_icodes[0], HIGH_FIRST,m_icodes[0], USE_DEF, *m_icodes[1]->ll());
     rhs = UnaryOperator::Create(NEGATION, lhs);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();
@@ -96,8 +96,8 @@ bool Idiom16::match (iICODE picode)
 int Idiom16::action()
 {
     AstIdent *lhs;
-    COND_EXPR *rhs;
-    lhs = AstIdent::Reg (m_icodes[0]->ll()->dst.regi, m_icodes[0]->ll()->getFlag(),&m_func->localId);
+    Expr *rhs;
+    lhs = new RegisterNode(m_icodes[0]->ll()->dst.regi, m_icodes[0]->ll()->getFlag(),&m_func->localId);
     rhs = UnaryOperator::Create(NEGATION, lhs->clone());
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();

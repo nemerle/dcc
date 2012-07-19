@@ -65,6 +65,8 @@ struct LivenessSet : public std::bitset<32>
     {
         return test(r-rAX);
     }
+public:
+    LivenessSet &clrReg(int r);
 private:
     void postProcessCompositeRegs();
 };
@@ -83,15 +85,16 @@ struct DU
 #define MAX_REGS_DEF	4		/* 2 regs def'd for long-reg vars */
 
 
-struct COND_EXPR;
+struct Expr;
 struct AstIdent;
+struct UnaryOperator;
 struct HlTypeSupport
 {
     //hlIcode              opcode;    /* hlIcode opcode           */
     virtual bool        removeRegFromLong(eReg regi, LOCAL_ID *locId)=0;
     virtual std::string writeOut(Function *pProc, int *numLoc) const=0;
 protected:
-    void performLongRemoval (eReg regi, LOCAL_ID *locId, COND_EXPR *tree);
+    Expr * performLongRemoval (eReg regi, LOCAL_ID *locId, Expr *tree);
 };
 
 struct CallType : public HlTypeSupport
@@ -100,9 +103,9 @@ struct CallType : public HlTypeSupport
     Function *      proc;
     STKFRAME *      args;   // actual arguments
     void allocStkArgs (int num);
-    bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc);
-    void placeStkArg(COND_EXPR *exp, int pos);
-    virtual COND_EXPR * toId();
+    bool newStkArg(Expr *exp, llIcode opcode, Function *pproc);
+    void placeStkArg(Expr *exp, int pos);
+    virtual Expr * toAst();
 public:
     bool removeRegFromLong(eReg /*regi*/, LOCAL_ID */*locId*/)
     {
@@ -114,20 +117,24 @@ public:
 struct AssignType : public HlTypeSupport
 {
     /* for HLI_ASSIGN */
-    COND_EXPR    *lhs;
-    COND_EXPR    *rhs;
-    AssignType() : lhs(0),rhs(0) {}
+protected:
+public:
+    Expr    *m_lhs;
+    Expr    *rhs;
+    AssignType() {}
+    Expr *lhs() const {return m_lhs;}
+    void lhs(Expr *l);
     bool removeRegFromLong(eReg regi, LOCAL_ID *locId);
     std::string writeOut(Function *pProc, int *numLoc) const;
 };
 struct ExpType : public HlTypeSupport
 {
     /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
-    COND_EXPR    *v;
+    Expr    *v;
     ExpType() : v(0) {}
     bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
-        performLongRemoval(regi,locId,v);
+        v=performLongRemoval(regi,locId,v);
         return true;
     }
     std::string writeOut(Function *pProc, int *numLoc) const;
@@ -147,15 +154,21 @@ public:
         return const_cast<const HlTypeSupport *>(const_cast<HLTYPE*>(this)->get());
     }
 
-    void expr(COND_EXPR *e)
+    void expr(Expr *e)
     {
         assert(e);
         exp.v=e;
     }
-    void replaceExpr(COND_EXPR *e);
-    COND_EXPR * expr() { return exp.v;}
-    const COND_EXPR * expr() const  { return exp.v;}
-    void set(hlIcode i,COND_EXPR *e)
+    Expr *getMyExpr()
+    {
+        if(opcode==HLI_CALL)
+            return call.toAst();
+        return expr();
+    }
+    void replaceExpr(Expr *e);
+    Expr * expr() { return exp.v;}
+    const Expr * expr() const  { return exp.v;}
+    void set(hlIcode i,Expr *e)
     {
         if(i!=HLI_RET)
             assert(e);
@@ -163,7 +176,7 @@ public:
         opcode=i;
         exp.v=e;
     }
-    void set(COND_EXPR *l,COND_EXPR *r);
+    void set(Expr *l,Expr *r);
     void setCall(Function *proc);
     HLTYPE(hlIcode op=HLI_INVALID) : opcode(op)
     {}
@@ -179,7 +192,7 @@ public:
     }
 public:
     std::string write1HlIcode(Function *pProc, int *numLoc) const;
-    void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs);
+    void setAsgn(Expr *lhs, Expr *rhs);
 } ;
 /* LOW_LEVEL icode operand record */
 struct LLOperand
@@ -201,6 +214,16 @@ struct LLOperand
         proc.proc=0;
         proc.cb=0;
     }
+    bool operator==(const LLOperand &with) const
+    {
+        return (seg==with.seg) &&
+                (segOver==with.segOver) &&
+                (segValue==with.segValue) &&
+                (regi == with.regi) &&
+                (off == with.off) &&
+                (opz==with.opz) &&
+                (proc.proc==with.proc.proc);
+    }
     int64_t getImm2() const {return opz;}
     void SetImmediateOp(uint32_t dw)
     {
@@ -219,8 +242,6 @@ struct LLOperand
     static LLOperand CreateReg2(unsigned Val)
     {
         LLOperand Op;
-//        Op.Kind = kRegister;
-//        Op.RegVal = Reg;
         Op.regi = (eReg)Val;
         return Op;
     }
@@ -229,20 +250,15 @@ struct LLOperand
 struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
 protected:
-    uint32_t     flg;            /* icode flags                  */
-//    LLOperand &get(int idx)
-//    {
-//        assert(idx<size());
-//        return getOperand(idx);
-//    }
-    LLOperand    m_src;            /* source operand               */
+    uint32_t        flg;            /* icode flags                  */
+    LLOperand       m_src;            /* source operand               */
 public:
-    int          codeIdx;    	/* Index into cCode.code            */
-    uint8_t      numBytes;       /* Number of bytes this instr   */
-    uint32_t     label;          /* offset in image (20-bit adr) */
-    LLOperand    dst;            /* destination operand          */
-    DU           flagDU;         /* def/use of flags				*/
-        int caseEntry;
+    int             codeIdx;    	/* Index into cCode.code            */
+    uint8_t         numBytes;       /* Number of bytes this instr   */
+    uint32_t        label;          /* offset in image (20-bit adr) */
+    LLOperand       dst;            /* destination operand          */
+    DU              flagDU;         /* def/use of flags				*/
+    int             caseEntry;
     std::vector<uint32_t> caseTbl2;
     int         hllLabNum;      /* label # for hll codegen      */
     bool conditionalJump()
@@ -260,9 +276,7 @@ public:
         flg &= ~flag;
     }
     uint32_t getFlag() const {return flg;}
-    //llIcode getOpcode() const { return opcode; }
-
-    uint32_t  GetLlLabel() const { return label;}
+    uint32_t GetLlLabel() const { return label;}
 
     void SetImmediateOp(uint32_t dw) {m_src.SetImmediateOp(dw);}
 
@@ -308,7 +322,6 @@ public:
 
     void flops(std::ostringstream &out);
     bool isJmpInst();
-    //HLTYPE toHighLevel(COND_EXPR *lhs, COND_EXPR *rhs, Function *func);
     HLTYPE createCall();
     LLInst(ICODE *container) : flg(0),codeIdx(0),numBytes(0),m_link(container)
     {
@@ -465,13 +478,13 @@ public:
     condId idType(opLoc sd);
     // HLL setting functions
     // set this icode to be an assign
-    void setAsgn(COND_EXPR *lhs, COND_EXPR *rhs)
+    void setAsgn(Expr *lhs, Expr *rhs)
     {
         type=HIGH_LEVEL;
         hlU()->setAsgn(lhs,rhs);
     }
-    void setUnary(hlIcode op, COND_EXPR *_exp);
-    void setJCond(COND_EXPR *cexp);
+    void setUnary(hlIcode op, Expr *_exp);
+    void setJCond(Expr *cexp);
 
     void emitGotoLabel(int indLevel);
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
@@ -480,7 +493,7 @@ public:
 public:
     bool removeDefRegi(eReg regi, int thisDefIdx, LOCAL_ID *locId);
     void checkHlCall();
-    bool newStkArg(COND_EXPR *exp, llIcode opcode, Function *pproc)
+    bool newStkArg(Expr *exp, llIcode opcode, Function *pproc)
     {
         return hlU()->call.newStkArg(exp,opcode,pproc);
     }

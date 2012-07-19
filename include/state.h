@@ -30,6 +30,10 @@ struct STATE
         memset(r,0,sizeof(int16_t)*INDEX_BX_SI); //TODO: move this to machine_x86
         memset(f,0,sizeof(uint8_t)*INDEX_BX_SI);
     }
+    void setMemoryByte(uint32_t addr,uint8_t val)
+    {
+        //TODO: make this into a full scale value tracking class !
+    };
 };
 
 

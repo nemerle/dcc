@@ -3,4 +3,4 @@
 #make -j5
 #cd ..
 ./test_use_base.sh
-./regression_tester.rb ./dcc_original -s -c 2>stderr >stdout; diff tests/prev/ tests/outputs/
+./regression_tester.rb ./dcc_original -s -c 2>stderr >stdout; diff -wB tests/prev/ tests/outputs/

@@ -15,6 +15,7 @@ struct PROG /* Loaded program image parameters  */
     uint16_t    segMain;    /* The segment of the main() proc   */
     bool        bSigs;		/* True if signatures loaded		*/
     int         cbImage;    /* Length of image in bytes         */
-    uint8_t *   Image;      /* Allocated by loader to hold entire program image */
+    const uint8_t *image() const {return Imagez;}
+    uint8_t *   Imagez;      /* Allocated by loader to hold entire program image */
 };
 

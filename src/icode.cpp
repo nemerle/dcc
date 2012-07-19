@@ -103,6 +103,12 @@ void HLTYPE::setCall(Function *proc)
 }
 bool AssignType::removeRegFromLong(eReg regi, LOCAL_ID *locId)
 {
-    lhs->performLongRemoval(regi,locId);
+    m_lhs=lhs()->performLongRemoval(regi,locId);
     return true;
 }
+void AssignType::lhs(Expr *l)
+{
+    assert(dynamic_cast<UnaryOperator *>(l));
+    m_lhs=l;
+}
+

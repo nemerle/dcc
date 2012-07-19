@@ -9,7 +9,7 @@
 #include "StackFrame.h"
 /* PROCEDURE NODE */
 struct CALL_GRAPH;
-struct COND_EXPR;
+struct Expr;
 struct Disassembler;
 struct Function;
 struct CALL_GRAPH;
@@ -74,8 +74,8 @@ struct FunctionType
 };
 struct Assignment
 {
-    COND_EXPR *lhs;
-    COND_EXPR *rhs;
+    Expr *lhs;
+    Expr *rhs;
 };
 struct JumpTable
 {
@@ -184,9 +184,11 @@ public:
 
     void displayCFG();
     void displayStats();
-    void processHliCall(COND_EXPR *exp, iICODE picode);
+    void processHliCall(Expr *exp, iICODE picode);
 
     void preprocessReturnDU(LivenessSet &_liveOut);
+    Expr * adjustActArgType(Expr *_exp, hlType forType);
+    std::string writeCall(Function *tproc, STKFRAME &args, int *numLoc);
 protected:
     void extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &table);
     bool followAllTableEntries(JumpTable &table, uint32_t cs, ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);

@@ -25,7 +25,7 @@ ENDIF()
 
 ADD_SUBDIRECTORY(3rd_party)
 
-llvm_map_components_to_libraries(REQ_LLVM_LIBRARIES jit native mc support)
+llvm_map_components_to_libraries(REQ_LLVM_LIBRARIES jit native mc support tablegen)
 INCLUDE_DIRECTORIES(
     3rd_party/libdisasm
     include
@@ -50,6 +50,7 @@ set(dcc_LIB_SOURCES
     src/hltype.cpp
     src/machine_x86.cpp
     src/icode.cpp
+    src/RegisterNode
     src/idioms.cpp
     src/idioms/idiom1.cpp
     src/idioms/arith_idioms.cpp

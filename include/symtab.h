@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include "Enums.h"
 #include "types.h"
-struct COND_EXPR;
+struct Expr;
 struct AstIdent;
 struct TypeContainer;
 /* * * * * * * * * * * * * * * * * */
@@ -36,7 +36,7 @@ struct SYM : public SymbolCommon
 struct STKSYM : public SymbolCommon
 {
     typedef int16_t tLabel;
-    COND_EXPR	*actual;	/* Expression tree of actual parameter 		*/
+    Expr	*actual;	/* Expression tree of actual parameter 		*/
     AstIdent 	*regs;		/* For register arguments only				*/
     tLabel      label;        /* Immediate off from BP (+:args, -:params) */
     uint8_t     regOff;     /* Offset is a register (e.g. SI, DI)       */

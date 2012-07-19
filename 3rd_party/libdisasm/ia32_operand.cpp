@@ -109,17 +109,15 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
             op->type = op_absolute;
 
             /* segment:offset address used in far calls */
-            x86_imm_sized( buf, buf_len,
-                           &op->data.absolute.segment, 2 );
             if ( m_decoded->addr_size == 4 ) {
-                x86_imm_sized( buf, buf_len,
-                               &op->data.absolute.offset.off32, 4 );
-                size = 6;
-            } else {
-                x86_imm_sized( buf, buf_len,
-                               &op->data.absolute.offset.off16, 2 );
+                x86_imm_sized( buf, buf_len, &op->data.absolute.offset.off32, 4 );
                 size = 4;
+            } else {
+                x86_imm_sized( buf, buf_len,&op->data.absolute.offset.off16, 2 );
+                size = 2;
             }
+            x86_imm_sized( buf+size, buf_len-size, &op->data.absolute.segment, 2 );
+            size+=2;
 
             break;
         case ADDRMETH_I:	/* Immediate val */
@@ -140,17 +138,24 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
                            op->data.far_offset depending on the size of
                            the operand */
             op->flags.op_signed = true;
-            if ( op_size == 1 ) {
-                /* one-byte near offset */
-                op->type = op_relative_near;
-                x86_imm_signsized(buf, buf_len, &op->data.relative_near, 1);
-            } else {
-                /* far offset...is this truly signed? */
-                op->type = op_relative_far;
-                x86_imm_signsized(buf, buf_len,
-                                  &op->data.relative_far, op_size );
+            switch(op_size)
+            {
+                case 1:
+                    /* one-byte near offset */
+                    op->type = op_relative_near;
+                    size = x86_imm_signsized(buf, buf_len, &op->data.relative_near, 1);
+                    break;
+                case 2:
+                    op->type = op_relative_far;
+                    int16_t offset_val;
+                    size = x86_imm_signsized(buf, buf_len,&offset_val, 2);
+                    op->data.relative_far=offset_val;
+                    break;
+                default:
+                    assert(false);
+                    size=0;
+
             }
-            size = op_size;
             break;
         case ADDRMETH_O:	/* No ModR/M; op is word/dword offset */
             /* NOTE: these are actually RVAs not offsets to seg!! */
@@ -258,7 +263,7 @@ size_t Ia32_Decoder::decode_operand_size( unsigned int op_type, x86_op_t *op ) {
                          * value s a 16:16 pointer or a 16:32 pointer, where
                          * the first '16' is a segment */
             size = (m_decoded->addr_size == 4) ? 6 : 4;
-            op->datatype = (size == 4) ? op_descr32 : op_descr16;
+            op->datatype = (size == 6) ? op_descr32 : op_descr16;
             break;
         case OPTYPE_b:	/* byte, ignore op-size */
             size = 1;

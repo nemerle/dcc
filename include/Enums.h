@@ -8,6 +8,7 @@ enum regType
 };
 enum condId
 {
+    UNDEF=0,
     GLOB_VAR,       /* global variable  */
     REGISTER,       /* register         */
     LOCAL_VAR,      /* negative disp    */

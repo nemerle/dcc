@@ -336,7 +336,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
                 localId.id_arr[loc_ident_idx].idx.push_back(pIcode);//idx-1//insert
                 icode.setRegDU( pmL->regi, eDEF);
                 asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
-                asgn.rhs = AstIdent::idLong (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, *next1->ll());
+                asgn.rhs = AstIdent::Long (&this->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, *next1->ll());
                 icode.setAsgn(asgn.lhs, asgn.rhs);
                 next1->invalidate();
                 forced_finish=true; /* to exit the loop */
@@ -365,7 +365,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
             {
                 asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
-                asgn.rhs = AstIdent::idLong (&this->localId, SRC, pIcode, LOW_FIRST, pIcode, eUSE, *next1->ll());
+                asgn.rhs = AstIdent::Long (&this->localId, SRC, pIcode, LOW_FIRST, pIcode, eUSE, *next1->ll());
                 icode.setRegDU( pmH->regi, USE_DEF);
                 condOp toCreate=DUMMY;
                 switch (icode.ll()->getOpcode())
@@ -411,13 +411,13 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                     const LLOperand &src_op1(pIcode->ll()->src());
                     const LLOperand &src_op2(next1->ll()->src());
                     eReg srcReg1=src_op1.getReg2();
-                    eReg srcReg2=src_op2.getReg2();
-                    if ((ref_long.h == srcReg1) && (ref_long.l == srcReg2))
+                    eReg nextReg2=src_op2.getReg2();
+                    if ((ref_long.h == srcReg1) && (ref_long.l == nextReg2))
                     {
-                        pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
+                        pIcode->setRegDU( nextReg2, eUSE);
 
                         asgn.rhs = AstIdent::LongIdx (loc_ident_idx);
-                        asgn.lhs = AstIdent::idLong (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, *next1->ll());
+                        asgn.lhs = AstIdent::Long (&this->localId, DST, pIcode,HIGH_FIRST, pIcode, eDEF, *next1->ll());
 
                         pIcode->setAsgn(dynamic_cast<AstIdent *>(asgn.lhs), asgn.rhs);
                         next1->invalidate();
@@ -453,7 +453,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                 {
                     asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
                     pIcode->setRegDU( pmH->regi, USE_DEF);
-                    asgn.rhs = AstIdent::idLong (&this->localId, SRC, pIcode,
+                    asgn.rhs = AstIdent::Long (&this->localId, SRC, pIcode,
                                                   LOW_FIRST, pIcode, eUSE, *next1->ll());
                     condOp toCreate=DUMMY;
                     switch (pIcode->ll()->getOpcode()) {
@@ -505,7 +505,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             if (pLocId.id.longId.srcDstRegMatch(pIcode,pIcode))
             {
                 asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
-                asgn.rhs = AstIdent::Kte (0, 4);	/* long 0 */
+                asgn.rhs = new Constant(0, 4);	/* long 0 */
                 asgn.lhs = new BinaryOperator(condOpJCond[next1->ll()->getOpcode() - iJB],asgn.lhs, asgn.rhs);
                 next1->setJCond(asgn.lhs);
                 next1->copyDU(*pIcode, eUSE, eUSE);

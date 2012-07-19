@@ -247,7 +247,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         {
             for (j = 0; j < cb; j++)
             {
-                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[inst.label + j]);
+                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.image()[inst.label + j]);
             }
             hex_bytes << ' ';
         }

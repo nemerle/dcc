@@ -14,7 +14,7 @@ void JumpTable::pruneEntries(uint16_t cs)
     PROG *prg(Project::get()->binary());
     for (uint32_t i = start; i < finish; i += 2)
     {
-        uint32_t target = cs + LH(&prg->Image[i]);
+        uint32_t target = cs + LH(&prg->image()[i]);
         if (target < finish && target >= start)
             finish = target;
         else if (target >= (uint32_t)prg->cbImage)
@@ -23,9 +23,9 @@ void JumpTable::pruneEntries(uint16_t cs)
     ICODE _Icode; // used as scan input
     for (uint32_t i = start; i < finish; i += 2)
     {
-        uint32_t target = cs + LH(&prg->Image[i]);
+        uint32_t target = cs + LH(&prg->image()[i]);
         /* Be wary of 00 00 as code - it's probably data */
-        if (! (prg->Image[target] || prg->Image[target+1]) || scan(target, _Icode))
+        if (! (prg->image()[target] || prg->image()[target+1]) || scan(target, _Icode))
             finish = i;
     }
 

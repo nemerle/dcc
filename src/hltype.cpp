@@ -1,7 +1,7 @@
 #include "icode.h"
 #include "ast.h"
 
-void HLTYPE::replaceExpr(COND_EXPR *e)
+void HLTYPE::replaceExpr(Expr *e)
 {
     assert(e);
     delete exp.v;

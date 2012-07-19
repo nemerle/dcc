@@ -5,6 +5,7 @@
  * (C) Cristina Cifuentes
  */
 #pragma once
+#include <stdint.h>
 #include <cstring>
 #include <list>
 #include <boost/range/iterator_range.hpp>
@@ -34,37 +35,37 @@ typedef boost::iterator_range<iICODE> rICODE;
 #include "IdentType.h"
 
 /* Expression data type */
-struct COND_EXPR
+struct Expr
 {
 public:
     condNodeType            m_type;     /* Conditional Expression Node Type */
 public:
-    static bool         insertSubTreeLongReg(COND_EXPR *exp, COND_EXPR *&tree, int longIdx);
-    static bool         insertSubTreeReg(COND_EXPR *&tree, COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
-    static bool         insertSubTreeReg(AstIdent *&tree, COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
+    static bool         insertSubTreeLongReg(Expr *exp, Expr *&tree, int longIdx);
+    static bool         insertSubTreeReg(Expr *&tree, Expr *_expr, eReg regi, const LOCAL_ID *locsym);
+    static bool         insertSubTreeReg(AstIdent *&tree, Expr *_expr, eReg regi, const LOCAL_ID *locsym);
 public:
-    virtual COND_EXPR *clone() const;
-    void release();
-    COND_EXPR(condNodeType t=UNKNOWN_OP) : m_type(t)
+
+    virtual Expr *clone() const=0;  //!< Makes a deep copy of the given expression
+    Expr(condNodeType t=UNKNOWN_OP) : m_type(t)
     {
 
     }
-    virtual ~COND_EXPR();
+    virtual ~Expr();
 public:
     virtual std::string walkCondExpr (Function * pProc, int* numLoc) const=0;
-    virtual COND_EXPR *inverse() const=0; // return new COND_EXPR that is invarse of this
+    virtual Expr *inverse() const=0; // return new COND_EXPR that is invarse of this
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId)=0;
-    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym)=0;
-    virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx)=0;
-    virtual hlType expType(Function *pproc) const;
+    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)=0;
+    virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx)=0;
+    virtual hlType expType(Function *pproc) const=0;
     virtual int hlTypeSize(Function *pproc) const=0;
-    virtual void performLongRemoval(eReg regi, LOCAL_ID *locId) {}
+    virtual Expr * performLongRemoval(eReg regi, LOCAL_ID *locId) { return this; }
 };
-struct UnaryOperator : public COND_EXPR
+struct UnaryOperator : public Expr
 {
-    UnaryOperator(condNodeType t=UNKNOWN_OP) : COND_EXPR(t),unaryExp(nullptr) {}
-    COND_EXPR *unaryExp;
-    virtual COND_EXPR *inverse() const
+    UnaryOperator(condNodeType t=UNKNOWN_OP) : Expr(t),unaryExp(nullptr) {}
+    Expr *unaryExp;
+    virtual Expr *inverse() const
     {
         if (m_type == NEGATION) //TODO: memleak here
         {
@@ -72,14 +73,14 @@ struct UnaryOperator : public COND_EXPR
         }
         return this->clone();
     }
-    virtual COND_EXPR *clone() const
+    virtual Expr *clone() const
     {
         UnaryOperator *newExp = new UnaryOperator(*this);
         newExp->unaryExp = unaryExp->clone();
         return newExp;
     }
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
-    static UnaryOperator *Create(condNodeType t, COND_EXPR *sub_expr)
+    static UnaryOperator *Create(condNodeType t, Expr *sub_expr)
     {
         UnaryOperator *newExp = new UnaryOperator();
         newExp->m_type = t;
@@ -94,22 +95,22 @@ struct UnaryOperator : public COND_EXPR
 public:
     int hlTypeSize(Function *pproc) const;
     virtual std::string walkCondExpr(Function *pProc, int *numLoc) const;
-    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
+    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
     virtual hlType expType(Function *pproc) const;
-    virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
+    virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
 };
 
-struct BinaryOperator : public COND_EXPR
+struct BinaryOperator : public Expr
 {
     condOp      m_op;
-    COND_EXPR *m_lhs;
-    COND_EXPR *m_rhs;
-    BinaryOperator(condOp o) : COND_EXPR(BOOLEAN_OP)
+    Expr *m_lhs;
+    Expr *m_rhs;
+    BinaryOperator(condOp o) : Expr(BOOLEAN_OP)
     {
         m_op = o;
         m_lhs=m_rhs=nullptr;
     }
-    BinaryOperator(condOp o,COND_EXPR *l,COND_EXPR *r) : COND_EXPR(BOOLEAN_OP)
+    BinaryOperator(condOp o,Expr *l,Expr *r) : Expr(BOOLEAN_OP)
     {
         m_op = o;
         m_lhs=l;
@@ -121,51 +122,51 @@ struct BinaryOperator : public COND_EXPR
         delete m_lhs;
         delete m_rhs;
     }
-    static BinaryOperator *Create(condOp o,COND_EXPR *l,COND_EXPR *r)
+    static BinaryOperator *Create(condOp o,Expr *l,Expr *r)
     {
         BinaryOperator *res = new BinaryOperator(o);
         res->m_lhs = l;
         res->m_rhs = r;
         return res;
     }
-    static BinaryOperator *LogicAnd(COND_EXPR *l,COND_EXPR *r)
+    static BinaryOperator *LogicAnd(Expr *l,Expr *r)
     {
         return new BinaryOperator(DBL_AND,l,r);
     }
-    static BinaryOperator *And(COND_EXPR *l,COND_EXPR *r)
+    static BinaryOperator *And(Expr *l,Expr *r)
     {
         return new BinaryOperator(AND,l,r);
     }
-    static BinaryOperator *Or(COND_EXPR *l,COND_EXPR *r)
+    static BinaryOperator *Or(Expr *l,Expr *r)
     {
         return new BinaryOperator(OR,l,r);
     }
-    static BinaryOperator *LogicOr(COND_EXPR *l,COND_EXPR *r)
+    static BinaryOperator *LogicOr(Expr *l,Expr *r)
     {
         return new BinaryOperator(DBL_OR,l,r);
     }
-    static BinaryOperator *CreateAdd(COND_EXPR *l,COND_EXPR *r);
+    static BinaryOperator *CreateAdd(Expr *l,Expr *r);
     void changeBoolOp(condOp newOp);
-    virtual COND_EXPR *inverse() const;
-    virtual COND_EXPR *clone() const;
+    virtual Expr *inverse() const;
+    virtual Expr *clone() const;
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
-    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
-    virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
-    const COND_EXPR *lhs() const
+    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
+    virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
+    const Expr *lhs() const
     {
-        return const_cast<const COND_EXPR *>(const_cast<BinaryOperator *>(this)->lhs());
+        return const_cast<const Expr *>(const_cast<BinaryOperator *>(this)->lhs());
     }
-    const COND_EXPR *rhs() const
+    const Expr *rhs() const
     {
-        return const_cast<const COND_EXPR *>(const_cast<BinaryOperator *>(this)->rhs());
+        return const_cast<const Expr *>(const_cast<BinaryOperator *>(this)->rhs());
     }
 
-    COND_EXPR *lhs()
+    Expr *lhs()
     {
         assert(m_type==BOOLEAN_OP);
         return m_lhs;
     }
-    COND_EXPR *rhs()
+    Expr *rhs()
     {
         assert(m_type==BOOLEAN_OP);
         return m_rhs;
@@ -182,31 +183,27 @@ struct AstIdent : public UnaryOperator
 {
     AstIdent() : UnaryOperator(IDENTIFIER)
     {
-        memset(&ident,0,sizeof(ident));
     }
-    virtual COND_EXPR *clone() const
+    IDENTTYPE   ident;              /* for IDENTIFIER                   */
+    static AstIdent *  Loc(int off, LOCAL_ID *localId);
+    static AstIdent *  LongIdx(int idx);
+    static AstIdent *  String(uint32_t idx);
+    static AstIdent *  Other(eReg seg, eReg regi, int16_t off);
+    static AstIdent *  Param(int off, const STKFRAME *argSymtab);
+    static AstIdent *  Long(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);
+    static AstIdent *  idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
+    static Expr * id(const LLInst &ll_insn, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
+
+    virtual Expr *clone() const
     {
         return new AstIdent(*this);
     }
-    IDENTTYPE   ident;              /* for IDENTIFIER                   */
-    static AstIdent *  RegIdx(int idx, regType reg_type);
-    static AstIdent *  Kte(uint32_t kte, uint8_t size);
-    static AstIdent *  Loc(int off, LOCAL_ID *localId);
-    static AstIdent *  Reg(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
-    static AstIdent *  LongIdx(int idx);
-    static AstIdent *  Other(eReg seg, eReg regi, int16_t off);
-    static AstIdent *  idParam(int off, const STKFRAME *argSymtab);
-    static AstIdent *  idLong(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);
-    static AstIdent *  idFunc(Function *pproc, STKFRAME *args);
-    static AstIdent *  idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
-    static COND_EXPR * id(const LLInst &ll_insn, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
-
     virtual int hlTypeSize(Function *pproc) const;
     virtual hlType expType(Function *pproc) const;
-    virtual void performLongRemoval(eReg regi, LOCAL_ID *locId);
+    virtual Expr * performLongRemoval(eReg regi, LOCAL_ID *locId);
     virtual std::string walkCondExpr(Function *pProc, int *numLoc) const;
-    virtual COND_EXPR *insertSubTreeReg(COND_EXPR *_expr, eReg regi, const LOCAL_ID *locsym);
-    virtual COND_EXPR *insertSubTreeLongReg(COND_EXPR *_expr, int longIdx);
+    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
+    virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);
 protected:
     eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl);
@@ -214,7 +211,94 @@ protected:
 };
 struct GlobalVariable : public AstIdent
 {
-    static AstIdent *Create(int16_t segValue, int16_t off);
+    bool valid;
+    int globIdx;
+    virtual Expr *clone() const
+    {
+        return new GlobalVariable(*this);
+    }
+    GlobalVariable(int16_t segValue, int16_t off);
+    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    int hlTypeSize(Function *pproc) const;
+    hlType expType(Function *pproc) const;
 };
-struct Constant : public COND_EXPR
-{};
+struct GlobalVariableIdx : public AstIdent
+{
+    bool valid;
+    int idxGlbIdx;	/* idx into localId, GLOB_VAR_IDX   */
+
+    virtual Expr *clone() const
+    {
+        return new GlobalVariableIdx(*this);
+    }
+    GlobalVariableIdx(int16_t segValue, int16_t off, uint8_t regi, const LOCAL_ID *locSym);
+    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    int hlTypeSize(Function *pproc) const;
+    hlType expType(Function *pproc) const;
+};
+struct Constant : public AstIdent
+{
+    struct _kte
+    {			/* for CONSTANT only					*/
+        uint32_t   kte;   	/*   value of the constant			*/
+        uint8_t    size;       /*   #bytes size constant	 		*/
+    } kte;
+
+    Constant(uint32_t _kte, uint8_t size)
+    {
+        ident.idType = CONSTANT;
+        kte.kte = _kte;
+        kte.size = size;
+    }
+    virtual Expr *clone() const
+    {
+        return new Constant(*this);
+    }
+    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    int hlTypeSize(Function *pproc) const;
+    hlType expType(Function *pproc) const;
+};
+struct FuncNode : public AstIdent
+{
+    struct _call {			/* for FUNCTION only				*/
+        Function     *proc;
+        STKFRAME *args;
+    } call;
+
+    FuncNode(Function *pproc, STKFRAME *args)
+    {
+        call.proc = pproc;
+        call.args = args;
+    }
+    virtual Expr *clone() const
+    {
+        return new FuncNode(*this);
+    }
+    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    int hlTypeSize(Function *pproc) const;
+    hlType expType(Function *pproc) const;
+};
+struct RegisterNode : public AstIdent
+{
+    regType     regiType;  /* for REGISTER only                */
+    int         regiIdx;   /* index into localId, REGISTER		*/
+
+    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
+
+    RegisterNode(int idx, regType reg_type)
+    {
+        ident.type(REGISTER);
+        regiType = reg_type;
+        regiIdx = idx;
+    }
+
+    RegisterNode(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
+    virtual Expr *clone() const
+    {
+        return new RegisterNode(*this);
+    }
+    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    int hlTypeSize(Function *) const;
+    hlType expType(Function *pproc) const;
+    bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);
+};

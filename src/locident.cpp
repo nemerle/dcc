@@ -341,13 +341,13 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pPro
 
         if ( not pIcode->ll()->testFlags(NO_SRC) )
         {
-            asgn.rhs = AstIdent::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, atOffset);
+            asgn.rhs = AstIdent::Long (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, atOffset);
         }
         return true;
     }
     else if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
     {
-        asgn.lhs = AstIdent::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, atOffset);
+        asgn.lhs = AstIdent::Long (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, atOffset);
         asgn.rhs = AstIdent::LongIdx (i);
         return true;
     }
@@ -380,13 +380,13 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
         asgn.lhs = AstIdent::LongIdx (i);
         if ( not pIcode->ll()->testFlags(NO_SRC) )
         {
-            asgn.rhs = AstIdent::idLong (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, atOffset);
+            asgn.rhs = AstIdent::Long (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, atOffset);
         }
         return true;
     }
     else if ((longId.h == pmHsrc->regi) && (longId.l == pmLsrc->regi))
     {
-        asgn.lhs = AstIdent::idLong (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, atOffset);
+        asgn.lhs = AstIdent::Long (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, atOffset);
         asgn.rhs = AstIdent::LongIdx (i);
         return true;
     }

@@ -74,7 +74,7 @@ void checkHeap(char *msg);              /* For debugging */
 
 void fixWildCards(uint8_t pat[]);			/* In fixwild.c */
 
-static boolT locatePattern(uint8_t *source, int iMin, int iMax, uint8_t *pattern,
+static boolT locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pattern,
                            int iPatLen, int *index);
 
 /*  *   *   *   *   *   *   *   *   *   *   *   *   *   *   *\
@@ -457,8 +457,8 @@ bool LibCheck(Function & pProc)
         pProc.name = "main";
         return false;
     }
-    memcpy(pat, &prog.Image[fileOffset], PATLEN);
-    //memmove(pat, &prog.Image[fileOffset], PATLEN);
+    memcpy(pat, &prog.image()[fileOffset], PATLEN);
+    //memmove(pat, &prog.image()[fileOffset], PATLEN);
     fixWildCards(pat);                  /* Fix wild cards in the copy */
     h = g_pattern_hasher.hash(pat);                      /* Hash the found proc */
     /* We always have to compare keys, because the hash function will always return a valid index */
@@ -520,7 +520,7 @@ bool LibCheck(Function & pProc)
             pProc.flg |= PROC_RUNTIME;		/* => is a runtime routine */
         }
     }
-    if (locatePattern(prog.Image, pProc.procEntry,
+    if (locatePattern(prog.image(), pProc.procEntry,
                       pProc.procEntry+sizeof(pattMsChkstk),
                       pattMsChkstk, sizeof(pattMsChkstk), &Idx))
     {
@@ -587,11 +587,11 @@ void dispKey(int /*i*/)
     iPatLen). The pattern can contain wild bytes; if you really want to match
     for the pattern that is used up by the WILD uint8_t, tough - it will match with
     everything else as well. */
-static boolT locatePattern(uint8_t *source, int iMin, int iMax, uint8_t *pattern, int iPatLen,
+static boolT locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pattern, int iPatLen,
                            int *index)
 {
     int i, j;
-    uint8_t *pSrc;                             /* Pointer to start of considered source */
+    const uint8_t *pSrc;                             /* Pointer to start of considered source */
     int iLast;
 
     iLast = iMax - iPatLen;                 /* Last source uint8_t to consider */
@@ -645,18 +645,18 @@ void STATE::checkStartup()
 
     /* Check the Turbo Pascal signatures first, since they involve only the
                 first 3 bytes, and false positives may be founf with the others later */
-    if (locatePattern(prog.Image, startOff, startOff+5, pattBorl4on,sizeof(pattBorl4on), &i))
+    if (locatePattern(prog.image(), startOff, startOff+5, pattBorl4on,sizeof(pattBorl4on), &i))
     {
         /* The first 5 bytes are a far call. Follow that call and
                         determine the version from that */
-        rel = LH(&prog.Image[startOff+1]);  	 /* This is abs off of init */
-        para= LH(&prog.Image[startOff+3]);/* This is abs seg of init */
+        rel = LH(&prog.image()[startOff+1]);  	 /* This is abs off of init */
+        para= LH(&prog.image()[startOff+3]);/* This is abs seg of init */
         init = ((uint32_t)para << 4) + rel;
-        if (locatePattern(prog.Image, init, init+26, pattBorl4Init,
+        if (locatePattern(prog.image(), init, init+26, pattBorl4Init,
                           sizeof(pattBorl4Init), &i))
         {
 
-            setState(rDS, LH(&prog.Image[i+1]));
+            setState(rDS, LH(&prog.image()[i+1]));
             printf("Borland Pascal v4 detected\n");
             chVendor = 't';                     /* Trubo */
             chModel  = 'p';						/* Pascal */
@@ -665,11 +665,11 @@ void STATE::checkStartup()
             prog.segMain = prog.initCS;			/* At the 5 uint8_t jump */
             goto gotVendor;                     /* Already have vendor */
         }
-        else if (locatePattern(prog.Image, init, init+26, pattBorl5Init,
+        else if (locatePattern(prog.image(), init, init+26, pattBorl5Init,
                                sizeof(pattBorl5Init), &i))
         {
 
-            setState( rDS, LH(&prog.Image[i+1]));
+            setState( rDS, LH(&prog.image()[i+1]));
             printf("Borland Pascal v5.0 detected\n");
             chVendor = 't';                     /* Trubo */
             chModel  = 'p';						/* Pascal */
@@ -678,11 +678,11 @@ void STATE::checkStartup()
             prog.segMain = prog.initCS;
             goto gotVendor;                     /* Already have vendor */
         }
-        else if (locatePattern(prog.Image, init, init+26, pattBorl7Init,
+        else if (locatePattern(prog.image(), init, init+26, pattBorl7Init,
                                sizeof(pattBorl7Init), &i))
         {
 
-            setState( rDS, LH(&prog.Image[i+1]));
+            setState( rDS, LH(&prog.image()[i+1]));
             printf("Borland Pascal v7 detected\n");
             chVendor = 't';                     /* Trubo */
             chModel  = 'p';						/* Pascal */
@@ -701,43 +701,43 @@ void STATE::checkStartup()
         as near data, just more pushes at the start. */
     if(prog.cbImage>int(startOff+0x180+sizeof(pattMainLarge)))
     {
-        if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainLarge,sizeof(pattMainLarge), &i))
+        if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainLarge,sizeof(pattMainLarge), &i))
         {
-            rel = LH(&prog.Image[i+OFFMAINLARGE]);  /* This is abs off of main */
-            para= LH(&prog.Image[i+OFFMAINLARGE+2]);/* This is abs seg of main */
+            rel = LH(&prog.image()[i+OFFMAINLARGE]);  /* This is abs off of main */
+            para= LH(&prog.image()[i+OFFMAINLARGE+2]);/* This is abs seg of main */
             /* Save absolute image offset */
             prog.offMain = ((uint32_t)para << 4) + rel;
             prog.segMain = (uint16_t)para;
             chModel = 'l';                          /* Large model */
         }
-        else if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainCompact,
+        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainCompact,
                                sizeof(pattMainCompact), &i))
         {
-            rel = LH_SIGNED(&prog.Image[i+OFFMAINCOMPACT]);/* This is the rel addr of main */
+            rel = LH_SIGNED(&prog.image()[i+OFFMAINCOMPACT]);/* This is the rel addr of main */
             prog.offMain = i+OFFMAINCOMPACT+2+rel;  /* Save absolute image offset */
             prog.segMain = prog.initCS;
             chModel = 'c';                          /* Compact model */
         }
-        else if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainMedium,
+        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainMedium,
                                sizeof(pattMainMedium), &i))
         {
-            rel = LH(&prog.Image[i+OFFMAINMEDIUM]);  /* This is abs off of main */
-            para= LH(&prog.Image[i+OFFMAINMEDIUM+2]);/* This is abs seg of main */
+            rel = LH(&prog.image()[i+OFFMAINMEDIUM]);  /* This is abs off of main */
+            para= LH(&prog.image()[i+OFFMAINMEDIUM+2]);/* This is abs seg of main */
             prog.offMain = ((uint32_t)para << 4) + rel;
             prog.segMain = (uint16_t)para;
             chModel = 'm';                          /* Medium model */
         }
-        else if (locatePattern(prog.Image, startOff, startOff+0x180, pattMainSmall,
+        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainSmall,
                                sizeof(pattMainSmall), &i))
         {
-            rel = LH_SIGNED(&prog.Image[i+OFFMAINSMALL]); /* This is rel addr of main */
+            rel = LH_SIGNED(&prog.image()[i+OFFMAINSMALL]); /* This is rel addr of main */
             prog.offMain = i+OFFMAINSMALL+2+rel;    /* Save absolute image offset */
             prog.segMain = prog.initCS;
             chModel = 's';                          /* Small model */
         }
-        else if (memcmp(&prog.Image[startOff], pattTPasStart, sizeof(pattTPasStart)) == 0)
+        else if (memcmp(&prog.image()[startOff], pattTPasStart, sizeof(pattTPasStart)) == 0)
         {
-            rel = LH_SIGNED(&prog.Image[startOff+1]);     /* Get the jump offset */
+            rel = LH_SIGNED(&prog.image()[startOff+1]);     /* Get the jump offset */
             prog.offMain = rel+startOff+3;          /* Save absolute image offset */
             prog.offMain += 0x20;                   /* These first 32 bytes are setting up */
             prog.segMain = prog.initCS;
@@ -764,27 +764,27 @@ void STATE::checkStartup()
 
 
     /* Now decide the compiler vendor and version number */
-    if (memcmp(&prog.Image[startOff], pattMsC5Start, sizeof(pattMsC5Start)) == 0)
+    if (memcmp(&prog.image()[startOff], pattMsC5Start, sizeof(pattMsC5Start)) == 0)
     {
         /* Yes, this is Microsoft startup code. The DS is sitting right here
             in the next 2 bytes */
-        setState( rDS, LH(&prog.Image[startOff+sizeof(pattMsC5Start)]));
+        setState( rDS, LH(&prog.image()[startOff+sizeof(pattMsC5Start)]));
         chVendor = 'm';                     /* Microsoft compiler */
         chVersion = '5';                    /* Version 5 */
         printf("MSC 5 detected\n");
     }
 
     /* The C8 startup pattern is different from C5's */
-    else if (memcmp(&prog.Image[startOff], pattMsC8Start, sizeof(pattMsC8Start)) == 0)
+    else if (memcmp(&prog.image()[startOff], pattMsC8Start, sizeof(pattMsC8Start)) == 0)
     {
-        setState( rDS, LH(&prog.Image[startOff+sizeof(pattMsC8Start)]));
+        setState( rDS, LH(&prog.image()[startOff+sizeof(pattMsC8Start)]));
         printf("MSC 8 detected\n");
         chVendor = 'm';                     /* Microsoft compiler */
         chVersion = '8';                    /* Version 8 */
     }
 
     /* The C8 .com startup pattern is different again! */
-    else if (memcmp(&prog.Image[startOff], pattMsC8ComStart,
+    else if (memcmp(&prog.image()[startOff], pattMsC8ComStart,
                     sizeof(pattMsC8ComStart)) == 0)
     {
         printf("MSC 8 .com detected\n");
@@ -792,27 +792,27 @@ void STATE::checkStartup()
         chVersion = '8';                    /* Version 8 */
     }
 
-    else if (locatePattern(prog.Image, startOff, startOff+0x30, pattBorl2Start,
+    else if (locatePattern(prog.image(), startOff, startOff+0x30, pattBorl2Start,
                            sizeof(pattBorl2Start), &i))
     {
         /* Borland startup. DS is at the second uint8_t (offset 1) */
-        setState( rDS, LH(&prog.Image[i+1]));
+        setState( rDS, LH(&prog.image()[i+1]));
         printf("Borland v2 detected\n");
         chVendor = 'b';                     /* Borland compiler */
         chVersion = '2';                    /* Version 2 */
     }
 
-    else if (locatePattern(prog.Image, startOff, startOff+0x30, pattBorl3Start,
+    else if (locatePattern(prog.image(), startOff, startOff+0x30, pattBorl3Start,
                            sizeof(pattBorl3Start), &i))
     {
         /* Borland startup. DS is at the second uint8_t (offset 1) */
-        setState( rDS, LH(&prog.Image[i+1]));
+        setState( rDS, LH(&prog.image()[i+1]));
         printf("Borland v3 detected\n");
         chVendor = 'b';                     /* Borland compiler */
         chVersion = '3';                    /* Version 3 */
     }
 
-    else if (locatePattern(prog.Image, startOff, startOff+0x30, pattLogiStart,
+    else if (locatePattern(prog.image(), startOff, startOff+0x30, pattLogiStart,
                            sizeof(pattLogiStart), &i))
     {
         /* Logitech modula startup. DS is 0, despite appearances */

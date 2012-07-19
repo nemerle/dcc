@@ -81,11 +81,11 @@ void DccFrontend::parse(Project &proj)
 
 /* Returns the size of the string pointed by sym and delimited by delim.
  * Size includes delimiter.     */
-int strSize (uint8_t *sym, char delim)
+int strSize (const uint8_t *sym, char delim)
 {
     PROG &prog(Project::get()->prog);
-    int till_end = sym-prog.Image;
-    uint8_t *end_ptr=std::find(sym,sym+(prog.cbImage-(till_end)),delim);
+    int till_end = sym-prog.image();
+    const uint8_t *end_ptr=std::find(sym,sym+(prog.cbImage-(till_end)),delim);
     return end_ptr-sym+1;
 }
 Function *fakeproc=Function::Create(0,0,"fake");
@@ -311,8 +311,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                             operand = ((uint32_t)(uint16_t)pstate->r[rDS]<<4) +
                                       (uint32_t)(uint16_t)pstate->r[rDX];
                             size = prog.fCOM ?
-                                       strSize (&prog.Image[operand], '$') :
-                                       strSize (&prog.Image[operand], '$'); // + 0x100
+                                       strSize (&prog.image()[operand], '$') :
+                                       strSize (&prog.image()[operand], '$'); // + 0x100
                             global_symbol_table.updateSymType (operand, TypeContainer(TYPE_STR, size));
                         }
                 }
@@ -355,9 +355,9 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 if ((psym = lookupAddr(&ll->src(), pstate, 4, eDuVal::USE))
                         /* && (Icode.ll()->flg & SEG_IMMED) */ )
                 {
-                    offset = LH(&prog.Image[psym->label]);
+                    offset = LH(&prog.image()[psym->label]);
                     pstate->setState( (ll->getOpcode() == iLDS)? rDS: rES,
-                                      LH(&prog.Image[psym->label + 2]));
+                                      LH(&prog.image()[psym->label + 2]));
                     pstate->setState( ll->dst.regi, (int16_t)offset);
                     psym->type = TYPE_PTR;
                 }
@@ -370,7 +370,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
         if (err == INVALID_386OP || err == INVALID_OPCODE)
         {
-            fatalError(err, prog.Image[_Icode.ll()->label], _Icode.ll()->label);
+            fatalError(err, prog.image()[_Icode.ll()->label], _Icode.ll()->label);
             this->flg |= PROC_BADINST;
         }
         else if (err == IP_OUT_OF_RANGE)
@@ -410,7 +410,7 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
     for (size_t i = table.start; i < table.finish; i += 2)
     {
         StCopy = *pstate;
-        StCopy.IP = cs + LH(&prog.Image[i]);
+        StCopy.IP = cs + LH(&prog.image()[i]);
         iICODE last_current_insn = (++Icode.rbegin()).base();
 
         FollowCtrl (pcallGraph, &StCopy);
@@ -434,7 +434,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
     if (pIcode.ll()->testFlags(I))
     {
         if (pIcode.ll()->getOpcode() == iJMPF)
-            pstate->setState( rCS, LH(prog.Image + pIcode.ll()->label + 3));
+            pstate->setState( rCS, LH(prog.image() + pIcode.ll()->label + 3));
         pstate->IP = pIcode.ll()->src().getImm2();
         int64_t i = pIcode.ll()->src().getImm2();
         if (i < 0)
@@ -483,7 +483,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
         cs = (uint32_t)(uint16_t)pstate->r[rCS] << 4;
         for (i = offTable; i < endTable; i += 2)
         {
-            target = cs + LH(&prog.Image[i]);
+            target = cs + LH(&prog.image()[i]);
             if (target < endTable && target >= offTable)
                 endTable = target;
             else if (target >= (uint32_t)prog.cbImage)
@@ -492,9 +492,9 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 
         for (i = offTable; i < endTable; i += 2)
         {
-            target = cs + LH(&prog.Image[i]);
+            target = cs + LH(&prog.image()[i]);
             /* Be wary of 00 00 as code - it's probably data */
-            if (! (prog.Image[target] || prog.Image[target+1]) ||
+            if (! (prog.image()[target] || prog.image()[target+1]) ||
                     scan(target, _Icode))
                 endTable = i;
         }
@@ -516,7 +516,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
             for (i = offTable, k = 0; i < endTable; i += 2)
             {
                 StCopy = *pstate;
-                StCopy.IP = cs + LH(&prog.Image[i]);
+                StCopy.IP = cs + LH(&prog.image()[i]);
                 iICODE last_current_insn = (++Icode.rbegin()).base();
                 //ip = Icode.size();
 
@@ -604,9 +604,9 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
                  * previous offset into the program image */
         uint32_t tgtAddr=0;
         if (pIcode.ll()->getOpcode() == iCALLF)
-            tgtAddr= LH(&prog.Image[off]) + ((uint32_t)(LH(&prog.Image[off+2])) << 4);
+            tgtAddr= LH(&prog.image()[off]) + ((uint32_t)(LH(&prog.image()[off+2])) << 4);
         else
-            tgtAddr= LH(&prog.Image[off]) + ((uint32_t)(uint16_t)state.r[rCS] << 4);
+            tgtAddr= LH(&prog.image()[off]) + ((uint32_t)(uint16_t)state.r[rCS] << 4);
         pIcode.ll()->replaceSrc(LLOperand::CreateImm2( tgtAddr ) );
         pIcode.ll()->setFlags(I);
         indirect = true;
@@ -651,7 +651,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
             localState = *pstate;
             pstate->IP = pIcode.ll()->src().getImm2();
             if (pIcode.ll()->getOpcode() == iCALLF)
-                pstate->setState( rCS, LH(prog.Image + pIcode.ll()->label + 3));
+                pstate->setState( rCS, LH(prog.image() + pIcode.ll()->label + 3));
             x.state = *pstate;
 
             /* Insert new procedure in call graph */
@@ -694,7 +694,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
         {
             psym = lookupAddr(&ll.src(), pstate, 2, eDuVal::USE);
             if (psym && ((psym->flg & SEG_IMMED) || psym->duVal.val))
-                pstate->setState( dstReg, LH(&prog.Image[psym->label]));
+                pstate->setState( dstReg, LH(&prog.image()[psym->label]));
         }
         else if (srcReg < INDEX_BX_SI && pstate->f[srcReg])  /* reg */
         {
@@ -714,9 +714,13 @@ static void process_MOV(LLInst & ll, STATE * pstate)
         {
             if (ll.testFlags(I))   /* immediate */
             {
-                prog.Image[psym->label] = (uint8_t)ll.src().getImm2();
+                //prog.image()[psym->label] = (uint8_t)ll.src().getImm2();
+                pstate->setMemoryByte(psym->label,(uint8_t)ll.src().getImm2());
                 if(psym->size>1)
-                    prog.Image[psym->label+1] = (uint8_t)(ll.src().getImm2()>>8);
+                {
+                    pstate->setMemoryByte(psym->label+1,uint8_t(ll.src().getImm2()>>8));
+                    //prog.image()[psym->label+1] = (uint8_t)(ll.src().getImm2()>>8);
+                }
                 psym->duVal.val = 1;
             }
             else if (srcReg == 0) /* direct mem offset */
@@ -724,18 +728,26 @@ static void process_MOV(LLInst & ll, STATE * pstate)
                 psym2 = lookupAddr (&ll.src(), pstate, 2, eDuVal::USE);
                 if (psym2 && ((psym->flg & SEG_IMMED) || (psym->duVal.val)))
                 {
-                    prog.Image[psym->label] = (uint8_t)prog.Image[psym2->label];
+                    //prog.image()[psym->label] = (uint8_t)prog.image()[psym2->label];
+                    pstate->setMemoryByte(psym->label,(uint8_t)prog.image()[psym2->label]);
                     if(psym->size>1)
-                        prog.Image[psym->label+1] = prog.Image[psym2->label+1];//(uint8_t)(prog.Image[psym2->label+1] >> 8);
+                    {
+                        pstate->setMemoryByte(psym->label+1,(uint8_t)prog.image()[psym2->label+1]);
+                        //prog.image()[psym->label+1] = prog.image()[psym2->label+1];//(uint8_t)(prog.image()[psym2->label+1] >> 8);
+                    }
                     psym->duVal.setFlags(eDuVal::DEF);
                     psym2->duVal.setFlags(eDuVal::USE);
                 }
             }
             else if (srcReg < INDEX_BX_SI && pstate->f[srcReg])  /* reg */
             {
-                prog.Image[psym->label] = (uint8_t)pstate->r[srcReg];
+                //prog.image()[psym->label] = (uint8_t)pstate->r[srcReg];
+                pstate->setMemoryByte(psym->label,(uint8_t)pstate->r[srcReg]);
                 if(psym->size>1)
-                    prog.Image[psym->label+1] = (uint8_t)(pstate->r[srcReg] >> 8);
+                {
+                    pstate->setMemoryByte(psym->label,(uint8_t)pstate->r[srcReg]>>8);
+                    //prog.image()[psym->label+1] = (uint8_t)(pstate->r[srcReg] >> 8);
+                }
                 psym->duVal.setFlags(eDuVal::DEF);
             }
         }

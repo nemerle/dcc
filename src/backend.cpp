@@ -108,23 +108,23 @@ static void printGlobVar (std::ostream &ostr,SYM * psym)
     switch (psym->size)
     {
         case 1:
-            ostr << "uint8_t\t"<<psym->name<<" = "<<prog.Image[relocOp]<<";\n";
+            ostr << "uint8_t\t"<<psym->name<<" = "<<prog.image()[relocOp]<<";\n";
             break;
         case 2:
-            ostr << "uint16_t\t"<<psym->name<<" = "<<LH(prog.Image+relocOp)<<";\n";
+            ostr << "uint16_t\t"<<psym->name<<" = "<<LH(prog.image()+relocOp)<<";\n";
             break;
         case 4: if (psym->type == TYPE_PTR)  /* pointer */
-                ostr << "uint16_t *\t"<<psym->name<<" = "<<LH(prog.Image+relocOp)<<";\n";
+                ostr << "uint16_t *\t"<<psym->name<<" = "<<LH(prog.image()+relocOp)<<";\n";
             else 			/* char */
                 ostr << "char\t"<<psym->name<<"[4] = \""<<
-                        prog.Image[relocOp]<<prog.Image[relocOp+1]<<
-                        prog.Image[relocOp+2]<<prog.Image[relocOp+3]<<";\n";
+                        prog.image()[relocOp]<<prog.image()[relocOp+1]<<
+                        prog.image()[relocOp+2]<<prog.image()[relocOp+3]<<";\n";
             break;
         default:
         {
             ostringstream strContents;
             for (j=0; j < psym->size; j++)
-                strContents << cChar(prog.Image[relocOp + j]);
+                strContents << cChar(prog.image()[relocOp + j]);
             ostr << "char\t*"<<psym->name<<" = \""<<strContents.str()<<"\";\n";
         }
     }

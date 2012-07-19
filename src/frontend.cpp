@@ -139,7 +139,7 @@ static void displayLoadInfo(void)
         printf("\nRelocation Table\n");
         for (i = 0; i < prog.cReloc; i++)
         {
-            printf("%06X -> [%04X]\n", prog.relocTable[i],LH(prog.Image + prog.relocTable[i]));
+            printf("%06X -> [%04X]\n", prog.relocTable[i],LH(prog.image() + prog.relocTable[i]));
         }
     }
     printf("\n");
@@ -303,12 +303,12 @@ void DccFrontend::LoadImage(Project &proj)
 
     /* Allocate a block of memory for the program. */
     prog.cbImage  = cb + sizeof(PSP);
-    prog.Image    = new uint8_t [prog.cbImage];
-    prog.Image[0] = 0xCD;		/* Fill in PSP int 20h location */
-    prog.Image[1] = 0x20;		/* for termination checking     */
+    prog.Imagez    = new uint8_t [prog.cbImage];
+    prog.Imagez[0] = 0xCD;		/* Fill in PSP int 20h location */
+    prog.Imagez[1] = 0x20;		/* for termination checking     */
 
     /* Read in the image past where a PSP would go */
-    if (cb != (int)fread(prog.Image + sizeof(PSP), 1, (size_t)cb, fp))
+    if (cb != (int)fread(prog.Imagez + sizeof(PSP), 1, (size_t)cb, fp))
     {
         fatalError(CANNOT_READ, proj.binary_path().c_str());
     }
@@ -323,7 +323,7 @@ void DccFrontend::LoadImage(Project &proj)
     {
         for (i = 0; i < prog.cReloc; i++)
         {
-            uint8_t *p = &prog.Image[prog.relocTable[i]];
+            uint8_t *p = &prog.Imagez[prog.relocTable[i]];
             uint16_t  w = (uint16_t)LH(p) + EXE_RELOCATION;
             *p++    = (uint8_t)(w & 0x00FF);
             *p      = (uint8_t)((w & 0xFF00) >> 8);

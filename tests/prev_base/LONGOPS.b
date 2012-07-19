@@ -15,30 +15,32 @@ long LXMUL@ (long arg0, long arg1)
 {
 int loc1;
 int loc2; /* tmp */
+
     loc2 = LO(arg0);
     LO(arg0) = loc1;
     loc1 = loc2;
     loc2 = LO(arg0);
     LO(arg0) = HI(arg0);
-
     if ((LO(arg0) & LO(arg0)) != 0) {
+        LO(arg0) = (LO(arg0) * LO(arg1));
     }
     loc2 = LO(arg0);
     LO(arg0) = HI(arg1);
     HI(arg1) = loc2;
-
     if ((LO(arg0) & LO(arg0)) != 0) {
         LO(arg0) = (LO(arg0) * loc1);
         HI(arg1) = (HI(arg1) + LO(arg0));
     }
     loc2 = LO(arg0);
-    arg0 = (loc1 * LO(arg1));
+    LO(arg0) = loc1;
+    loc1 = loc2;
+    arg0 = (LO(arg0) * LO(arg1));
     HI(arg0) = (HI(arg0) + HI(arg1));
     return (arg0);
 }
 
 
-long LDIV@ (long arg0, int arg3)
+long LDIV@ (long arg0, long arg2)
 /* Takes 8 bytes of parameters.
  * Runtime support routine of the compiler.
  * High-level language prologue code.
@@ -131,7 +133,7 @@ long LDIV@ (long arg0, int arg3)
 }
 
 
-long LMOD@ (long arg0, int arg3)
+long LMOD@ (long arg0, long arg2)
 /* Takes 8 bytes of parameters.
  * Runtime support routine of the compiler.
  * High-level language prologue code.
@@ -280,6 +282,7 @@ void main ()
 {
 long loc1;
 long loc2;
+
     loc2 = 255;
     loc1 = 143;
     loc1 = (loc2 + loc1);

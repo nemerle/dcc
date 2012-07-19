@@ -94,7 +94,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     STKFRAME * call_args_stackframe, *target_stackframe;
     const ID *id;
     int tidx;
-    boolT regExist;
+    bool regExist=false;
     condId type;
     Function * tproc;
     eReg regL, regH;		/* Registers involved in arguments */
@@ -106,16 +106,29 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     /* Get registers and index into target procedure's local list */
     call_args_stackframe = ticode->hl()->call.args;
     target_stackframe = &tproc->args;
-    lhs = dynamic_cast<AstIdent *>(picode->hl()->asgn.lhs);
+    lhs = dynamic_cast<AstIdent *>(picode->hl()->asgn.lhs());
+    RegisterNode *lhs_reg = dynamic_cast<RegisterNode *>(lhs);
     assert(lhs);
-    type = lhs->ident.idType;
-    if (type == REGISTER)
+    type = lhs->ident.type();
+    if (lhs_reg)
     {
-        regL = id_arr[lhs->ident.idNode.regiIdx].id.regi;
+        regL = id_arr[lhs_reg->regiIdx].id.regi;
         if (regL < rAL)
             tidx = tproc->localId.newByteWordReg(TYPE_WORD_SIGN, regL);
         else
             tidx = tproc->localId.newByteWordReg(TYPE_BYTE_SIGN, regL);
+        /* Check if register argument already on the formal argument list */
+        for(STKSYM &tgt_sym : *target_stackframe)
+        {
+            RegisterNode *tgt_sym_regs = dynamic_cast<RegisterNode *>(tgt_sym.regs);
+            if( tgt_sym_regs == NULL ) // both REGISTER and LONG_VAR require this precondition
+                continue;
+            if ( tgt_sym_regs->regiIdx == tidx )
+            {
+                regExist = true;
+                break;
+            }
+        }
     }
     else if (type == LONG_VAR)
     {
@@ -123,32 +136,20 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
         regL = id_arr[longIdx].id.longId.l;
         regH = id_arr[longIdx].id.longId.h;
         tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, tproc->Icode.begin() /*0*/);
-    }
-
-    /* Check if register argument already on the formal argument list */
-    regExist = false;
-    for(STKSYM &tgt_sym : *target_stackframe)
-    {
-        if( tgt_sym.regs == NULL ) // both REGISTER and LONG_VAR require this precondition
-            continue;
-        if (type == REGISTER)
+        /* Check if register argument already on the formal argument list */
+        for(STKSYM &tgt_sym : *target_stackframe)
         {
-            if ( tgt_sym.regs->ident.idNode.regiIdx == tidx )
-            {
-                regExist = true;
-            }
-        }
-        else if (type == LONG_VAR)
-        {
+            if( tgt_sym.regs == NULL ) // both REGISTER and LONG_VAR require this precondition
+                continue;
             if ( tgt_sym.regs->ident.idNode.longIdx == tidx )
             {
                 regExist = true;
+                break;
             }
         }
-        if(regExist == true)
-            break;
     }
-
+    else
+        ;//regExist = false;
     /* Do ts (formal arguments) */
     if (regExist == false)
     {
@@ -161,12 +162,12 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
             if (regL < rAL)
             {
                 newsym.type = TYPE_WORD_SIGN;
-                newsym.regs = AstIdent::RegIdx(tidx, WORD_REG);
+                newsym.regs = new RegisterNode(tidx, WORD_REG);
             }
             else
             {
                 newsym.type = TYPE_BYTE_SIGN;
-                newsym.regs = AstIdent::RegIdx(tidx, BYTE_REG);
+                newsym.regs = new RegisterNode(tidx, BYTE_REG);
             }
             tproc->localId.id_arr[tidx].name = newsym.name;
         }
@@ -189,7 +190,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     /* Mask off high and low register(s) in picode */
     switch (type) {
         case REGISTER:
-            id = &id_arr[lhs->ident.idNode.regiIdx];
+            id = &id_arr[lhs_reg->regiIdx];
             picode->du.def &= maskDuReg[id->id.regi];
             if (id->id.regi < rAL)
                 newsym.type = TYPE_WORD_SIGN;
@@ -215,9 +216,9 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
  * @return true if it was a near call that made use of a segment register.
  *         false elsewhere
 */
-bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
+bool CallType::newStkArg(Expr *exp, llIcode opcode, Function * pproc)
 {
-    AstIdent *expr = dynamic_cast<AstIdent *>(exp);
+    RegisterNode *expr = dynamic_cast<RegisterNode *>(exp);
 
     uint8_t regi;
     /* Check for far procedure call, in which case, references to segment
@@ -225,16 +226,13 @@ bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
          * long references to another segment) */
     if (expr)
     {
-        if (expr->ident.idType == REGISTER)
+        regi =  pproc->localId.id_arr[expr->regiIdx].id.regi;
+        if ((regi >= rES) && (regi <= rDS))
         {
-            regi =  pproc->localId.id_arr[expr->ident.idNode.regiIdx].id.regi;
-            if ((regi >= rES) && (regi <= rDS))
-            {
-                if (opcode == iCALLF)
-                    return false;
-                else
-                    return true;
-            }
+            if (opcode == iCALLF)
+                return false;
+            else
+                return true;
         }
     }
 
@@ -249,22 +247,22 @@ bool CallType::newStkArg(COND_EXPR *exp, llIcode opcode, Function * pproc)
 
 /* Places the actual argument exp in the position given by pos in the
  * argument list of picode.	*/
-void CallType::placeStkArg (COND_EXPR *exp, int pos)
+void CallType::placeStkArg (Expr *exp, int pos)
 {
     (*args)[pos].actual = exp;
     (*args)[pos].setArgName(pos);
 }
 
-COND_EXPR *CallType::toId()
+Expr *CallType::toAst()
 {
-    return AstIdent::idFunc( proc, args);
+    return new FuncNode( proc, args);
 }
 
 
 /* Checks to determine whether the expression (actual argument) has the
  * same type as the given type (from the procedure's formal list).  If not,
  * the actual argument gets modified */
-void adjustActArgType (COND_EXPR *_exp, hlType forType, Function * pproc)
+Expr *Function::adjustActArgType (Expr *_exp, hlType forType)
 {
     AstIdent *expr = dynamic_cast<AstIdent *>(_exp);
     PROG &prog(Project::get()->prog);
@@ -272,11 +270,11 @@ void adjustActArgType (COND_EXPR *_exp, hlType forType, Function * pproc)
     int offset, offL;
 
     if (expr == NULL)
-        return;
+        return _exp;
 
-    actType = expr-> expType (pproc);
+    actType = expr-> expType (this);
     if (actType == forType)
-        return;
+        return _exp;
     switch (forType)
     {
         case TYPE_UNKNOWN: case TYPE_BYTE_SIGN:
@@ -292,16 +290,20 @@ void adjustActArgType (COND_EXPR *_exp, hlType forType, Function * pproc)
         case TYPE_STR:
             switch (actType) {
                 case TYPE_CONST:
-                    /* It's an offset into image where a string is
-                                         * found.  Point to the string.	*/
-                    offL = expr->ident.idNode.kte.kte;
+                    /* It's an offset into image where a string is found.  Point to the string.	*/
+                {
+                    Constant *c=dynamic_cast<Constant *>(expr);
+                    assert(c);
+                    offL = c->kte.kte;
                     if (prog.fCOM)
-                        offset = (pproc->state.r[rDS]<<4) + offL + 0x100;
+                        offset = (state.r[rDS]<<4) + offL + 0x100;
                     else
-                        offset = (pproc->state.r[rDS]<<4) + offL;
+                        offset = (state.r[rDS]<<4) + offL;
                     expr->ident.idNode.strIdx = offset;
-                    expr->ident.idType = STRING;
-                    break;
+                    expr->ident.type(STRING);
+                    delete c;
+                    return AstIdent::String(offset);
+                }
 
                 case TYPE_PTR:
                     /* It's a pointer to a char rather than a pointer to
@@ -319,6 +321,7 @@ void adjustActArgType (COND_EXPR *_exp, hlType forType, Function * pproc)
         default:
             fprintf(stderr,"adjustForArgType unhandled forType %d \n",forType);
     }
+    return _exp;
 }
 
 
