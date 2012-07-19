@@ -414,13 +414,14 @@ eReg convertRegister(const x86_reg_t &reg)
 
     eReg regmap[]={ rUNDEF,
                     rUNDEF,rUNDEF,rUNDEF,rUNDEF,   //eax ecx ebx edx
-                    rUNDEF,rUNDEF,rUNDEF,rUNDEF,   //esp ebp esi edi
+                    rSP,rUNDEF,rUNDEF,rUNDEF,   //esp ebp esi edi
                     rAX,rCX,rDX,rBX,
                     rSP,rBP,rSI,rDI,
                     rAL,rCL,rDL,rBL,
                     rAH,rCH,rDH,rBH
                   };
     assert(reg.id<sizeof(regmap)/sizeof(eReg));
+    assert(regmap[reg.id]!=rUNDEF);
     return regmap[reg.id];
 }
 LLOperand convertOperand(const x86_op_t &from)
@@ -480,8 +481,15 @@ eErrorId scan(uint32_t ip, ICODE &p)
         if(p.insn.x86_get_branch_target())
             decodeBranchTgt(p.insn);
     }
-//    LLOperand conv = convertOperand(*p.insn.get_dest());
-//    assert(conv==p.ll()->dst);
+    x86_op_t *dst_op = p.insn.get_dest();
+    static int only_first=1;
+    if(dst_op && only_first)
+    {
+        only_first = 0;
+        LLOperand conv = convertOperand(*dst_op);
+        p.ll()->dst=conv;
+        //assert(conv==p.ll()->dst);
+    }
     if (p.ll()->getOpcode())
     {
         /* Save bytes of image used */
