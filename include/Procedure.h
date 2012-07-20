@@ -143,7 +143,7 @@ public:
     bool            liveAnal;	/* Procedure has been analysed already		 */
 
     Function(void */*ty*/=0) : procEntry(0),depth(0),flg(0),cbParam(0),m_cfg(0),m_dfsLast(0),numBBs(0),
-        hasCase(false),liveIn(0),liveOut(0),liveAnal(0)//,next(0),prev(0)
+        hasCase(false),liveAnal(0)//,next(0),prev(0)
     {
     }
 public:

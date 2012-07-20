@@ -31,9 +31,9 @@ int Idiom8::action()
     AstIdent *lhs;
     Expr *expr;
     eReg regH,regL;
-    regH=m_icodes[0]->ll()->dst.regi;
-    regL=m_icodes[1]->ll()->dst.regi;
-    idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, regH, regL, m_icodes[0]);
+    regH=m_icodes[0]->ll()->m_dst.regi;
+    regL=m_icodes[1]->ll()->m_dst.regi;
+    idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, LONGID_TYPE(regH,regL), m_icodes[0]);
     lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU( regL, USE_DEF);
 
@@ -65,7 +65,7 @@ bool Idiom15::match(iICODE pIcode)
     if (not pIcode->ll()->testFlags(I) or (pIcode->ll()->src().getImm2() != 1))
         return false;
     m_icodes.clear();
-    regi = pIcode->ll()->dst.regi;
+    regi = pIcode->ll()->m_dst.regi;
     m_icodes.push_back(pIcode++);
     while(  (pIcode!=m_end) and
             pIcode->ll()->match(iSHL,(eReg)regi,I) and
@@ -81,7 +81,7 @@ int Idiom15::action()
     AstIdent *lhs;
 
     Expr *rhs,*_exp;
-    lhs = new RegisterNode(m_icodes[0]->ll()->dst.regi,
+    lhs = new RegisterNode(m_icodes[0]->ll()->m_dst.regi,
                             m_icodes[0]->ll()->getFlag() & NO_SRC_B,
                              &m_func->localId);
     rhs = new Constant(m_icodes.size(), 2);
@@ -122,10 +122,10 @@ int Idiom12::action()
     AstIdent *lhs;
 
     eReg regH,regL;
-    regL=m_icodes[0]->ll()->dst.regi;
-    regH=m_icodes[1]->ll()->dst.regi;
+    regL=m_icodes[0]->ll()->m_dst.regi;
+    regH=m_icodes[1]->ll()->m_dst.regi;
 
-    idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN, regH, regL,m_icodes[0]);
+    idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN, LONGID_TYPE(regH,regL),m_icodes[0]);
     lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU( regH, USE_DEF);
     expr = new BinaryOperator(SHL,lhs, new Constant(1, 2));
@@ -161,9 +161,9 @@ int Idiom9::action()
     AstIdent *lhs;
     Expr *rhs,*expr;
     eReg regH,regL;
-    regL=m_icodes[1]->ll()->dst.regi;
-    regH=m_icodes[0]->ll()->dst.regi;
-    idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN,regH,regL,m_icodes[0]);
+    regL=m_icodes[1]->ll()->m_dst.regi;
+    regH=m_icodes[0]->ll()->m_dst.regi;
+    idx = m_func->localId.newLongReg (TYPE_LONG_UNSIGN,LONGID_TYPE(regH,regL),m_icodes[0]);
     lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU(regL, USE_DEF);
     expr = new BinaryOperator(SHR,lhs, new Constant(1, 2));

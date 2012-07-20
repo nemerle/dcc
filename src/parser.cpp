@@ -146,8 +146,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             eIcode = ICODE();
 
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOV,0);
-            eIcode.ll()->replaceDst(rTMP);
+            eIcode.ll()->set(iMOV,0,rTMP);
             if (ll->testFlags(B) )
             {
                 eIcode.ll()->setFlags( B );
@@ -171,10 +170,9 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             /* iMOD */
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOD,0);
+            eIcode.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
             eIcode.ll()->replaceSrc(_Icode.ll()->src());
             eIcode.du = _Icode.du;
-            eIcode.ll()->setFlags( ( ll->getFlag() | SYNTHETIC  | IM_TMP_DST) );
             eIcode.ll()->label = SynthLab++;
             pIcode = Icode.addIcode(&eIcode);
         }
@@ -183,9 +181,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             /* MOV rTMP, regDst */
             eIcode = ICODE();
             eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOV,SYNTHETIC);
-            eIcode.ll()->replaceDst(LLOperand::CreateReg2(rTMP));
-            eIcode.ll()->replaceSrc(_Icode.ll()->dst);
+            eIcode.ll()->set(iMOV,SYNTHETIC,rTMP,_Icode.ll()->m_dst);
             eIcode.setRegDU( rTMP, eDEF);
             if(eIcode.ll()->src().getReg2())
             {
@@ -207,11 +203,11 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             eIcode.type = LOW_LEVEL;
             eIcode.ll()->set(iMOV,SYNTHETIC);
             eIcode.ll()->replaceDst(ll->src());
-            if(eIcode.ll()->dst.regi)
+            if(eIcode.ll()->m_dst.regi)
             {
-                if((eIcode.ll()->dst.regi>=rAL) && (eIcode.ll()->dst.regi<=rBH))
+                if((eIcode.ll()->m_dst.regi>=rAL) && (eIcode.ll()->m_dst.regi<=rBH))
                     eIcode.ll()->setFlags( B );
-                eIcode.setRegDU( eIcode.ll()->dst.regi, eDEF);
+                eIcode.setRegDU( eIcode.ll()->m_dst.regi, eDEF);
             }
             eIcode.ll()->replaceSrc(rTMP);
             eIcode.setRegDU( rTMP, eUSE);
@@ -246,7 +242,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                     if (ll->match(iJA) || ll->match(iJBE) )
                         pstate->JCond.immed++;
                     if (ll->getOpcode() == iJAE || ll->getOpcode() == iJA)
-                        pstate->JCond.regi = prev.ll()->dst.regi;
+                        pstate->JCond.regi = prev.ll()->m_dst.regi;
                     fBranch = (bool)
                               (ll->getOpcode() == iJB || ll->getOpcode() == iJBE);
                 }
@@ -258,7 +254,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
                 if (fBranch)                /* Do branching code */
                 {
-                    pstate->JCond.regi = prev.ll()->dst.regi;
+                    pstate->JCond.regi = prev.ll()->m_dst.regi;
                 }
                 /* Next icode. Note: not the same as GetLastIcode() because of the call
                                 to FollowCtrl() */
@@ -297,7 +293,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                     int size;
 
                     /* Save function number */
-                    Icode.back().ll()->dst.off = (int16_t)funcNum;
+                    Icode.back().ll()->m_dst.off = (int16_t)funcNum;
                     //Icode.GetIcode(Icode.GetNumIcodes() - 1)->
 
                     /* Program termination: int21h, fn 00h, 31h, 4Ch */
@@ -318,7 +314,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 }
                 else if ((ll->src().getImm2() == 0x2F) && (pstate->f[rAH]))
                 {
-                    Icode.back().ll()->dst.off = pstate->r[rAH];
+                    Icode.back().ll()->m_dst.off = pstate->r[rAH];
                 }
                 else    /* Program termination: int20h, int27h */
                     done = (boolT)(ll->src().getImm2() == 0x20 ||
@@ -337,7 +333,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             break; **** HERE ***/
 
             case iSHL:
-                if (pstate->JCond.regi == ll->dst.regi)
+                if (pstate->JCond.regi == ll->m_dst.regi)
                 {
                     if ((ll->testFlags(I)) && ll->src().getImm2() == 1)
                         pstate->JCond.immed *= 2;
@@ -348,7 +344,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
             case iLEA:
                 if (ll->src().getReg2()== rUNDEF)      /* direct mem offset */
-                    pstate->setState( ll->dst.getReg2(), ll->src().off);
+                    pstate->setState( ll->m_dst.getReg2(), ll->src().off);
                 break;
 
             case iLDS: case iLES:
@@ -358,7 +354,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                     offset = LH(&prog.image()[psym->label]);
                     pstate->setState( (ll->getOpcode() == iLDS)? rDS: rES,
                                       LH(&prog.image()[psym->label + 2]));
-                    pstate->setState( ll->dst.regi, (int16_t)offset);
+                    pstate->setState( ll->m_dst.regi, (int16_t)offset);
                     psym->type = TYPE_PTR;
                 }
                 break;
@@ -564,7 +560,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
     {
         /* Not immediate, i.e. indirect call */
 
-        if (pIcode.ll()->dst.regi && (!option.Calls))
+        if (pIcode.ll()->m_dst.regi && (!option.Calls))
         {
             /* We have not set the brave option to attempt to follow
                 the execution path through register indirect calls.
@@ -579,25 +575,25 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
                         es:0 where es:0 is the start of the image. This is
                         usually wrong! Consider also CALL [BP+0E] in which the
                         segment for the pointer is in SS! - Mike */
-        if(pIcode.ll()->dst.isReg())
+        if(pIcode.ll()->m_dst.isReg())
         {
-            if( not  pstate->isKnown(pIcode.ll()->dst.regi)
+            if( not  pstate->isKnown(pIcode.ll()->m_dst.regi)
                     or
-                    not  pstate->isKnown(pIcode.ll()->dst.seg)
+                    not  pstate->isKnown(pIcode.ll()->m_dst.seg)
                     )
             {
-                fprintf(stderr,"Indirect call with unkown register values\n");
+                fprintf(stderr,"Indirect call with unknown register values\n");
                 return false;
             }
-            off = pstate->r[pIcode.ll()->dst.seg];
+            off = pstate->r[pIcode.ll()->m_dst.seg];
             off <<=4;
-            off += pstate->r[pIcode.ll()->dst.regi];
+            off += pstate->r[pIcode.ll()->m_dst.regi];
 
         }
         else
         {
-            off = (uint32_t)(uint16_t)pIcode.ll()->dst.off +
-                  ((uint32_t)(uint16_t)pIcode.ll()->dst.segValue << 4);
+            off = (uint32_t)(uint16_t)pIcode.ll()->m_dst.off +
+                  ((uint32_t)(uint16_t)pIcode.ll()->m_dst.segValue << 4);
         }
 
         /* Address of function is given by 4 (CALLF) or 2 (CALL) bytes at
@@ -684,7 +680,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
 {
     PROG &prog(Project::get()->prog);
     SYM *  psym, *psym2;        /* Pointer to symbol in global symbol table */
-    uint8_t  dstReg = ll.dst.regi;
+    uint8_t  dstReg = ll.m_dst.regi;
     uint8_t  srcReg = ll.src().regi;
     if (dstReg > 0 && dstReg < INDEX_BX_SI)
     {
@@ -709,7 +705,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
         int size=2;
         if((ll.src().regi>=rAL)&&(ll.src().regi<=rBH))
             size=1;
-        psym = lookupAddr (&ll.dst, pstate, size, eDEF);
+        psym = lookupAddr (&ll.m_dst, pstate, size, eDEF);
         if (psym && ! (psym->duVal.val))      /* no initial value yet */
         {
             if (ll.testFlags(I))   /* immediate */
@@ -898,19 +894,6 @@ static void setBits(int16_t type, uint32_t start, uint32_t len)
     }
 }
 
-/* DU bit definitions for each reg value - including index registers */
-LivenessSet duReg[] = { 0x00,
-                        //AH AL . . AX, BH
-                        0x11001, 0x22002, 0x44004, 0x88008, /* uint16_t regs    */
-                        0x10, 0x20, 0x40, 0x80,
-                        0x100, 0x200, 0x400, 0x800,         /* seg regs     */
-                        0x1000, 0x2000, 0x4000, 0x8000,     /* uint8_t regs    */
-                        0x10000, 0x20000, 0x40000, 0x80000,
-                        0x100000,                           /* tmp reg      */
-                        0x48, 0x88, 0x60, 0xA0,             /* index regs   */
-                        0x40, 0x80, 0x20, 0x08 };
-
-
 /* Checks which registers were used and updates the du.u flag.
  * Places local variables on the local symbol table.
  * Arguments: d     : SRC or DST icode operand
@@ -945,7 +928,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
                 if (pm->off > 0)    /* global indexed variable */
                     pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,TYPE_WORD_SIGN);
             }
-            pIcode.du.use |= duReg[pm->regi];
+            pIcode.du.use.addReg(pm->regi);
         }
 
         else
@@ -963,7 +946,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
 
     /* Use of register */
     else if ((d == DST) || ((d == SRC) && (not pIcode.ll()->testFlags(I))))
-        pIcode.du.use |= duReg[pm->regi];
+        pIcode.du.use.addReg(pm->regi);
 }
 
 
@@ -1007,14 +990,15 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
                 if (pm->off > 0)        /* global var */
                     pProc->localId.newIntIdx(pm->segValue, pm->off, rBX,TYPE_WORD_SIGN);
             }
-            pIcode.du.use |= duReg[pm->regi];
+            pIcode.du.use.addReg(pm->regi);
         }
     }
     /* Definition of register */
     else if ((d == DST) || ((d == SRC) && (not pIcode.ll()->testFlags(I))))
     {
-        pIcode.du.def |= duReg[pm->regi];
-        pIcode.du1.numRegsDef++;
+        assert(not pIcode.ll()->match(iPUSH));
+        pIcode.du1.addDef(pm->regi);
+        pIcode.du.def.addReg(pm->regi);
     }
 }
 
@@ -1030,8 +1014,9 @@ static void use_def(opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, i
 
     if (pm->regi < INDEX_BX_SI)                   /* register */
     {
-        pIcode.du.def |= duReg[pm->regi];
-        pIcode.du1.numRegsDef++;
+        assert(not pIcode.ll()->match(iPUSH));
+        pIcode.du1.addDef(pm->regi);
+        pIcode.du.def.addReg(pm->regi);
     }
 }
 
@@ -1090,12 +1075,12 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
                 if (cb == 1)
                 {
                     pIcode.du.def.addReg(rAX);
-                    pIcode.du1.numRegsDef++;
+                    pIcode.du1.addDef(rAX);
                 }
                 else
                 {
                     pIcode.du.def.addReg(rAX).addReg(rDX);
-                    pIcode.du1.numRegsDef += 2;
+                    pIcode.du1.addDef(rAX).addDef(rDX);
                 }
             }
             else
@@ -1107,13 +1092,13 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             if (cb == 1)                    /* uint8_t */
             {
                 pIcode.du.def.addReg(rAX);
-                pIcode.du1.numRegsDef++;
+                pIcode.du1.addDef(rAX);
                 pIcode.du.use.addReg(rAL);
             }
             else                            /* uint16_t */
             {
                 pIcode.du.def.addReg(rDX).addReg(rAX);
-                pIcode.du1.numRegsDef += 2;
+                pIcode.du1.addDef(rAX).addDef(rDX);
                 pIcode.du.use.addReg(rAX);
             }
             break;
@@ -1134,9 +1119,13 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             break;
 
         case iLDS:  case iLES:
-            pIcode.du.def.addReg(((pIcode.ll()->getOpcode() == iLDS) ? rDS : rES));
-            pIcode.du1.numRegsDef++;
+		{
+			eReg r=((pIcode.ll()->getOpcode() == iLDS) ? rDS : rES);
+            pIcode.du.def.addReg(r);
+            pIcode.du1.addDef(r);
             cb = 4;
+            // fallthrough
+		}
         case iMOV:
             use(SRC, pIcode, this, pstate, cb);
             def(DST, pIcode, this, pstate, cb);
@@ -1161,27 +1150,27 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
 
         case iLOOP:  case iLOOPE:  case iLOOPNE:
             pIcode.du.def.addReg(rCX);
-            pIcode.du1.numRegsDef++;
+            pIcode.du1.addDef(rCX);
         case iJCXZ:
             pIcode.du.use.addReg(rCX);
             break;
 
         case iREPNE_CMPS: case iREPE_CMPS:  case iREP_MOVS:
             pIcode.du.addDefinedAndUsed(rCX);
-            pIcode.du1.numRegsDef++;
+            pIcode.du1.addDef(rCX);
         case iCMPS:  case iMOVS:
             pIcode.du.addDefinedAndUsed(rSI);
             pIcode.du.addDefinedAndUsed(rDI);
-            pIcode.du1.numRegsDef += 2;
+            pIcode.du1.addDef(rSI).addDef(rDI);
             pIcode.du.use.addReg(rES).addReg(sseg);
             break;
 
         case iREPNE_SCAS: case iREPE_SCAS:  case iREP_STOS:  case iREP_INS:
             pIcode.du.addDefinedAndUsed(rCX);
-            pIcode.du1.numRegsDef++;
+            pIcode.du1.addDef(rCX);
         case iSCAS:  case iSTOS:  case iINS:
             pIcode.du.def.addReg(rDI);
-            pIcode.du1.numRegsDef++;
+            pIcode.du1.addDef(rDI);
             if (pIcode.ll()->getOpcode() == iREP_INS || pIcode.ll()->getOpcode()== iINS)
             {
                 pIcode.du.use.addReg(rDI).addReg(rES).addReg(rDX);
@@ -1194,28 +1183,31 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
 
         case iREP_LODS:
             pIcode.du.addDefinedAndUsed(rCX);
-            pIcode.du1.numRegsDef++;
+            pIcode.du1.addDef(rCX);
         case iLODS:
+		{
+            eReg r = (cb==2)? rAX: rAL;
             pIcode.du.addDefinedAndUsed(rSI);
-            pIcode.du.def.addReg((cb==2)? rAX: rAL);
-            pIcode.du1.numRegsDef += 2;
+            pIcode.du1.addDef(rSI);
+            pIcode.du.def.addReg(r);
+            pIcode.du1.addDef(r);
             pIcode.du.use.addReg(sseg);
+		}
             break;
-
         case iREP_OUTS:
             pIcode.du.addDefinedAndUsed(rCX);
-            pIcode.du1.numRegsDef++;
+            pIcode.du1.addDef(rCX);
         case iOUTS:
             pIcode.du.addDefinedAndUsed(rSI);
-            pIcode.du1.numRegsDef++;
-            pIcode.du.use |= duReg[rDX] | duReg[sseg];
+            pIcode.du1.addDef(rSI);
+            pIcode.du.use.addReg(rDX).addReg(sseg);
             break;
 
         case iIN:  case iOUT:
             def(DST, pIcode, this, pstate, cb);
             if (! Imm)
             {
-                pIcode.du.use |= duReg[rDX];
+                pIcode.du.use.addReg(rDX);
             }
             break;
     }

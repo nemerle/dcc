@@ -407,7 +407,21 @@ unsigned int Ia32_Decoder::ia32_insn_implicit_ops( unsigned int impl_idx ) {
 		if (!op) {
 			op = m_decoded->x86_operand_new();
 			/* all implicit operands are registers */
-			handle_impl_reg( op, list->operand );
+                        if(m_decoded->addr_size==2)
+                        {
+                            if(list->operand==REG_EIP_INDEX)
+                                handle_impl_reg( op, REG_IP_INDEX );
+                            else if(list->operand<REG_WORD_OFFSET)
+                            {
+                                handle_impl_reg( op, (list->operand-REG_DWORD_OFFSET)+REG_WORD_OFFSET);
+                                assert((list->operand-REG_DWORD_OFFSET)<REG_WORD_OFFSET-REG_DWORD_OFFSET);
+                            }
+                            else
+                                handle_impl_reg( op, list->operand);
+
+                        }
+                        else
+							handle_impl_reg( op, list->operand );
 			/* decrement the 'explicit count' incremented by default in
 			 * x86_operand_new */
 			m_decoded->explicit_count = m_decoded->explicit_count -1;

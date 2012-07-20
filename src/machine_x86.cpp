@@ -1,5 +1,6 @@
 #include <cassert>
 #include "machine_x86.h"
+#include "icode.h"
 // Index registers **** temp solution
 static const std::string regNames[] = {
     "undef",
@@ -8,7 +9,7 @@ static const std::string regNames[] = {
     "es", "cs", "ss", "ds",
     "al", "cl", "dl", "bl",
     "ah", "ch", "dh", "bh",
-    "tmp",
+    "tmp","tmp2",
     "bx+si", "bx+di", "bp+si", "bp+di",
     "si", "di", "bp", "bx"
 };
@@ -131,4 +132,13 @@ eReg Machine_X86::compositeParent(eReg reg)
             return rUNDEF;
     }
     return rUNDEF;
+}
+void Machine_X86::writeRegVector (std::ostream &ostr,const LivenessSet &regi)
+{
+    int j;
+    for (j = rAX; j < INDEX_BX_SI; j++)
+    {
+        if (regi.testReg(j))
+            ostr << regName(eReg(j))<<" ";
+    }
 }

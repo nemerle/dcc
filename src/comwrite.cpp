@@ -154,7 +154,7 @@ void LLInst::writeIntComment (std::ostringstream &s)
     s<<"\t/* ";
     if (src_immed == 0x21)
     {
-        s <<int21h[dst.off];
+        s <<int21h[m_dst.off];
     }
     else if (src_immed > 0x1F && src_immed < 0x2F)
     {
@@ -162,7 +162,7 @@ void LLInst::writeIntComment (std::ostringstream &s)
     }
     else if (src_immed == 0x2F)
     {
-        switch (dst.off)
+        switch (m_dst.off)
         {
             case 0x01 :
                 s << "Print spooler";
@@ -215,8 +215,8 @@ void Function::writeProcComments(std::ostream &ostr)
             else		/* long register */
             {
                 id = &this->localId.id_arr[psym->regs->ident.idNode.longIdx];
-                ostr << Machine_X86::regName(id->id.longId.h) << ":";
-                ostr << Machine_X86::regName(id->id.longId.l);
+                ostr << Machine_X86::regName(id->longId().h()) << ":";
+                ostr << Machine_X86::regName(id->longId().l());
             }
             ostr << ".\n";
 

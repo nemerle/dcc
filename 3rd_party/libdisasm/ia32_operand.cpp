@@ -107,13 +107,13 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
             /* No MODRM : note these set operand type explicitly */
         case ADDRMETH_A:	/* No modR/M -- direct addr */
             op->type = op_absolute;
-
+            //according to Intel Manuals, offset goes first
             /* segment:offset address used in far calls */
             if ( m_decoded->addr_size == 4 ) {
                 x86_imm_sized( buf, buf_len, &op->data.absolute.offset.off32, 4 );
                 size = 4;
             } else {
-                x86_imm_sized( buf, buf_len,&op->data.absolute.offset.off16, 2 );
+                x86_imm_sized( buf, buf_len, &op->data.absolute.offset.off16, 2 );
                 size = 2;
             }
             x86_imm_sized( buf+size, buf_len-size, &op->data.absolute.segment, 2 );
@@ -134,7 +134,7 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
             size = op_size;
             break;
         case ADDRMETH_J:	/* Rel offset to add to IP [jmp] */
-            /* this fills op->data.near_offset or
+                           /* this fills op->data.near_offset or
                            op->data.far_offset depending on the size of
                            the operand */
             op->flags.op_signed = true;
@@ -146,15 +146,15 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
                     size = x86_imm_signsized(buf, buf_len, &op->data.relative_near, 1);
                     break;
                 case 2:
+                    /* far offset...is this truly signed? */
                     op->type = op_relative_far;
-                    int16_t offset_val;
-                    size = x86_imm_signsized(buf, buf_len,&offset_val, 2);
+                    int16_t offset_val; // easier upcast to int32_t
+                    size = x86_imm_signsized(buf, buf_len, &offset_val, 2 );
                     op->data.relative_far=offset_val;
                     break;
                 default:
                     assert(false);
                     size=0;
-
             }
             break;
         case ADDRMETH_O:	/* No ModR/M; op is word/dword offset */
@@ -181,7 +181,7 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
             op->flags.op_pointer = true;
             op->flags.op_string = true;
             ia32_handle_register( &op->data.expression.base,
-                                  REG_DWORD_OFFSET + 6 );
+                                  gen_regs + 6 );
             break;
         case ADDRMETH_Y:	/* Memory addressed by ES:DI [string] */
             op->type = op_expression;
@@ -190,7 +190,7 @@ size_t Ia32_Decoder::decode_operand_value( unsigned char *buf, size_t buf_len,
             op->flags.op_pointer = true;
             op->flags.op_string = true;
             ia32_handle_register( &op->data.expression.base,
-                                  REG_DWORD_OFFSET + 7 );
+                                  gen_regs + 7 );
             break;
         case ADDRMETH_RR:	/* Gen Register hard-coded in opcode */
             op->type = op_register;
@@ -260,8 +260,8 @@ size_t Ia32_Decoder::decode_operand_size( unsigned int op_type, x86_op_t *op ) {
             break;
         case OPTYPE_p:	/* 32/48-bit ptr [op size attr] */
             /* technically these flags are not accurate: the
-                         * value s a 16:16 pointer or a 16:32 pointer, where
-                         * the first '16' is a segment */
+             * value s a 16:16 pointer or a 16:32 pointer, where
+             * the first '16' is a segment */
             size = (m_decoded->addr_size == 4) ? 6 : 4;
             op->datatype = (size == 6) ? op_descr32 : op_descr16;
             break;

@@ -4,6 +4,7 @@
 #include <sstream>
 #include <bitset>
 
+struct LivenessSet;
 /* Machine registers */
 enum eReg
 {
@@ -32,8 +33,9 @@ enum eReg
     rBH =       20,
 
     rTMP=       21, /* temp register for DIV/IDIV/MOD	*/
+    rTMP2=       22, /* temp register for DIV/IDIV/MOD	*/
     /* Indexed modes go from INDEXBASE to INDEXBASE+7  */
-    INDEX_BX_SI = 22, // "bx+si"
+    INDEX_BX_SI = 23, // "bx+si"
     INDEX_BX_DI, // "bx+di"
     INDEX_BP_SI, // "bp+si"
     INDEX_BP_DI, // "bp+di"
@@ -64,15 +66,7 @@ public:
     bool physicalReg(eReg r);
     /* Writes the registers that are set in the bitvector */
     //TODO: move this into Machine_X86 ?
-    static void writeRegVector (std::ostream &ostr,const std::bitset<32> &regi)
-    {
-        int j;
-        for (j = rAX; j < INDEX_BX_SI; j++)
-        {
-            if (regi.test(j-1))
-                ostr << regName(eReg(j))<<" ";
-        }
-    }
+    static void writeRegVector (std::ostream &ostr,const LivenessSet &regi);
     static eReg subRegH(eReg reg);
     static eReg subRegL(eReg reg);
     static bool isMemOff(eReg r);

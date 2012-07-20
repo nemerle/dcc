@@ -250,7 +250,7 @@ void Function::propLongStk (int i, const ID &pLocId)
             continue;
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
         {
-            if (checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, *next1->ll()) == true)
+            if (checkLongEq (pLocId.longStkId(), pIcode, i, this, asgn, *next1->ll()) == true)
             {
                 switch (pIcode->ll()->getOpcode())
                 {
@@ -290,7 +290,7 @@ void Function::propLongStk (int i, const ID &pLocId)
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
         else if ((pIcode->ll()->getOpcode() == iCMP) && (isLong23 (pIcode->getParent(), l23, &arc)))
         {
-            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this, asgn, *l23->ll()) )
+            if ( checkLongEq (pLocId.longStkId(), pIcode, i, this, asgn, *l23->ll()) )
             {
                 advance(pIcode,longJCond23 (asgn, pIcode, arc, l23));
             }
@@ -300,7 +300,7 @@ void Function::propLongStk (int i, const ID &pLocId)
                  * 2 CMPs and 2 branches */
         else if ((pIcode->ll()->getOpcode() == iCMP) && isLong22 (pIcode, pEnd, l23))
         {
-            if ( checkLongEq (pLocId.id.longStkId, pIcode, i, this,asgn, *l23->ll()) )
+            if ( checkLongEq (pLocId.longStkId(), pIcode, i, this,asgn, *l23->ll()) )
             {
                 advance(pIcode,longJCond22 (asgn, pIcode,pEnd));
             }
@@ -329,9 +329,9 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
         switch (icode.ll()->getOpcode())
         {
         case iMOV:
-            pmH = &icode.ll()->dst;
-            pmL = &next1->ll()->dst;
-            if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
+            pmH = &icode.ll()->m_dst;
+            pmL = &next1->ll()->m_dst;
+            if ((pLocId.longId().h() == pmH->regi) && (pLocId.longId().l() == pmL->regi))
             {
                 localId.id_arr[loc_ident_idx].idx.push_back(pIcode);//idx-1//insert
                 icode.setRegDU( pmL->regi, eDEF);
@@ -344,9 +344,9 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             break;
 
         case iPOP:
-            pmH = &next1->ll()->dst;
-            pmL = &icode.ll()->dst;
-            if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
+            pmH = &next1->ll()->m_dst;
+            pmL = &icode.ll()->m_dst;
+            if ((pLocId.longId().h() == pmH->regi) && (pLocId.longId().l() == pmL->regi))
             {
                 asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
                 icode.setRegDU( pmH->regi, eDEF);
@@ -360,9 +360,9 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
             //                /**** others missing ***/
 
         case iAND: case iOR: case iXOR:
-            pmL = &icode.ll()->dst;
-            pmH = &next1->ll()->dst;
-            if ((pLocId.id.longId.h == pmH->regi) && (pLocId.id.longId.l == pmL->regi))
+            pmL = &icode.ll()->m_dst;
+            pmH = &next1->ll()->m_dst;
+            if ((pLocId.longId().h() == pmH->regi) && (pLocId.longId().l() == pmL->regi))
             {
                 asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
                 asgn.rhs = AstIdent::Long (&this->localId, SRC, pIcode, LOW_FIRST, pIcode, eUSE, *next1->ll());
@@ -407,12 +407,12 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             {
             case iMOV:
                 {
-                    const LONGID_TYPE &ref_long(pLocId.id.longId);
+                    const LONGID_TYPE &ref_long(pLocId.longId());
                     const LLOperand &src_op1(pIcode->ll()->src());
                     const LLOperand &src_op2(next1->ll()->src());
                     eReg srcReg1=src_op1.getReg2();
                     eReg nextReg2=src_op2.getReg2();
-                    if ((ref_long.h == srcReg1) && (ref_long.l == nextReg2))
+                    if ((ref_long.h() == srcReg1) && (ref_long.l() == nextReg2))
                     {
                         pIcode->setRegDU( nextReg2, eUSE);
 
@@ -428,11 +428,10 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
 
             case iPUSH:
                 {
-                    const LONGID_TYPE &ref_long(pLocId.id.longId);
+                    const LONGID_TYPE &ref_long(pLocId.longId());
                     const LLOperand &src_op1(pIcode->ll()->src());
                     const LLOperand &src_op2(next1->ll()->src());
-                    if ((ref_long.h == src_op1.getReg2()) &&
-                            (ref_long.l == src_op2.getReg2()))
+                    if ((ref_long.h() == src_op1.getReg2()) && (ref_long.l() == src_op2.getReg2()))
                     {
                         asgn.rhs = AstIdent::LongIdx (loc_ident_idx);
                         pIcode->setRegDU( next1->ll()->src().getReg2(), eUSE);
@@ -446,10 +445,9 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
                 /*** others missing ****/
 
             case iAND: case iOR: case iXOR:
-                pmL = &pIcode->ll()->dst;
-                pmH = &next1->ll()->dst;
-                if ((pLocId.id.longId.h == pmH->regi) &&
-                        (pLocId.id.longId.l == pmL->regi))
+                pmL = &pIcode->ll()->m_dst;
+                pmH = &next1->ll()->m_dst;
+                if ((pLocId.longId().h() == pmH->regi) && (pLocId.longId().l() == pmL->regi))
                 {
                     asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
                     pIcode->setRegDU( pmH->regi, USE_DEF);
@@ -478,7 +476,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         /* Check long conditional (i.e. 2 CMPs and 3 branches */
         else if ((pIcode->ll()->getOpcode() == iCMP) && (isLong23 (pIcode->getParent(), long_loc, &arc)))
         {
-            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn, *long_loc->ll()))
+            if (checkLongRegEq (pLocId.longId(), pIcode, loc_ident_idx, this, asgn, *long_loc->ll()))
             {
                 // reduce the advance by 1 here (loop increases) ?
                 advance(pIcode,longJCond23 (asgn, pIcode, arc, long_loc));
@@ -489,7 +487,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
              * 2 CMPs and 2 branches */
         else if (pIcode->ll()->match(iCMP) && (isLong22 (pIcode, pEnd, long_loc)))
         {
-            if (checkLongRegEq (pLocId.id.longId, pIcode, loc_ident_idx, this, asgn, *long_loc->ll()) )
+            if (checkLongRegEq (pLocId.longId(), pIcode, loc_ident_idx, this, asgn, *long_loc->ll()) )
             {
                 // TODO: verify that removing -1 does not change anything !
                 advance(pIcode,longJCond22 (asgn, pIcode,pEnd));
@@ -502,7 +500,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
          * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
         else if (pIcode->ll()->match(iOR) && (next1 != pEnd) && (isJCond ((llIcode)next1->ll()->getOpcode())))
         {
-            if (pLocId.id.longId.srcDstRegMatch(pIcode,pIcode))
+            if (pLocId.longId().srcDstRegMatch(pIcode,pIcode))
             {
                 asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
                 asgn.rhs = new Constant(0, 4);	/* long 0 */

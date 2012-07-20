@@ -52,18 +52,23 @@ static const char *hexStr (uint16_t i)
 void ICODE::setRegDU (eReg regi, operDu du_in)
 {
     //    printf("%s %d %x\n",__FUNCTION__,regi,int(du_in));
+    if(regi==rSP)
+    {
+        printf("Discarding SP def&use info for now\n");
+        return;
+    }
     switch (du_in)
     {
         case eDEF:
             du.def.addReg(regi);
-            du1.numRegsDef++;
+            du1.addDef(regi);
             break;
         case eUSE:
             du.use.addReg(regi);
             break;
         case USE_DEF:
             du.addDefinedAndUsed(regi);
-            du1.numRegsDef++;
+            du1.addDef(regi);
             break;
         case NONE:    /* do nothing */
             break;
@@ -233,9 +238,8 @@ AstIdent *AstIdent::Long(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, 
     else
     {
         newExp  = new AstIdent();
-        idx = localId->newLong(sd, pIcode, f, ix, du, atOffset);
         newExp->ident.idType = LONG_VAR;
-        newExp->ident.idNode.longIdx = idx;
+        newExp->ident.idNode.longIdx = localId->newLong(sd, pIcode, f, ix, du, atOffset);
     }
     return (newExp);
 }
@@ -265,7 +269,7 @@ AstIdent *AstIdent::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
         case TYPE_LONG_SIGN:
         {
             newExp  = new AstIdent();
-            idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->id.longId.h,retVal->id.longId.l, ix_);
+            idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->longId(), ix_);
             newExp->ident.idType = LONG_VAR;
             newExp->ident.idNode.longIdx = idx;
             break;
@@ -294,13 +298,13 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
 
     int idx;          /* idx into pIcode->localId table */
 
-    const LLOperand &pm((sd == SRC) ? ll_insn.src() : ll_insn.dst);
+    const LLOperand &pm((sd == SRC) ? ll_insn.src() : ll_insn.m_dst);
 
     if (    ((sd == DST) && ll_insn.testFlags(IM_DST)) or
             ((sd == SRC) && ll_insn.testFlags(IM_SRC)) or
             (sd == LHS_OP))             /* for MUL lhs */
     {                                                   /* implicit dx:ax */
-        idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, rDX, rAX, ix_);
+        idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, LONGID_TYPE(rDX, rAX), ix_);
         newExp = AstIdent::LongIdx (idx);
         duIcode.setRegDU (rDX, du);
         duIcode.setRegDU (rAX, du);
@@ -372,7 +376,7 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
 /* Returns the identifier type */
 condId LLInst::idType(opLoc sd) const
 {
-    const LLOperand &pm((sd == SRC) ? src() : dst);
+    const LLOperand &pm((sd == SRC) ? src() : m_dst);
 
     if ((sd == SRC) && testFlags(I))
         return (CONSTANT);
@@ -582,10 +586,10 @@ string AstIdent::walkCondExpr(Function *pProc, int *numLoc) const
             {
                 id->setLocalName(++(*numLoc));
                 codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
-                codeOut <<"/* "<<Machine_X86::regName(id->id.longId.h) << ":" <<
-                          Machine_X86::regName(id->id.longId.l) << " */\n";
+                codeOut <<"/* "<<Machine_X86::regName(id->longId().h()) << ":" <<
+                          Machine_X86::regName(id->longId().l()) << " */\n";
                 o << id->name;
-                pProc->localId.propLongId (id->id.longId.l,id->id.longId.h, id->name.c_str());
+                pProc->localId.propLongId (id->longId().l(),id->longId().h(), id->name.c_str());
             }
             else    /* GLB_FRAME */
             {
@@ -884,10 +888,10 @@ eReg AstIdent::otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
     if ((id->loc == REG_FRAME) && ((id->type == TYPE_LONG_SIGN) ||
                                    (id->type == TYPE_LONG_UNSIGN)))
     {
-        if (id->id.longId.h == regi)
-            return (id->id.longId.l);
-        else if (id->id.longId.l == regi)
-            return (id->id.longId.h);
+        if (id->longId().h() == regi)
+            return (id->longId().l());
+        else if (id->longId().l() == regi)
+            return (id->longId().h());
     }
     return rUNDEF;	// Cristina: please check this!
 }

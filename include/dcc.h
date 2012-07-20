@@ -59,12 +59,8 @@ typedef struct {            /* Command line option flags */
 extern OPTION option;       /* Command line options             */
 
 #include "BinaryImage.h"
-extern LivenessSet duReg[30];   /* def/use bits for registers		*/
 
-//extern uint32_t duReg[30];		/* def/use bits for registers		*/
-extern LivenessSet maskDuReg[30];	/* masks off du bits for regs		*/
 
-/* Registers used by icode instructions */
 
 /* Memory map states */
 enum eAreaType
@@ -130,8 +126,8 @@ char 	*writeJcondInv (HLTYPE, Function *, int *);
 
 
 /* Exported funcions from locident.c */
-boolT checkLongEq (LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &atOffset);
-boolT checkLongRegEq (LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &);
+bool checkLongEq(LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &atOffset);
+bool checkLongRegEq(LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &);
 eReg otherLongRegi(eReg, int, LOCAL_ID *);
 
 

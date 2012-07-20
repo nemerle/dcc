@@ -99,7 +99,6 @@ x86_op_t * x86_insn_t::get_dest() {
     if ( ! operands ) {
         return NULL;
     }
-    assert(this->x86_operand_count(op_dest)==1);
     for (op_lst = operands; op_lst; op_lst = op_lst->next ) {
         if ( op_lst->op.access & op_write)
             return &(op_lst->op);

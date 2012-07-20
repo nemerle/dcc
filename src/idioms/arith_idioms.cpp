@@ -102,20 +102,20 @@ bool Idiom18::match(iICODE picode)
     m_is_dec = m_icodes[1]->ll()->match(iDEC);
 
     uint8_t regi;		/* register of the MOV */
-    if(not (m_icodes[0]->ll()->match(iMOV) and m_icodes[0]->ll()->dst.isReg() ))
+    if(not m_icodes[0]->ll()->matchWithRegDst(iMOV) )
         return false;
-    regi = m_icodes[0]->ll()->dst.regi;
-    if( not ( m_icodes[2]->ll()->match(iCMP) && (m_icodes[2]->ll()->dst.regi == regi) &&
+    regi = m_icodes[0]->ll()->m_dst.regi;
+    if( not ( m_icodes[2]->ll()->match(iCMP,regi)  &&
               m_icodes[3]->ll()->conditionalJump() ) )
         return false;
     // Simple matching finished, select apropriate matcher based on dst type
     /* Get variable */
-    if (m_icodes[1]->ll()->dst.regi == 0)	/* global variable */
+    if (m_icodes[1]->ll()->m_dst.regi == 0)	/* global variable */
     {
         /* not supported yet */
         m_idiom_type = 0;
     }
-    else if ( m_icodes[1]->ll()->dst.isReg() )	/* register */
+    else if ( m_icodes[1]->ll()->m_dst.isReg() )	/* register */
     {
         m_idiom_type = 1;
 //        if ((m_icodes[1]->ll()->dst.regi == rSI) && (m_func->flg & SI_REGVAR))
@@ -123,7 +123,7 @@ bool Idiom18::match(iICODE picode)
 //        else if ((m_icodes[1]->ll()->dst.regi == rDI) && (m_func->flg & DI_REGVAR))
 //            m_idiom_type = 1;
     }
-    else if (m_icodes[1]->ll()->dst.off)		/* local variable */
+    else if (m_icodes[1]->ll()->m_dst.off)		/* local variable */
         m_idiom_type = 2;
     else		/* indexed */
     {
@@ -141,20 +141,20 @@ bool Idiom18::match(iICODE picode)
             break;
         case 1:  /* register variable */
             /* Check previous instruction for a MOV */
-            if ( (m_icodes[0]->ll()->src().regi == m_icodes[1]->ll()->dst.regi))
+            if ( (m_icodes[0]->ll()->src().regi == m_icodes[1]->ll()->m_dst.regi))
             {
                 return true;
             }
             break;
         case 2: /* local */
-            if ((m_icodes[0]->ll()->src().off == m_icodes[1]->ll()->dst.off))
+            if ((m_icodes[0]->ll()->src().off == m_icodes[1]->ll()->m_dst.off))
             {
                 return true;
             }
             break;
         case 3: // indexed
             printf("Untested idiom18 type: indexed\n");
-            if ((m_icodes[0]->ll()->src() == m_icodes[1]->ll()->dst))
+            if ((m_icodes[0]->ll()->src() == m_icodes[1]->ll()->m_dst))
             {
                 return true;
             }
@@ -200,15 +200,15 @@ bool Idiom19::match(iICODE picode)
     m_is_dec = m_icodes[0]->ll()->match(iDEC);
     if ( not m_icodes[1]->ll()->conditionalJump() )
         return false;
-    if (m_icodes[0]->ll()->dst.regi == 0)	/* global variable */
+    if (m_icodes[0]->ll()->m_dst.regi == 0)	/* global variable */
         /* not supported yet */ ;
-    else if ( m_icodes[0]->ll()->dst.isReg() ) /* register */
+    else if ( m_icodes[0]->ll()->m_dst.isReg() ) /* register */
     {
         //        if (((picode->ll()->dst.regi == rSI) && (pproc->flg & SI_REGVAR)) ||
         //            ((picode->ll()->dst.regi == rDI) && (pproc->flg & DI_REGVAR)))
         return true;
     }
-    else if (m_icodes[0]->ll()->dst.off)		/* stack variable */
+    else if (m_icodes[0]->ll()->m_dst.off)		/* stack variable */
     {
         return true;
     }
@@ -257,12 +257,12 @@ bool Idiom20::match(iICODE picode)
     for(int i=0; i<4; ++i)
         m_icodes[i] =picode++;
     /* Check second instruction for a MOV */
-    if(not (m_icodes[1]->ll()->match(iMOV) && m_icodes[1]->ll()->dst.isReg()))
+    if( not m_icodes[1]->ll()->matchWithRegDst(iMOV) )
         return false;
 
     m_is_dec = m_icodes[0]->ll()->match(iDEC) ? PRE_DEC : PRE_INC;
 
-    LLOperand &ll_dest(m_icodes[0]->ll()->dst);
+    const LLOperand &ll_dest(m_icodes[0]->ll()->m_dst);
     /* Get variable */
     if (ll_dest.regi == 0)	/* global variable */
     {
@@ -284,7 +284,7 @@ bool Idiom20::match(iICODE picode)
         type = 3;
         /* not supported yet */ ;
     }
-    regi = m_icodes[1]->ll()->dst.regi;
+    regi = m_icodes[1]->ll()->m_dst.regi;
     const LLOperand &mov_src(m_icodes[1]->ll()->src());
     if (m_icodes[2]->ll()->match(iCMP,(eReg)regi) && m_icodes[3]->ll()->conditionalJump())
     {

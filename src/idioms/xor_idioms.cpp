@@ -26,7 +26,7 @@ bool Idiom21::match (iICODE picode)
     if (not m_icodes[1]->ll()->testFlags(I))
         return false;
 
-    dst = &m_icodes[0]->ll()->dst;
+    dst = &m_icodes[0]->ll()->m_dst;
     src = &m_icodes[0]->ll()->src();
     if ((dst->regi == src->getReg2()) && (dst->getReg2() > 0) && (dst->getReg2() < INDEX_BX_SI))
     {
@@ -45,7 +45,7 @@ int Idiom21::action()
     lhs = AstIdent::Long (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, *m_icodes[1]->ll());
     rhs = new Constant(m_icodes[1]->ll()->src().getImm2(), 4);
     m_icodes[0]->setAsgn(lhs, rhs);
-    m_icodes[0]->du.use = 0;		/* clear register used in iXOR */
+    m_icodes[0]->du.use.reset();		/* clear register used in iXOR */
     m_icodes[1]->invalidate();
     return 2;
 }
@@ -63,7 +63,7 @@ bool Idiom7::match(iICODE picode)
         return false;
     const LLOperand *dst, *src;
     m_icode=picode;
-    dst = &picode->ll()->dst;
+    dst = &picode->ll()->m_dst;
     src = &picode->ll()->src();
     if (dst->regi == 0)                 /* global variable */
     {
@@ -87,7 +87,7 @@ int Idiom7::action()
     Expr *lhs;
     lhs = AstIdent::id (*m_icode->ll(), DST, m_func, m_icode, *m_icode, NONE);
     m_icode->setAsgn(dynamic_cast<AstIdent *>(lhs), new Constant(0, 2));
-    m_icode->du.use = 0;    /* clear register used in iXOR */
+    m_icode->du.use.reset();    /* clear register used in iXOR */
     m_icode->ll()->setFlags(I);
     return 1;
 }
@@ -116,7 +116,7 @@ bool Idiom10::match(iICODE pIcode)
     /* Check OR reg, reg */
     if (not m_icodes[0]->ll()->testFlags(I)  &&
             m_icodes[0]->ll()->src().isReg() &&
-            (m_icodes[0]->ll()->src().getReg2() == m_icodes[0]->ll()->dst.getReg2()))
+            (m_icodes[0]->ll()->src().getReg2() == m_icodes[0]->ll()->m_dst.getReg2()))
         if (m_icodes[1]->ll()->match(iJNE)) //.conditionalJump()
         {
             return true;
@@ -128,8 +128,9 @@ int Idiom10::action()
 {
     m_icodes[0]->ll()->set(iCMP,I);
     m_icodes[0]->ll()->replaceSrc(LLOperand::CreateImm2(0));
-    m_icodes[0]->du.def = 0;
-    m_icodes[0]->du1.numRegsDef = 0;
+    m_icodes[0]->du.def.reset();  //TODO: this defines FLAGS
+    m_icodes[0]->du1.clearAllDefs();
+    //m_icodes[0]->du1.numRegsDef = 0;
     return 2;
 
 }

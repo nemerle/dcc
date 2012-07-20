@@ -10,9 +10,8 @@
 #include "dcc.h"
 bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 {
-    return (a->ll()->src().getReg2()==l) and (b->ll()->dst.getReg2()==h);
+    return (a->ll()->src().getReg2()==m_l) and (b->ll()->m_dst.getReg2()==m_h);
 }
-
 
 ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
 {
@@ -24,6 +23,32 @@ ID::ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
     macro[0]=0;
     memset(&id,0,sizeof(id));
     loc=f;
+    assert(not ((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN)));
+}
+ID::ID(hlType t,const LONGID_TYPE &s) : type(t),illegal(false),hasMacro(false)
+{
+    macro[0]=0;
+    memset(&id,0,sizeof(id));
+    loc=REG_FRAME;
+    m_longId = s;
+    assert((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN));
+}
+ID::ID(hlType t,const LONG_STKID_TYPE &s) : type(t),illegal(false),hasMacro(false)
+{
+    macro[0]=0;
+    memset(&id,0,sizeof(id));
+    loc=STK_FRAME;
+    id.longStkId = s;
+    assert((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN));
+}
+
+ID::ID(hlType t, const LONGGLB_TYPE &s)
+{
+    macro[0]=0;
+    memset(&id,0,sizeof(id));
+    loc=GLB_FRAME;
+    id.longGlb = s;
+    assert((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN));
 }
 
 
@@ -142,17 +167,22 @@ int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t)
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new register identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
-int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
+int LOCAL_ID::newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_)
 {
+    eReg regH,regL;
+    regL = longT.l();
+    regH = longT.h();
     size_t idx;
     //iICODE ix_;
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
     {
         ID &entry(id_arr[idx]);
+        if(!entry.isLong() || (entry.loc != REG_FRAME))
+            continue;
         if (/*(locSym->id[idx].type == t) &&   Not checking type */
-            (entry.id.longId.h == regH) &&
-            (entry.id.longId.l == regL))
+                (entry.longId().h() == regH) &&
+                (entry.longId().l() == regL))
         {
             /* Check for occurrence in the list */
             if (entry.idx.inList(ix_))
@@ -167,12 +197,9 @@ int LOCAL_ID::newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_)
     }
 
     /* Not in the table, create new identifier */
-    newIdent (t, REG_FRAME);
-    id_arr[id_arr.size()-1].idx.push_back(ix_);
-    idx = id_arr.size() - 1;
-    id_arr[idx].id.longId.h = regH;
-    id_arr[idx].id.longId.l = regL;
-    return (idx);
+    id_arr.push_back(ID(t, LONGID_TYPE(regH,regL)));
+    id_arr.back().idx.push_back(ix_);
+    return (id_arr.size() - 1);
 }
 /* Returns an identifier conditional expression node of type TYPE_LONG or
  * TYPE_WORD_SIGN	*/
@@ -199,12 +226,9 @@ int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
     }
 
     /* Not in the table, create new identifier */
-    newIdent (t, GLB_FRAME);
-    idx = id_arr.size() - 1;
-    id_arr[idx].id.longGlb.seg = seg;
-    id_arr[idx].id.longGlb.offH = offH;
-    id_arr[idx].id.longGlb.offL = offL;
-    return (idx);
+    id_arr.push_back(ID(t, LONGGLB_TYPE(seg,offH,offL)));
+    return (id_arr.size() - 1);
+
 }
 
 
@@ -246,9 +270,11 @@ int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
     {
+        if(id_arr[idx].loc!=STK_FRAME)
+            continue;
         if ((id_arr[idx].type == t) &&
-            (id_arr[idx].id.longStkId.offH == offH) &&
-            (id_arr[idx].id.longStkId.offL == offL))
+            (id_arr[idx].longStkId().offH == offH) &&
+            (id_arr[idx].longStkId().offL == offL))
             return (idx);
     }
 
@@ -257,11 +283,8 @@ int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
     flagByteWordId (offL);
 
     /* Create new identifier */
-    newIdent (t, STK_FRAME);
-    idx = id_arr.size() - 1;
-    id_arr[idx].id.longStkId.offH = offH;
-    id_arr[idx].id.longStkId.offL = offL;
-    return (idx);
+    id_arr.push_back(ID(t,LONG_STKID_TYPE(offH,offL)));
+    return (id_arr.size() - 1);
 }
 
 
@@ -289,7 +312,7 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
 
     else if (pmL->regi < INDEX_BX_SI)                     /* register */
     {
-        idx = newLongReg(TYPE_LONG_SIGN, pmH->regi, pmL->regi, ix);
+        idx = newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(pmH->regi, pmL->regi), ix);
         if (f == HIGH_FIRST)
             pIcode->setRegDU( pmL->regi, du);   /* low part */
         else
@@ -325,15 +348,31 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, LLInst &atOffset)
+bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
     /* pointers to LOW_LEVEL icodes */
     const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
-    pmHdst = &pIcode->ll()->dst;
-    pmLdst = &atOffset.dst;
+    pmHdst = &pIcode->ll()->m_dst;
+    pmLdst = &atOffset.m_dst;
     pmHsrc = &pIcode->ll()->src();
     pmLsrc = &atOffset.src();
+//    if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
+//    {
+//        asgn.lhs = AstIdent::LongIdx (i);
+
+//        if ( not pIcode->ll()->testFlags(NO_SRC) )
+//        {
+//            asgn.rhs = AstIdent::Long (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, atOffset);
+//        }
+//        return true;
+//    }
+//    else if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
+//    {
+//        asgn.lhs = AstIdent::Long (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, atOffset);
+//        asgn.rhs = AstIdent::LongIdx (i);
+//        return true;
+//    }
 
     if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
     {
@@ -364,18 +403,18 @@ boolT checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pPro
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
-boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
+bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
                       Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
     /* pointers to LOW_LEVEL icodes */
     const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
-    pmHdst = &pIcode->ll()->dst;
-    pmLdst = &atOffset.dst;
+    pmHdst = &pIcode->ll()->m_dst;
+    pmLdst = &atOffset.m_dst;
     pmHsrc = &pIcode->ll()->src();
     pmLsrc = &atOffset.src();
 
-    if ((longId.h == pmHdst->regi) && (longId.l == pmLdst->regi))
+    if ((longId.h() == pmHdst->regi) && (longId.l() == pmLdst->regi))
     {
         asgn.lhs = AstIdent::LongIdx (i);
         if ( not pIcode->ll()->testFlags(NO_SRC) )
@@ -384,7 +423,7 @@ boolT checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
         }
         return true;
     }
-    else if ((longId.h == pmHsrc->regi) && (longId.l == pmLsrc->regi))
+    else if ((longId.h() == pmHsrc->regi) && (longId.l() == pmLsrc->regi))
     {
         asgn.lhs = AstIdent::Long (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, atOffset);
         asgn.rhs = AstIdent::LongIdx (i);
@@ -406,10 +445,10 @@ eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
     if ((id->loc == REG_FRAME) && ((id->type == TYPE_LONG_SIGN) ||
         (id->type == TYPE_LONG_UNSIGN)))
     {
-        if (id->id.longId.h == regi)
-            return (id->id.longId.l);
-        else if (id->id.longId.l == regi)
-            return (id->id.longId.h);
+        if (id->longId().h() == regi)
+            return (id->longId().l());
+        else if (id->longId().l() == regi)
+            return (id->longId().h());
     }
     return rUNDEF;	// Cristina: please check this!
 }

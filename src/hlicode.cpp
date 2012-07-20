@@ -11,27 +11,6 @@
 #include "dcc.h"
 using namespace std;
 
-/* Masks off bits set by duReg[] */
-LivenessSet maskDuReg[] = { 0x00,
-                            /* uint16_t regs */
-                            0xFEEFFE, //rAX
-                            0xFDDFFD, //rCX
-                            0xFBB00B, //rDX
-                            0xF77007, //rBX
-                            0xFFFFEF, //rSP
-                            0xFFFFDF, //rBP
-                            0xFFFFBF, //rSI
-                            0xFFFF7F, //rDI
-                            0xFFFEFF,
-                            0xFFFDFF,
-                            0xFFFBFF,
-                            0xFFF7FF, /* seg regs  */
-                            0xFFEFFF, 0xFFDFFF, 0xFFBFFF, 0xFF7FFF, /* uint8_t regs */
-                            0xFEFFFF, 0xFDFFFF, 0xFBFFFF, 0xF7FFFF,
-                            0xEFFFFF,                               /* tmp reg   */
-                            0xFFFFB7, 0xFFFF77, 0xFFFF9F, 0xFFFF5F, /* index regs */
-                            0xFFFFBF, 0xFFFF7F, 0xFFFFDF, 0xFFFFF7 };
-
 static char buf[lineSize];     /* Line buffer for hl icode output */
 
 
@@ -98,13 +77,13 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
 {
     int numDefs;
 
-    numDefs = du1.numRegsDef;
+    numDefs = du1.getNumRegsDef();
     if (numDefs == thisDefIdx)
     {
         for ( ; numDefs > 0; numDefs--)
         {
 
-            if (du1.used(numDefs-1)||(du.lastDefRegi[regi]))
+            if (du1.used(numDefs-1)||(du.lastDefRegi.testReg(regi)))
                 break;
         }
     }
@@ -117,8 +96,9 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
     HlTypeSupport *p=hlU()->get();
     if(p and p->removeRegFromLong(regi,locId))
     {
-        du1.numRegsDef--;
-        du.def &= maskDuReg[regi];
+        du1.removeDef(regi); //du1.numRegsDef--;
+		//du.def &= maskDuReg[regi];
+        du.def.clrReg(regi);
     }
     return false;
 }
@@ -285,6 +265,41 @@ HLTYPE LLInst::toHighLevel(COND_EXPR *lhs,COND_EXPR *rhs,Function *func)
     return res;
 }
 #endif
+static bool  needsLhs(unsigned opc)
+{
+    switch (opc)
+    {
+        case iCALL:
+        case iCALLF:
+        case iRET:
+        case iRETF:
+        default: return false;
+        case iADD:
+        case iAND:
+        case iDEC:
+        case iDIV:
+        case iIDIV:/* should be signed div */
+        case iIMUL:
+        case iINC:
+        case iLEA:
+        case iMOD:
+        case iMOV:
+        case iMUL:
+        case iNEG:
+        case iNOT:
+        case iOR:
+        case iPOP:
+        case iPUSH:
+        case iSHL:
+        case iSAR:    /* signed */
+        case iSHR:
+        case iSIGNEX:
+        case iSUB:
+        case iXCHG:
+        case iXOR:
+            return true;
+    }
+}
 /* Translates LOW_LEVEL icodes to HIGH_LEVEL icodes - 1st stage.
  * Note: this process should be done before data flow analysis, which
  *       refines the HIGH_LEVEL icodes. */
@@ -292,12 +307,12 @@ void Function::highLevelGen()
 {
     size_t numIcode;         /* number of icode instructions */
     iICODE pIcode;        /* ptr to current icode node */
-    Expr *lhs;
     Expr *rhs; /* left- and right-hand side of expression */
     uint32_t _flg;          /* icode flags */
     numIcode = Icode.size();
     for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
     {
+        Expr *lhs=nullptr;
         assert(numIcode==Icode.size());
         pIcode = i; //Icode.GetIcode(i)
         LLInst *ll = pIcode->ll();
@@ -306,13 +321,16 @@ void Function::highLevelGen()
         if ((pIcode->type != LOW_LEVEL) or not pIcode->valid() )
             continue;
         _flg = ll->getFlag();
-        if ((_flg & IM_OPS) != IM_OPS)   /* not processing IM_OPS yet */
-            if ((_flg & NO_OPS) != NO_OPS)       /* if there are opers */
+        if (not ll->testFlags(IM_OPS))   /* not processing IM_OPS yet */
+            if ( not ll->testFlags(NO_OPS) )       /* if there are opers */
             {
                 if ( not ll->testFlags(NO_SRC) )   /* if there is src op */
                     rhs = AstIdent::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
+                if(ll->m_dst.isSet() || (ll->getOpcode()==iMOD))
                 lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
             }
+        if(needsLhs(ll->getOpcode()))
+            assert(lhs!=nullptr);
         switch (ll->getOpcode())
         {
             case iADD:
@@ -406,10 +424,12 @@ void Function::highLevelGen()
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
-            case iPOP:    pIcode->setUnary(HLI_POP, lhs);
+            case iPOP:
+                pIcode->setUnary(HLI_POP, lhs);
                 break;
 
-            case iPUSH:   pIcode->setUnary(HLI_PUSH, lhs);
+            case iPUSH:
+                pIcode->setUnary(HLI_PUSH, lhs);
                 break;
 
             case iRET:
@@ -613,7 +633,7 @@ void ICODE::writeDU()
     }
 
     /* Print du1 chain */
-    printf ("# regs defined = %d\n", du1.numRegsDef);
+    printf ("# regs defined = %d\n", du1.getNumRegsDef());
     for (int i = 0; i < MAX_REGS_DEF; i++)
     {
         if (not du1.used(i))

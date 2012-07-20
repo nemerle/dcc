@@ -7,6 +7,9 @@
 #include <vector>
 #include <list>
 #include <bitset>
+#include <set>
+#include <algorithm>
+#include <initializer_list>
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
 #include <llvm/MC/MCInst.h>
@@ -29,21 +32,24 @@ typedef std::list<ICODE>::iterator iICODE;
 typedef std::list<ICODE>::reverse_iterator riICODE;
 typedef boost::iterator_range<iICODE> rCODE;
 
-struct LivenessSet : public std::bitset<32>
+struct LivenessSet
 {
-    LivenessSet(int val=0) : std::bitset<32>(val) {}
-    LivenessSet(const LivenessSet &other)
+    std::set<eReg> registers;
+public:
+    LivenessSet(const std::initializer_list<eReg> &init) : registers(init) {}
+    LivenessSet() {}
+    LivenessSet(const LivenessSet &other) : registers(other.registers)
     {
-        (std::bitset<32> &)*this = (std::bitset<32> &)other;
     }
-    LivenessSet(const std::bitset<32> &other)
+    void reset()
     {
-        (std::bitset<32> &)*this = other;
+        registers.clear();
     }
-//    LivenessSet(LivenessSet &&other) : LivenessSet()
-//    {
-//        swap(*this,other);
-//    }
+
+    //    LivenessSet(LivenessSet &&other) : LivenessSet()
+    //    {
+    //        swap(*this,other);
+    //    }
     LivenessSet &operator=(LivenessSet other)
     {
         swap(*this,other);
@@ -56,22 +62,65 @@ struct LivenessSet : public std::bitset<32>
 
         // by swapping the members of two classes,
         // the two classes are effectively swapped
-        swap((std::bitset<32> &)first, (std::bitset<32> &)second);
+        swap(first.registers, second.registers);
     }
+    LivenessSet &operator|=(const LivenessSet &other)
+    {
+        registers.insert(other.registers.begin(),other.registers.end());
+        return *this;
+    }
+    LivenessSet &operator&=(const LivenessSet &other)
+    {
+        std::set<eReg> res;
+        std::set_intersection(registers.begin(),registers.end(),
+                              other.registers.begin(),other.registers.end(),
+                              std::inserter(res, res.end()));
+        registers = res;
+        return *this;
+    }
+    LivenessSet &operator-=(const LivenessSet &other)
+    {
+        std::set<eReg> res;
+        std::set_difference(registers.begin(),registers.end(),
+                            other.registers.begin(),other.registers.end(),
+                            std::inserter(res, res.end()));
+        registers = res;
+        return *this;
+    }
+    LivenessSet operator-(const LivenessSet &other) const
+    {
+        return LivenessSet(*this) -= other;
+    }
+    LivenessSet operator+(const LivenessSet &other) const
+    {
+        return LivenessSet(*this) |= other;
+    }
+    LivenessSet operator &(const LivenessSet &other) const
+    {
+        return LivenessSet(*this) &= other;
+    }
+    bool any() const
+    {
+        return not registers.empty();
+    }
+    bool operator==(const LivenessSet &other) const
+    {
+        return registers==other.registers;
+    }
+    bool operator!=(const LivenessSet &other) const { return not(*this==other);}
 
     LivenessSet &setReg(int r);
     LivenessSet &addReg(int r);
-    bool testReg(int r)
+    bool testReg(int r) const
     {
-        return test(r-rAX);
+        return registers.find(eReg(r))!=registers.end();
     }
-public:
+    bool testRegAndSubregs(int r) const;
     LivenessSet &clrReg(int r);
 private:
     void postProcessCompositeRegs();
 };
 
-extern LivenessSet duReg[30];
 /* uint8_t and uint16_t registers */
 
 /* Def/use of flags - low 4 bits represent flags */
@@ -180,8 +229,8 @@ public:
     void setCall(Function *proc);
     HLTYPE(hlIcode op=HLI_INVALID) : opcode(op)
     {}
-//    HLTYPE() // help valgrind find uninitialized HLTYPES
-//    {}
+    //    HLTYPE() // help valgrind find uninitialized HLTYPES
+    //    {}
     HLTYPE & operator=(const HLTYPE &l)
     {
         exp     = l.exp;
@@ -197,7 +246,6 @@ public:
 /* LOW_LEVEL icode operand record */
 struct LLOperand
 {
-    llvm::MCOperand llvm_op;
     eReg     seg;               /* CS, DS, ES, SS                       */
     eReg     segOver;           /* CS, DS, ES, SS if segment override   */
     int16_t    segValue;          /* Value of segment seg during analysis */
@@ -245,6 +293,10 @@ struct LLOperand
         Op.regi = (eReg)Val;
         return Op;
     }
+    bool isSet()
+    {
+        return not (*this == LLOperand());
+    }
     void addProcInformation(int param_count,uint32_t call_conv);
 };
 struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
@@ -256,7 +308,7 @@ public:
     int             codeIdx;    	/* Index into cCode.code            */
     uint8_t         numBytes;       /* Number of bytes this instr   */
     uint32_t        label;          /* offset in image (20-bit adr) */
-    LLOperand       dst;            /* destination operand          */
+    LLOperand       m_dst;            /* destination operand          */
     DU              flagDU;         /* def/use of flags				*/
     int             caseEntry;
     std::vector<uint32_t> caseTbl2;
@@ -285,25 +337,29 @@ public:
     {
         return (getOpcode()==op);
     }
+    bool matchWithRegDst(llIcode op)
+    {
+        return (getOpcode()==op) and m_dst.isReg();
+    }
     bool match(llIcode op,eReg dest)
     {
-        return (getOpcode()==op)&&dst.regi==dest;
+        return (getOpcode()==op)&&m_dst.regi==dest;
     }
     bool match(llIcode op,eReg dest,uint32_t flgs)
     {
-        return (getOpcode()==op) and (dst.regi==dest) and testFlags(flgs);
+        return (getOpcode()==op) and (m_dst.regi==dest) and testFlags(flgs);
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
-        return (getOpcode()==op)&&(dst.regi==dest)&&(m_src.regi==src_reg);
+        return (getOpcode()==op)&&(m_dst.regi==dest)&&(m_src.regi==src_reg);
     }
     bool match(eReg dest,eReg src_reg)
     {
-        return (dst.regi==dest)&&(m_src.regi==src_reg);
+        return (m_dst.regi==dest)&&(m_src.regi==src_reg);
     }
     bool match(eReg dest)
     {
-        return (dst.regi==dest);
+        return (m_dst.regi==dest);
     }
     bool match(llIcode op,uint32_t flgs)
     {
@@ -312,6 +368,19 @@ public:
     void set(llIcode op,uint32_t flags)
     {
         setOpcode(op);
+        flg =flags;
+    }
+    void set(llIcode op,uint32_t flags,eReg dst_reg)
+    {
+        setOpcode(op);
+        m_dst = LLOperand::CreateReg2(dst_reg);
+        flg =flags;
+    }
+    void set(llIcode op,uint32_t flags,eReg dst_reg,const LLOperand &src_op)
+    {
+        setOpcode(op);
+        m_dst = LLOperand::CreateReg2(dst_reg);
+        m_src = src_op;
         flg =flags;
     }
     void emitGotoLabel(int indLevel);
@@ -343,16 +412,16 @@ public:
     }
     void replaceDst(const LLOperand &with)
     {
-        dst = with;
+        m_dst = with;
     }
-    void replaceDst(eReg r)
-    {
-        dst = LLOperand::CreateReg2(r);
-    }
+//    void replaceDst(eReg r)
+//    {
+//        dst = LLOperand::CreateReg2(r);
+//    }
     ICODE *m_link;
     condId idType(opLoc sd) const;
-    const LLOperand *   get(opLoc sd) const { return (sd == SRC) ? &src() : &dst; }
-    LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &dst; }
+    const LLOperand *   get(opLoc sd) const { return (sd == SRC) ? &src() : &m_dst; }
+    LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &m_dst; }
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
@@ -407,6 +476,10 @@ public:
     };
     struct DU1
     {
+    protected:
+        int     numRegsDef;             /* # registers defined by this inst */
+
+    public:
         struct Use
         {
             int Reg; // used register
@@ -422,7 +495,6 @@ public:
             }
 
         };
-        int     numRegsDef;             /* # registers defined by this inst */
         uint8_t	regi[MAX_REGS_DEF+1];	/* registers defined by this inst   */
         Use     idx[MAX_REGS_DEF+1];
         //int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
@@ -447,6 +519,11 @@ public:
             Use &u(idx[regIdx]);
             u.removeUser(ic);
         }
+        int getNumRegsDef() const {return numRegsDef;}
+        void clearAllDefs() {numRegsDef=0;}
+        DU1 &addDef(eReg r) {numRegsDef++; return *this;}
+        DU1 &setDef(eReg r) {numRegsDef=1; return *this;}
+        void removeDef(eReg r) {numRegsDef--;}
         DU1() : numRegsDef(0)
         {
         }
@@ -460,13 +537,13 @@ public:
     const LLInst *      ll() const { return &m_ll;}
 
     HLTYPE *            hlU() {
-//        assert(type==HIGH_LEVEL);
-//        assert(m_hl.opcode!=HLI_INVALID);
+        //        assert(type==HIGH_LEVEL);
+        //        assert(m_hl.opcode!=HLI_INVALID);
         return &m_hl;
     }
     const HLTYPE *      hl() const {
-//        assert(type==HIGH_LEVEL);
-//        assert(m_hl.opcode!=HLI_INVALID);
+        //        assert(type==HIGH_LEVEL);
+        //        assert(m_hl.opcode!=HLI_INVALID);
         return &m_hl;
     }
     void                hl(const HLTYPE &v) { m_hl=v;}
@@ -501,9 +578,9 @@ public:
     {
     }
 public:
-  const MachineBasicBlock* getParent() const { return Parent; }
-  MachineBasicBlock* getParent() { return Parent; }
-  //unsigned getNumOperands() const { return (unsigned)Operands.size(); }
+    const MachineBasicBlock* getParent() const { return Parent; }
+    MachineBasicBlock* getParent() { return Parent; }
+    //unsigned getNumOperands() const { return (unsigned)Operands.size(); }
 
 };
 /** Map n low level instructions to m high level instructions

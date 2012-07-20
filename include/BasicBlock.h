@@ -36,7 +36,7 @@ private:
         numHlIcodes(0),flg(0),
         inEdges(0),
         edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
-        inInterval(0),correspInt(0),liveUse(0),def(0),liveIn(0),liveOut(0),
+        inInterval(0),correspInt(0),
         dfsFirstNum(0),dfsLastNum(0),immedDom(0),ifFollow(0),loopType(0),latchNode(0),
         numBackEdges(0),loopHead(0),loopFollow(0),caseHead(0),caseTail(0),index(0)
     {

@@ -122,7 +122,7 @@ void Function::findIdioms()
                 {
                     if ((pIcode->ll()->src().proc.proc->retVal.type==TYPE_LONG_SIGN)
                             || (pIcode->ll()->src().proc.proc->retVal.type == TYPE_LONG_UNSIGN))
-                        localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, pIcode/*ip*/);
+                        localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), pIcode/*ip*/);
                 }
 
             /* Check for idioms */

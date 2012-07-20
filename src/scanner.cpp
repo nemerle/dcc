@@ -6,6 +6,8 @@
  ****************************************************************************/
 
 #include <cstring>
+#include <map>
+#include <string>
 #include "dcc.h"
 #include "scanner.h"
 #include "project.h"
@@ -411,33 +413,116 @@ int disassembleOneLibDisasm(uint32_t ip,x86_insn_t &l)
 }
 eReg convertRegister(const x86_reg_t &reg)
 {
+    if( (reg_pc==reg.type) || (0==reg.id))
+        return rUNDEF;
 
     eReg regmap[]={ rUNDEF,
                     rUNDEF,rUNDEF,rUNDEF,rUNDEF,   //eax ecx ebx edx
-                    rSP,rUNDEF,rUNDEF,rUNDEF,   //esp ebp esi edi
+                    rSP,rUNDEF,rUNDEF,rDI,   //esp ebp esi edi
                     rAX,rCX,rDX,rBX,
                     rSP,rBP,rSI,rDI,
                     rAL,rCL,rDL,rBL,
                     rAH,rCH,rDH,rBH
                   };
+    std::map<std::string,eReg> nameToEnum = {{"es",rES},{"ds",rDS},{"cs",rCS},{"ss",rSS}};
+    if(nameToEnum.find(reg.name)!=nameToEnum.end())
+        return nameToEnum[reg.name];
     assert(reg.id<sizeof(regmap)/sizeof(eReg));
     assert(regmap[reg.id]!=rUNDEF);
     return regmap[reg.id];
 }
+LLOperand convertExpression(const x86_ea_t &from)
+{
+    // BASE + Scale*Index + Disp
+    LLOperand res;
+    res.seg = rDS;
+    /*
+    INDEX_BX_SI = 22, // "bx+si"
+    INDEX_BX_DI, // "bx+di"
+    INDEX_BP_SI, // "bp+si"
+    INDEX_BP_DI, // "bp+di"
+    INDEX_SI, // "si"
+    INDEX_DI, // "di"
+    INDEX_BP, // "bp"
+    INDEX_BX, // "bx"
+    */
+    if(from.base.id)
+    {
+        eReg base_reg = convertRegister(from.base);
+        eReg index_reg = convertRegister(from.index);
+//        if(base_reg==rBX)
+        switch(base_reg)
+        {
+            case rDI:
+                res.regi = INDEX_DI; break;
+            case rBP:
+                res.seg=rSS;
+                switch(index_reg)
+                {
+                    case rDI:
+                        res.regi = INDEX_BP_DI; break;
+                    case rSI:
+                        res.regi = INDEX_BP_SI; break;
+                    case rUNDEF:
+                        res.regi = INDEX_BP; break;
+                    default:
+                        assert(false);
+                }
+                break;
+            case rBX:
+                switch(index_reg)
+                {
+                    case rDI:
+                        res.regi = INDEX_BX_DI; break;
+                    case rSI:
+                        res.regi = INDEX_BX_SI; break;
+                    case rUNDEF:
+                        res.regi = INDEX_BX; break;
+                    default:
+                        assert(false);
+                }
+                break;
+            default:
+                assert(false);
+        }
+        assert(index_reg==rUNDEF);
+    }
+    assert(from.scale==0);
+    if(from.index.id)
+    {
+        assert(false);
+    }
+    res.off = from.disp;
+    return res;
+}
 LLOperand convertOperand(const x86_op_t &from)
 {
+    LLOperand res;
     switch(from.type)
     {
         case op_unused:
             break;
         case op_register:
-            return LLOperand::CreateReg2(convertRegister(from.data.reg));
+            res.regi = convertRegister(from.data.reg); break;
         case op_immediate:
-            return LLOperand::CreateImm2(from.data.sdword);
+            res.opz = from.data.sdword;
+        case op_expression:
+            res = convertExpression(from.data.expression); break;
+        case op_offset:
+        {
+            LLOperand res;
+            res.seg = rDS;
+            res.off = from.data.offset;
+            break;
+        }
         default:
             fprintf(stderr,"convertOperand does not know how to convert %d\n",from.type);
     }
-    return LLOperand::CreateImm2(0);
+    if(res.isSet() && (res.seg == rUNDEF))
+    {
+        res.seg = rDS;
+    }
+    return res;
 }
 /*****************************************************************************
  Scans one machine instruction at offset ip in prog.Image and returns error.
@@ -481,15 +566,8 @@ eErrorId scan(uint32_t ip, ICODE &p)
         if(p.insn.x86_get_branch_target())
             decodeBranchTgt(p.insn);
     }
-    x86_op_t *dst_op = p.insn.get_dest();
-    static int only_first=1;
-    if(dst_op && only_first)
-    {
-        only_first = 0;
-        LLOperand conv = convertOperand(*dst_op);
-        p.ll()->dst=conv;
-        //assert(conv==p.ll()->dst);
-    }
+//    LLOperand conv = convertOperand(*p.insn.get_dest());
+//    assert(conv==p.ll()->dst);
     if (p.ll()->getOpcode())
     {
         /* Save bytes of image used */
@@ -552,7 +630,7 @@ static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off
 
     /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
     pm = (!(stateTable[i].flg & TO_REG) == fdst) ?
-                &pIcode->ll()->dst : &pIcode->ll()->src();
+                &pIcode->ll()->m_dst : &pIcode->ll()->src();
 
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
          * provide the value of this segment in the field segValue.  */
@@ -619,7 +697,7 @@ static void rm(int i)
     }
     //pIcode->insn.get_dest()->
     if ((stateTable[i].flg & NSP) && (pIcode->ll()->src().getReg2()==rSP ||
-                                      pIcode->ll()->dst.getReg2()==rSP))
+                                      pIcode->ll()->m_dst.getReg2()==rSP))
         pIcode->ll()->setFlags(NOT_HLL);
 }
 
@@ -656,10 +734,9 @@ static void segrm(int i)
 static void regop(int i)
 {
     setAddress(i, false, 0, ((int16_t)i & 7) + rAX, 0);
-    pIcode->ll()->replaceDst(LLOperand::CreateReg2(pIcode->ll()->src().getReg2()));
-    //    pIcode->ll()->dst.regi = pIcode->ll()->src.regi;
-}
+    pIcode->ll()->replaceDst(pIcode->ll()->src());
 
+}
 
 /*****************************************************************************
  segop - seg encoded in middle of opcode
@@ -767,7 +844,7 @@ static void trans(int i)
     if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */
         ll->setOpcode(transTable[REG(*pInst)]);   /* valid on bytes */
         rm(i);
-        ll->replaceSrc( pIcode->ll()->dst );
+        ll->replaceSrc( pIcode->ll()->m_dst );
         if (ll->match(iJMP) || ll->match(iCALL) || ll->match(iCALLF))
             ll->setFlags(NO_OPS);
         else if (ll->match(iINC) || ll->match(iPUSH) || ll->match(iDEC))
@@ -799,7 +876,7 @@ static void arith(int i)
     }
     else if (!(opcode == iNOT || opcode == iNEG))
     {
-        pIcode->ll()->replaceSrc( pIcode->ll()->dst );
+        pIcode->ll()->replaceSrc( pIcode->ll()->m_dst );
         setAddress(i, true, 0, rAX, 0);			/* dst = AX  */
     }
     else if (opcode == iNEG || opcode == iNOT)
@@ -838,7 +915,7 @@ static void data2(int )
          * set to NO_OPS.	*/
     if (pIcode->ll()->getOpcode() == iENTER)
     {
-        pIcode->ll()->dst.off = getWord();
+        pIcode->ll()->m_dst.off = getWord();
         pIcode->ll()->setFlags(NO_OPS);
     }
     else

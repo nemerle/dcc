@@ -60,7 +60,7 @@ void ExpStack::push(Expr *expr)
 Expr *ExpStack::pop()
 {
     if(expStk.empty())
-        return 0;
+        return expStk.back();
     Expr *topExp = expStk.back();
     expStk.pop_back();
     return topExp;
@@ -266,7 +266,7 @@ void Function::genLiveKtes ()
         {
             if ((insn.type == HIGH_LEVEL) && ( insn.valid() ))
             {
-                liveUse |= (insn.du.use & ~def);
+                liveUse |= (insn.du.use - def);
                 def |= insn.du.def;
             }
         }
@@ -358,14 +358,15 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                     {
                         switch (pcallee->retVal.type) {
                             case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
-                                ticode.du1.numRegsDef = 2;
+                                ticode.du1.setDef(rAX).addDef(rDX);
+                                //TODO: use Calling convention to properly set regs here
                                 break;
                             case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
                             case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
-                                ticode.du1.numRegsDef = 1;
+                                ticode.du1.setDef(rAX);
                                 break;
                             default:
-                                ticode.du1.numRegsDef = 0;
+                                ticode.du1 = ICODE::DU1(); // was .numRegsDef = 0
                                 //fprintf(stderr,"Function::liveRegAnalysis : Unknown return type %d, assume 0\n",pcallee->retVal.type);
                         } /*eos*/
 
@@ -377,7 +378,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
             }
 
             /* liveIn(b) = liveUse(b) U (liveOut(b) - def(b) */
-            pbb->liveIn = LivenessSet(pbb->liveUse | (pbb->liveOut & ~pbb->def));
+            pbb->liveIn = LivenessSet(pbb->liveUse + (pbb->liveOut - pbb->def));
 
             /* Check if live sets have been modified */
             if ((prevLiveIn != pbb->liveIn) || (prevLiveOut != pbb->liveOut))
@@ -422,10 +423,10 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
             if (checked_icode->type != HIGH_LEVEL) // Only check uses of HIGH_LEVEL icodes
                 continue;
             /* if used, get icode index */
-            if ((checked_icode->du.use & duReg[regi]).any())
+            if ( checked_icode->du.use.testRegAndSubregs(regi) )
                 start_at->du1.recordUse(defRegIdx,checked_icode.base());
             /* if defined, stop finding uses for this reg */
-            if ((checked_icode->du.def & duReg[regi]).any())
+            if (checked_icode->du.def.testRegAndSubregs(regi))
             {
                 ticode=checked_icode.base();
                 break;
@@ -435,13 +436,13 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
             ticode=(++riICODE(rbegin())).base();
 
         /* Check if last definition of this register */
-        if ((not (ticode->du.def & duReg[regi]).any()) and (liveOut & duReg[regi]).any())
+        if (not ticode->du.def.testRegAndSubregs(regi) and liveOut.testRegAndSubregs(regi) )
             start_at->du.lastDefRegi.addReg(regi);
     }
     else		/* only 1 instruction in this basic block */
     {
         /* Check if last definition of this register */
-        if ((liveOut & duReg[regi]).any())
+        if ( liveOut.testRegAndSubregs(regi) )
             start_at->du.lastDefRegi.addReg(regi);
     }
     return false;
@@ -460,17 +461,17 @@ void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
         for (auto iter=target_instructions.begin(); iter!=target_instructions.end(); ++iter)
         {
             /* if used, get icode index */
-            if ((iter->du.use & duReg[regi]).any())
+            if ( iter->du.use.testRegAndSubregs(regi) )
                 picode.du1.recordUse(defRegIdx,iter.base());
             /* if defined, stop finding uses for this reg */
-            if ((iter->du.def & duReg[regi]).any())
+            if (iter->du.def.testRegAndSubregs(regi))
                 break;
         }
 
         /* if not used in this basic block, check if the
          * register is live out, if so, make it the last
          * definition of this register */
-        if ( picode.du1.used(defRegIdx) && (tbb->liveOut & duReg[regi]).any())
+        if ( picode.du1.used(defRegIdx) && tbb->liveOut.testRegAndSubregs(regi))
             picode.du.lastDefRegi.addReg(regi);
     }
 }
@@ -484,11 +485,11 @@ void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
 void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
 {
     if (picode->valid() and not picode->du1.used(defRegIdx) and
-            (not (picode->du.lastDefRegi & duReg[regi]).any()) &&
+            (not picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
             (not ((picode->hl()->opcode == HLI_CALL) &&
                   (picode->hl()->call.proc->flg & PROC_ISLIB))))
     {
-        if (! (this->liveOut & duReg[regi]).any())	/* not liveOut */
+        if (! (this->liveOut.testRegAndSubregs(regi)))	/* not liveOut */
         {
             bool res = picode->removeDefRegi (regi, defRegIdx+1,&Parent->localId);
             if (res == true)
@@ -537,7 +538,7 @@ void BB::genDU1()
             defRegIdx++;
 
             /* Check if all defined registers have been processed */
-            if ((defRegIdx >= picode->du1.numRegsDef) || (defRegIdx == MAX_REGS_DEF))
+            if ((defRegIdx >= picode->du1.getNumRegsDef()) || (defRegIdx == MAX_REGS_DEF))
                 break;
         }
     }
@@ -736,18 +737,18 @@ void LOCAL_ID::processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode
             {
                 assert(lhs_ident);
                 res = Expr::insertSubTreeLongReg (
-                          p_hl.asgn.rhs,
-                          t_hl.exp.v,
-                          lhs_ident->ident.idNode.longIdx);
+                            p_hl.asgn.rhs,
+                            t_hl.exp.v,
+                            lhs_ident->ident.idNode.longIdx);
             }
             else
             {
                 RegisterNode *lhs_reg = dynamic_cast<RegisterNode *>(p_hl.asgn.lhs());
                 assert(lhs_reg);
                 res = Expr::insertSubTreeReg (
-                          t_hl.exp.v,
-                          p_hl.asgn.rhs,
-                          id_arr[lhs_reg->regiIdx].id.regi,
+                            t_hl.exp.v,
+                            p_hl.asgn.rhs,
+                            id_arr[lhs_reg->regiIdx].id.regi,
                         this);
             }
             if (res)
@@ -848,7 +849,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     {
         HLTYPE &_icHl(*picode->hlU());
         numHlIcodes++;
-        if (picode->du1.numRegsDef == 1)    /* uint8_t/uint16_t regs */
+        if (picode->du1.getNumRegsDef() == 1)    /* uint8_t/uint16_t regs */
         {
             /* Check for only one use of this register.  If this is
              * the last definition of the register in this BB, check
@@ -867,7 +868,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                          * icode expression */
 
                         ticode = picode->du1.idx[0].uses.front();
-                        if ((picode->du.lastDefRegi & duReg[regi]).any() &&
+                        if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
                                 ((ticode->hl()->opcode != HLI_CALL) &&
                                  (ticode->hl()->opcode != HLI_RET)))
                             continue;
@@ -886,7 +887,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         //   call F() <- somehow this is marked as user of POP ?
                         ticode = picode->du1.idx[0].uses.front();
                         ti_hl = ticode->hlU();
-                        if ((picode->du.lastDefRegi & duReg[regi]).any() &&
+                        if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
                                 ((ti_hl->opcode != HLI_CALL) &&
                                  (ti_hl->opcode != HLI_RET)))
                             continue;
@@ -902,8 +903,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 RegisterNode *v = dynamic_cast<RegisterNode *>(_icHl.expr());
                                 assert(v);
                                 res = Expr::insertSubTreeReg (ti_hl->exp.v,
-                                                                   _exp,
-                                                                   locals.id_arr[v->regiIdx].id.regi,
+                                                              _exp,
+                                                              locals.id_arr[v->regiIdx].id.regi,
                                         &locals);
                                 if (res)
                                 {
@@ -971,7 +972,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
             }
         }
 
-        else if (picode->du1.numRegsDef == 2)   /* long regs */
+        else if (picode->du1.getNumRegsDef() == 2)   /* long regs */
         {
             /* Check for only one use of these registers */
             if ((picode->du1.numUses(0) == 1) and (picode->du1.numUses(1) == 1))
@@ -986,7 +987,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                         {
                             ticode = picode->du1.idx[0].uses.front();
-                            if ((picode->du.lastDefRegi & duReg[regi]).any() &&
+                            if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
                                     ((ticode->hl()->opcode != HLI_CALL) &&
                                      (ticode->hl()->opcode != HLI_RET)))
                                 continue;
@@ -998,7 +999,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                         {
                             ticode = picode->du1.idx[0].uses.front();
-                            if ((picode->du.lastDefRegi & duReg[regi]).any() &&
+                            if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
                                     ((ticode->hl()->opcode != HLI_CALL) &&
                                      (ticode->hl()->opcode != HLI_RET)))
                                 continue;
@@ -1011,7 +1012,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                     break;
                                 case HLI_JCOND: case HLI_PUSH:
                                     res = Expr::insertSubTreeLongReg (_exp,
-                                                                           ticode->hlU()->exp.v,
+                                                                      ticode->hlU()->exp.v,
                                                                       dynamic_cast<AstIdent *>(_icHl.asgn.lhs())->ident.idNode.longIdx);
                                     if (res)
                                     {
@@ -1034,9 +1035,9 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                             case HLI_ASSIGN:
                                 _exp = _icHl.call.toAst();
                                 ticode->hlU()->asgn.lhs(
-                                        AstIdent::Long(&locals, DST,
-                                                          ticode,HIGH_FIRST, picode.base(),
-                                                          eDEF, *(++iICODE(ticode))->ll()));
+                                            AstIdent::Long(&locals, DST,
+                                                           ticode,HIGH_FIRST, picode.base(),
+                                                           eDEF, *(++iICODE(ticode))->ll()));
                                 ticode->hlU()->asgn.rhs = _exp;
                                 picode->invalidate();
                                 numHlIcodes--;
@@ -1052,9 +1053,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 _exp = _icHl.call.toAst();
                                 _retVal = &picode->hl()->call.proc->retVal;
                                 res = Expr::insertSubTreeLongReg (_exp,
-                                                                       ticode->hlU()->exp.v,
-                                                                       locals.newLongReg ( _retVal->type, _retVal->id.longId.h,
-                                                                                           _retVal->id.longId.l, picode.base()));
+                                                                  ticode->hlU()->exp.v,
+                                                                  locals.newLongReg ( _retVal->type, _retVal->longId(), picode.base()));
                                 if (res)	/* was substituted */
                                 {
                                     picode->invalidate();
@@ -1083,8 +1083,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
         {
             g_exp_stk.processExpPush(numHlIcodes, picode.base());
         }
-        else if(picode->du1.numRegsDef!=0)
-            printf("Num def %d\n",picode->du1.numRegsDef);
+        else if(picode->du1.getNumRegsDef()!=0)
+            printf("Num def %d\n",picode->du1.getNumRegsDef());
 
         /* For HLI_CALL instructions that use arguments from the stack,
          * pop them from the expression stack and place them on the
@@ -1098,7 +1098,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
 
             /* If we could not substitute the result of a function,
              * assign it to the corresponding registers */
-            if ( not _icHl.call.proc->isLibrary() and (not picode->du1.used(0)) and (picode->du1.numRegsDef > 0))
+            if ( not _icHl.call.proc->isLibrary() and (not picode->du1.used(0)) and (picode->du1.getNumRegsDef() > 0))
             {
                 _exp = new FuncNode(_icHl.call.proc, _icHl.call.args);
                 auto lhs = AstIdent::idID (&_icHl.call.proc->retVal, &locals, picode.base());
@@ -1131,13 +1131,13 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
         eReg bad_regs[] = {rES,rCS,rDS,rSS};
         constexpr char * names[] ={"ES","CS","DS","SS"};
         for(int i=0; i<4; ++i)
-        if(_liveOut.testReg(bad_regs[i]))
-        {
-            fprintf(stderr,"LivenessSet probably screwed up, %s register as an liveOut in preprocessReturnDU\n",names[i]);
-            _liveOut.clrReg(bad_regs[i]);
-            if(not _liveOut.any())
-                return;
-        }
+            if(_liveOut.testReg(bad_regs[i]))
+            {
+                fprintf(stderr,"LivenessSet probably screwed up, %s register as an liveOut in preprocessReturnDU\n",names[i]);
+                _liveOut.clrReg(bad_regs[i]);
+                if(not _liveOut.any())
+                    return;
+            }
         flg |= PROC_IS_FUNC;
         isAx = _liveOut.testReg(rAX);
         isBx = _liveOut.testReg(rBX);
@@ -1176,9 +1176,8 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
         {
             retVal.type = TYPE_LONG_SIGN;
             retVal.loc = REG_FRAME;
-            retVal.id.longId.h = rDX;
-            retVal.id.longId.l = rAX;
-            /*idx = */localId.newLongReg(TYPE_LONG_SIGN, rDX, rAX, Icode.begin()/*0*/);
+            retVal.longId() = LONGID_TYPE(rDX,rAX);
+            /*idx = */localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), Icode.begin());
             localId.propLongId (rAX, rDX, "\0");
         }
         else if (isAx || isBx || isCx || isDx)	/* uint16_t */

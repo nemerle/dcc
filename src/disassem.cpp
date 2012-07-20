@@ -70,7 +70,7 @@ static const char *szFlops3C[] =
 
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
-static void  formatRM(ostringstream &p, uint32_t flg, const LLOperand &pm);
+static void  formatRM(ostringstream &p, const LLOperand &pm);
 static ostringstream &strDst(ostringstream &os, uint32_t flg, const LLOperand &pm);
 
 static char *strHex(uint32_t d);
@@ -283,7 +283,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     {
         case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
         case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-            strDst(operands_s,inst.getFlag(), inst.dst);
+            strDst(operands_s,inst.getFlag(), inst.m_dst);
             inst.strSrc(operands_s);
             break;
 
@@ -293,7 +293,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 
         case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
         case iROR:
-            strDst(operands_s,inst.getFlag() | I, inst.dst);
+            strDst(operands_s,inst.getFlag() | I, inst.m_dst);
             if(inst.testFlags(I))
                 inst.strSrc(operands_s);
             else
@@ -301,7 +301,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             break;
 
         case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-            strDst(operands_s,inst.getFlag() | I, inst.dst);
+            strDst(operands_s,inst.getFlag() | I, inst.m_dst);
             break;
 
         case iPUSH:
@@ -311,15 +311,15 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             }
             else
             {
-                strDst(operands_s,inst.getFlag() | I, inst.dst);
+                strDst(operands_s,inst.getFlag() | I, inst.m_dst);
             }
             break;
 
         case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
             if (inst.testFlags(I))
             {
-                strDst(operands_s,inst.getFlag(), inst.dst) <<", ";
-                formatRM(operands_s, inst.getFlag(), inst.src());
+                strDst(operands_s,inst.getFlag(), inst.m_dst) <<", ";
+                formatRM(operands_s, inst.src());
                 inst.strSrc(operands_s);
             }
             else
@@ -327,7 +327,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             break;
 
         case iLDS:  case iLES:  case iBOUND:
-            strDst(operands_s,inst.getFlag(), inst.dst)<<", dword ptr";
+            strDst(operands_s,inst.getFlag(), inst.m_dst)<<", dword ptr";
             inst.strSrc(operands_s,true);
             break;
 
@@ -397,8 +397,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             break;
 
         case iENTER:
-            operands_s<<strHex(inst.dst.off)<<", ";
-            operands_s<<strHex(inst.src().getImm2());
+            operands_s<<strHex(inst.m_dst.off) << ", " << strHex(inst.src().getImm2());
             break;
 
         case iRET:  case iRETF:  case iINT:
@@ -552,7 +551,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(std::ostringstream &p, uint32_t /*flg*/, const LLOperand &pm)
+static void formatRM(std::ostringstream &p, const LLOperand &pm)
 {
     //char    seg[4];
 
@@ -595,7 +594,7 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, const LLOperand &p
     //os << setw(WID_PTR);
     if ((flg & I) and not pm.isReg())
         os << szPtr[flg & B];
-    formatRM(os, flg, pm);
+    formatRM(os, pm);
     return os;
 }
 
@@ -612,7 +611,7 @@ ostringstream &LLInst::strSrc(ostringstream &os,bool skip_comma)
     else if (testFlags(IM_SRC))		/* level 2 */
         os<<"dx:ax";
     else
-        formatRM(os, getFlag(), src());
+        formatRM(os, src());
 
     return os;
 }
@@ -649,7 +648,7 @@ void LLInst::flops(std::ostringstream &out)
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */
 
-    if ( not dst.isReg() )
+    if ( not m_dst.isReg() )
     {
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
         out<<Machine_X86::floatOpName(op)<<' ';
@@ -685,7 +684,7 @@ void LLInst::flops(std::ostringstream &out)
                 }
         }
 
-        formatRM(out, getFlag(), dst);
+        formatRM(out, m_dst);
     }
     else
     {
@@ -694,7 +693,7 @@ void LLInst::flops(std::ostringstream &out)
             normal opcodes. Because the opcodes are slightly different for
             this case (e.g. op=04 means FSUB if reg != 3, but FSUBR for
             reg == 3), a separate table is used (szFlops2). */
-        int destRegIdx=dst.regi - rAX;
+        int destRegIdx=m_dst.regi - rAX;
         switch (op)
         {
             case 0x0C:

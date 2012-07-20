@@ -97,7 +97,8 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     bool regExist=false;
     condId type;
     Function * tproc;
-    eReg regL, regH;		/* Registers involved in arguments */
+    eReg regL = rUNDEF;
+    eReg regH;		/* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
     tproc = ticode->hl()->call.proc;
@@ -113,6 +114,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     if (lhs_reg)
     {
         regL = id_arr[lhs_reg->regiIdx].id.regi;
+        assert(regL!=rUNDEF);
         if (regL < rAL)
             tidx = tproc->localId.newByteWordReg(TYPE_WORD_SIGN, regL);
         else
@@ -133,9 +135,10 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     else if (type == LONG_VAR)
     {
         int longIdx = lhs->ident.idNode.longIdx;
-        regL = id_arr[longIdx].id.longId.l;
-        regH = id_arr[longIdx].id.longId.h;
-        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regH, regL, tproc->Icode.begin() /*0*/);
+        LONGID_TYPE regHL = id_arr[longIdx].longId();
+        regH=regHL.h();
+        regL=regHL.l();
+        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regHL, tproc->Icode.begin() /*0*/);
         /* Check if register argument already on the formal argument list */
         for(STKSYM &tgt_sym : *target_stackframe)
         {
@@ -175,6 +178,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
         {
             newsym.regs = AstIdent::LongIdx (tidx);
             newsym.type = TYPE_LONG_SIGN;
+            assert(regL!=rUNDEF);
             tproc->localId.id_arr[tidx].name = newsym.name;
             tproc->localId.propLongId (regL, regH, tproc->localId.id_arr[tidx].name.c_str());
         }
@@ -191,7 +195,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     switch (type) {
         case REGISTER:
             id = &id_arr[lhs_reg->regiIdx];
-            picode->du.def &= maskDuReg[id->id.regi];
+            picode->du.def.clrReg(id->id.regi);
             if (id->id.regi < rAL)
                 newsym.type = TYPE_WORD_SIGN;
             else
@@ -199,8 +203,8 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
             break;
         case LONG_VAR:
             id = &id_arr[lhs->ident.idNode.longIdx];
-            picode->du.def &= maskDuReg[id->id.longId.h];
-            picode->du.def &= maskDuReg[id->id.longId.l];
+            picode->du.def.clrReg(id->longId().h());
+            picode->du.def.clrReg(id->longId().l());
             newsym.type = TYPE_LONG_SIGN;
             break;
         default:

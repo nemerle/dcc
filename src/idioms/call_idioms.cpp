@@ -77,13 +77,13 @@ bool Idiom17::match(iICODE picode)
     if (m_icodes[1]->ll()->match(iPOP))
     {
         int i=0;
-        regi = m_icodes[1]->ll()->dst.regi;
+        regi = m_icodes[1]->ll()->m_dst.regi;
         if ((regi >= rAX) && (regi <= rBX))
             i++;
 
         while (picode != m_end && picode->ll()->match(iPOP))
         {
-            if (picode->ll()->dst.regi != regi)
+            if (picode->ll()->m_dst.regi != regi)
                 break;
             i++;
             m_icodes.push_back(picode++);

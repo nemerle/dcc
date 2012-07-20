@@ -31,37 +31,67 @@ struct IDX_ARRAY : public std::vector<iICODE>
     }
 };
 
-typedef enum
+enum frameType
 {
     STK_FRAME,			/* For stack vars			*/
     REG_FRAME,			/* For register variables 	*/
     GLB_FRAME			/* For globals				*/
-} frameType;
+};
 
-typedef struct
+struct BWGLB_TYPE
 {
     int16_t	seg;			/*   segment value							 */
     int16_t	off;			/*   offset									 */
     eReg 	regi;			/*   optional indexed register				 */
-} BWGLB_TYPE;
+} ;
 
 
-typedef struct
-{ /* For TYPE_LONG_(UN)SIGN on the stack	     */
+/* For TYPE_LONG_(UN)SIGN on the stack	     */
+struct LONG_STKID_TYPE
+{
     int		offH;	/*   high offset from BP					 */
     int		offL;	/*   low offset from BP						 */
-}	LONG_STKID_TYPE;
+    LONG_STKID_TYPE(int h,int l) : offH(h),offL(l) {}
+};
+/* For TYPE_LONG_(UN)SIGN registers			 */
 struct LONGID_TYPE
-{		/* For TYPE_LONG_(UN)SIGN registers			 */
-    eReg	h;		/*   high register							 */
-    eReg	l;		/*   low register							 */
+{
+protected:
+    eReg	m_h;		/*   high register							 */
+    eReg	m_l;		/*   low register							 */
+public:
+    void set(eReg highpart,eReg lowpart)
+    {
+        m_h = highpart;
+        m_l = lowpart;
+    }
+    eReg l() const { return m_l; }
+    eReg h() const { return m_h; }
     bool srcDstRegMatch(iICODE a,iICODE b) const;
+    LONGID_TYPE() {} // uninitializing constructor to help valgrind catch uninit accesses
+    LONGID_TYPE(eReg h,eReg l) : m_h(h),m_l(l) {}
 };
 
-
+struct LONGGLB_TYPE /* For TYPE_LONG_(UN)SIGN globals			 */
+{
+    int16_t	seg;	/*   segment value                                              */
+    int16_t	offH;	/*   offset high                                                */
+    int16_t	offL;	/*   offset low                                                 */
+    uint8_t	regi;	/*   optional indexed register                                  */
+    LONGGLB_TYPE(int16_t _seg,int16_t _H,int16_t _L,int8_t _reg=0)
+    {
+        seg=_seg;
+        offH=_H;
+        offL=_L;
+        regi=_reg;
+    }
+};
 /* ID, LOCAL_ID */
 struct ID
 {
+protected:
+    LONGID_TYPE     m_longId; /* For TYPE_LONG_(UN)SIGN registers			 */
+public:
     hlType              type;       /* Probable type                            */
     bool                illegal;    /* Boolean: not a valid field any more      */
     //std::vector<iICODE> idx;
@@ -70,33 +100,39 @@ struct ID
     bool                hasMacro;   /* Identifier requires a macro              */
     char                macro[10];  /* Macro for this identifier                */
     std::string         name;       /* Identifier's name                        */
-    union {                         /* Different types of identifiers           */
+    union ID_UNION {                         /* Different types of identifiers           */
+        friend class ID;
+    protected:
+        LONG_STKID_TYPE	longStkId;  /* For TYPE_LONG_(UN)SIGN on the stack */
+    public:
         eReg		regi;       /* For TYPE_BYTE(uint16_t)_(UN)SIGN registers   */
         struct {                    /* For TYPE_BYTE(uint16_t)_(UN)SIGN on the stack */
             uint8_t	regOff;     /*    register offset (if any)              */
             int		off;        /*    offset from BP            		*/
         }               bwId;
         BWGLB_TYPE	bwGlb;	/* For TYPE_BYTE(uint16_t)_(UN)SIGN globals		 */
-        LONGID_TYPE     longId; /* For TYPE_LONG_(UN)SIGN registers			 */
-        LONG_STKID_TYPE	longStkId;  /* For TYPE_LONG_(UN)SIGN on the stack */
-        struct {			/* For TYPE_LONG_(UN)SIGN globals			 */
-            int16_t	seg;	/*   segment value                                              */
-            int16_t	offH;	/*   offset high                                                */
-            int16_t	offL;	/*   offset low                                                 */
-            uint8_t	regi;	/*   optional indexed register                                  */
-        }			longGlb;
+        LONGGLB_TYPE    longGlb;
         struct {			/* For TYPE_LONG_(UN)SIGN constants                     */
             uint32_t	h;		/*	 high uint16_t								 */
             uint32_t 	l;		/*	 low uint16_t								 */
         } longKte;
+        ID_UNION() { /*new (&longStkId) LONG_STKID_TYPE();*/}
     } id;
+    LONGID_TYPE &longId() {assert(isLong() && loc==REG_FRAME); return m_longId;}
+    const LONGID_TYPE &longId() const {assert(isLong() && loc==REG_FRAME); return m_longId;}
+    LONG_STKID_TYPE &longStkId() {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
+    const LONG_STKID_TYPE &longStkId() const {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
     ID();
     ID(hlType t, frameType f);
+    ID(hlType t, const LONGID_TYPE &s);
+    ID(hlType t, const LONG_STKID_TYPE &s);
+    ID(hlType t, const LONGGLB_TYPE &s);
     bool isSigned() const { return (type==TYPE_BYTE_SIGN)||(type==TYPE_WORD_SIGN)||(type==TYPE_LONG_SIGN);}
     uint16_t typeBitsize() const
     {
         return TypeContainer::typeSize(type)*8;
     }
+    bool isLong() const { return (type==TYPE_LONG_UNSIGN)||(type==TYPE_LONG_SIGN); }
     void setLocalName(int i)
     {
         char buf[32];
@@ -123,7 +159,7 @@ public:
     int newByteWordReg(hlType t, eReg regi);
     int newByteWordStk(hlType t, int off, uint8_t regOff);
     int newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t);
-    int newLongReg(hlType t, eReg regH, eReg regL, iICODE ix_);
+    int newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, int off);
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);
     void newIdent(hlType t, frameType f);
