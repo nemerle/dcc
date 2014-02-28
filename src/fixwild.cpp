@@ -180,8 +180,7 @@ static bool op0F(uint8_t pat[])
     processor is in 16 bit address mode (real mode).
     PATLEN bytes are scanned.
 */
-void
-fixWildCards(uint8_t pat[])
+void fixWildCards(uint8_t pat[])
 {
 
     uint8_t op, quad, intArg;

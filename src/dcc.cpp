@@ -8,6 +8,7 @@
 #include "dcc.h"
 #include "project.h"
 
+#include "CallGraph.h"
 /* Global variables - extern to other modules */
 extern char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
 extern SYMTAB  symtab;             /* Global symbol table      			  */
@@ -34,54 +35,49 @@ static void displayTotalStats(void);
 #include <llvm/CodeGen/MachineInstrBuilder.h>
 
 #include <llvm/TableGen/Main.h>
-#include <llvm/TableGen/TableGenAction.h>
+#include <llvm/TableGen/TableGenBackend.h>
 #include <llvm/TableGen/Record.h>
 /****************************************************************************
  * main
  ***************************************************************************/
 #include <iostream>
 using namespace llvm;
-class TVisitor : public TableGenAction {
-public:
-    virtual bool operator()(raw_ostream &OS, RecordKeeper &Records)
+bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
+{
+    Record *rec = Records.getDef("ADD8i8");
+    if(rec)
     {
-        Record *rec = Records.getDef("ADD8i8");
-        if(rec)
-        {
-            if(not rec->getTemplateArgs().empty())
-                std::cout << "Has template args\n";
-            auto classes(rec->getSuperClasses());
-            for(auto val : rec->getSuperClasses())
-                std::cout << "Super "<<val->getName()<<"\n";
+        if(not rec->getTemplateArgs().empty())
+            std::cout << "Has template args\n";
+        auto classes(rec->getSuperClasses());
+        for(auto val : rec->getSuperClasses())
+            std::cout << "Super "<<val->getName()<<"\n";
 
-//          DagInit * in = rec->getValueAsDag(val.getName());
-//          in->dump();
-            for(const RecordVal &val : rec->getValues())
-            {
-//                val.dump();
-            }
-            rec->dump();
-
-        }
-        //        rec = Records.getDef("CCR");
-        //        if(rec)
-        //            rec->dump();
-        for(auto val : Records.getDefs())
+        //          DagInit * in = rec->getValueAsDag(val.getName());
+        //          in->dump();
+        for(const RecordVal &val : rec->getValues())
         {
-            //std::cout<< "Def "<<val.first<<"\n";
+            //                val.dump();
         }
-        return false;
+        rec->dump();
+
     }
-};
+    //        rec = Records.getDef("CCR");
+    //        if(rec)
+    //            rec->dump();
+    for(auto val : Records.getDefs())
+    {
+        //std::cout<< "Def "<<val.first<<"\n";
+    }
+    return false;
+}
 int testTblGen(int argc, char **argv)
 {
     using namespace llvm;
     sys::PrintStackTraceOnErrorSignal();
     PrettyStackTraceProgram(argc,argv);
     cl::ParseCommandLineOptions(argc,argv);
-    TVisitor tz;
-
-    return llvm::TableGenMain(argv[0],tz);
+    return llvm::TableGenMain(argv[0],TVisitor);
     InitializeNativeTarget();
     Triple TheTriple;
     std::string  def = sys::getDefaultTargetTriple();

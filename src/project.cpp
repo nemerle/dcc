@@ -9,7 +9,7 @@ SYMTAB  symtab;             /* Global symbol table      			  */
 STATS   stats;              /* cfg statistics       				  */
 //PROG    prog;               /* programs fields      				  */
 OPTION  option;             /* Command line options     			  */
-Project *Project::s_instance = 0;
+Project *Project::s_instance = nullptr;
 Project::Project() : callGraph(nullptr)
 {
     memset(&prog,0,sizeof(prog));
@@ -94,7 +94,7 @@ const std::string &Project::symbolName(size_t idx)
 Project *Project::get()
 {
     //WARNING: poor man's singleton, not thread safe
-    if(s_instance==0)
+    if(s_instance==nullptr)
         s_instance=new Project;
     return s_instance;
 }

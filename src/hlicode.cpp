@@ -97,7 +97,7 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
     if(p and p->removeRegFromLong(regi,locId))
     {
         du1.removeDef(regi); //du1.numRegsDef--;
-		//du.def &= maskDuReg[regi];
+        //du.def &= maskDuReg[regi];
         du.def.clrReg(regi);
     }
     return false;
@@ -305,9 +305,9 @@ static bool  needsLhs(unsigned opc)
  *       refines the HIGH_LEVEL icodes. */
 void Function::highLevelGen()
 {
-    size_t numIcode;         /* number of icode instructions */
-    iICODE pIcode;        /* ptr to current icode node */
-    Expr *rhs; /* left- and right-hand side of expression */
+    size_t numIcode;        /* number of icode instructions */
+    iICODE pIcode;          /* ptr to current icode node */
+    Expr *rhs;              /* left- and right-hand side of expression */
     uint32_t _flg;          /* icode flags */
     numIcode = Icode.size();
     for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
@@ -316,6 +316,8 @@ void Function::highLevelGen()
         assert(numIcode==Icode.size());
         pIcode = i; //Icode.GetIcode(i)
         LLInst *ll = pIcode->ll();
+        LLOperand *dst_ll = ll->get(DST);
+        LLOperand *src_ll = ll->get(SRC);
         if ( ll->testFlags(NOT_HLL) )
             pIcode->invalidate();
         if ((pIcode->type != LOW_LEVEL) or not pIcode->valid() )
@@ -327,8 +329,14 @@ void Function::highLevelGen()
                 if ( not ll->testFlags(NO_SRC) )   /* if there is src op */
                     rhs = AstIdent::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
                 if(ll->m_dst.isSet() || (ll->getOpcode()==iMOD))
-                lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
+                    lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
             }
+        if(ll->getOpcode()==iPUSH) {
+            if(ll->testFlags(I)) {
+                lhs = new Constant(src_ll->opz,src_ll->byteWidth());
+            }
+//            lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
+        }
         if(needsLhs(ll->getOpcode()))
             assert(lhs!=nullptr);
         switch (ll->getOpcode())
@@ -356,18 +364,13 @@ void Function::highLevelGen()
 
             case iDIV:
             case iIDIV:/* should be signed div */
+            {
+                eReg v = ( dst_ll->byteWidth()==1) ? rAL:rAX;
                 rhs = new BinaryOperator(DIV,lhs, rhs);
-                if ( ll->testFlags(B) )
-                {
-                    lhs = new RegisterNode(rAL, 0, &localId);
-                    pIcode->setRegDU( rAL, eDEF);
-                }
-                else
-                {
-                    lhs = new RegisterNode(rAX, 0, &localId);
-                    pIcode->setRegDU( rAX, eDEF);
-                }
+                lhs = new RegisterNode(LLOperand(v, dst_ll->byteWidth()), &localId);
+                pIcode->setRegDU( v, eDEF);
                 pIcode->setAsgn(lhs, rhs);
+            }
                 break;
 
             case iIMUL:
@@ -387,17 +390,13 @@ void Function::highLevelGen()
                 break;
 
             case iMOD:
+            {
                 rhs = new BinaryOperator(MOD,lhs, rhs);
-                eReg lhs_reg;
-
-                if ( ll->testFlags(B) )
-                    lhs_reg = rAH;
-                else
-                    lhs_reg = rDX;
-
-                lhs = new RegisterNode(lhs_reg, 0, &localId);
+                eReg lhs_reg = (dst_ll->byteWidth()==1) ? rAH : rDX;
+                lhs = new RegisterNode(LLOperand(lhs_reg, dst_ll->byteWidth()), &localId);
                 pIcode->setRegDU( lhs_reg, eDEF);
                 pIcode->setAsgn(lhs, rhs);
+            }
                 break;
 
             case iMOV:    pIcode->setAsgn(lhs, rhs);
@@ -415,7 +414,7 @@ void Function::highLevelGen()
                 break;
 
             case iNOT:
-                rhs = new BinaryOperator(NOT,NULL, rhs); // TODO: change this to unary NOT ?
+                rhs = new BinaryOperator(NOT,nullptr, rhs); // TODO: change this to unary NOT ?
                 pIcode->setAsgn(lhs, rhs);
                 break;
 
@@ -433,7 +432,7 @@ void Function::highLevelGen()
                 break;
 
             case iRET:
-            case iRETF:   pIcode->setUnary(HLI_RET, NULL);
+            case iRETF:   pIcode->setUnary(HLI_RET, nullptr);
                 break;
 
             case iSHL:
@@ -498,7 +497,7 @@ std::string Function::writeCall (Function * tproc, STKFRAME & args, int *numLoc)
 
 
 /* Displays the output of a HLI_JCOND icode. */
-char *writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
+const char *writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
 {
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
@@ -521,7 +520,7 @@ char *writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
 /* Displays the inverse output of a HLI_JCOND icode.  This is used in the case
  * when the THEN clause of an if..then..else is empty.  The clause is
  * negated and the ELSE clause is used instead.	*/
-char *writeJcondInv (HLTYPE h, Function * pProc, int *numLoc)
+const char *writeJcondInv(HLTYPE h, Function * pProc, int *numLoc)
 {
     memset (buf, ' ', sizeof(buf));
     buf[0] = '\0';
@@ -638,12 +637,12 @@ void ICODE::writeDU()
     {
         if (not du1.used(i))
             continue;
-            printf ("%d: du1[%d][] = ", my_idx, i);
-            for(auto j : du1.idx[i].uses)
-            {
-                printf ("%d ", j->loc_ip);
-            }
-            printf ("\n");
+        printf ("%d: du1[%d][] = ", my_idx, i);
+        for(auto j : du1.idx[i].uses)
+        {
+            printf ("%d ", j->loc_ip);
+        }
+        printf ("\n");
     }
 
     /* For HLI_CALL, print # parameter bytes */

@@ -29,6 +29,7 @@ struct STKFRAME;
 struct LOCAL_ID;
 struct ICODE;
 struct LLInst;
+struct LLOperand;
 struct ID;
 typedef std::list<ICODE>::iterator iICODE;
 typedef boost::iterator_range<iICODE> rICODE;
@@ -291,6 +292,7 @@ struct RegisterNode : public AstIdent
         regiType = reg_type;
         regiIdx = idx;
     }
+    RegisterNode(const LLOperand &, LOCAL_ID *locsym);
 
     RegisterNode(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
     virtual Expr *clone() const

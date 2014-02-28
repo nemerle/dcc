@@ -4,6 +4,10 @@
 #include <cassert>
 #include <list>
 #include <llvm/ADT/ilist.h>
+#include <boost/icl/interval.hpp>
+#include <boost/icl/interval_map.hpp>
+#include <boost/icl/split_interval_map.hpp>
+#include <unordered_set>
 #include "symtab.h"
 #include "BinaryImage.h"
 #include "Procedure.h"

@@ -53,7 +53,7 @@ struct TABLEINFO_TYPE
 {
     TABLEINFO_TYPE()
     {
-        symTab=valTab=0;
+        symTab=valTab=nullptr;
     }
     //void deleteVal(uint32_t symOff, Function *symProc, boolT bSymToo);
     void create(tableType type);
@@ -80,7 +80,7 @@ void TABLEINFO_TYPE::create(tableType type)
             numEntry  = 0;
             tableSize = TABLESIZE;
             valTab = new SYMTABLE [TABLESIZE];
-            symTab = 0;
+            symTab = nullptr;
             break;
         case Label:
             currentTabInfo.numEntry  = 0;

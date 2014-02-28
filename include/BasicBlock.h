@@ -117,7 +117,7 @@ public:
     void findBBExps(LOCAL_ID &locals, Function *f);
     bool    valid() {return 0==(flg & INVALID_BB); }
     bool    wasTraversedAtLevel(int l) const {return traversed==l;}
-    ICODE * writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, boolT &repCond);
+    ICODE * writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, bool &repCond);
     void    addOutEdge(uint32_t ip)  // TODO: fix this
     {
         edges.push_back(TYPEADR_TYPE(ip));

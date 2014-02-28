@@ -177,7 +177,7 @@ enum llIcode
     iPOP,
     iPOPA,
     iPOPF,
-    iPUSH,
+    iPUSH,      // 77
     iPUSHA,
     iPUSHF,
     iRCL,		/* 80 */

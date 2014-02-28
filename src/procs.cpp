@@ -9,6 +9,7 @@
 #include <cassert>
 #include "dcc.h"
 #include "project.h"
+#include "CallGraph.h"
 
 extern Project g_proj;
 /* Static indentation buffer */
@@ -123,7 +124,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
         for(STKSYM &tgt_sym : *target_stackframe)
         {
             RegisterNode *tgt_sym_regs = dynamic_cast<RegisterNode *>(tgt_sym.regs);
-            if( tgt_sym_regs == NULL ) // both REGISTER and LONG_VAR require this precondition
+            if( tgt_sym_regs == nullptr ) // both REGISTER and LONG_VAR require this precondition
                 continue;
             if ( tgt_sym_regs->regiIdx == tidx )
             {
@@ -142,7 +143,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
         /* Check if register argument already on the formal argument list */
         for(STKSYM &tgt_sym : *target_stackframe)
         {
-            if( tgt_sym.regs == NULL ) // both REGISTER and LONG_VAR require this precondition
+            if( tgt_sym.regs == nullptr ) // both REGISTER and LONG_VAR require this precondition
                 continue;
             if ( tgt_sym.regs->ident.idNode.longIdx == tidx )
             {
@@ -273,7 +274,7 @@ Expr *Function::adjustActArgType (Expr *_exp, hlType forType)
     hlType actType;
     int offset, offL;
 
-    if (expr == NULL)
+    if (expr == nullptr)
         return _exp;
 
     actType = expr-> expType (this);

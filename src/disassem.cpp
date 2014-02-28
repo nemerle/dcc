@@ -258,7 +258,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     oper_stream << setw(5)<<left; // align for the labels
     {
         ostringstream lab_contents;
-        if (readVal(lab_contents, inst.label, 0))
+        if (readVal(lab_contents, inst.label, nullptr))
         {
             lab_contents << ':';             /* Also removes the null */
         }
@@ -343,7 +343,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             ICODE *lab=pc.GetIcode(inst.src().getImm2());
             selectTable(Label);
             if ((inst.src().getImm2() < (uint32_t)numIcode) &&  /* Ensure in range */
-                    readVal(operands_s, lab->ll()->label, 0))
+                    readVal(operands_s, lab->ll()->label, nullptr))
             {
                 break;                          /* Symbolic label. Done */
             }
@@ -483,7 +483,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     /* Check for user supplied comment */
     selectTable(Comment);
     ostringstream cbuf;
-    if (readVal(cbuf, inst.label, 0))
+    if (readVal(cbuf, inst.label, nullptr))
     {
         result_stream <<"; "<<cbuf.str();
     }

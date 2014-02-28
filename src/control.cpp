@@ -276,13 +276,13 @@ void Function::structLoops(derSeq *derivedG)
 
     /* Structure loops */
     /* for all derived sequences Gi */
-    for(derSeq::iterator iter=derivedG->begin(); iter!=derivedG->end(); ++iter)
+    for(auto & elem : *derivedG)
     {
         level++;
-        Ii = iter->Ii;
+        Ii = elem.Ii;
         while (Ii)       /* for all intervals Ii of Gi */
         {
-            latchNode = NULL;
+            latchNode = nullptr;
             intNodes.clear();
 
             /* Find interval head (original BB node in G1) and create

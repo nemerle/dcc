@@ -97,7 +97,7 @@ int Idiom16::action()
 {
     AstIdent *lhs;
     Expr *rhs;
-    lhs = new RegisterNode(m_icodes[0]->ll()->m_dst.regi, m_icodes[0]->ll()->getFlag(),&m_func->localId);
+    lhs = new RegisterNode(*m_icodes[0]->ll()->get(DST),&m_func->localId);
     rhs = UnaryOperator::Create(NEGATION, lhs->clone());
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();

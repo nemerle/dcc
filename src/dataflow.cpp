@@ -93,11 +93,11 @@ size_t STKFRAME::getLocVar(int off)
 /* Returns a string with the source operand of Icode */
 static Expr *srcIdent (const LLInst &ll_insn, Function * pProc, iICODE i, ICODE & duIcode, operDu du)
 {
-    if (ll_insn.testFlags(I))   /* immediate operand */
+    const LLOperand * src_op = ll_insn.get(SRC);
+    if (src_op->isImmediate())   /* immediate operand ll_insn.testFlags(I)*/
     {
-        if (ll_insn.testFlags(B))
-            return new Constant(ll_insn.src().getImm2(), 1);
-        return new Constant(ll_insn.src().getImm2(), 2);
+        //if (ll_insn.testFlags(B))
+        return new Constant(src_op->getImm2(), src_op->byteWidth());
     }
     // otherwise
     return AstIdent::id (ll_insn, SRC, pProc, i, duIcode, du);
@@ -148,6 +148,8 @@ void Function::elimCondCodes ()
                 if ((use & def) != use)
                     continue;
                 notSup = false;
+                LLOperand *dest_ll = defAt->ll()->get(DST);
+                LLOperand *src_ll = defAt->ll()->get(SRC);
                 if ((useAtOp >= iJB) && (useAtOp <= iJNS))
                 {
                     iICODE befDefAt = (++riICODE(defAt)).base();
@@ -161,29 +163,22 @@ void Function::elimCondCodes ()
                         case iOR:
                             lhs = defAt->hl()->asgn.lhs()->clone();
                             useAt->copyDU(*defAt, eUSE, eDEF);
-                            if (defAt->ll()->testFlags(B))
-                                rhs = new Constant(0, 1);
-                            else
-                                rhs = new Constant(0, 2);
+                            //if (defAt->ll()->testFlags(B))
+                            rhs = new Constant(0, dest_ll->byteWidth());
                             break;
 
                         case iTEST:
                             rhs = srcIdent (*defAt->ll(),this, befDefAt,*useAt, eUSE);
                             lhs = dstIdent (*defAt->ll(),this, befDefAt,*useAt, eUSE);
                             lhs = BinaryOperator::And(lhs, rhs);
-                            if (defAt->ll()->testFlags(B))
-                                rhs = new Constant(0, 1);
-                            else
-                                rhs = new Constant(0, 2);
+//                            if (defAt->ll()->testFlags(B))
+                            rhs = new Constant(0, dest_ll->byteWidth());
                             break;
                         case iINC:
                         case iDEC: //WARNING: verbatim copy from iOR needs fixing ?
                             lhs = defAt->hl()->asgn.lhs()->clone();
                             useAt->copyDU(*defAt, eUSE, eDEF);
-                            if (defAt->ll()->testFlags(B))
-                                rhs = new Constant(0, 1);
-                            else
-                                rhs = new Constant(0, 2);
+                            rhs = new Constant(0, dest_ll->byteWidth());
                             break;
                         default:
                             notSup = true;
@@ -202,7 +197,8 @@ void Function::elimCondCodes ()
 
                 else if (useAtOp == iJCXZ)
                 {
-                    lhs = new RegisterNode(rCX, 0, &localId);
+                    //NOTICE: was rCX, 0
+                    lhs = new RegisterNode(LLOperand(rCX, 0 ), &localId);
                     useAt->setRegDU (rCX, eUSE);
                     rhs = new Constant(0, 2);
                     _expr = BinaryOperator::Create(EQUAL,lhs,rhs);
@@ -514,7 +510,7 @@ void BB::genDU1()
     /* Process each register definition of a HIGH_LEVEL icode instruction.
      * Note that register variables should not be considered registers.
      */
-    assert(0!=Parent);
+    assert(nullptr!=Parent);
     ICODE::TypeFilter<HIGH_LEVEL> select_high_level;
     auto all_high_levels =  instructions | filtered(select_high_level);
     for (auto picode=all_high_levels.begin(); picode!=all_high_levels.end(); ++picode)
@@ -568,7 +564,7 @@ void LOCAL_ID::forwardSubs (Expr *lhs, Expr *rhs, iICODE picode, iICODE ticode, 
     }
     RegisterNode * lhs_reg=dynamic_cast<RegisterNode *>(lhs_unary);
     assert(lhs_reg);
-    if (rhs == NULL)        /* In case expression popped is NULL */
+    if (rhs == nullptr)        /* In case expression popped is NULL */
         return;
 
     /* Insert on rhs of ticode, if possible */
@@ -607,7 +603,7 @@ static void forwardSubsLong (int longIdx, Expr *_exp, iICODE picode, iICODE tico
 {
     bool res;
 
-    if (_exp == NULL)        /* In case expression popped is NULL */
+    if (_exp == nullptr)        /* In case expression popped is NULL */
         return;
 
     /* Insert on rhs of ticode, if possible */
@@ -634,18 +630,18 @@ static void forwardSubsLong (int longIdx, Expr *_exp, iICODE picode, iICODE tico
  * instruction f up to instruction t.	*/
 bool UnaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs)
 {
-    if(0==unaryExp)
+    if(nullptr==unaryExp)
         return false;
     return unaryExp->xClear ( range_to_check, lastBBinst, locs);
 }
 
 bool BinaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs)
 {
-    if(0==m_rhs)
+    if(nullptr==m_rhs)
         return false;
     if ( ! m_rhs->xClear (range_to_check, lastBBinst, locs) )
         return false;
-    if(0==m_lhs)
+    if(nullptr==m_lhs)
         return false;
     return m_lhs->xClear (range_to_check, lastBBinst, locs);
 }
@@ -689,7 +685,7 @@ static int processCArg (Function * pp, Function * pProc, ICODE * picode, size_t 
     {
         if (pp->args.numArgs > 0)
         {
-            if(_exp==NULL)
+            if(_exp==nullptr)
                 fprintf(stderr,"Would try to adjustForArgType with null _exp\n");
             else
                 pp->args.adjustForArgType (numArgs, _exp->expType (pProc));
@@ -794,7 +790,7 @@ void Function::processHliCall(Expr *_exp, iICODE picode)
             {
                 if (pp->args.numArgs >0)
                 {
-                    if(_exp==NULL)
+                    if(_exp==nullptr)
                     {
                         fprintf(stderr,"Would try to adjustForArgType with null _exp\n");
                     }
@@ -840,7 +836,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     Expr *_exp;     // expression pointer - for HLI_POP and HLI_CALL    */
     //Expr *lhs;	// exp ptr for return value of a HLI_CALL		*/
     iICODE ticode;     // Target icode                             */
-    HLTYPE *ti_hl=0;
+    HLTYPE *ti_hl=nullptr;
     uint8_t regi;
     numHlIcodes = 0;
     // register(s) to be forward substituted	*/
@@ -1129,7 +1125,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
         //        int idx;
         bool isAx, isBx, isCx, isDx;
         eReg bad_regs[] = {rES,rCS,rDS,rSS};
-        constexpr char * names[] ={"ES","CS","DS","SS"};
+        constexpr const char * names[] ={"ES","CS","DS","SS"};
         for(int i=0; i<4; ++i)
             if(_liveOut.testReg(bad_regs[i]))
             {

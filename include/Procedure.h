@@ -13,6 +13,7 @@ struct Expr;
 struct Disassembler;
 struct Function;
 struct CALL_GRAPH;
+struct PROG;
 
 typedef llvm::iplist<Function> FunctionListType;
 typedef FunctionListType lFunction;
@@ -189,6 +190,7 @@ public:
     void preprocessReturnDU(LivenessSet &_liveOut);
     Expr * adjustActArgType(Expr *_exp, hlType forType);
     std::string writeCall(Function *tproc, STKFRAME &args, int *numLoc);
+    void processDosInt(STATE *pstate, PROG &prog, bool done);
 protected:
     void extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &table);
     bool followAllTableEntries(JumpTable &table, uint32_t cs, ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);

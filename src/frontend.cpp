@@ -67,7 +67,7 @@ static void displayMemMap(void);
 ****************************************************************************/
 bool DccFrontend::FrontEnd ()
 {
-    Project::get()->callGraph = 0;
+    Project::get()->callGraph = nullptr;
     Project::get()->create(m_fname);
 
     /* Load program into memory */
@@ -213,7 +213,7 @@ void DccFrontend::LoadImage(Project &proj)
     uint8_t	buf[4];
 
     /* Open the input file */
-    if ((fp = fopen(proj.binary_path().c_str(), "rb")) == NULL)
+    if ((fp = fopen(proj.binary_path().c_str(), "rb")) == nullptr)
     {
         fatalError(CANNOT_OPEN, proj.binary_path().c_str());
     }

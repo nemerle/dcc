@@ -64,7 +64,7 @@ static struct {
     {  data1,   axImp, B                        , iADD	},  /* 04 */
     {  data2,   axImp, 0                        , iADD	},  /* 05 */
     {  segop,   none2, NO_SRC                   , iPUSH	},  /* 06 */
-    {  segop,   none2, NO_SRC 			, iPOP	},  /* 07 */
+    {  segop,   none2, NO_SRC                   , iPOP	},  /* 07 */
     {  modrm,   none2, B                        , iOR	},  /* 08 */
     {  modrm,   none2, NSP                      , iOR	},  /* 09 */
     {  modrm,   none2, TO_REG | B               , iOR	},  /* 0A */
@@ -96,7 +96,7 @@ static struct {
     {  data1,   axImp, B                        , iAND	},	/* 24 */
     {  data2,   axImp, 0                        , iAND	},	/* 25 */
     { prefix,   none2, 0                        , (IC)rES},	/* 26 */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC	, iDAA	},	/* 27 */
+    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iDAA	},	/* 27 */
     {  modrm,   none2, B                        , iSUB	},	/* 28 */
     {  modrm,   none2, 0                        , iSUB	},	/* 29 */
     {  modrm,   none2, TO_REG | B               , iSUB	},	/* 2A */
@@ -133,7 +133,7 @@ static struct {
     {  regop,   none2, 0                        , iDEC	},	/* 49 */
     {  regop,   none2, 0                        , iDEC	},	/* 4A */
     {  regop,   none2, 0                        , iDEC	},	/* 4B */
-    {  regop,   none2, NOT_HLL			, iDEC	},	/* 4C */
+    {  regop,   none2, NOT_HLL                  , iDEC	},	/* 4C */
     {  regop,   none2, 0                        , iDEC	},	/* 4D */
     {  regop,   none2, 0                        , iDEC	},	/* 4E */
     {  regop,   none2, 0                        , iDEC	},	/* 4F */
@@ -450,7 +450,7 @@ LLOperand convertExpression(const x86_ea_t &from)
     {
         eReg base_reg = convertRegister(from.base);
         eReg index_reg = convertRegister(from.index);
-//        if(base_reg==rBX)
+        //        if(base_reg==rBX)
         switch(base_reg)
         {
             case rDI:
@@ -566,8 +566,8 @@ eErrorId scan(uint32_t ip, ICODE &p)
         if(p.insn.x86_get_branch_target())
             decodeBranchTgt(p.insn);
     }
-//    LLOperand conv = convertOperand(*p.insn.get_dest());
-//    assert(conv==p.ll()->dst);
+    //    LLOperand conv = convertOperand(*p.insn.get_dest());
+    //    assert(conv==p.ll()->dst);
     if (p.ll()->getOpcode())
     {
         /* Save bytes of image used */
@@ -626,14 +626,12 @@ static int signex(uint8_t b)
  ***************************************************************************/
 static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off)
 {
-    LLOperand *pm;
-
     /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
-    pm = (!(stateTable[i].flg & TO_REG) == fdst) ?
-                &pIcode->ll()->m_dst : &pIcode->ll()->src();
+    LLOperand *pm = (!(stateTable[i].flg & TO_REG) == fdst) ? &pIcode->ll()->m_dst : &pIcode->ll()->src();
 
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
-         * provide the value of this segment in the field segValue.  */
+     * provide the value of this segment in the field segValue.
+    */
     if (seg)  		/* segment override */
     {
         pm->seg = pm->segOver = (eReg)seg;
@@ -733,7 +731,7 @@ static void segrm(int i)
  ***************************************************************************/
 static void regop(int i)
 {
-    setAddress(i, false, 0, ((int16_t)i & 7) + rAX, 0);
+    setAddress(i, false, 0, ((int16_t)i & 0x7) + rAX, 0);
     pIcode->ll()->replaceDst(pIcode->ll()->src());
 
 }
@@ -743,6 +741,9 @@ static void regop(int i)
  *****************************************************************************/
 static void segop(int i)
 {
+    if(i==0x1E) {
+        printf("es");
+    }
     setAddress(i, true, 0, (((int16_t)i & 0x18) >> 3) + rES, 0);
 }
 
@@ -837,11 +838,14 @@ static void trans(int i)
 {
     static llIcode transTable[8] =
     {
-        (llIcode)iINC, (llIcode)iDEC, (llIcode)iCALL, (llIcode)iCALLF,
+        (llIcode)iINC, iDEC, (llIcode)iCALL, (llIcode)iCALLF,
         (llIcode)iJMP, (llIcode)iJMPF,(llIcode)iPUSH, (llIcode)0
     };
     LLInst *ll = pIcode->ll();
-    if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */
+    if(transTable[REG(*pInst)]==iPUSH) {
+        printf("es");
+    }
+    if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */        
         ll->setOpcode(transTable[REG(*pInst)]);   /* valid on bytes */
         rm(i);
         ll->replaceSrc( pIcode->ll()->m_dst );
@@ -895,7 +899,7 @@ static void arith(int i)
  *****************************************************************************/
 static void data1(int i)
 {
-    pIcode->ll()->replaceSrc(LLOperand::CreateImm2((stateTable[i].flg & S_EXT)? signex(*pInst++): *pInst++));
+    pIcode->ll()->replaceSrc(LLOperand::CreateImm2((stateTable[i].flg & S_EXT)? signex(*pInst++): *pInst++,1));
     pIcode->ll()->setFlags(I);
 }
 
@@ -937,6 +941,7 @@ static void dispM(int i)
  ****************************************************************************/
 static void dispN(int )
 {
+
     //PROG &prog(Project::get()->prog);
     /*long off = (short)*/getWord();	/* Signed displacement */
 
@@ -961,10 +966,11 @@ static void dispS(int )
 /****************************************************************************
  dispF - 4 byte disp as immed 20-bit target address
  ***************************************************************************/
-static void dispF(int )
+static void dispF(int i)
 {
-    /*off = */(unsigned)getWord();
-    /*seg = */(unsigned)getWord();
+    uint16_t off = (unsigned)getWord();
+    uint16_t seg = (unsigned)getWord();
+    setAddress(i, true, seg, 0, off);
     //    decodeBranchTgt();
 }
 

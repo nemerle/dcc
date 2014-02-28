@@ -33,7 +33,7 @@ struct STATE
     void setMemoryByte(uint32_t addr,uint8_t val)
     {
         //TODO: make this into a full scale value tracking class !
-    };
+    }
 };
 
 

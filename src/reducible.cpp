@@ -54,7 +54,7 @@ BB *interval::firstOfInt ()
 {
     auto pq = currNode;
     if (pq == nodes.end())
-        return 0;
+        return nullptr;
     ++currNode;
     return *pq;
 }
@@ -108,7 +108,7 @@ void derSeq_Entry::findIntervals (Function *c)
 
     appendQueue (H, Gi);  /* H = {first node of G} */
     Gi->beenOnH = true;
-    Gi->reachingInt = BB::Create(0,"",c); /* ^ empty BB */
+    Gi->reachingInt = BB::Create(nullptr,"",c); /* ^ empty BB */
 
     /* Process header nodes list H */
     while (!H.empty())
@@ -124,15 +124,15 @@ void derSeq_Entry::findIntervals (Function *c)
         pI->appendNodeInt (H, header);   /* pI(header) = {header} */
 
         /* Process all nodes in the current interval list */
-        while ((h = pI->firstOfInt()) != NULL)
+        while ((h = pI->firstOfInt()) != nullptr)
         {
             /* Check all immediate successors of h */
-            for (size_t i = 0; i < h->edges.size(); i++)
+            for (auto & elem : h->edges)
             {
-                succ = h->edges[i].BBptr;
+                succ = elem.BBptr;
                 succ->inEdgeCount--;
 
-                if (succ->reachingInt == NULL)   /* first visit */
+                if (succ->reachingInt == nullptr)   /* first visit */
                 {
                     succ->reachingInt = header;
                     if (succ->inEdgeCount == 0)
@@ -182,7 +182,7 @@ static void displayIntervals (interval *pI)
         printf ("  Interval #: %d\t#OutEdges: %d\n", pI->numInt, pI->numOutEdges);
         for(BB *node : pI->nodes)
         {
-            if (node->correspInt == NULL)    /* real BBs */
+            if (node->correspInt == nullptr)    /* real BBs */
                 printf ("    Node: %d\n", node->begin()->loc_ip);
             else             // BBs represent intervals
                 printf ("   Node (corresp int): %d\n", node->correspInt->numInt);
@@ -248,7 +248,7 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
     derSeq_Entry &new_entry(derivedGi.back());
 
     sameGraph = true;
-    BBnode = 0;
+    BBnode = nullptr;
     std::vector<BB *> bbs;
     for(Ii = prev_entry.Ii; Ii != nullptr; Ii = Ii->next)
     {

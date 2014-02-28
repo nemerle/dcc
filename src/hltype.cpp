@@ -20,6 +20,6 @@ HlTypeSupport *HLTYPE::get()
     case HLI_PUSH:   return &exp;
     case HLI_CALL:   return &call;
     default:
-        return 0;
+        return nullptr;
     }
 }

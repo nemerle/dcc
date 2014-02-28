@@ -10,14 +10,15 @@
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
 
-#include "dcc.h"
-#include "disassem.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string.h>
 #include <stdio.h>
+#include "dcc.h"
+#include "disassem.h"
 #include "project.h"
+#include "CallGraph.h"
 using namespace boost;
 using namespace boost::adaptors;
 bundle cCode;			/* Procedure declaration and code */
@@ -318,9 +319,9 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
     pcallGraph->proc->flg |= PROC_OUTPUT;
 
     /* Dfs if this procedure has any successors */
-    for (size_t i = 0; i < pcallGraph->outEdges.size(); i++)
+    for (auto & elem : pcallGraph->outEdges)
     {
-        backBackEnd (pcallGraph->outEdges[i], _ios);
+        backBackEnd (elem, _ios);
     }
 
     /* Generate code for this procedure */

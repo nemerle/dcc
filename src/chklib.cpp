@@ -56,7 +56,7 @@ static  uint16_t    *T1base, *T2base;       /* Pointers to start of T1, T2 */
 static  uint16_t    *g;                     /* g[] */
 static  HT      *ht;                    /* The hash table */
 static  PH_FUNC_STRUCT *pFunc;          /* Points to the array of func names */
-static  hlType  *pArg=0;                /* Points to the array of param types */
+static  hlType  *pArg=nullptr;                /* Points to the array of param types */
 static  int     numFunc;                /* Number of func names actually stored */
 static  int     numArg;                 /* Number of param names actually stored */
 #define DCCLIBS "dcclibs.dat"           /* Name of the prototypes data file */
@@ -302,7 +302,7 @@ void SetupLibCheck(void)
     uint16_t w, len;
     int i;
 
-    if ((g_file = fopen(sSigName, "rb")) == NULL)
+    if ((g_file = fopen(sSigName, "rb")) == nullptr)
     {
         printf("Warning: cannot open signature file %s\n", sSigName);
         return;
@@ -392,7 +392,7 @@ void SetupLibCheck(void)
     /* This is now the hash table */
     /* First allocate space for the table */
     ht = new HT[numKeys];
-    if ( 0 == ht)
+    if ( nullptr == ht)
     {
         printf("Could not allocate hash table\n");
         exit(1);
@@ -446,7 +446,7 @@ bool LibCheck(Function & pProc)
     if (prog.bSigs == false)
     {
         /* No signatures... can't rely on hash parameters to be initialised
-                        so always return false */
+        so always return false */
         return false;
     }
 
@@ -457,6 +457,8 @@ bool LibCheck(Function & pProc)
         pProc.name = "main";
         return false;
     }
+    if(fileOffset + PATLEN > prog.cbImage)
+        return false;
     memcpy(pat, &prog.image()[fileOffset], PATLEN);
     //memmove(pat, &prog.image()[fileOffset], PATLEN);
     fixWildCards(pat);                  /* Fix wild cards in the copy */
@@ -888,7 +890,7 @@ void readProtoFile(void)
     }
     strcat(szProFName, DCCLIBS);
 
-    if ((fProto = fopen(szProFName, "rb")) == NULL)
+    if ((fProto = fopen(szProFName, "rb")) == nullptr)
     {
         printf("Warning: cannot open library prototype data file %s\n", szProFName);
         return;

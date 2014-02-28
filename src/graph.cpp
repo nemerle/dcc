@@ -83,8 +83,8 @@ CondJumps:
                     if (ll->testFlags(SWITCH))
                     {
                         pBB = BB::Create(current_range, MULTI_BRANCH, this);
-                        for (size_t i = 0; i < ll->caseTbl2.size(); i++)
-                            pBB->addOutEdge(ll->caseTbl2[i]);
+                        for (auto & elem : ll->caseTbl2)
+                            pBB->addOutEdge(elem);
                         hasCase = true;
                     }
                     else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
@@ -138,9 +138,9 @@ CondJumps:
     for (; iter!=heldBBs.end(); ++iter)
     {
         pBB = *iter;
-        for (size_t edeg_idx = 0; edeg_idx < pBB->edges.size(); edeg_idx++)
+        for (auto & elem : pBB->edges)
         {
-            int32_t ip = pBB->edges[edeg_idx].ip;
+            int32_t ip = elem.ip;
             if (ip >= SYNTHESIZED_MIN)
             {
                 fatalError (INVALID_SYNTHETIC_BB);
@@ -151,7 +151,7 @@ CondJumps:
         if(iter2==heldBBs.end())
             fatalError(NO_BB, ip, name.c_str());
         psBB = *iter2;
-        pBB->edges[edeg_idx].BBptr = psBB;
+        elem.BBptr = psBB;
         psBB->inEdges.push_back((BB *)nullptr);
     }
 }
@@ -258,7 +258,7 @@ void Function::compressCFG()
 
     /* Allocate storage for dfsLast[] array */
     numBBs = stats.numBBaft;
-    m_dfsLast.resize(numBBs,0); // = (BB **)allocMem(numBBs * sizeof(BB *))
+    m_dfsLast.resize(numBBs,nullptr); // = (BB **)allocMem(numBBs * sizeof(BB *))
 
     /* Now do a dfs numbering traversal and fill in the inEdges[] array */
     last = numBBs - 1;
@@ -360,10 +360,10 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
 traversed = DFS_MERGE;
 
 /* Process all out edges recursively */
-for (size_t i = 0; i < edges.size(); i++)
+for (auto & elem : edges)
 {
-    if (edges[i].BBptr->traversed != DFS_MERGE)
-        edges[i].BBptr->mergeFallThrough(Icode);
+    if (elem.BBptr->traversed != DFS_MERGE)
+        elem.BBptr->mergeFallThrough(Icode);
 }
 }
 

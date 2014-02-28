@@ -81,9 +81,7 @@ int Idiom15::action()
     AstIdent *lhs;
 
     Expr *rhs,*_exp;
-    lhs = new RegisterNode(m_icodes[0]->ll()->m_dst.regi,
-                            m_icodes[0]->ll()->getFlag() & NO_SRC_B,
-                             &m_func->localId);
+    lhs = new RegisterNode(*m_icodes[0]->ll()->get(DST), &m_func->localId);
     rhs = new Constant(m_icodes.size(), 2);
     _exp = new BinaryOperator(SHL,lhs, rhs);
     m_icodes[0]->setAsgn(lhs, _exp);
@@ -159,7 +157,7 @@ int Idiom9::action()
 {
     int idx;
     AstIdent *lhs;
-    Expr *rhs,*expr;
+    Expr *expr;
     eReg regH,regL;
     regL=m_icodes[1]->ll()->m_dst.regi;
     regH=m_icodes[0]->ll()->m_dst.regi;

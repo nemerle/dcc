@@ -352,7 +352,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
                 icode.setRegDU( pmH->regi, eDEF);
                 icode.setUnary(HLI_POP, asgn.lhs);
                 next1->invalidate();
-                asgn.lhs=0;
+                asgn.lhs=nullptr;
                 forced_finish=true;        /* to exit the loop */
             }
             break;

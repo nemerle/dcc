@@ -12,6 +12,7 @@
 
 #include "dcc.h"
 #include "project.h"
+#include "CallGraph.h"
 using namespace std;
 
 //static void     FollowCtrl (Function * pProc, CALL_GRAPH * pcallGraph, STATE * pstate);
@@ -50,7 +51,7 @@ void DccFrontend::parse(Project &proj)
         /* We know where main() is. Start the flow of control from there */
         start_proc.procEntry = prog.offMain;
         /* In medium and large models, the segment of main may (will?) not be
-                        the same as the initial CS segment (of the startup code) */
+            the same as the initial CS segment (of the startup code) */
         state.setState(rCS, prog.segMain);
         start_proc.name = "main";
         state.IP = prog.offMain;
@@ -88,7 +89,7 @@ int strSize (const uint8_t *sym, char delim)
     const uint8_t *end_ptr=std::find(sym,sym+(prog.cbImage-(till_end)),delim);
     return end_ptr-sym+1;
 }
-Function *fakeproc=Function::Create(0,0,"fake");
+Function *fakeproc=Function::Create(nullptr,0,"fake");
 
 /* FollowCtrl - Given an initial procedure, state information and symbol table
  * builds a list of procedures reachable from the initial procedure
@@ -597,7 +598,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
         }
 
         /* Address of function is given by 4 (CALLF) or 2 (CALL) bytes at
-                 * previous offset into the program image */
+         * previous offset into the program image */
         uint32_t tgtAddr=0;
         if (pIcode.ll()->getOpcode() == iCALLF)
             tgtAddr= LH(&prog.image()[off]) + ((uint32_t)(LH(&prog.image()[off+2])) << 4);

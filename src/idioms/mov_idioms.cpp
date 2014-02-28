@@ -27,6 +27,7 @@ bool Idiom14::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
+    LLInst * matched [] = {m_icodes[0]->ll(),m_icodes[1]->ll()};
     /* Check for regL */
     m_regL = m_icodes[0]->ll()->m_dst.regi;
     if (not m_icodes[0]->ll()->testFlags(I) && ((m_regL == rAX) || (m_regL ==rBX)))
@@ -105,7 +106,7 @@ int Idiom13::action()
     eReg regi = m_icodes[0]->ll()->m_dst.regi;
     m_icodes[0]->du1.removeDef(regi);
     //m_icodes[0]->du1.numRegsDef--;   	/* prev uint8_t reg def */
-    lhs = new RegisterNode(m_loaded_reg, 0, &m_func->localId);
+    lhs = new RegisterNode(LLOperand(m_loaded_reg, 0), &m_func->localId);
     m_icodes[0]->setRegDU( m_loaded_reg, eDEF);
     rhs = AstIdent::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
     m_icodes[0]->setAsgn(lhs, rhs);

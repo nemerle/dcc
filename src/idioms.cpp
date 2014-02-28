@@ -3,6 +3,8 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
+#include <llvm/Support/PatternMatch.h>
+#include <boost/iterator/filter_iterator.hpp>
 #include <cstring>
 #include <deque>
 #include "idiom.h"
@@ -15,8 +17,6 @@
 #include "shift_idioms.h"
 #include "arith_idioms.h"
 #include "dcc.h"
-#include <llvm/Support/PatternMatch.h>
-#include <boost/iterator/filter_iterator.hpp>
 /*****************************************************************************
  * JmpInst - Returns true if opcode is a conditional or unconditional jump
  ****************************************************************************/
@@ -116,7 +116,7 @@ void Function::findIdioms()
         case iCALL:  case iCALLF:
             /* Check for library functions that return a long register.
                          * Propagate this result */
-            if (pIcode->ll()->src().proc.proc != 0)
+            if (pIcode->ll()->src().proc.proc != nullptr)
                 if ((pIcode->ll()->src().proc.proc->flg & PROC_ISLIB) &&
                         (pIcode->ll()->src().proc.proc->flg & PROC_IS_FUNC))
                 {

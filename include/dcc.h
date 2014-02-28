@@ -22,22 +22,6 @@
 #include "BasicBlock.h"
 class Project;
 /* CALL GRAPH NODE */
-struct CALL_GRAPH
-{
-        ilFunction proc;               /* Pointer to procedure in pProcList	*/
-        std::vector<CALL_GRAPH *> outEdges; /* array of out edges                   */
-public:
-        void write();
-        CALL_GRAPH() : outEdges(0)
-        {
-        }
-public:
-        void writeNodeCallGraph(int indIdx);
-        bool insertCallGraph(ilFunction caller, ilFunction callee);
-        bool insertCallGraph(Function *caller, ilFunction callee);
-        void insertArc(ilFunction newProc);
-};
-//extern CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
 extern bundle cCode;			/* Output C procedure's declaration and code */
 
 /**** Global variables ****/
@@ -121,8 +105,8 @@ bool    LibCheck(Function &p);                              /* chklib.c     */
 boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
 
 /* Exported functions from hlicode.c */
-char 	*writeJcond (const HLTYPE &, Function *, int *);
-char 	*writeJcondInv (HLTYPE, Function *, int *);
+const char *writeJcond(const HLTYPE &, Function *, int *);
+const char  *writeJcondInv (HLTYPE, Function *, int *);
 
 
 /* Exported funcions from locident.c */

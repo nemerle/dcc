@@ -298,7 +298,7 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
 
     int idx;          /* idx into pIcode->localId table */
 
-    const LLOperand &pm((sd == SRC) ? ll_insn.src() : ll_insn.m_dst);
+    const LLOperand &pm(*ll_insn.get(sd));
 
     if (    ((sd == DST) && ll_insn.testFlags(IM_DST)) or
             ((sd == SRC) && ll_insn.testFlags(IM_SRC)) or
@@ -312,7 +312,7 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
 
     else if ((sd == DST) && ll_insn.testFlags(IM_TMP_DST))
     {                                                   /* implicit tmp */
-        newExp = new RegisterNode(rTMP, 0, &pProc->localId);
+        newExp = new RegisterNode(LLOperand(rTMP,2), &pProc->localId);
         duIcode.setRegDU(rTMP, (operDu)eUSE);
     }
 
@@ -322,7 +322,8 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
         newExp = new GlobalVariable(pm.segValue, pm.off);
     else if ( pm.isReg() )      /* register */
     {
-        newExp = new RegisterNode(pm.regi, (sd == SRC) ? ll_insn.getFlag() : ll_insn.getFlag() & NO_SRC_B, &pProc->localId);
+        //(sd == SRC) ? ll_insn.getFlag() : ll_insn.getFlag() & NO_SRC_B
+        newExp = new RegisterNode(pm, &pProc->localId);
         duIcode.setRegDU( pm.regi, du);
     }
 
@@ -359,10 +360,11 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
                 case INDEX_BP: selected = rBP; break;
                 case INDEX_BX: selected = rBX; break;
                 default:
-                    newExp = 0;
+                    newExp = nullptr;
                     assert(false);
             }
-            newExp = new RegisterNode(selected, 0, &pProc->localId);
+            //NOTICE: was selected, 0
+            newExp = new RegisterNode(LLOperand(selected, 0), &pProc->localId);
             duIcode.setRegDU( selected, du);
             newExp = UnaryOperator::Create(DEREFERENCE, newExp);
         }
@@ -402,7 +404,7 @@ int hlSize[] = {2, 1, 1, 2, 2, 4, 4, 4, 2, 2, 1, 4, 4};
 
 int Expr::hlTypeSize(Function * pproc) const
 {
-    if (this == NULL)
+    if (this == nullptr)
         return (2);		/* for TYPE_UNKNOWN */
     fprintf(stderr,"hlTypeSize queried for Unkown type %d \n",m_type);
     return 2;			// CC: is this correct?
@@ -710,7 +712,7 @@ bool Expr::insertSubTreeReg (AstIdent *&tree, Expr *_expr, eReg regi,const LOCAL
 bool Expr::insertSubTreeReg (Expr *&tree, Expr *_expr, eReg regi,const LOCAL_ID *locsym)
 {
 
-    if (tree == NULL)
+    if (tree == nullptr)
         return false;
     Expr *temp=tree->insertSubTreeReg(_expr,regi,locsym);
     if(nullptr!=temp)
@@ -775,7 +777,7 @@ Expr *AstIdent::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)
  * long register index longIdx*/
 bool Expr::insertSubTreeLongReg(Expr *_expr, Expr *&tree, int longIdx)
 {
-    if (tree == NULL)
+    if (tree == nullptr)
         return false;
     Expr *temp=tree->insertSubTreeLongReg(_expr,longIdx);
     if(nullptr!=temp)

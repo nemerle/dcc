@@ -66,7 +66,7 @@ void BB::display()
 
     for (size_t i = 0; i < edges.size(); i++)
     {
-        if(edges[i].BBptr==0)
+        if(edges[i].BBptr==nullptr)
             printf(" outEdge[%2zd] = Unlinked out edge to %d\n",i, edges[i].ip);
         else
             printf(" outEdge[%2zd] = %d\n",i, edges[i].BBptr->begin()->loc_ip);
@@ -132,7 +132,7 @@ void BB::displayDfs()
   \param indLevel indentation level - used for formatting.
   \param numLoc: last # assigned to local variables
 */
-ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, boolT &repCond)
+ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, bool &repCond)
 {
     latch = pProc->m_dfsLast[this->latchNode];
     std::ostringstream ostr;
@@ -192,8 +192,8 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     int follow;						/* ifFollow                 	*/
     BB * succ, *latch;					/* Successor and latching node 	*/
     ICODE * picode;					/* Pointer to HLI_JCOND instruction	*/
-    char *l;                                            /* Pointer to HLI_JCOND expression	*/
-    boolT emptyThen,					/* THEN clause is empty			*/
+    std::string l;                  /* Pointer to HLI_JCOND expression	*/
+    bool emptyThen,					/* THEN clause is empty			*/
             repCond;					/* Repeat condition for while() */
 
     /* Check if this basic block should be analysed */
@@ -206,7 +206,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
 
     /* Check for start of loop */
     repCond = false;
-    latch = NULL;
+    latch = nullptr;
     if (loopType)
     {
        picode=writeLoopHeader(indLevel, pProc, numLoc, latch, repCond);
@@ -303,13 +303,13 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                     if (succ->dfsLastNum != follow)	/* THEN part */
                     {
                         l = writeJcond ( *back().hl(), pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l);
+                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l.c_str());
                         succ->writeCode (indLevel, pProc, numLoc, _latchNode,follow);
                     }
                     else		/* empty THEN part => negate ELSE part */
                     {
                         l = writeJcondInv ( *back().hl(), pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l);
+                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l.c_str());
                         edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, follow);
                         emptyThen = true;
                     }
@@ -345,7 +345,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             else		/* no follow => if..then..else */
             {
                 l = writeJcond ( *back().hl(), pProc, numLoc);
-                cCode.appendCode( "%s%s", indentStr(indLevel-1), l);
+                cCode.appendCode( "%s%s", indentStr(indLevel-1), l.c_str());
                 edges[THEN].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);
                 cCode.appendCode( "%s}\n%selse {\n", indentStr(indLevel-1), indentStr(indLevel - 1));
                 edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);

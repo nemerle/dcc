@@ -44,7 +44,7 @@ void Function::controlFlowAnalysis()
 {
     if (flg & PROC_ISLIB)
         return;         /* Ignore library functions */
-    derSeq *derivedG=0;
+    derSeq *derivedG=nullptr;
 
     /* Make cfg reducible and build derived sequences */
     derivedG=checkReducibility();

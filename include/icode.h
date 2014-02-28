@@ -13,7 +13,7 @@
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
 #include <llvm/MC/MCInst.h>
-#include <llvm/Instruction.h>
+#include <llvm/IR/Instruction.h>
 #include <boost/range/iterator_range.hpp>
 #include "libdis.h"
 #include "Enums.h"
@@ -252,15 +252,25 @@ struct LLOperand
     eReg       regi;              /* 0 < regs < INDEXBASE <= index modes  */
     int16_t    off;               /* memory address offset                */
     uint32_t   opz;             /*   idx of immed src op        */
+    bool immed;
+    bool is_offset; // set by jumps
+    bool is_compound;
+    size_t width;
     //union {/* Source operand if (flg & I)  */
     struct {				/* Call & # actual arg bytes	*/
         Function *proc;     /*   pointer to target proc (for CALL(F))*/
         int     cb;		/*   # actual arg bytes			*/
     } proc;
-    LLOperand() : seg(rUNDEF),segOver(rUNDEF),segValue(0),regi(rUNDEF),off(0),opz(0)
+    LLOperand() : seg(rUNDEF),segOver(rUNDEF),segValue(0),regi(rUNDEF),off(0),
+        opz(0),immed(0),is_offset(false),is_compound(0),width(0)
     {
         proc.proc=0;
         proc.cb=0;
+    }
+    LLOperand(eReg r,size_t w) : LLOperand()
+    {
+        regi=r;
+        width=w;
     }
     bool operator==(const LLOperand &with) const
     {
@@ -279,12 +289,12 @@ struct LLOperand
     }
     eReg getReg2() const {return regi;}
     bool isReg() const;
-    static LLOperand CreateImm2(int64_t Val)
+    static LLOperand CreateImm2(int64_t Val,uint8_t wdth=2)
     {
         LLOperand Op;
-        //Op.Kind = kImmediate;
-        //Op.ImmVal = Val;
+        Op.immed=true;
         Op.opz = Val;
+        Op.width = wdth;
         return Op;
     }
     static LLOperand CreateReg2(unsigned Val)
@@ -298,6 +308,10 @@ struct LLOperand
         return not (*this == LLOperand());
     }
     void addProcInformation(int param_count,uint32_t call_conv);
+    bool isImmediate() const { return immed;}
+    void setImmediate(bool x) { immed=x;}
+    bool compound() const {return is_compound;} // dx:ax pair
+    size_t byteWidth() const { assert(width<=4); return width;}
 };
 struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
