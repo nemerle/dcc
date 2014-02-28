@@ -1052,8 +1052,8 @@ static int format_att_mnemonic( x86_insn_t *insn, char *buf, int len) {
 
         /* do long jump/call prefix */
         if ( insn->type == insn_jmp || insn->type == insn_call ) {
-                if (! is_imm_jmp( insn->x86_operand_1st() ) ||
-                     (insn->x86_operand_1st())->datatype != op_byte ) {
+                if (! is_imm_jmp( insn->operand_1st() ) ||
+                     (insn->operand_1st())->datatype != op_byte ) {
                     /* far jump/call, use "l" prefix */
                     STRNCAT( buf, "l", len );
                 }
@@ -1077,11 +1077,11 @@ static int format_att_mnemonic( x86_insn_t *insn, char *buf, int len) {
              insn->type == insn_out
             )) {
             if ( insn->x86_operand_count( op_explicit ) > 0 &&
-                 is_memory_op( insn->x86_operand_1st() ) ){
-                size = insn->x86_operand_1st()->operand_size();
+                 is_memory_op( insn->operand_1st() ) ){
+                size = insn->operand_1st()->operand_size();
             } else if ( insn->x86_operand_count( op_explicit ) > 1 &&
-                        is_memory_op( insn->x86_operand_2nd() ) ){
-                size = insn->x86_operand_2nd()->operand_size();
+                        is_memory_op( insn->operand_2nd() ) ){
+                size = insn->operand_2nd()->operand_size();
             }
         }
 
@@ -1223,24 +1223,24 @@ static int format_xml_insn( x86_insn_t *insn, char *buf, int len ) {
         len -= format_insn_eflags_str( insn->flags_tested, buf, len );
         STRNCAT( buf, "\"/>\n\t</flags>\n", len );
 
-        if ( insn->x86_operand_1st() ) {
-                insn->x86_operand_1st()->x86_format_operand(str,
+        if ( insn->operand_1st() ) {
+                insn->operand_1st()->x86_format_operand(str,
                            sizeof str, xml_syntax);
                 STRNCAT( buf, "\t<operand name=dest>\n", len );
                 STRNCAT( buf, str, len );
                 STRNCAT( buf, "\t</operand>\n", len );
         }
 
-        if ( insn->x86_operand_2nd() ) {
-                insn->x86_operand_2nd()->x86_format_operand(str,sizeof str,
+        if ( insn->operand_2nd() ) {
+                insn->operand_2nd()->x86_format_operand(str,sizeof str,
                                                         xml_syntax);
                 STRNCAT( buf, "\t<operand name=src>\n", len );
                 STRNCAT( buf, str, len );
                 STRNCAT( buf, "\t</operand>\n", len );
         }
 
-        if ( insn->x86_operand_3rd() ) {
-                insn->x86_operand_3rd()->x86_format_operand(str,sizeof str,
+        if ( insn->operand_3rd() ) {
+                insn->operand_3rd()->x86_format_operand(str,sizeof str,
                                xml_syntax);
                 STRNCAT( buf, "\t<operand name=imm>\n", len );
                 STRNCAT( buf, str, len );
@@ -1342,13 +1342,13 @@ int x86_insn_t::x86_format_insn( char *buf, int len,
         STRNCAT( buf, "\t", len );
 
         /* dest */
-        if ( (dst = x86_operand_1st()) && !(dst->flags.op_implied) ) {
+        if ( (dst = operand_1st()) && !(dst->flags.op_implied) ) {
             dst->x86_format_operand(str, MAX_OP_STRING, format);
             STRNCAT( buf, str, len );
         }
 
         /* src */
-        if ( (src = x86_operand_2nd()) ) {
+        if ( (src = operand_2nd()) ) {
             if ( !(dst->flags.op_implied) ) {
                 STRNCAT( buf, ", ", len );
             }
@@ -1357,9 +1357,9 @@ int x86_insn_t::x86_format_insn( char *buf, int len,
         }
 
         /* imm */
-        if ( x86_operand_3rd()) {
+        if ( operand_3rd()) {
             STRNCAT( buf, ", ", len );
-            x86_operand_3rd()->x86_format_operand(str, MAX_OP_STRING,format);
+            operand_3rd()->x86_format_operand(str, MAX_OP_STRING,format);
             STRNCAT( buf, str, len );
         }
 
@@ -1373,8 +1373,8 @@ int x86_insn_t::x86_format_insn( char *buf, int len,
         /* not sure which is correct? sometimes GNU as requires
         * an imm as the first operand, sometimes as the third... */
         /* imm */
-        if ( x86_operand_3rd() ) {
-            x86_operand_3rd()->x86_format_operand(str, MAX_OP_STRING,format);
+        if ( operand_3rd() ) {
+            operand_3rd()->x86_format_operand(str, MAX_OP_STRING,format);
             STRNCAT( buf, str, len );
             /* there is always 'dest' operand if there is 'src' */
             STRNCAT( buf, ", ", len );
@@ -1382,13 +1382,13 @@ int x86_insn_t::x86_format_insn( char *buf, int len,
 
         if ( (note & insn_note_nonswap ) == 0 ) {
             /* regular AT&T style swap */
-            src = x86_operand_2nd();
-            dst = x86_operand_1st();
+            src = operand_2nd();
+            dst = operand_1st();
         }
         else {
             /* special-case instructions */
-            src = x86_operand_1st();
-            dst = x86_operand_2nd();
+            src = operand_1st();
+            dst = operand_2nd();
         }
 
         /* src */
@@ -1431,20 +1431,20 @@ int x86_insn_t::x86_format_insn( char *buf, int len,
 
         /* print operands */
         /* dest */
-        if ( x86_operand_1st()  ) {
-            x86_operand_1st()->x86_format_operand(str, MAX_OP_STRING,format);
+        if ( operand_1st()  ) {
+            operand_1st()->x86_format_operand(str, MAX_OP_STRING,format);
             STRNCATF( buf, "%s\t", str, len );
         }
 
         /* src */
-        if ( x86_operand_2nd() ) {
-            x86_operand_2nd()->x86_format_operand(str, MAX_OP_STRING,format);
+        if ( operand_2nd() ) {
+            operand_2nd()->x86_format_operand(str, MAX_OP_STRING,format);
             STRNCATF( buf, "%s\t", str, len );
         }
 
         /* imm */
-        if ( x86_operand_3rd()) {
-            x86_operand_3rd()->x86_format_operand(str, MAX_OP_STRING,format);
+        if ( operand_3rd()) {
+            operand_3rd()->x86_format_operand(str, MAX_OP_STRING,format);
             STRNCAT( buf, str, len );
         }
     }

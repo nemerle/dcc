@@ -93,7 +93,7 @@ x86_op_t * x86_insn_t::x86_get_branch_target() {
 
     return NULL;
 }
-x86_op_t * x86_insn_t::get_dest() {
+const x86_op_t * x86_insn_t::get_dest() const {
     x86_oplist_t *op_lst;
     assert(this);
     if ( ! operands ) {
@@ -169,7 +169,7 @@ uint8_t *x86_insn_t::x86_get_raw_imm() {
 }
 
 
-size_t x86_op_t::operand_size() {
+size_t x86_op_t::operand_size() const {
     switch (datatype ) {
         case op_byte:    return 1;
         case op_word:    return 2;

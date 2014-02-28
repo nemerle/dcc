@@ -161,7 +161,7 @@ unsigned int X86_Disasm::x86_disasm_forward( unsigned char *buf, unsigned int bu
         }
 
         if ( follow_insn_dest(&insn) ) {
-            op = insn.x86_operand_1st();//x86_get_dest_operand
+            op = insn.operand_1st();//x86_get_dest_operand
             next_addr = -1;
 
             /* if caller supplied a resolver, use it to determine

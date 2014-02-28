@@ -288,20 +288,21 @@ struct x86_op_t{
         } data;
         /* this is needed to make formatting operands more sane */
         void * insn;		/* pointer to x86_insn_t owning operand */
-    size_t size()
+    size_t size() const
     {
         return operand_size();
     }
     /* get size of operand data in bytes */
-    size_t operand_size();
+    size_t operand_size() const;
     /* format (sprintf) an operand into 'buf' using specified syntax */
     int x86_format_operand(char *buf, int len, enum x86_asm_format format );
-    bool is_address( ) {
+    bool is_address( ) const {
         return ( type == op_absolute || type == op_offset );
     }
-    bool is_relative( ) {
+    bool is_relative( ) const {
         return ( type == op_relative_near || type == op_relative_far );
     }
+    bool is_immediate( ) const { return ( type == op_immediate ); }
     int32_t getAddress()
     {
         assert(is_address()||is_relative());
@@ -634,10 +635,10 @@ public:
     /* convenience routine: returns count of operands matching 'type' */
     size_t x86_operand_count( enum x86_op_foreach_type type );
     /* accessor functions for the operands */
-    x86_op_t * x86_operand_1st( );
-    x86_op_t * x86_operand_2nd( );
-    x86_op_t * x86_operand_3rd( );
-    x86_op_t *  get_dest();
+    x86_op_t * operand_1st( );
+    x86_op_t * operand_2nd( );
+    x86_op_t * operand_3rd( );
+    const x86_op_t *  get_dest() const;
     int32_t x86_get_rel_offset( );
     x86_op_t * x86_get_branch_target( );
     x86_op_t * x86_get_imm( );

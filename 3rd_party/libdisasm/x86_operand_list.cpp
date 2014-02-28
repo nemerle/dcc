@@ -184,7 +184,7 @@ size_t x86_insn_t::x86_operand_count( enum x86_op_foreach_type type ) {
 }
 
 /* accessor functions */
-x86_op_t * x86_insn_t::x86_operand_1st() {
+x86_op_t * x86_insn_t::operand_1st() {
         if (! explicit_count ) {
                 return NULL;
         }
@@ -192,7 +192,7 @@ x86_op_t * x86_insn_t::x86_operand_1st() {
         return &(operands->op);
 }
 
-x86_op_t * x86_insn_t::x86_operand_2nd( ) {
+x86_op_t * x86_insn_t::operand_2nd( ) {
         if ( explicit_count < 2 ) {
                 return NULL;
         }
@@ -200,7 +200,7 @@ x86_op_t * x86_insn_t::x86_operand_2nd( ) {
         return &(operands->next->op);
 }
 
-x86_op_t * x86_insn_t::x86_operand_3rd( ) {
+x86_op_t * x86_insn_t::operand_3rd( ) {
         if ( explicit_count < 3 ) {
                 return NULL;
         }
