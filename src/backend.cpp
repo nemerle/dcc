@@ -167,7 +167,7 @@ void Project::writeGlobSymTable()
 
 /* Writes the header information and global variables to the output C file
  * fp. */
-static void writeHeader (std::ostream &_ios, char *fileName)
+static void writeHeader (std::ostream &_ios, const char *fileName)
 {
     PROG &prog(Project::get()->prog);
     /* Write header information */
@@ -341,7 +341,7 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
 
 
 /* Invokes the necessary routines to produce code one procedure at a time. */
-void BackEnd (char *fileName, CALL_GRAPH * pcallGraph)
+void BackEnd (const std::string &fileName, CALL_GRAPH * pcallGraph)
 {
     std::ofstream fs; /* Output C file 	*/
 
@@ -356,7 +356,7 @@ void BackEnd (char *fileName, CALL_GRAPH * pcallGraph)
     printf ("dcc: Writing C beta file %s\n", outNam.c_str());
 
     /* Header information */
-    writeHeader (fs, option.filename);
+    writeHeader (fs, option.filename.c_str());
 
     /* Initialize total Icode instructions statistics */
     stats.totalLL = 0;

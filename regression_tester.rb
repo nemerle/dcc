@@ -14,9 +14,9 @@ def perform_test(exepath,filepath,outname,args)
 	filepath=path_local(filepath)
 	joined_args = args.join(' ')
 	printf("calling:" + "#{exepath} -a1 #{joined_args} -o#{output_path}.a1 #{filepath}\n")
-	STDERR << "Errors for : #{filepath}"
-	result = `#{exepath} -a1 -o#{output_path}.a1 #{filepath}`
-	result = `#{exepath} -a2 #{joined_args} -o#{output_path}.a2 #{filepath}`
+	STDERR << "Errors for : #{filepath}\n"
+	result = `#{exepath} -a 1 -o#{output_path}.a1 #{filepath}`
+	result = `#{exepath} -a 2 #{joined_args} -o#{output_path}.a2 #{filepath}`
 	result = `#{exepath} #{joined_args} -o#{output_path} #{filepath}`
 	puts result
 	p $?

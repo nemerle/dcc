@@ -68,7 +68,6 @@ void readFileSection(uint16_t* p, int len, FILE *_file);
 void cleanup(void);
 void checkStartup(STATE *state);
 void readProtoFile(void);
-void fixNewline(char *s);
 int  searchPList(char *name);
 void checkHeap(char *msg);              /* For debugging */
 

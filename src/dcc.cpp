@@ -4,13 +4,15 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
+#include <QtCore/QCoreApplication>
+#include <QCommandLineParser>
 #include <cstring>
 #include "dcc.h"
 #include "project.h"
 
 #include "CallGraph.h"
 /* Global variables - extern to other modules */
-extern char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
+extern std::string asm1_name, asm2_name;     /* Assembler output filenames     */
 extern SYMTAB  symtab;             /* Global symbol table      			  */
 extern STATS   stats;              /* cfg statistics       				  */
 //PROG    prog;               /* programs fields      				  */
@@ -40,6 +42,7 @@ static void displayTotalStats(void);
 /****************************************************************************
  * main
  ***************************************************************************/
+#include <QtCore/QFile>
 #include <iostream>
 using namespace llvm;
 bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
@@ -112,10 +115,67 @@ int testTblGen(int argc, char **argv)
     exit(0);
 
 }
+void setupOptions(QCoreApplication &app) {
+    //[-a1a2cmsi]
+    QCommandLineParser parser;
+    parser.setApplicationDescription("dcc");
+    parser.addHelpOption();
+    //parser.addVersionOption();
+    //QCommandLineOption showProgressOption("p", QCoreApplication::translate("main", "Show progress during copy"));
+    QCommandLineOption boolOpts[] {
+        QCommandLineOption {"v", QCoreApplication::translate("main", "verbose")},
+        QCommandLineOption {"V", QCoreApplication::translate("main", "very verbose")},
+        QCommandLineOption {"c", QCoreApplication::translate("main", "Follow register indirect calls")},
+        QCommandLineOption {"m", QCoreApplication::translate("main", "Print memory maps of program")},
+        QCommandLineOption {"s", QCoreApplication::translate("main", "Print stats")}
+    };
+    for(QCommandLineOption &o : boolOpts) {
+        parser.addOption(o);
+    }
+    QCommandLineOption assembly("a", QCoreApplication::translate("main", "Produce assembly"),"assembly_level");
+    // A boolean option with multiple names (-f, --force)
+    //QCommandLineOption forceOption(QStringList() << "f" << "force", "Overwrite existing files.");
+    // An option with a value
+    QCommandLineOption targetFileOption(QStringList() << "o" << "output",
+                                        QCoreApplication::translate("main", "Place output into <file>."),
+                                        QCoreApplication::translate("main", "file"));
+    parser.addOption(targetFileOption);
+    parser.addOption(assembly);
+    //parser.addOption(forceOption);
+    // Process the actual command line arguments given by the user
+    parser.addPositionalArgument("source", QCoreApplication::translate("main", "Dos Executable file to decompile."));
+    parser.process(app);
+
+    const QStringList args = parser.positionalArguments();
+    if(args.empty()) {
+        parser.showHelp();
+    }
+    // source is args.at(0), destination is args.at(1)
+    option.verbose = parser.isSet(boolOpts[0]);
+    option.VeryVerbose = parser.isSet(boolOpts[1]);
+    if(parser.isSet(assembly)) {
+        option.asm1 = parser.value(assembly).toInt()==1;
+        option.asm2 = parser.value(assembly).toInt()==2;
+    }
+    option.Map = parser.isSet(boolOpts[3]);
+    option.Stats = parser.isSet(boolOpts[4]);
+    option.Interact = false;
+    option.Calls = parser.isSet(boolOpts[2]);
+    option.filename = args.first().toStdString();
+    if(parser.isSet(targetFileOption))
+        asm1_name = asm2_name = parser.value(targetFileOption).toStdString();
+    else if(option.asm1 || option.asm2) {
+        asm1_name = option.filename+".a1";
+        asm2_name = option.filename+".a2";
+    }
+
+}
 int main(int argc, char **argv)
 {
-    /* Extract switches and filename */
-    strcpy(option.filename, initargs(argc, argv));
+    QCoreApplication app(argc,argv);
+
+    QCoreApplication::setApplicationVersion("0.1");
+    setupOptions(app);
 
     /* Front end reads in EXE or COM file, parses it into I-code while
      * building the call graph and attaching appropriate bits of code for
@@ -138,96 +198,14 @@ int main(int argc, char **argv)
      * analysis, data flow etc. and outputs it to output file ready for
      * re-compilation.
     */
-    BackEnd(asm1_name ? asm1_name:option.filename, Project::get()->callGraph);
+    BackEnd(!asm1_name.empty() ? asm1_name:option.filename, Project::get()->callGraph);
 
     Project::get()->callGraph->write();
 
     if (option.Stats)
         displayTotalStats();
 
-    /*
-    freeDataStructures(pProcList);
-*/
     return 0;
-}
-
-/****************************************************************************
- * initargs - Extract command line arguments
- ***************************************************************************/
-static char *initargs(int argc, char *argv[])
-{
-    char *pc;
-
-    while (--argc > 0 && (*++argv)[0] == '-')
-    {
-        for (pc = argv[0]+1; *pc; pc++)
-            switch (*pc)
-            {
-                case 'a':       /* Print assembler listing */
-                    if (*(pc+1) == '2')
-                        option.asm2 = true;
-                    else
-                        option.asm1 = true;
-                    if (*(pc+1) == '1' || *(pc+1) == '2')
-                        pc++;
-                    break;
-                case 'c':
-                    option.Calls = true;
-                    break;
-                case 'i':
-                    option.Interact = true;
-                    break;
-                case 'm':       /* Print memory map */
-                    option.Map = true;
-                    break;
-                case 's':       /* Print Stats */
-                    option.Stats = true;
-                    break;
-                case 'V':       /* Very verbose => verbose */
-                    option.VeryVerbose = true;
-                case 'v':
-                    option.verbose = true; /* Make everything verbose */
-                    break;
-                case 'o':       /* assembler output file */
-                    if (*(pc+1)) {
-                        asm1_name = asm2_name = pc+1;
-                        goto NextArg;
-                    }
-                    else if (--argc > 0) {
-                        asm1_name = asm2_name = *++argv;
-                        goto NextArg;
-                    }
-                default:
-                    fatalError(INVALID_ARG, *pc);
-                    return *argv;
-            }
-NextArg:;
-    }
-
-    if (argc == 1)
-    {
-        if (option.asm1 || option.asm2)
-        {
-            if (! asm1_name)
-            {
-                asm1_name = strcpy((char*)malloc(strlen(*argv)+4), *argv);
-                pc = strrchr(asm1_name, '.');
-                if (pc > strrchr(asm1_name, '/'))
-                {
-                    *pc = '\0';
-                }
-                asm2_name = (char*)malloc(strlen(asm1_name)+4) ;
-                strcat(strcpy(asm2_name, asm1_name), ".a2");
-                unlink(asm2_name);
-                strcat(asm1_name, ".a1");
-            }
-            unlink(asm1_name);  /* Remove asm output files */
-        }
-        return *argv;       /* filename of the program to decompile */
-    }
-
-    fatalError(USAGE);
-    return *argv; // does not reach this.
 }
 
 static void

@@ -1,5 +1,8 @@
 PROJECT(dcc_original)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.9)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+find_package(Qt5Core)
 
 OPTION(dcc_build_tests "Enable unit tests." OFF)
 #SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
@@ -9,7 +12,7 @@ IF(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(/W4)
 ELSE()
 #-D_GLIBCXX_DEBUG
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall --std=c++0x")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall --std=c++11")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} "  ) #--coverage
 ENDIF()
 
@@ -34,6 +37,7 @@ INCLUDE_DIRECTORIES(
     ${LLVM_INCLUDE_DIRS}
 )
 set(dcc_LIB_SOURCES
+    src/CallConvention.cpp
     src/ast.cpp
     src/backend.cpp
     src/bundle.cpp
@@ -73,7 +77,6 @@ set(dcc_LIB_SOURCES
     src/symtab.cpp
     src/udm.cpp
     src/BasicBlock.cpp
-    src/CallConvention.cpp
 )
 set(dcc_SOURCES
     src/dcc.cpp
@@ -100,6 +103,7 @@ set(dcc_HEADERS
     include/idioms/shift_idioms.h
     include/idioms/xor_idioms.h
     include/locident.h
+    include/CallConvention.h
     include/perfhlib.h
     include/project.h
     include/scanner.h
@@ -109,7 +113,6 @@ set(dcc_HEADERS
     include/Procedure.h
     include/StackFrame.h
     include/BasicBlock.h
-    include/CallConvention.h
 
 )
 SOURCE_GROUP(Source FILES ${dcc_SOURCES})
@@ -120,7 +123,8 @@ ADD_LIBRARY(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
-TARGET_LINK_LIBRARIES(dcc_original LLVMSupport dcc_lib disasm_s ${REQ_LLVM_LIBRARIES} LLVMSupport)
+TARGET_LINK_LIBRARIES(dcc_original dcc_lib disasm_s ${REQ_LLVM_LIBRARIES} ncurses LLVMSupport)
+qt5_use_modules(dcc_original Core)
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)
 endif()

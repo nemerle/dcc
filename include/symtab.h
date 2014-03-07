@@ -36,21 +36,13 @@ struct SYM : public SymbolCommon
 struct STKSYM : public SymbolCommon
 {
     typedef int16_t tLabel;
-    Expr	*actual;	/* Expression tree of actual parameter 		*/
-    AstIdent 	*regs;		/* For register arguments only				*/
-    tLabel      label;        /* Immediate off from BP (+:args, -:params) */
-    uint8_t     regOff;     /* Offset is a register (e.g. SI, DI)       */
-    bool        hasMacro;	/* This type needs a macro					*/
+    Expr	*actual=0;	/* Expression tree of actual parameter 		*/
+    AstIdent 	*regs=0;		/* For register arguments only				*/
+    tLabel      label=0;        /* Immediate off from BP (+:args, -:params) */
+    uint8_t     regOff=0;     /* Offset is a register (e.g. SI, DI)       */
+    bool        hasMacro=false;	/* This type needs a macro					*/
     std::string macro;  	/* Macro name								*/
-    bool        invalid;	/* Boolean: invalid entry in formal arg list*/
-    STKSYM()
-    {
-        actual=0;
-        regs=0;
-        label=0;
-        regOff=0;
-        invalid=hasMacro = false;
-    }
+    bool        invalid=false;	/* Boolean: invalid entry in formal arg list*/
     void setArgName(int i)
     {
         char buf[32];

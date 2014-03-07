@@ -27,7 +27,6 @@ const char *indentStr(int indLevel) // Indentation according to the depth of the
  * not exist.  */
 void CALL_GRAPH::insertArc (ilFunction newProc)
 {
-    CALL_GRAPH *pcg;
 
 
     /* Check if procedure already exists */
@@ -35,7 +34,7 @@ void CALL_GRAPH::insertArc (ilFunction newProc)
     if(res!=outEdges.end())
         return;
     /* Include new arc */
-    pcg = new CALL_GRAPH;
+    CALL_GRAPH *pcg = new CALL_GRAPH;
     pcg->proc = newProc;
     outEdges.push_back(pcg);
 }
@@ -49,13 +48,10 @@ bool CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
         insertArc (callee);
         return true;
     }
-    else
-    {
         for (CALL_GRAPH *edg : outEdges)
             if (edg->insertCallGraph (caller, callee))
                 return true;
-        return (false);
-    }
+    return false;
 }
 
 bool CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
@@ -333,7 +329,6 @@ void STKFRAME::adjustForArgType(size_t numArg_, hlType actType_)
 {
     hlType forType;
     STKSYM * psym, * nsym;
-    int off;
     /* If formal argument does not exist, do not create new ones, just
      * ignore actual argument
      */
@@ -341,7 +336,7 @@ void STKFRAME::adjustForArgType(size_t numArg_, hlType actType_)
         return;
 
     /* Find stack offset for this argument */
-    off = m_minOff;
+    int off = m_minOff;
     size_t i=0;
     for(STKSYM &s : *this) // walk formal arguments upto numArg_
     {
@@ -353,7 +348,6 @@ void STKFRAME::adjustForArgType(size_t numArg_, hlType actType_)
 
     /* Find formal argument */
     //psym = &at(numArg_);
-    //i = numArg_;
         //auto iter=std::find_if(sym.begin(),sym.end(),[off](STKSYM &s)->bool {s.off==off;});
     auto iter=std::find_if(begin()+numArg_,end(),[off](STKSYM &s)->bool {return s.label==off;});
     if(iter==end()) // symbol not found
@@ -361,15 +355,16 @@ void STKFRAME::adjustForArgType(size_t numArg_, hlType actType_)
         psym = &(*iter);
 
     forType = psym->type;
-    if (forType != actType_)
-    {
+    if (forType == actType_)
+        return;
         switch (actType_) {
             case TYPE_UNKNOWN: case TYPE_BYTE_SIGN:
             case TYPE_BYTE_UNSIGN: case TYPE_WORD_SIGN:
             case TYPE_WORD_UNSIGN: case TYPE_RECORD:
                 break;
 
-            case TYPE_LONG_UNSIGN: case TYPE_LONG_SIGN:
+    case TYPE_LONG_UNSIGN:
+    case TYPE_LONG_SIGN:
                 if ((forType == TYPE_WORD_UNSIGN) ||
                         (forType == TYPE_WORD_SIGN) ||
                         (forType == TYPE_UNKNOWN))
@@ -395,6 +390,5 @@ void STKFRAME::adjustForArgType(size_t numArg_, hlType actType_)
             default:
                 fprintf(stderr,"STKFRAME::adjustForArgType unhandled actType_ %d \n",actType_);
         } /* eos */
-    }
 }
 

@@ -153,7 +153,7 @@ void Disassembler::disassem(Function * ppProc)
         m_fp.open(p,ios_base::app);
         if (!m_fp.is_open())
         {
-            fatalError(CANNOT_OPEN, p);
+            fatalError(CANNOT_OPEN, p.c_str());
         }
     }
     /* Create temporary code array */

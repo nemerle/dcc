@@ -82,7 +82,7 @@ bool DccFrontend::FrontEnd ()
 
     if (option.asm1)
     {
-        printf("dcc: writing assembler file %s\n", asm1_name);
+        printf("dcc: writing assembler file %s\n", asm1_name.c_str());
     }
 
     /* Search through code looking for impure references and flag them */

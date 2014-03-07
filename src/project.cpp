@@ -1,10 +1,11 @@
 #include <utility>
 #include "dcc.h"
+#include "CallGraph.h"
 #include "project.h"
 #include "Procedure.h"
 using namespace std;
 //Project g_proj;
-char    *asm1_name, *asm2_name;     /* Assembler output filenames     */
+string asm1_name, asm2_name;     /* Assembler output filenames     */
 SYMTAB  symtab;             /* Global symbol table      			  */
 STATS   stats;              /* cfg statistics       				  */
 //PROG    prog;               /* programs fields      				  */
