@@ -112,6 +112,6 @@ constexpr int NUM_TABLE_TYPES = int(Comment)+1; /* Number of entries: must be la
 
 void    createSymTables(void);
 void    destroySymTables(void);
-boolT   readVal (std::ostringstream &symName, uint32_t   symOff, Function *symProc);
+bool    readVal (std::ostringstream &symName, uint32_t   symOff, Function *symProc);
 void    selectTable(tableType);     /* Select a particular table */
 

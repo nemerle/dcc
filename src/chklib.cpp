@@ -74,7 +74,7 @@ void checkHeap(char *msg);              /* For debugging */
 
 void fixWildCards(uint8_t pat[]);			/* In fixwild.c */
 
-static boolT locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pattern,
+static bool locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pattern,
                            int iPatLen, int *index);
 
 /*  *   *   *   *   *   *   *   *   *   *   *   *   *   *   *\
@@ -477,6 +477,7 @@ bool LibCheck(Function & pProc)
         if ((numFunc == 0) || (i=searchPList(ht[h].htSym)) != NIL)
         {
             pProc.flg |= PROC_ISLIB; 		/* It's a lib function */
+            pProc.callingConv(CConv::C);
             if (i != NIL)
             {
                 /* Allocate space for the arg struct, and copy the hlType to
@@ -511,8 +512,7 @@ bool LibCheck(Function & pProc)
                             /*** other types are not considered yet ***/
                     }
                 }
-                if (pFunc[i].bVararg)
-                    pProc.flg |= PROC_VARARG;
+                pProc.getFunctionType()->m_vararg = pFunc[i].bVararg;
             }
         }
         else if (i == NIL)
@@ -532,7 +532,7 @@ bool LibCheck(Function & pProc)
         pProc.args.numArgs = 0;		/* With no args */
     }
 
-    return (boolT)((pProc.flg & PROC_ISLIB) != 0);
+    return (bool)((pProc.flg & PROC_ISLIB) != 0);
 }
 
 
@@ -565,8 +565,7 @@ readFileShort(FILE *f)
 }
 
 // Read a section of the file, considering endian issues
-void
-readFileSection(uint16_t* p, int len, FILE* f)
+void readFileSection(uint16_t* p, int len, FILE* f)
 {
     for (int i=0; i < len; i += 2)
     {
@@ -589,7 +588,7 @@ void dispKey(int /*i*/)
     iPatLen). The pattern can contain wild bytes; if you really want to match
     for the pattern that is used up by the WILD uint8_t, tough - it will match with
     everything else as well. */
-static boolT locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pattern, int iPatLen,
+static bool locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pattern, int iPatLen,
                            int *index)
 {
     int i, j;
@@ -763,7 +762,7 @@ void STATE::checkStartup()
     }
 
     printf("Model: %c\n", chModel);
-
+    prog.addressingMode = chModel;
 
     /* Now decide the compiler vendor and version number */
     if (memcmp(&prog.image()[startOff], pattMsC5Start, sizeof(pattMsC5Start)) == 0)
@@ -953,8 +952,7 @@ void readProtoFile(void)
 
 }
 
-int
-searchPList(char *name)
+int searchPList(char *name)
 {
     /* Search through the symbol names for the name */
     /* Use binary search */
@@ -991,10 +989,7 @@ searchPList(char *name)
     {
         return mn;            /* Found! */
     }
-    else
-    {
-        return NIL;
-    }
+    return NIL;
 }
 
 

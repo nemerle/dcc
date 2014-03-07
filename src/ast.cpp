@@ -89,9 +89,9 @@ void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
             break;
         case eUSE:
             if (duDu == eDEF)
-                du.use=duIcode.du.def;
+                du.use = duIcode.du.def;
             else
-                du.use =duIcode.du.use;
+                du.use = duIcode.du.use;
             break;
         case USE_DEF:
             du = duIcode.du;
@@ -134,17 +134,14 @@ string GlobalVariable::walkCondExpr(Function *, int *) const
 {
     if(valid)
         return Project::get()->symtab[globIdx].name;
-    else
-        return "INVALID GlobalVariable";
+    return "INVALID GlobalVariable";
 }
 
 /* Returns an identifier conditional expression node of type LOCAL_VAR */
 AstIdent *AstIdent::Loc(int off, LOCAL_ID *localId)
 {
     size_t i;
-    AstIdent *newExp;
-
-    newExp = new AstIdent();
+    AstIdent *newExp = new AstIdent();
     newExp->ident.idType = LOCAL_VAR;
     for (i = 0; i < localId->csym(); i++)
     {
@@ -204,7 +201,7 @@ string GlobalVariableIdx::walkCondExpr(Function *pProc, int *) const
  * that points to the given index idx.  */
 AstIdent *AstIdent::LongIdx (int idx)
 {
-    AstIdent *newExp = new AstIdent();
+    AstIdent *newExp = new AstIdent;
     newExp->ident.idType = LONG_VAR;
     newExp->ident.idNode.longIdx = idx;
     return (newExp);
@@ -222,7 +219,6 @@ AstIdent *AstIdent::String(uint32_t idx)
 /* Returns an identifier conditional expression node of type LONG_VAR */
 AstIdent *AstIdent::Long(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset)
 {
-    int idx;
     AstIdent *newExp;
     /* Check for long constant and save it as a constant expression */
     if ((sd == SRC) && pIcode->ll()->testFlags(I))  /* constant */
@@ -275,10 +271,10 @@ AstIdent *AstIdent::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
             break;
         }
         case TYPE_WORD_SIGN:
-            newExp = new RegisterNode(locsym->newByteWordReg(retVal->type, retVal->id.regi),WORD_REG);
+            newExp = new RegisterNode(locsym->newByteWordReg(retVal->type, retVal->id.regi),WORD_REG,locsym);
             break;
         case TYPE_BYTE_SIGN:
-            newExp = new RegisterNode(locsym->newByteWordReg(retVal->type, retVal->id.regi),BYTE_REG);
+            newExp = new RegisterNode(locsym->newByteWordReg(retVal->type, retVal->id.regi),BYTE_REG,locsym);
             break;
         default:
             fprintf(stderr,"AstIdent::idID unhandled type %d\n",retVal->type);
@@ -826,18 +822,14 @@ Expr *AstIdent::insertSubTreeLongReg(Expr *_expr, int longIdx)
     return nullptr;
 }
 
-/* Recursively deallocates the abstract syntax tree rooted at *exp */
-Expr::~Expr(){}
 
 /* Makes a copy of the given expression.  Allocates newExp storage for each
  * node.  Returns the copy. */
 
 Expr *BinaryOperator::clone() const
 {
-    BinaryOperator* newExp=new BinaryOperator(m_op);        /* Expression node copy */
-    newExp->m_lhs = m_lhs->clone();
-    newExp->m_rhs = m_rhs->clone();
-    return newExp;
+    /* Expression node copy */
+    return new BinaryOperator(m_op,m_lhs->clone(),m_rhs->clone());
 }
 
 Expr *BinaryOperator::inverse() const
@@ -878,15 +870,13 @@ Expr *AstIdent::performLongRemoval(eReg regi, LOCAL_ID *locId)
     {
         otherRegi = otherLongRegi (regi, ident.idNode.longIdx, locId);
         delete this;
-        return new RegisterNode(locId->newByteWordReg(TYPE_WORD_SIGN,otherRegi),WORD_REG);
+        return new RegisterNode(locId->newByteWordReg(TYPE_WORD_SIGN,otherRegi),WORD_REG,locId);
     }
     return this;
 }
 eReg AstIdent::otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
 {
-    ID *id;
-
-    id = &locTbl->id_arr[idx];
+    ID *id = &locTbl->id_arr[idx];
     if ((id->loc == REG_FRAME) && ((id->type == TYPE_LONG_SIGN) ||
                                    (id->type == TYPE_LONG_UNSIGN)))
     {
@@ -933,6 +923,3 @@ hlType FuncNode::expType(Function *) const
 {
     return call.proc->retVal.type;
 }
-
-
-

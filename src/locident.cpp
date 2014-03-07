@@ -42,7 +42,7 @@ ID::ID(hlType t,const LONG_STKID_TYPE &s) : type(t),illegal(false),hasMacro(fals
     assert((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN));
 }
 
-ID::ID(hlType t, const LONGGLB_TYPE &s)
+ID::ID(hlType t, const LONGGLB_TYPE &s) : type(t),illegal(false)
 {
     macro[0]=0;
     memset(&id,0,sizeof(id));
@@ -224,7 +224,7 @@ int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
             (id_arr[idx].id.longGlb.offL == offL))
             return (idx);
     }
-
+    printf("%d",t);
     /* Not in the table, create new identifier */
     id_arr.push_back(ID(t, LONGGLB_TYPE(seg,offH,offL)));
     return (id_arr.size() - 1);

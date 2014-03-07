@@ -51,7 +51,8 @@ public:
     {
 
     }
-    virtual ~Expr();
+    /** Recursively deallocates the abstract syntax tree rooted at *exp */
+    virtual ~Expr() {}
 public:
     virtual std::string walkCondExpr (Function * pProc, int* numLoc) const=0;
     virtual Expr *inverse() const=0; // return new COND_EXPR that is invarse of this
@@ -122,6 +123,7 @@ struct BinaryOperator : public Expr
         assert(m_lhs!=m_rhs || m_lhs==nullptr);
         delete m_lhs;
         delete m_rhs;
+        m_lhs=m_rhs=nullptr;
     }
     static BinaryOperator *Create(condOp o,Expr *l,Expr *r)
     {
@@ -132,21 +134,28 @@ struct BinaryOperator : public Expr
     }
     static BinaryOperator *LogicAnd(Expr *l,Expr *r)
     {
-        return new BinaryOperator(DBL_AND,l,r);
+        return Create(DBL_AND,l,r);
+    }
+    static BinaryOperator *createSHL(Expr *l,Expr *r)
+    {
+        return Create(SHL,l,r);
     }
     static BinaryOperator *And(Expr *l,Expr *r)
     {
-        return new BinaryOperator(AND,l,r);
+        return Create(AND,l,r);
     }
     static BinaryOperator *Or(Expr *l,Expr *r)
     {
-        return new BinaryOperator(OR,l,r);
+        return Create(OR,l,r);
     }
     static BinaryOperator *LogicOr(Expr *l,Expr *r)
     {
-        return new BinaryOperator(DBL_OR,l,r);
+        return Create(DBL_OR,l,r);
     }
-    static BinaryOperator *CreateAdd(Expr *l,Expr *r);
+    static BinaryOperator *CreateAdd(Expr *l,Expr *r) {
+        return Create(ADD,l,r);
+
+    }
     void changeBoolOp(condOp newOp);
     virtual Expr *inverse() const;
     virtual Expr *clone() const;
@@ -281,20 +290,22 @@ struct FuncNode : public AstIdent
 };
 struct RegisterNode : public AstIdent
 {
+    const LOCAL_ID *m_syms;
     regType     regiType;  /* for REGISTER only                */
     int         regiIdx;   /* index into localId, REGISTER		*/
 
     virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
 
-    RegisterNode(int idx, regType reg_type)
+    RegisterNode(int idx, regType reg_type,const LOCAL_ID *syms)
     {
+        m_syms= syms;
         ident.type(REGISTER);
         regiType = reg_type;
         regiIdx = idx;
     }
     RegisterNode(const LLOperand &, LOCAL_ID *locsym);
 
-    RegisterNode(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
+    //RegisterNode(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
     virtual Expr *clone() const
     {
         return new RegisterNode(*this);

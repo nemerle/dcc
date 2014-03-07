@@ -19,7 +19,7 @@ BB *BB::Create(void */*ctx*/, const string &/*s*/, Function *parent, BB */*inser
  *  @arg start - basic block starts here, might be parent->Icode.end()
  *  @arg fin - last of basic block's instructions
 */
-BB *BB::Create(const rCODE &r,uint8_t _nodeType, Function *parent)
+BB *BB::Create(const rCODE &r,eBBKind _nodeType, Function *parent)
 {
     BB* pnewBB;
     pnewBB = new BB;
@@ -28,14 +28,16 @@ BB *BB::Create(const rCODE &r,uint8_t _nodeType, Function *parent)
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
     pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
     pnewBB->instructions = r;
-
+    int addr = pnewBB->begin()->loc_ip;
     /* Mark the basic block to which the icodes belong to, but only for
      * real code basic blocks (ie. not interval bbs) */
     if(parent)
     {
         //setInBB should automatically handle if our range is empty
         parent->Icode.SetInBB(pnewBB->instructions, pnewBB);
-        parent->heldBBs.push_back(pnewBB);
+
+        assert(parent->m_ip_to_bb.find(addr)==parent->m_ip_to_bb.end());
+        parent->m_ip_to_bb[addr] = pnewBB;
         parent->m_actual_cfg.push_back(pnewBB);
         pnewBB->Parent = parent;
     }
@@ -48,7 +50,7 @@ BB *BB::Create(const rCODE &r,uint8_t _nodeType, Function *parent)
 BB *BB::CreateIntervalBB(Function *parent)
 {
     iICODE endOfParent = parent->Icode.end();
-    return Create(make_iterator_range(endOfParent,endOfParent),INTERVAL_NODE,parent);
+    return Create(make_iterator_range(endOfParent,endOfParent),INTERVAL_NODE,nullptr);
 }
 
 static const char *const s_nodeType[] = {"branch", "if", "case", "fall", "return", "call",

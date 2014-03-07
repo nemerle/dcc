@@ -101,8 +101,6 @@ void    SetupLibCheck(void);                                /* chklib.c     */
 void    CleanupLibCheck(void);                              /* chklib.c     */
 bool    LibCheck(Function &p);                              /* chklib.c     */
 
-/* Exported functions from procs.c */
-boolT	insertCallGraph (CALL_GRAPH *, ilFunction, ilFunction);
 
 /* Exported functions from hlicode.c */
 const char *writeJcond(const HLTYPE &, Function *, int *);

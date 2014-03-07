@@ -211,7 +211,7 @@ void Function::findIdioms()
         if (cbParam != delta)
         {
             cbParam = delta;
-            flg |= (CALL_MASK & CALL_UNKNOWN);
+            callingConv(CConv::UNKNOWN);
         }
     }
 }

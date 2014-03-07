@@ -13,7 +13,7 @@
 
 /* Returns whether the given icode opcode is within the range of valid
  * high-level conditional jump icodes (iJB..iJG) */
-static boolT isJCond (llIcode opcode)
+static bool isJCond (llIcode opcode)
 {
     if ((opcode >= iJB) && (opcode <= iJG))
         return true;
@@ -59,7 +59,7 @@ static bool isLong23 (BB * pbb, iICODE &off, int *arc)
 
 
 /* Returns whether the conditions for a 2-2 long variable are satisfied */
-static boolT isLong22 (iICODE pIcode, iICODE pEnd, iICODE &off)
+static bool isLong22 (iICODE pIcode, iICODE pEnd, iICODE &off)
 {
     iICODE initial_icode=pIcode;
     if(distance(pIcode,pEnd)<4)

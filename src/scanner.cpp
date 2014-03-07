@@ -842,10 +842,10 @@ static void trans(int i)
         (llIcode)iJMP, (llIcode)iJMPF,(llIcode)iPUSH, (llIcode)0
     };
     LLInst *ll = pIcode->ll();
-    if(transTable[REG(*pInst)]==iPUSH) {
-        printf("es");
-    }
-    if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */        
+//    if(transTable[REG(*pInst)]==iPUSH) {
+//        printf("es");
+//    }
+    if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */
         ll->setOpcode(transTable[REG(*pInst)]);   /* valid on bytes */
         rm(i);
         ll->replaceSrc( pIcode->ll()->m_dst );

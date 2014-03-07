@@ -77,14 +77,14 @@ static char *strHex(uint32_t d);
 //static int   checkScanned(uint32_t pcCur);
 //static void  setProc(Function * proc);
 //static void  dispData(uint16_t dataSeg);
-boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
+bool callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 //static  FILE   *dis_g_fp;
 static  CIcodeRec pc;
 static  int     cb, j, numIcode, allocIcode;
 static  map<int,int> pl;
 static  uint32_t   nextInst;
-static  boolT    fImpure;
+static  bool    fImpure;
 //static  int     g_lab;
 static  Function *   pProc;          /* Points to current proc struct */
 

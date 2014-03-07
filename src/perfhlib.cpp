@@ -24,9 +24,7 @@ static  short   *g;         /* g[] */
 //static void duplicateKeys(int v1, int v2);
 PatternHasher g_pattern_hasher;
 
-void
-PatternHasher::init(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin,
-                    int _NumVert)
+void PatternHasher::init(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin, int _NumVert)
 {
     /* These parameters are stored in statics so as to obviate the need for
         passing all these (or defererencing pointers) for every call to hash()

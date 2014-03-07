@@ -53,9 +53,9 @@ ilFunction Project::findByEntry(uint32_t entry)
 return iter;
 }
 
-ilFunction Project::createFunction()
+ilFunction Project::createFunction(FunctionType *f,const std::string &name)
 {
-    pProcList.push_back(Function::Create());
+    pProcList.push_back(Function::Create(f,0,name,0));
     return (++pProcList.rbegin()).base();
 }
 

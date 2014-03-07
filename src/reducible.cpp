@@ -104,7 +104,7 @@ void derSeq_Entry::findIntervals (Function *c)
             *header,          /* Current interval's header node   */
             *succ;            /* Successor basic block        */
     queue H;            /* Queue of possible header nodes   */
-    boolT first = true;       /* First pass through the loop      */
+    bool first = true;       /* First pass through the loop      */
 
     appendQueue (H, Gi);  /* H = {first node of G} */
     Gi->beenOnH = true;
@@ -304,13 +304,11 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
 /* Finds the derived sequence of the graph derivedG->Gi (ie. cfg).
  * Constructs the n-th order graph and places all the intermediate graphs
  * in the derivedG list sequence.                   */
-uint8_t Function::findDerivedSeq (derSeq &derivedGi)
+bool Function::findDerivedSeq (derSeq &derivedGi)
 {
-    BB *Gi;      /* Current derived sequence graph       */
-
     derSeq::iterator iter=derivedGi.begin();
     assert(iter!=derivedGi.end());
-    Gi = iter->Gi;
+    BB *Gi = iter->Gi;      /* Current derived sequence graph       */
     while (! trivialGraph (Gi))
     {
         /* Find the intervals of Gi and place them in derivedGi->Ii */

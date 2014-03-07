@@ -16,8 +16,9 @@
 #include "project.h"
 using namespace std;
 using namespace boost::adaptors;
-RegisterNode::RegisterNode(const LLOperand &op,LOCAL_ID *locsym)
+RegisterNode::RegisterNode(const LLOperand &op, LOCAL_ID *locsym)
 {
+    m_syms = locsym;
     ident.type(REGISTER);
     hlType type_sel;
     regType reg_type;
@@ -59,6 +60,7 @@ string RegisterNode::walkCondExpr(Function *pProc, int *numLoc) const
     std::ostringstream codeOut;
 
     std::ostringstream o;
+    assert(&pProc->localId==m_syms);
     ID *id = &pProc->localId.id_arr[regiIdx];
     if (id->name[0] == '\0')	/* no name */
     {
@@ -83,8 +85,6 @@ int RegisterNode::hlTypeSize(Function *) const
         return (2);
 }
 
-
-
 hlType RegisterNode::expType(Function *pproc) const
 {
     if (regiType == BYTE_REG)
@@ -95,6 +95,7 @@ hlType RegisterNode::expType(Function *pproc) const
 
 Expr *RegisterNode::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)
 {
+    assert(locsym==m_syms);
     eReg treeReg = locsym->id_arr[regiIdx].id.regi;
     if (treeReg == regi)                        /* uint16_t reg */
     {
@@ -104,6 +105,7 @@ Expr *RegisterNode::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *loc
     {
         return _expr;
     }
+    return nullptr;
 }
 bool RegisterNode::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId)
 {

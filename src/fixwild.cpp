@@ -82,8 +82,9 @@ TwoWild(uint8_t pat[])
 static bool
 FourWild(uint8_t pat[])
 {
-            TwoWild(pat);
-    return  TwoWild(pat);
+    if(TwoWild(pat))
+        return true;
+    return TwoWild(pat);
 }
 
 /* Chop from the current point by wiping with zeroes. Can't rely on anything
@@ -338,7 +339,7 @@ void fixWildCards(uint8_t pat[])
                         if (op & 1) pc += 2;
                         else        pc += 1;
                         continue;
-                        
+
                     }
                 case 0xB0:          /* B0 - BF */
                 {

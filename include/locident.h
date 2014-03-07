@@ -101,7 +101,7 @@ public:
     char                macro[10];  /* Macro for this identifier                */
     std::string         name;       /* Identifier's name                        */
     union ID_UNION {                         /* Different types of identifiers           */
-        friend class ID;
+        friend struct ID;
     protected:
         LONG_STKID_TYPE	longStkId;  /* For TYPE_LONG_(UN)SIGN on the stack */
     public:
@@ -118,27 +118,27 @@ public:
         } longKte;
         ID_UNION() { /*new (&longStkId) LONG_STKID_TYPE();*/}
     } id;
-    LONGID_TYPE &longId() {assert(isLong() && loc==REG_FRAME); return m_longId;}
-    const LONGID_TYPE &longId() const {assert(isLong() && loc==REG_FRAME); return m_longId;}
-    LONG_STKID_TYPE &longStkId() {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
-    const LONG_STKID_TYPE &longStkId() const {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
-    ID();
-    ID(hlType t, frameType f);
-    ID(hlType t, const LONGID_TYPE &s);
-    ID(hlType t, const LONG_STKID_TYPE &s);
-    ID(hlType t, const LONGGLB_TYPE &s);
-    bool isSigned() const { return (type==TYPE_BYTE_SIGN)||(type==TYPE_WORD_SIGN)||(type==TYPE_LONG_SIGN);}
-    uint16_t typeBitsize() const
-    {
-        return TypeContainer::typeSize(type)*8;
-    }
-    bool isLong() const { return (type==TYPE_LONG_UNSIGN)||(type==TYPE_LONG_SIGN); }
-    void setLocalName(int i)
-    {
-        char buf[32];
-        sprintf (buf, "loc%d", i);
-        name=buf;
-    }
+    LONGID_TYPE &           longId() {assert(isLong() && loc==REG_FRAME); return m_longId;}
+    const LONGID_TYPE &     longId() const {assert(isLong() && loc==REG_FRAME); return m_longId;}
+    LONG_STKID_TYPE &       longStkId() {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
+    const LONG_STKID_TYPE & longStkId() const {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
+                            ID();
+                            ID(hlType t, frameType f);
+                            ID(hlType t, const LONGID_TYPE &s);
+                            ID(hlType t, const LONG_STKID_TYPE &s);
+                            ID(hlType t, const LONGGLB_TYPE &s);
+    bool                    isSigned() const { return (type==TYPE_BYTE_SIGN)||(type==TYPE_WORD_SIGN)||(type==TYPE_LONG_SIGN);}
+    uint16_t                typeBitsize() const
+                            {
+                                return TypeContainer::typeSize(type)*8;
+                            }
+    bool                    isLong() const { return (type==TYPE_LONG_UNSIGN)||(type==TYPE_LONG_SIGN); }
+    void                    setLocalName(int i)
+                            {
+                                char buf[32];
+                                sprintf (buf, "loc%d", i);
+                                name=buf;
+                            }
 };
 
 struct LOCAL_ID

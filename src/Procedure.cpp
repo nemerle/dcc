@@ -30,3 +30,8 @@ void JumpTable::pruneEntries(uint16_t cs)
     }
 
 }
+
+
+void Function::callingConv(CConv::Type v) {
+    m_call_conv=CConv::create(v);
+}

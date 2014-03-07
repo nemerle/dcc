@@ -68,32 +68,24 @@ typedef std::list<BB *> queue;
 
 struct interval
 {
-    uint8_t         numInt;         /* # of the interval    */
-    uint8_t         numOutEdges;    /* Number of out edges  */
+    uint8_t         numInt=0;         /* # of the interval    */
+    uint8_t         numOutEdges=0;    /* Number of out edges  */
     queue           nodes;         /* Nodes of the interval*/
     queue::iterator currNode;      /* Current node     */
-    interval *next;          /* Next interval    */
-    BB *firstOfInt();
-    interval()
-    {
-        numInt=numOutEdges=0;
-        currNode=nodes.end();
-        next=0;
-    }
-    void appendNodeInt(queue &pqH, BB *node);
+    interval *      next=0;          /* Next interval    */
+    BB *            firstOfInt();
+                    interval() : currNode(nodes.end()){
+                    }
+    void            appendNodeInt(queue &pqH, BB *node);
 };
 
 
 /* Derived Sequence structure */
 struct derSeq_Entry
 {
-    BB *                Gi;        /* Graph pointer        */
+    BB *                Gi=nullptr;        /* Graph pointer        */
     std::list<interval *> m_intervals;
-    interval *          Ii;        /* Interval list of Gi  */
-    derSeq_Entry() : Gi(0),Ii(0)
-    {
-
-    }
+    interval *          Ii=nullptr;        /* Interval list of Gi  */
     ~derSeq_Entry();
 public:
     void findIntervals(Function *c);

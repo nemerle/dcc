@@ -164,17 +164,17 @@ void LLInst::writeIntComment (std::ostringstream &s)
     {
         switch (m_dst.off)
         {
-            case 0x01 :
-                s << "Print spooler";
-                break;
-            case 0x02:
-                s << "Assign";
-                break;
-            case 0x10:
-                s << "Share";
-                break;
-            case 0xB7:
-                s << "Append";
+        case 0x01 :
+            s << "Print spooler";
+            break;
+        case 0x02:
+            s << "Assign";
+            break;
+        case 0x10:
+            s << "Share";
+            break;
+        case 0xB7:
+            s << "Append";
         }
     }
     else
@@ -235,29 +235,23 @@ void Function::writeProcComments(std::ostream &ostr)
         ostr << " * Untranslatable routine.  Assembler provided.\n";
         if (this->flg & PROC_IS_FUNC)
             switch (this->retVal.type) { // TODO: Functions return value in various regs
-                case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
-                    ostr << " * Return value in register al.\n";
-                    break;
-                case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
-                    ostr << " * Return value in register ax.\n";
-                    break;
-                case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
-                    ostr << " * Return value in registers dx:ax.\n";
-                    break;
-                default:
-                    fprintf(stderr,"Unknown retval type %d",this->retVal.type);
-                    break;
+            case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
+                ostr << " * Return value in register al.\n";
+                break;
+            case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
+                ostr << " * Return value in register ax.\n";
+                break;
+            case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
+                ostr << " * Return value in registers dx:ax.\n";
+                break;
+            default:
+                fprintf(stderr,"Unknown retval type %d",this->retVal.type);
+                break;
             } /* eos */
     }
 
     /* Calling convention */
-    if (this->flg & CALL_PASCAL)
-        ostr << " * Pascal calling convention.\n";
-    else if (this->flg & CALL_C)
-        ostr << " * C calling convention.\n";
-    else if (this->flg & CALL_UNKNOWN)
-        ostr << " * Unknown calling convention.\n";
-
+    callingConv()->writeComments(ostr);
     /* Other flags */
     if (this->flg & (PROC_BADINST | PROC_IJMP))
     {

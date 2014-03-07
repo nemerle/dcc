@@ -46,7 +46,7 @@ public:
     const std::string &binary_path() const {return m_fname;}
     ilFunction funcIter(Function *to_find);
     ilFunction findByEntry(uint32_t entry);
-    ilFunction createFunction();
+    ilFunction createFunction(FunctionType *f,const std::string &name);
     bool valid(ilFunction iter);
 
     int     getSymIdxByAdd(uint32_t adr);

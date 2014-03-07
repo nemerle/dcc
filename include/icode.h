@@ -18,6 +18,7 @@
 #include "libdis.h"
 #include "Enums.h"
 #include "state.h"			// State depends on INDEXBASE, but later need STATE
+#include "CallConvention.h"
 
 //enum condId;
 
@@ -307,7 +308,7 @@ struct LLOperand
     {
         return not (*this == LLOperand());
     }
-    void addProcInformation(int param_count,uint32_t call_conv);
+    void addProcInformation(int param_count, CConv::Type call_conv);
     bool isImmediate() const { return immed;}
     void setImmediate(bool x) { immed=x;}
     bool compound() const {return is_compound;} // dx:ax pair

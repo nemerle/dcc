@@ -12,10 +12,6 @@
 #define MAX 0x7FFFFFFF
 
 /* Type definitions used in the program */
-typedef unsigned char byte; /* 8 bits   */
-typedef unsigned short word;/* 16 bits  */
-typedef short int16;        /* 16 bits  */
-typedef unsigned char boolT; /* 8 bits   */
 
 #define SYNTHESIZED_MIN 0x100000    /* Synthesized labs use bits 21..32 */
 
@@ -29,12 +25,12 @@ typedef unsigned char boolT; /* 8 bits   */
 // Macro reads a LH word from the image regardless of host convention
 // Returns a 16 bit quantity, e.g. C000 is read into an Int as C000
 //#define LH(p)  ((int16)((byte *)(p))[0] + ((int16)((byte *)(p))[1] << 8))
-#define LH(p)    ((word)((byte *)(p))[0]  + ((word)((byte *)(p))[1] << 8))
+#define LH(p)    ((uint16_t)((uint8_t *)(p))[0]  + ((uint16_t)((uint8_t *)(p))[1] << 8))
 
 
 /* Macro reads a LH word from the image regardless of host convention */
 /* Returns a signed quantity, e.g. C000 is read into an Int as FFFFC000 */
-#define LH_SIGNED(p) (((byte *)(p))[0] + (((char *)(p))[1] << 8))
+#define LH_SIGNED(p) (((uint8_t *)(p))[0] + (((char *)(p))[1] << 8))
 
 /* Macro tests bit b for type t in prog.map */
 #define BITMAP(b, t)  (prog.map[(b) >> 2] & ((t) << (((b) & 3) << 1)))

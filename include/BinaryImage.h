@@ -17,5 +17,6 @@ struct PROG /* Loaded program image parameters  */
     int         cbImage;    /* Length of image in bytes         */
     const uint8_t *image() const {return Imagez;}
     uint8_t *   Imagez;      /* Allocated by loader to hold entire program image */
+    int         addressingMode;
 };
 

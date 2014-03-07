@@ -39,42 +39,47 @@ void DccFrontend::parse(Project &proj)
     SynthLab = SYNTHESIZED_MIN;
 
     // default-construct a Function object !
-    /*auto func = */proj.createFunction();
+    /*auto func = */;
 
     /* Check for special settings of initial state, based on idioms of the
           startup code */
     state.checkStartup();
-    Function &start_proc(proj.pProcList.front());
+    Function *start_proc;
     /* Make a struct for the initial procedure */
     if (prog.offMain != -1)
     {
+        start_proc = proj.createFunction(0,"main");
+        start_proc->retVal.loc = REG_FRAME;
+        start_proc->retVal.type = TYPE_WORD_SIGN;
+        start_proc->retVal.id.regi = rAX;
         /* We know where main() is. Start the flow of control from there */
-        start_proc.procEntry = prog.offMain;
+        start_proc->procEntry = prog.offMain;
         /* In medium and large models, the segment of main may (will?) not be
             the same as the initial CS segment (of the startup code) */
         state.setState(rCS, prog.segMain);
-        start_proc.name = "main";
         state.IP = prog.offMain;
     }
     else
     {
+        start_proc = proj.createFunction(0,"start");
         /* Create initial procedure at program start address */
-        start_proc.name="start";
-        start_proc.procEntry = (uint32_t)state.IP;
+        start_proc->procEntry = (uint32_t)state.IP;
     }
+
     /* The state info is for the first procedure */
-    start_proc.state = state;
+    start_proc->state = state;
 
     /* Set up call graph initial node */
     proj.callGraph = new CALL_GRAPH;
-    proj.callGraph->proc = proj.pProcList.begin();
+    proj.callGraph->proc = start_proc;
 
     /* This proc needs to be called to set things up for LibCheck(), which
        checks a proc to see if it is a know C (etc) library */
     SetupLibCheck();
-    //ERROR:  proj and g_proj are 'live' at this point !
+    //BUG:  proj and g_proj are 'live' at this point !
+
     /* Recursively build entire procedure list */
-    proj.pProcList.front().FollowCtrl (proj.callGraph, &state);
+    start_proc->FollowCtrl(proj.callGraph, &state);
 
     /* This proc needs to be called to clean things up from SetupLibCheck() */
     CleanupLibCheck();
@@ -89,16 +94,89 @@ int strSize (const uint8_t *sym, char delim)
     const uint8_t *end_ptr=std::find(sym,sym+(prog.cbImage-(till_end)),delim);
     return end_ptr-sym+1;
 }
-Function *fakeproc=Function::Create(nullptr,0,"fake");
+ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
+{
+    /* MOV rTMP, reg */
 
-/* FollowCtrl - Given an initial procedure, state information and symbol table
+    ICODE eIcode = ICODE();
+
+    eIcode.type = LOW_LEVEL;
+    eIcode.ll()->set(iMOV,0,rTMP);
+    if (ll->testFlags(B) )
+    {
+        eIcode.ll()->setFlags( B );
+        eIcode.ll()->replaceSrc(rAX);
+    }
+    else    /* implicit dx:ax */
+    {
+        eIcode.ll()->setFlags( IM_SRC );
+        eIcode.setRegDU( rDX, eUSE);
+    }
+    eIcode.setRegDU( rAX, eUSE);
+    eIcode.setRegDU( rTMP, eDEF);
+    eIcode.ll()->setFlags( SYNTHETIC );
+    /* eIcode.ll()->label = SynthLab++; */
+    eIcode.ll()->label = _Icode.ll()->label;
+    Icode.addIcode(&eIcode);
+
+    /* iDIV, iIDIV */
+    Icode.addIcode(&_Icode);
+
+    /* iMOD */
+    eIcode = ICODE();
+    eIcode.type = LOW_LEVEL;
+    eIcode.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
+    eIcode.ll()->replaceSrc(_Icode.ll()->src());
+    eIcode.du = _Icode.du;
+    eIcode.ll()->label = SynthLab++;
+    return Icode.addIcode(&eIcode);
+}
+ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
+{
+    /* MOV rTMP, regDst */
+    ICODE eIcode;
+    eIcode.type = LOW_LEVEL;
+    eIcode.ll()->set(iMOV,SYNTHETIC,rTMP,ll->m_dst);
+    eIcode.setRegDU( rTMP, eDEF);
+    if(eIcode.ll()->src().getReg2())
+    {
+        eReg srcreg=eIcode.ll()->src().getReg2();
+        eIcode.setRegDU( srcreg, eUSE);
+        if((srcreg>=rAL) && (srcreg<=rBH))
+            eIcode.ll()->setFlags( B );
+    }
+    eIcode.ll()->label = ll->label;
+    Icode.addIcode(&eIcode);
+
+    /* MOV regDst, regSrc */
+    ll->set(iMOV,SYNTHETIC|ll->getFlag());
+    Icode.addIcode(&_Icode);
+    ll->setOpcode(iXCHG); /* for next case */
+
+    /* MOV regSrc, rTMP */
+    eIcode = ICODE();
+    eIcode.type = LOW_LEVEL;
+    eIcode.ll()->set(iMOV,SYNTHETIC);
+    eIcode.ll()->replaceDst(ll->src());
+    if(eIcode.ll()->m_dst.regi)
+    {
+        if((eIcode.ll()->m_dst.regi>=rAL) && (eIcode.ll()->m_dst.regi<=rBH))
+            eIcode.ll()->setFlags( B );
+        eIcode.setRegDU( eIcode.ll()->m_dst.regi, eDEF);
+    }
+    eIcode.ll()->replaceSrc(rTMP);
+    eIcode.setRegDU( rTMP, eUSE);
+    eIcode.ll()->label = SynthLab++;
+    return Icode.addIcode(&eIcode);
+}
+
+/** FollowCtrl - Given an initial procedure, state information and symbol table
  * builds a list of procedures reachable from the initial procedure
  * using a depth first search.     */
 void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 {
     PROG &prog(Project::get()->prog);
     ICODE   _Icode, *pIcode;     /* This gets copied to pProc->Icode[] later */
-    ICODE   eIcode;             /* extra icodes for iDIV, iIDIV, iXCHG */
     SYM *    psym;
     uint32_t   offset;
     eErrorId err;
@@ -119,8 +197,11 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         printf("Parsing proc %s at %X\n", name.c_str(), pstate->IP);
     }
 
-    while (! done && ! (err = scan(pstate->IP, _Icode)))
+    while (! done )
     {
+        err = scan(pstate->IP, _Icode);
+        if(err)
+            break;
         LLInst *ll = _Icode.ll();
         pstate->IP += (uint32_t)ll->numBytes;
         setBits(BM_CODE, ll->label, (uint32_t)ll->numBytes);
@@ -141,80 +222,10 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         }
 
         /* Copy Icode to Proc */
-        if ((_Icode.ll()->getOpcode() == iDIV) || (_Icode.ll()->getOpcode() == iIDIV))
-        {
-            /* MOV rTMP, reg */
-            eIcode = ICODE();
-
-            eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOV,0,rTMP);
-            if (ll->testFlags(B) )
-            {
-                eIcode.ll()->setFlags( B );
-                eIcode.ll()->replaceSrc(rAX);
-            }
-            else    /* implicit dx:ax */
-            {
-                eIcode.ll()->setFlags( IM_SRC );
-                eIcode.setRegDU( rDX, eUSE);
-            }
-            eIcode.setRegDU( rAX, eUSE);
-            eIcode.setRegDU( rTMP, eDEF);
-            eIcode.ll()->setFlags( SYNTHETIC );
-            /* eIcode.ll()->label = SynthLab++; */
-            eIcode.ll()->label = _Icode.ll()->label;
-            Icode.addIcode(&eIcode);
-
-            /* iDIV, iIDIV */
-            Icode.addIcode(&_Icode);
-
-            /* iMOD */
-            eIcode = ICODE();
-            eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
-            eIcode.ll()->replaceSrc(_Icode.ll()->src());
-            eIcode.du = _Icode.du;
-            eIcode.ll()->label = SynthLab++;
-            pIcode = Icode.addIcode(&eIcode);
-        }
+        if ((ll->getOpcode() == iDIV) || (ll->getOpcode() == iIDIV))
+            pIcode = translate_DIV(ll, _Icode);
         else if (_Icode.ll()->getOpcode() == iXCHG)
-        {
-            /* MOV rTMP, regDst */
-            eIcode = ICODE();
-            eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOV,SYNTHETIC,rTMP,_Icode.ll()->m_dst);
-            eIcode.setRegDU( rTMP, eDEF);
-            if(eIcode.ll()->src().getReg2())
-            {
-                eReg srcreg=eIcode.ll()->src().getReg2();
-                eIcode.setRegDU( srcreg, eUSE);
-                if((srcreg>=rAL) && (srcreg<=rBH))
-                    eIcode.ll()->setFlags( B );
-            }
-            eIcode.ll()->label = _Icode.ll()->label;
-            Icode.addIcode(&eIcode);
-
-            /* MOV regDst, regSrc */
-            _Icode.ll()->set(iMOV,SYNTHETIC|_Icode.ll()->getFlag());
-            Icode.addIcode(&_Icode);
-            ll->setOpcode(iXCHG); /* for next case */
-
-            /* MOV regSrc, rTMP */
-            eIcode = ICODE();
-            eIcode.type = LOW_LEVEL;
-            eIcode.ll()->set(iMOV,SYNTHETIC);
-            eIcode.ll()->replaceDst(ll->src());
-            if(eIcode.ll()->m_dst.regi)
-            {
-                if((eIcode.ll()->m_dst.regi>=rAL) && (eIcode.ll()->m_dst.regi<=rBH))
-                    eIcode.ll()->setFlags( B );
-                eIcode.setRegDU( eIcode.ll()->m_dst.regi, eDEF);
-            }
-            eIcode.ll()->replaceSrc(rTMP);
-            eIcode.setRegDU( rTMP, eUSE);
-            eIcode.ll()->label = SynthLab++;
-            pIcode = Icode.addIcode(&eIcode);
-        }
+            pIcode = translate_XCHG(ll, _Icode);
         else
             pIcode = Icode.addIcode(&_Icode);
 
@@ -230,7 +241,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 STATE   StCopy;
                 int     ip      = Icode.size()-1;	/* Index of this jump */
                 ICODE  &prev(*(++Icode.rbegin())); /* Previous icode */
-                boolT   fBranch = false;
+                bool   fBranch = false;
 
                 pstate->JCond.regi = 0;
 
@@ -298,7 +309,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                     //Icode.GetIcode(Icode.GetNumIcodes() - 1)->
 
                     /* Program termination: int21h, fn 00h, 31h, 4Ch */
-                    done  = (boolT)(funcNum == 0x00 || funcNum == 0x31 ||
+                    done  = (bool)(funcNum == 0x00 || funcNum == 0x31 ||
                                     funcNum == 0x4C);
 
                     /* String functions: int21h, fn 09h */
@@ -318,8 +329,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                     Icode.back().ll()->m_dst.off = pstate->r[rAH];
                 }
                 else    /* Program termination: int20h, int27h */
-                    done = (boolT)(ll->src().getImm2() == 0x20 ||
-                                   ll->src().getImm2() == 0x27);
+                    done = (ll->src().getImm2() == 0x20 || ll->src().getImm2() == 0x27);
                 if (done)
                     pIcode->ll()->setFlags(TERMINATES);
                 break;
@@ -546,16 +556,14 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
  *       programmer expected it to come back - otherwise surely a JMP would
  *       have been used.  */
 
-boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
+bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
     PROG &prog(Project::get()->prog);
     ICODE &last_insn(Icode.back());
     STATE localState;     /* Local copy of the machine state */
     uint32_t off;
-    boolT indirect;
-
     /* For Indirect Calls, find the function address */
-    indirect = false;
+    bool indirect = false;
     //pIcode.ll()->immed.proc.proc=fakeproc;
     if ( not pIcode.ll()->testFlags(I) )
     {
@@ -618,7 +626,7 @@ boolT Function::process_CALL (ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *ps
         /* Create a new procedure node and save copy of the state */
         if ( not Project::get()->valid(iter) )
         {
-            iter = Project::get()->createFunction();
+            iter = Project::get()->createFunction(0,"");
             Function &x(*iter);
             x.procEntry = pIcode.ll()->src().getImm2();
             LibCheck(x);
@@ -1120,13 +1128,13 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             break;
 
         case iLDS:  case iLES:
-		{
-			eReg r=((pIcode.ll()->getOpcode() == iLDS) ? rDS : rES);
+        {
+            eReg r=((pIcode.ll()->getOpcode() == iLDS) ? rDS : rES);
             pIcode.du.def.addReg(r);
             pIcode.du1.addDef(r);
             cb = 4;
             // fallthrough
-		}
+        }
         case iMOV:
             use(SRC, pIcode, this, pstate, cb);
             def(DST, pIcode, this, pstate, cb);
@@ -1186,14 +1194,14 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             pIcode.du.addDefinedAndUsed(rCX);
             pIcode.du1.addDef(rCX);
         case iLODS:
-		{
+        {
             eReg r = (cb==2)? rAX: rAL;
             pIcode.du.addDefinedAndUsed(rSI);
             pIcode.du1.addDef(rSI);
             pIcode.du.def.addReg(r);
             pIcode.du1.addDef(r);
             pIcode.du.use.addReg(sseg);
-		}
+        }
             break;
         case iREP_OUTS:
             pIcode.du.addDefinedAndUsed(rCX);

@@ -62,69 +62,69 @@ void Function::createCFG()
         }
         else
             switch (ll->getOpcode()) {
-                case iJB:  case iJBE:  case iJAE:  case iJA:
-                case iJL:  case iJLE:  case iJGE:  case iJG:
-                case iJE:  case iJNE:  case iJS:   case iJNS:
-                case iJO:  case iJNO:  case iJP:   case iJNP:
-                case iJCXZ:
-                    pBB = BB::Create(current_range, TWO_BRANCH, this);
+            case iJB:  case iJBE:  case iJAE:  case iJA:
+            case iJL:  case iJLE:  case iJGE:  case iJG:
+            case iJE:  case iJNE:  case iJS:   case iJNS:
+            case iJO:  case iJNO:  case iJP:   case iJNP:
+            case iJCXZ:
+                pBB = BB::Create(current_range, TWO_BRANCH, this);
 CondJumps:
-                    pBB->addOutEdge(nextIcode->loc_ip);
-                    /* This is checking for jumps off into nowhere */
-                    if ( not ll->testFlags(NO_LABEL) )
-                        pBB->addOutEdge(ll->src().getImm2());
-                    break;
+                pBB->addOutEdge(nextIcode->loc_ip);
+                /* This is checking for jumps off into nowhere */
+                if ( not ll->testFlags(NO_LABEL) )
+                    pBB->addOutEdge(ll->src().getImm2());
+                break;
 
-                case iLOOP: case iLOOPE: case iLOOPNE:
-                    pBB = BB::Create(current_range, LOOP_NODE, this);
-                    goto CondJumps;
+            case iLOOP: case iLOOPE: case iLOOPNE:
+                pBB = BB::Create(current_range, LOOP_NODE, this);
+                goto CondJumps;
 
-                case iJMPF: case iJMP:
-                    if (ll->testFlags(SWITCH))
-                    {
-                        pBB = BB::Create(current_range, MULTI_BRANCH, this);
-                        for (auto & elem : ll->caseTbl2)
-                            pBB->addOutEdge(elem);
-                        hasCase = true;
-                    }
-                    else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
-                    {
-                        pBB = BB::Create(current_range, ONE_BRANCH, this);
-                        pBB->addOutEdge(ll->src().getImm2());
-                    }
-                    else
-                        pBB = BB::Create(current_range,  NOWHERE_NODE, this);
-                    break;
-
-                case iCALLF: case iCALL:
+            case iJMPF: case iJMP:
+                if (ll->testFlags(SWITCH))
                 {
-                    Function * p = ll->src().proc.proc;
-                    pBB = BB::Create(current_range,  CALL_NODE, this);
-                    if (p && not ((p->flg) & TERMINATES) )
-                        pBB->addOutEdge(nextIcode->loc_ip);
-                    break;
+                    pBB = BB::Create(current_range, MULTI_BRANCH, this);
+                    for (auto & elem : ll->caseTbl2)
+                        pBB->addOutEdge(elem);
+                    hasCase = true;
                 }
+                else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
+                {
+                    pBB = BB::Create(current_range, ONE_BRANCH, this);
+                    pBB->addOutEdge(ll->src().getImm2());
+                }
+                else
+                    pBB = BB::Create(current_range,  NOWHERE_NODE, this);
+                break;
 
-                case iRET:  case iRETF:
-                    pBB = BB::Create(current_range,  RETURN_NODE, this);
-                    break;
+            case iCALLF: case iCALL:
+            {
+                Function * p = ll->src().proc.proc;
+                pBB = BB::Create(current_range,  CALL_NODE, this);
+                if (p && not ((p->flg) & TERMINATES) )
+                    pBB->addOutEdge(nextIcode->loc_ip);
+                break;
+            }
 
-                default:
-                    /* Check for exit to DOS */
-                    if ( ll->testFlags(TERMINATES) )
+            case iRET:  case iRETF:
+                pBB = BB::Create(current_range,  RETURN_NODE, this);
+                break;
+
+            default:
+                /* Check for exit to DOS */
+                if ( ll->testFlags(TERMINATES) )
+                {
+                    pBB = BB::Create(current_range,  TERMINATE_NODE, this);
+                }
+                /* Check for a fall through */
+                else if (nextIcode != Icode.end())
+                {
+                    if (nextIcode->ll()->testFlags(TARGET | CASE))
                     {
-                        pBB = BB::Create(current_range,  TERMINATE_NODE, this);
+                        pBB = BB::Create(current_range,  FALL_NODE, this);
+                        pBB->addOutEdge(nextIcode->loc_ip);
                     }
-                    /* Check for a fall through */
-                    else if (nextIcode != Icode.end())
-                    {
-                        if (nextIcode->ll()->testFlags(TARGET | CASE))
-                        {
-                            pBB = BB::Create(current_range,  FALL_NODE, this);
-                            pBB->addOutEdge(nextIcode->loc_ip);
-                        }
-                    }
-                    break;
+                }
+                break;
             }
         if(pBB!=nullptr) // created a new Basic block
         {
@@ -133,11 +133,9 @@ CondJumps:
             current_range=make_iterator_range(nextIcode,nextIcode);
         }
     }
-    auto iter=heldBBs.begin();
-    /* Convert list of BBs into a graph */
-    for (; iter!=heldBBs.end(); ++iter)
+    for (auto pr : m_ip_to_bb)
     {
-        pBB = *iter;
+        BB* pBB=pr.second;
         for (auto & elem : pBB->edges)
         {
             int32_t ip = elem.ip;
@@ -146,15 +144,14 @@ CondJumps:
                 fatalError (INVALID_SYNTHETIC_BB);
                 return;
             }
-            auto iter2=std::find_if(heldBBs.begin(),heldBBs.end(),
-                                    [ip](BB *psBB)->bool {return psBB->begin()->loc_ip==ip;});
-        if(iter2==heldBBs.end())
-            fatalError(NO_BB, ip, name.c_str());
-        psBB = *iter2;
-        elem.BBptr = psBB;
-        psBB->inEdges.push_back((BB *)nullptr);
+            auto iter2=m_ip_to_bb.find(ip);
+            if(iter2==m_ip_to_bb.end())
+                fatalError(NO_BB, ip, name.c_str());
+            psBB = iter2->second;
+            elem.BBptr = psBB;
+            psBB->inEdges.push_back((BB *)nullptr);
+        }
     }
-}
 }
 
 void Function::markImpure()
@@ -181,21 +178,16 @@ void Function::markImpure()
 
 }
 
-
-
-/*****************************************************************************
- * newBB - Allocate new BB and link to end of list
- *****************************************************************************/
-
 /*****************************************************************************
  * freeCFG - Deallocates a cfg
  ****************************************************************************/
 void Function::freeCFG()
 {
-    for(BB *p : heldBBs)
+    for(auto p : m_ip_to_bb)
     {
-        delete p;
+        delete p.second;
     }
+    m_ip_to_bb.clear();
 }
 
 
@@ -338,33 +330,33 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             auto iter=std::find_if(this->end(),pChild->begin(),[](ICODE &c)
             {return not c.ll()->testFlags(NO_CODE);});
 
-        if (iter != pChild->begin())
+            if (iter != pChild->begin())
+                break;
+            back().ll()->setFlags(NO_CODE);
+            back().invalidate();
+            nodeType = FALL_NODE;
+            //instructions.advance_end(-1); //TODO: causes creation of empty BB
+        }
+        /* If there's no other edges into child can merge */
+        if (pChild->inEdges.size() != 1)
             break;
-        back().ll()->setFlags(NO_CODE);
-        back().invalidate();
-        nodeType = FALL_NODE;
-        //instructions.advance_end(-1); //TODO: causes creation of empty BB
+
+        nodeType = pChild->nodeType;
+        instructions = boost::make_iterator_range(begin(),pChild->end());
+        pChild->front().ll()->clrFlags(TARGET);
+        edges.swap(pChild->edges);
+
+        pChild->inEdges.clear();
+        pChild->edges.clear();
     }
-    /* If there's no other edges into child can merge */
-    if (pChild->inEdges.size() != 1)
-        break;
+    traversed = DFS_MERGE;
 
-    nodeType = pChild->nodeType;
-    instructions = boost::make_iterator_range(begin(),pChild->end());
-    pChild->front().ll()->clrFlags(TARGET);
-    edges.swap(pChild->edges);
-
-    pChild->inEdges.clear();
-    pChild->edges.clear();
-}
-traversed = DFS_MERGE;
-
-/* Process all out edges recursively */
-for (auto & elem : edges)
-{
-    if (elem.BBptr->traversed != DFS_MERGE)
-        elem.BBptr->mergeFallThrough(Icode);
-}
+    /* Process all out edges recursively */
+    for (auto & elem : edges)
+    {
+        if (elem.BBptr->traversed != DFS_MERGE)
+            elem.BBptr->mergeFallThrough(Icode);
+    }
 }
 
 

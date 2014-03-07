@@ -105,7 +105,7 @@ static void freeList (nodeList &l)
 
 
 /* Returns whether the node n belongs to the queue list q. */
-static boolT inInt(BB * n, queue &q)
+static bool inInt(BB * n, queue &q)
 {
     return std::find(q.begin(),q.end(),n)!=q.end();
 }

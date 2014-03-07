@@ -112,6 +112,10 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     RegisterNode *lhs_reg = dynamic_cast<RegisterNode *>(lhs);
     assert(lhs);
     type = lhs->ident.type();
+    if(type==REGISTER)
+        assert(lhs_reg);
+    if(type==LONG_VAR)
+        assert(!lhs_reg);
     if (lhs_reg)
     {
         regL = id_arr[lhs_reg->regiIdx].id.regi;
@@ -163,16 +167,11 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
 
         if (type == REGISTER)
         {
-            if (regL < rAL)
-            {
-                newsym.type = TYPE_WORD_SIGN;
-                newsym.regs = new RegisterNode(tidx, WORD_REG);
-            }
-            else
-            {
-                newsym.type = TYPE_BYTE_SIGN;
-                newsym.regs = new RegisterNode(tidx, BYTE_REG);
-            }
+            regType rType = WORD_REG;
+            if (regL >= rAL)
+                rType = BYTE_REG;
+            newsym.type = (regL < rAL) ? TYPE_WORD_SIGN : TYPE_BYTE_SIGN;
+            newsym.regs = new RegisterNode(tidx, rType,this);
             tproc->localId.id_arr[tidx].name = newsym.name;
         }
         else if (type == LONG_VAR)
@@ -234,10 +233,7 @@ bool CallType::newStkArg(Expr *exp, llIcode opcode, Function * pproc)
         regi =  pproc->localId.id_arr[expr->regiIdx].id.regi;
         if ((regi >= rES) && (regi <= rDS))
         {
-            if (opcode == iCALLF)
-                return false;
-            else
-                return true;
+            return (opcode == iCALLF) ? false : true;
         }
     }
 
@@ -312,7 +308,7 @@ Expr *Function::adjustActArgType (Expr *_exp, hlType forType)
 
                 case TYPE_PTR:
                     /* It's a pointer to a char rather than a pointer to
-                                         * an integer */
+                     * an integer */
                     /***HERE - modify the type ****/
                     break;
 

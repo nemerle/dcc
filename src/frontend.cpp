@@ -223,8 +223,8 @@ void DccFrontend::LoadImage(Project &proj)
     {
         fatalError(CANNOT_READ, proj.binary_path().c_str());
     }
-
-    if (! (prog.fCOM = (boolT)(header.sigLo != 0x4D || header.sigHi != 0x5A))) {
+    prog.fCOM = (header.sigLo != 0x4D || header.sigHi != 0x5A);
+    if (! prog.fCOM ) {
         /* Read rest of header */
         fseek(fp, 0, SEEK_SET);
         if (fread(&header, sizeof(header), 1, fp) != 1)
@@ -250,13 +250,13 @@ void DccFrontend::LoadImage(Project &proj)
         }
 
         /* We quietly ignore minAlloc and maxAlloc since for our
-* purposes it doesn't really matter where in real memory
-* the program would end up.  EXE programs can't really rely on
-* their load location so setting the PSP segment to 0 is fine.
-* Certainly programs that prod around in DOS or BIOS are going
-* to have to load DS from a constant so it'll be pretty
-* obvious.
-*/
+        * purposes it doesn't really matter where in real memory
+        * the program would end up.  EXE programs can't really rely on
+        * their load location so setting the PSP segment to 0 is fine.
+        * Certainly programs that prod around in DOS or BIOS are going
+        * to have to load DS from a constant so it'll be pretty
+        * obvious.
+        */
         prog.initCS = (int16_t)LH(&header.initCS) + EXE_RELOCATION;
         prog.initIP = (int16_t)LH(&header.initIP);
         prog.initSS = (int16_t)LH(&header.initSS) + EXE_RELOCATION;

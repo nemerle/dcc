@@ -37,7 +37,7 @@ private:
         inEdges(0),
         edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
         inInterval(0),correspInt(0),
-        dfsFirstNum(0),dfsLastNum(0),immedDom(0),ifFollow(0),loopType(0),latchNode(0),
+        dfsFirstNum(0),dfsLastNum(0),immedDom(0),ifFollow(0),loopType(NO_TYPE),latchNode(0),
         numBackEdges(0),loopHead(0),loopFollow(0),caseHead(0),caseTail(0),index(0)
     {
 
@@ -90,7 +90,7 @@ public:
     int             dfsLastNum;     /* DFS #: last visit of node    */
     int             immedDom;       /* Immediate dominator (dfsLast index) */
     int             ifFollow;       /* node that ends the if        */
-    int             loopType;       /* Type of loop (if any)        */
+    eNodeHeaderType loopType;       /* Type of loop (if any)        */
     int             latchNode;      /* latching node of the loop    */
     size_t          numBackEdges;   /* # of back edges              */
     int             loopHead;       /* most nested loop head to which this node belongs (dfsLast)  */
@@ -101,7 +101,7 @@ public:
     int             index;          /* Index, used in several ways  */
     static BB * Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
     static BB * CreateIntervalBB(Function *parent);
-    static BB * Create(const rCODE &r, uint8_t _nodeType, Function *parent);
+    static BB *     Create(const rCODE &r, eBBKind _nodeType, Function *parent);
     void    writeCode(int indLevel, Function *pProc, int *numLoc, int latchNode, int ifFollow);
     void    mergeFallThrough(CIcodeRec &Icode);
     void    dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last);

@@ -73,6 +73,7 @@ set(dcc_LIB_SOURCES
     src/symtab.cpp
     src/udm.cpp
     src/BasicBlock.cpp
+    src/CallConvention.cpp
 )
 set(dcc_SOURCES
     src/dcc.cpp
@@ -108,6 +109,8 @@ set(dcc_HEADERS
     include/Procedure.h
     include/StackFrame.h
     include/BasicBlock.h
+    include/CallConvention.h
+
 )
 SOURCE_GROUP(Source FILES ${dcc_SOURCES})
 SOURCE_GROUP(Headers FILES ${dcc_HEADERS})
@@ -117,7 +120,7 @@ ADD_LIBRARY(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
-TARGET_LINK_LIBRARIES(dcc_original dcc_lib disasm_s ${REQ_LLVM_LIBRARIES} ncurses)
+TARGET_LINK_LIBRARIES(dcc_original LLVMSupport dcc_lib disasm_s ${REQ_LLVM_LIBRARIES} LLVMSupport)
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)
 endif()
