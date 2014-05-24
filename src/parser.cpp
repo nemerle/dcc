@@ -20,70 +20,8 @@ static void     setBits(int16_t type, uint32_t start, uint32_t len);
 static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 void    interactDis(Function * initProc, int ic);
-static uint32_t    SynthLab;
+extern uint32_t    SynthLab;
 
-/* Parses the program, builds the call graph, and returns the list of
- * procedures found     */
-void DccFrontend::parse(Project &proj)
-{
-    PROG &prog(proj.prog);
-    STATE state;
-
-    /* Set initial state */
-    state.setState(rES, 0);   /* PSP segment */
-    state.setState(rDS, 0);
-    state.setState(rCS, prog.initCS);
-    state.setState(rSS, prog.initSS);
-    state.setState(rSP, prog.initSP);
-    state.IP = ((uint32_t)prog.initCS << 4) + prog.initIP;
-    SynthLab = SYNTHESIZED_MIN;
-
-    // default-construct a Function object !
-    /*auto func = */;
-
-    /* Check for special settings of initial state, based on idioms of the
-          startup code */
-    state.checkStartup();
-    Function *start_proc;
-    /* Make a struct for the initial procedure */
-    if (prog.offMain != -1)
-    {
-        start_proc = proj.createFunction(0,"main");
-        start_proc->retVal.loc = REG_FRAME;
-        start_proc->retVal.type = TYPE_WORD_SIGN;
-        start_proc->retVal.id.regi = rAX;
-        /* We know where main() is. Start the flow of control from there */
-        start_proc->procEntry = prog.offMain;
-        /* In medium and large models, the segment of main may (will?) not be
-            the same as the initial CS segment (of the startup code) */
-        state.setState(rCS, prog.segMain);
-        state.IP = prog.offMain;
-    }
-    else
-    {
-        start_proc = proj.createFunction(0,"start");
-        /* Create initial procedure at program start address */
-        start_proc->procEntry = (uint32_t)state.IP;
-    }
-
-    /* The state info is for the first procedure */
-    start_proc->state = state;
-
-    /* Set up call graph initial node */
-    proj.callGraph = new CALL_GRAPH;
-    proj.callGraph->proc = start_proc;
-
-    /* This proc needs to be called to set things up for LibCheck(), which
-       checks a proc to see if it is a know C (etc) library */
-    SetupLibCheck();
-    //BUG:  proj and g_proj are 'live' at this point !
-
-    /* Recursively build entire procedure list */
-    start_proc->FollowCtrl(proj.callGraph, &state);
-
-    /* This proc needs to be called to clean things up from SetupLibCheck() */
-    CleanupLibCheck();
-}
 
 /* Returns the size of the string pointed by sym and delimited by delim.
  * Size includes delimiter.     */

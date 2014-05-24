@@ -28,11 +28,11 @@ BB *BB::Create(const rCODE &r,eBBKind _nodeType, Function *parent)
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
     pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
     pnewBB->instructions = r;
-    int addr = pnewBB->begin()->loc_ip;
     /* Mark the basic block to which the icodes belong to, but only for
      * real code basic blocks (ie. not interval bbs) */
     if(parent)
     {
+        int addr = pnewBB->begin()->loc_ip;
         //setInBB should automatically handle if our range is empty
         parent->Icode.SetInBB(pnewBB->instructions, pnewBB);
 
@@ -40,10 +40,10 @@ BB *BB::Create(const rCODE &r,eBBKind _nodeType, Function *parent)
         parent->m_ip_to_bb[addr] = pnewBB;
         parent->m_actual_cfg.push_back(pnewBB);
         pnewBB->Parent = parent;
-    }
 
     if ( r.begin() != parent->Icode.end() )		/* Only for code BB's */
         stats.numBBbef++;
+    }
     return pnewBB;
 
 }
@@ -90,7 +90,7 @@ void BB::displayDfs()
            dfsFirstNum, dfsLastNum,
            immedDom == MAX ? -1 : immedDom);
     printf("loopType = %s, loopHead = %d, latchNode = %d, follow = %d\n",
-           s_loopType[loopType],
+           s_loopType[(int)loopType],
            loopHead == MAX ? -1 : loopHead,
            latchNode == MAX ? -1 : latchNode,
            loopFollow == MAX ? -1 : loopFollow);
@@ -136,12 +136,14 @@ void BB::displayDfs()
 */
 ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&latch, bool &repCond)
 {
+    if(loopType == eNodeHeaderType::NO_TYPE)
+        return nullptr;
     latch = pProc->m_dfsLast[this->latchNode];
     std::ostringstream ostr;
     ICODE* picode;
     switch (loopType)
     {
-        case WHILE_TYPE:
+    case eNodeHeaderType::WHILE_TYPE:
             picode = &this->back();
 
             /* Check for error in while condition */
@@ -169,15 +171,16 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
             picode->invalidate();
             break;
 
-        case REPEAT_TYPE:
+    case eNodeHeaderType::REPEAT_TYPE:
             ostr << "\n"<<indentStr(indLevel)<<"do {\n";
             picode = &latch->back();
             picode->invalidate();
             break;
 
-        case ENDLESS_TYPE:
+    case eNodeHeaderType::ENDLESS_TYPE:
             ostr << "\n"<<indentStr(indLevel)<<"for (;;) {\n";
             picode = &latch->back();
+        break;
     }
     cCode.appendCode(ostr.str());
     stats.numHLIcode += 1;
@@ -209,10 +212,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     /* Check for start of loop */
     repCond = false;
     latch = nullptr;
-    if (loopType)
-    {
        picode=writeLoopHeader(indLevel, pProc, numLoc, latch, repCond);
-    }
 
     /* Write the code for this basic block */
     if (repCond == false)
@@ -227,12 +227,12 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
         return;
 
     /* Check type of loop/node and process code */
-    if ( loopType )	/* there is a loop */
+    if ( loopType!=eNodeHeaderType::NO_TYPE )	/* there is a loop */
     {
         assert(latch);
         if (this != latch)		/* loop is over several bbs */
         {
-            if (loopType == WHILE_TYPE)
+            if (loopType == eNodeHeaderType::WHILE_TYPE)
             {
                 succ = edges[THEN].BBptr;
                 if (succ->dfsLastNum == loopFollow)
@@ -248,7 +248,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
 
         /* Loop epilogue: generate the loop trailer */
         indLevel--;
-        if (loopType == WHILE_TYPE)
+        if (loopType == eNodeHeaderType::WHILE_TYPE)
         {
             std::ostringstream ostr;
             /* Check if there is need to repeat other statements involved
@@ -260,9 +260,9 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             ostr <<indentStr(indLevel)<< "}	/* end of while */\n";
             cCode.appendCode(ostr.str());
         }
-        else if (loopType == ENDLESS_TYPE)
+        else if (loopType == eNodeHeaderType::ENDLESS_TYPE)
             cCode.appendCode( "%s}	/* end of loop */\n",indentStr(indLevel));
-        else if (loopType == REPEAT_TYPE)
+        else if (loopType == eNodeHeaderType::REPEAT_TYPE)
         {
             string e = "//*failed*//";
             if (picode->hl()->opcode != HLI_JCOND)

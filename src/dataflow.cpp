@@ -143,7 +143,6 @@ void Function::elimCondCodes ()
         //auto reversed_instructions = pBB->range() | reversed;
         for (useAt = pBB->rbegin(); useAt != pBB->rend(); useAt++)
         {
-            ICODE &useIcode(*useAt);
             llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
             if ((useAt->type != LOW_LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
@@ -159,7 +158,6 @@ void Function::elimCondCodes ()
                     continue;
                 notSup = false;
                 LLOperand *dest_ll = defIcode.ll()->get(DST);
-                LLOperand *src_ll = defIcode.ll()->get(SRC);
                 if ((useAtOp >= iJB) && (useAtOp <= iJNS))
                 {
                     iICODE befDefAt = (++riICODE(defAt)).base();

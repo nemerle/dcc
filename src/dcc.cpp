@@ -4,26 +4,10 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
+#include <cstring>
+#include <iostream>
 #include <QtCore/QCoreApplication>
 #include <QCommandLineParser>
-#include <cstring>
-#include "dcc.h"
-#include "project.h"
-
-#include "CallGraph.h"
-/* Global variables - extern to other modules */
-extern std::string asm1_name, asm2_name;     /* Assembler output filenames     */
-extern SYMTAB  symtab;             /* Global symbol table      			  */
-extern STATS   stats;              /* cfg statistics       				  */
-//PROG    prog;               /* programs fields      				  */
-extern OPTION  option;             /* Command line options     			  */
-//Function *   pProcList;			/* List of procedures, topologically sort */
-//Function *	pLastProc;			/* Pointer to last node in procedure list */
-//FunctionListType pProcList;
-//CALL_GRAPH	*callGraph;		/* Call graph of the program			  */
-
-static char *initargs(int argc, char *argv[]);
-static void displayTotalStats(void);
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/TargetSelect.h>
@@ -39,11 +23,24 @@ static void displayTotalStats(void);
 #include <llvm/TableGen/Main.h>
 #include <llvm/TableGen/TableGenBackend.h>
 #include <llvm/TableGen/Record.h>
+#include <QtCore/QFile>
+
+#include "dcc.h"
+#include "project.h"
+#include "CallGraph.h"
+#include "DccFrontend.h"
+
+/* Global variables - extern to other modules */
+extern QString asm1_name, asm2_name;     /* Assembler output filenames     */
+extern SYMTAB  symtab;             /* Global symbol table      			  */
+extern STATS   stats;              /* cfg statistics       				  */
+extern OPTION  option;             /* Command line options     			  */
+
+static char *initargs(int argc, char *argv[]);
+static void displayTotalStats(void);
 /****************************************************************************
  * main
  ***************************************************************************/
-#include <QtCore/QFile>
-#include <iostream>
 using namespace llvm;
 bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
 {
@@ -161,9 +158,9 @@ void setupOptions(QCoreApplication &app) {
     option.Stats = parser.isSet(boolOpts[4]);
     option.Interact = false;
     option.Calls = parser.isSet(boolOpts[2]);
-    option.filename = args.first().toStdString();
+    option.filename = args.first();
     if(parser.isSet(targetFileOption))
-        asm1_name = asm2_name = parser.value(targetFileOption).toStdString();
+        asm1_name = asm2_name = parser.value(targetFileOption);
     else if(option.asm1 || option.asm2) {
         asm1_name = option.filename+".a1";
         asm2_name = option.filename+".a2";
@@ -181,7 +178,14 @@ int main(int argc, char **argv)
      * building the call graph and attaching appropriate bits of code for
      * each procedure.
     */
-    DccFrontend fe(option.filename);
+    Project::get()->create(option.filename);
+
+    DccFrontend fe(&app);
+    if(!Project::get()->load()) {
+        return -1;
+    }
+    if (option.verbose)
+        Project::get()->prog.displayLoadInfo();
     if(false==fe.FrontEnd ())
         return -1;
     if(option.asm1)
@@ -198,7 +202,7 @@ int main(int argc, char **argv)
      * analysis, data flow etc. and outputs it to output file ready for
      * re-compilation.
     */
-    BackEnd(!asm1_name.empty() ? asm1_name:option.filename, Project::get()->callGraph);
+    BackEnd(Project::get()->callGraph);
 
     Project::get()->callGraph->write();
 

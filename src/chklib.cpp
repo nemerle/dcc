@@ -5,17 +5,16 @@
  * (C) Mike van Emmerik
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#ifdef __BORLAND__
-#include <mem.h>
-#else
-#include <memory.h>
-#endif
-#include <string.h>
 #include "dcc.h"
 #include "project.h"
 #include "perfhlib.h"
+#include "dcc_interface.h"
+
+#include <QDir>
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <string.h>
 
 #define  NIL   -1                   /* Used like NULL, but 0 is valid */
 
@@ -300,10 +299,11 @@ void SetupLibCheck(void)
     PROG &prog(Project::get()->prog);
     uint16_t w, len;
     int i;
-
-    if ((g_file = fopen(sSigName, "rb")) == nullptr)
+    IDcc *dcc = IDcc::get();
+    QString fpath = dcc->dataDir("sigs").absoluteFilePath(sSigName);
+    if ((g_file = fopen(qPrintable(fpath), "rb")) == nullptr)
     {
-        printf("Warning: cannot open signature file %s\n", sSigName);
+        printf("Warning: cannot open signature file %s\n", qPrintable(fpath));
         return;
     }
 
@@ -638,7 +638,6 @@ void STATE::checkStartup()
     char chModel = 'x';
     char chVendor = 'x';
     char chVersion = 'x';
-    char *pPath;
     char temp[4];
 
     startOff = ((uint32_t)prog.initCS << 4) + prog.initIP;
@@ -829,21 +828,6 @@ void STATE::checkStartup()
 
 gotVendor:
 
-    /* Use the DCC environment variable to set where the .sig files will
-        be found. Otherwise, assume current directory */
-    pPath = getenv("DCC");
-    if (pPath)
-    {
-        strcpy(sSigName, pPath);            /* Use path given */
-        if (sSigName[strlen(sSigName)-1] != '/')
-        {
-            strcat(sSigName, "/");          /* Append a slash if necessary */
-        }
-    }
-    else
-    {
-        strcpy(sSigName, "./");             /* Current directory */
-    }
     strcat(sSigName, "dcc");
     temp[1] = '\0';
     temp[0] = chVendor;
@@ -866,45 +850,30 @@ gotVendor:
 */
 void readProtoFile(void)
 {
+    IDcc *dcc = IDcc::get();
+    QString szProFName = dcc->dataDir("prototypes").absoluteFilePath(DCCLIBS); /* Full name of dclibs.lst */
+
     FILE *fProto;
     char *pPath;                /* Point to the environment string */
-    char szProFName[81];        /* Full name of dclibs.lst */
     int  i;
 
-    /* Use the DCC environment variable to set where the dcclibs.lst file will
-        be found. Otherwise, assume current directory */
-    pPath = getenv("DCC");
-    if (pPath)
+    if ((fProto = fopen(qPrintable(szProFName), "rb")) == nullptr)
     {
-        strcpy(szProFName, pPath);           /* Use path given */
-        if (szProFName[strlen(szProFName)-1] != '/')
-        {
-            strcat(szProFName, "/");         /* Append a slash if necessary */
-        }
-    }
-    else
-    {
-        strcpy(szProFName, "./");            /* Current directory */
-    }
-    strcat(szProFName, DCCLIBS);
-
-    if ((fProto = fopen(szProFName, "rb")) == nullptr)
-    {
-        printf("Warning: cannot open library prototype data file %s\n", szProFName);
+        printf("Warning: cannot open library prototype data file %s\n", qPrintable(szProFName));
         return;
     }
 
     grab(4, fProto);
     if (strncmp(buf, "dccp", 4) != 0)
     {
-        printf("%s is not a dcc prototype file\n", szProFName);
+        printf("%s is not a dcc prototype file\n", qPrintable(szProFName));
         exit(1);
     }
 
     grab(2, fProto);
     if (strncmp(buf, "FN", 2) != 0)
     {
-        printf("FN (Function Name) subsection expected in %s\n", szProFName);
+        printf("FN (Function Name) subsection expected in %s\n", qPrintable(szProFName));
         exit(2);
     }
 
@@ -931,7 +900,7 @@ void readProtoFile(void)
     grab(2, fProto);
     if (strncmp(buf, "PM", 2) != 0)
     {
-        printf("PM (Parameter) subsection expected in %s\n", szProFName);
+        printf("PM (Parameter) subsection expected in %s\n", qPrintable(szProFName));
         exit(2);
     }
 

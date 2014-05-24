@@ -27,16 +27,16 @@ bool Idiom14::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    LLInst * matched [] = {m_icodes[0]->ll(),m_icodes[1]->ll()};
+    LLInst * matched [] {m_icodes[0]->ll(),m_icodes[1]->ll()};
     /* Check for regL */
-    m_regL = m_icodes[0]->ll()->m_dst.regi;
-    if (not m_icodes[0]->ll()->testFlags(I) && ((m_regL == rAX) || (m_regL ==rBX)))
+    m_regL = matched[0]->m_dst.regi;
+    if (not matched[0]->testFlags(I) && ((m_regL == rAX) || (m_regL ==rBX)))
     {
         /* Check for XOR regH, regH */
-        if (m_icodes[1]->ll()->match(iXOR) && not m_icodes[1]->ll()->testFlags(I))
+        if (matched[1]->match(iXOR) && not matched[1]->testFlags(I))
         {
-            m_regH = m_icodes[1]->ll()->m_dst.regi;
-            if (m_regH == m_icodes[1]->ll()->src().getReg2())
+            m_regH = matched[1]->m_dst.regi;
+            if (m_regH == matched[1]->src().getReg2())
             {
                 if ((m_regL == rAX) && (m_regH == rDX))
                     return true;
@@ -49,14 +49,11 @@ bool Idiom14::match(iICODE pIcode)
 }
 int Idiom14::action()
 {
-    int idx;
-    AstIdent *lhs;
-    Expr *rhs;
 
-    idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, LONGID_TYPE(m_regH,m_regL), m_icodes[0]);
-    lhs = AstIdent::LongIdx (idx);
+    int idx = m_func->localId.newLongReg (TYPE_LONG_SIGN, LONGID_TYPE(m_regH,m_regL), m_icodes[0]);
+    AstIdent *lhs = AstIdent::LongIdx (idx);
     m_icodes[0]->setRegDU( m_regH, eDEF);
-    rhs = AstIdent::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
+    Expr *rhs = AstIdent::id (*m_icodes[0]->ll(), SRC, m_func, m_icodes[0], *m_icodes[0], NONE);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[1]->invalidate();
     return 2;

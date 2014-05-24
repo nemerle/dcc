@@ -1,0 +1,68 @@
+PMOVMSKB
+Gd, Pq1H
+PMOVMSKB
+(66)
+Gd, Vdq1H
+
+should be 
+
+PMOVMSKB
+Gd, Qq1H
+PMOVMSKB
+(66)
+Gd, Wdq1H
+
+The instruction represented by this opcode expression does not support any 
+operand to be a memory location.
+
+MASKMOVQ
+Pq, Pq1H
+MASKMOVDQU
+(66)
+Vdq, Vdq1H
+
+should be
+
+MASKMOVQ
+Pq, Pq1H
+MASKMOVDQU
+(66)
+Vdq, Wdq1H
+
+MOVMSKPS
+Gd, Vps1H
+MOVMSKPD
+(66)
+Gd, Vpd1H
+
+should be
+
+MOVMSKPS
+Gd, Wps1H
+MOVMSKPD
+(66)
+Gd, Wpd1H
+
+The opcode table entries for LFS, LGS, and LSS
+
+L[FGS]S
+Mp
+
+should be
+
+L[FGS]S
+Gv,Mp
+
+MOVHLPS 
+Vps, Vps
+
+MOVLHPS
+Vps, Vps
+
+should be
+
+MOVHLPS 
+Vps, Wps
+
+MOVLHPS
+Vps, Wps

@@ -1,3 +1,5 @@
+#include <QtCore/QString>
+#include <QtCore/QDir>
 #include <utility>
 #include "dcc.h"
 #include "CallGraph.h"
@@ -5,7 +7,7 @@
 #include "Procedure.h"
 using namespace std;
 //Project g_proj;
-string asm1_name, asm2_name;     /* Assembler output filenames     */
+QString asm1_name, asm2_name;     /* Assembler output filenames     */
 SYMTAB  symtab;             /* Global symbol table      			  */
 STATS   stats;              /* cfg statistics       				  */
 //PROG    prog;               /* programs fields      				  */
@@ -20,19 +22,26 @@ void Project::initialize()
     delete callGraph;
     callGraph = nullptr;
 }
-void Project::create(const string &a)
+void Project::create(const QString &a)
 {
+    initialize();
     m_fname=a;
-    string::size_type ext_loc=a.find_last_of('.');
-    string::size_type slash_loc=a.find_last_of('/',ext_loc);
-    if(slash_loc==string::npos)
+    auto ext_loc=a.lastIndexOf('.');
+    auto slash_loc=a.lastIndexOf('/',ext_loc);
+    if(slash_loc==-1)
         slash_loc=0;
     else
         slash_loc++;
-    if(ext_loc!=string::npos)
-        m_project_name = a.substr(slash_loc,(ext_loc-slash_loc));
+    if(ext_loc!=-1) {
+        m_project_name = a.mid(slash_loc,ext_loc-slash_loc);
+    }
     else
-        m_project_name = a.substr(slash_loc);
+        m_project_name = a.mid(slash_loc);
+    m_output_path = a.left(slash_loc);
+}
+
+QString Project::output_name(const char *ext) {
+    return m_output_path+QDir::separator()+m_project_name+"."+ext;
 }
 bool Project::valid(ilFunction iter)
 {

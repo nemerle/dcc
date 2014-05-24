@@ -150,10 +150,10 @@ void Disassembler::disassem(Function * ppProc)
     if (pass != 3)
     {
         auto p = (pass == 1)? asm1_name: asm2_name;
-        m_fp.open(p,ios_base::app);
+        m_fp.open(p.toStdString(),ios_base::app);
         if (!m_fp.is_open())
         {
-            fatalError(CANNOT_OPEN, p.c_str());
+            fatalError(CANNOT_OPEN, p.toStdString().c_str());
         }
     }
     /* Create temporary code array */

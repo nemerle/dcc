@@ -9,6 +9,7 @@
 #include <utility>
 #include <algorithm>
 #include <bitset>
+#include <QtCore/QString>
 
 #include "Enums.h"
 #include "types.h"
@@ -26,7 +27,7 @@ extern bundle cCode;			/* Output C procedure's declaration and code */
 
 /**** Global variables ****/
 
-extern std::string asm1_name, asm2_name; /* Assembler output filenames 		*/
+extern QString asm1_name, asm2_name; /* Assembler output filenames 		*/
 
 typedef struct {            /* Command line option flags */
     unsigned verbose        : 1;
@@ -37,7 +38,7 @@ typedef struct {            /* Command line option flags */
     unsigned Stats          : 1;
     unsigned Interact       : 1;    /* Interactive mode */
     unsigned Calls          : 1;    /* Follow register indirect calls */
-    std::string	filename;			/* The input filename */
+    QString	filename;			/* The input filename */
 } OPTION;
 
 extern OPTION option;       /* Command line options             */
@@ -71,22 +72,11 @@ extern STATS stats; /* Icode statistics */
 
 
 /**** Global function prototypes ****/
-class DccFrontend
-{
-    void    LoadImage(Project &proj);
-    void    parse(Project &proj);
-    std::string m_fname;
-public:
-    DccFrontend(const std::string &fname) : m_fname(fname)
-    {
-    }
-    bool FrontEnd();            /* frontend.c   */
-};
 
 void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
 BB *    newBB(BB *, int, int, uint8_t, int, Function *);    /* graph.c      */
-void    BackEnd(const std::string &filename, CALL_GRAPH *);              /* backend.c    */
+void    BackEnd(CALL_GRAPH *);              /* backend.c    */
 extern char   *cChar(uint8_t c);                            /* backend.c    */
 eErrorId scan(uint32_t ip, ICODE &p);                       /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */

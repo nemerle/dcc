@@ -168,7 +168,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                 (inList (loopNodes, head->edges[THEN].BBptr->dfsLastNum) &&
                  inList (loopNodes, head->edges[ELSE].BBptr->dfsLastNum)))
             {
-                head->loopType = REPEAT_TYPE;
+                head->loopType = eNodeHeaderType::REPEAT_TYPE;
                 if (latchNode->edges[0].BBptr == head)
                     head->loopFollow = latchNode->edges[ELSE].BBptr->dfsLastNum;
                 else
@@ -177,7 +177,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
             }
             else
             {
-                head->loopType = WHILE_TYPE;
+                head->loopType = eNodeHeaderType::WHILE_TYPE;
                 if (inList (loopNodes, head->edges[THEN].BBptr->dfsLastNum))
                     head->loopFollow = head->edges[ELSE].BBptr->dfsLastNum;
                 else
@@ -186,7 +186,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
             }
         else /* head = anything besides 2-way, latch = 2-way */
         {
-            head->loopType = REPEAT_TYPE;
+            head->loopType = eNodeHeaderType::REPEAT_TYPE;
             if (latchNode->edges[THEN].BBptr == head)
                 head->loopFollow = latchNode->edges[ELSE].BBptr->dfsLastNum;
             else
@@ -196,12 +196,12 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
     else	/* latch = 1-way */
         if (latchNode->nodeType == LOOP_NODE)
         {
-            head->loopType = REPEAT_TYPE;
+            head->loopType = eNodeHeaderType::REPEAT_TYPE;
             head->loopFollow = latchNode->edges[0].BBptr->dfsLastNum;
         }
         else if (intNodeType == TWO_BRANCH)
         {
-            head->loopType = WHILE_TYPE;
+            head->loopType = eNodeHeaderType::WHILE_TYPE;
             pbb = latchNode;
             thenDfs = head->edges[THEN].BBptr->dfsLastNum;
             elseDfs = head->edges[ELSE].BBptr->dfsLastNum;
@@ -222,7 +222,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                                  * loop, so it is safer to consider it an endless loop */
                 if (pbb->dfsLastNum <= head->dfsLastNum)
                 {
-                    head->loopType = ENDLESS_TYPE;
+                    head->loopType = eNodeHeaderType::ENDLESS_TYPE;
                     findEndlessFollow (pProc, loopNodes, head);
                     break;
                 }
@@ -234,7 +234,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
         }
         else
         {
-            head->loopType = ENDLESS_TYPE;
+            head->loopType = eNodeHeaderType::ENDLESS_TYPE;
             findEndlessFollow (pProc, loopNodes, head);
         }
 

@@ -1,0 +1,49 @@
+;libdisasm.def : Declares the module parameters
+
+LIBRARY "libdisasm.dll"
+DESCRIPTION "libdisasm exported functions"
+EXPORTS
+	 x86_addr_size  		@1
+	 x86_cleanup		@2
+	 x86_disasm		@3
+	 x86_disasm_forward	@4
+	 x86_disasm_range		@5	
+	 x86_endian		@6
+	 x86_format_header		@7
+	 x86_format_insn		@8
+	 x86_format_mnemonic	@9
+	 x86_format_operand	@10
+	 x86_fp_reg		@11
+	 x86_get_branch_target	@12
+	 x86_get_imm		@13
+	 x86_get_options		@14
+	 x86_get_raw_imm		@15
+	 x86_get_rel_offset		@16
+	 x86_imm_signsized		@17
+	 x86_imm_sized		@18
+	 x86_init			@19
+	 x86_insn_is_tagged		@20
+	 x86_insn_is_valid		@21
+	 x86_invariant_disasm	@22	
+	 x86_ip_reg		@23
+	 x86_max_insn_size		@24
+	 x86_op_size		@25
+	 x86_operand_1st		@26
+	 x86_operand_2nd		@27
+	 x86_operand_3rd		@28
+	 x86_operand_count	@29
+	 x86_operand_foreach	@30
+	 x86_operand_new		@31
+	 x86_operand_size		@32
+	 x86_oplist_free		@33
+	 x86_reg_from_id		@34
+	 x86_report_error		@35
+	 x86_set_insn_addr		@36
+	 x86_set_insn_block	@37
+	 x86_set_insn_function	@38
+	 x86_set_insn_offset	@39
+	 x86_set_options		@40
+	 x86_set_reporter		@41
+	 x86_size_disasm		@42
+	 x86_sp_reg		@43
+	 x86_tag_insn		@44

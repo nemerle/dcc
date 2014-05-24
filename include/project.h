@@ -8,22 +8,25 @@
 #include <boost/icl/interval_map.hpp>
 #include <boost/icl/split_interval_map.hpp>
 #include <unordered_set>
+#include <QtCore/QString>
 #include "symtab.h"
 #include "BinaryImage.h"
 #include "Procedure.h"
+class QString;
 class SourceMachine;
 struct CALL_GRAPH;
 class IProject
 {
     virtual PROG *binary()=0;
-    virtual const std::string & project_name() const =0;
-    virtual const std::string & binary_path() const =0;
+    virtual const QString & project_name() const =0;
+    virtual const QString & binary_path() const =0;
 };
 class Project : public IProject
 {
     static Project *s_instance;
-    std::string m_fname;
-    std::string m_project_name;
+    QString m_fname;
+    QString m_project_name;
+    QString m_output_path;
 public:
 
 typedef llvm::iplist<Function> FunctionListType;
@@ -41,9 +44,12 @@ typedef FunctionListType lFunction;
     Project(); // default constructor,
 
 public:
-    void create(const std::string & a);
-    const std::string &project_name() const {return m_project_name;}
-    const std::string &binary_path() const {return m_fname;}
+    void create(const QString &a);
+    bool load();
+    const QString &output_path() const {return m_output_path;}
+    const QString &project_name() const {return m_project_name;}
+    const QString &binary_path() const {return m_fname;}
+    QString output_name(const char *ext);
     ilFunction funcIter(Function *to_find);
     ilFunction findByEntry(uint32_t entry);
     ilFunction createFunction(FunctionType *f,const std::string &name);
@@ -60,6 +66,7 @@ public:
     PROG * binary() {return &prog;}
     SourceMachine *machine();
 
+    const FunctionListType &functions() const { return pProcList; }
 protected:
     void initialize();
     void writeGlobSymTable();

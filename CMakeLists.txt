@@ -12,7 +12,7 @@ IF(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(/W4)
 ELSE()
 #-D_GLIBCXX_DEBUG
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall --std=c++11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} "  ) #--coverage
 ENDIF()
 
@@ -46,9 +46,9 @@ set(dcc_LIB_SOURCES
     src/control.cpp
     src/dataflow.cpp
     src/disassem.cpp
+    src/DccFrontend.cpp
     src/error.cpp
     src/fixwild.cpp
-    src/frontend.cpp
     src/graph.cpp
     src/hlicode.cpp
     src/hltype.cpp
@@ -77,6 +77,7 @@ set(dcc_LIB_SOURCES
     src/symtab.cpp
     src/udm.cpp
     src/BasicBlock.cpp
+    src/dcc_interface.cpp
 )
 set(dcc_SOURCES
     src/dcc.cpp
@@ -85,6 +86,7 @@ set(dcc_HEADERS
     include/ast.h
     include/bundle.h
     include/BinaryImage.h
+    include/DccFrontend.h
     include/dcc.h
     include/disassem.h
     include/dosdcc.h
@@ -113,18 +115,21 @@ set(dcc_HEADERS
     include/Procedure.h
     include/StackFrame.h
     include/BasicBlock.h
+    include/dcc_interface.h
 
 )
 SOURCE_GROUP(Source FILES ${dcc_SOURCES})
 SOURCE_GROUP(Headers FILES ${dcc_HEADERS})
 
 ADD_LIBRARY(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
+qt5_use_modules(dcc_lib Core)
 #cotire(dcc_lib)
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
 TARGET_LINK_LIBRARIES(dcc_original dcc_lib disasm_s ${REQ_LLVM_LIBRARIES} ncurses LLVMSupport)
 qt5_use_modules(dcc_original Core)
+#ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)
 endif()

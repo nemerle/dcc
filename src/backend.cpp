@@ -4,6 +4,8 @@
  * Purpose:	Back-end module.  Generates C code for each procedure.
  * (C) Cristina Cifuentes
  ****************************************************************************/
+#include <QDir>
+#include <QFile>
 #include <cassert>
 #include <string>
 #include <boost/range.hpp>
@@ -167,13 +169,13 @@ void Project::writeGlobSymTable()
 
 /* Writes the header information and global variables to the output C file
  * fp. */
-static void writeHeader (std::ostream &_ios, const char *fileName)
+static void writeHeader (std::ostream &_ios, const std::string &fileName)
 {
     PROG &prog(Project::get()->prog);
     /* Write header information */
     cCode.init();
     cCode.appendDecl( "/*\n");
-    cCode.appendDecl( " * Input file\t: %s\n", fileName);
+    cCode.appendDecl( " * Input file\t: %s\n", fileName.c_str());
     cCode.appendDecl( " * File type\t: %s\n", (prog.fCOM)?"COM":"EXE");
     cCode.appendDecl( " */\n\n#include \"dcc.h\"\n\n");
 
@@ -341,22 +343,21 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
 
 
 /* Invokes the necessary routines to produce code one procedure at a time. */
-void BackEnd (const std::string &fileName, CALL_GRAPH * pcallGraph)
+void BackEnd(CALL_GRAPH * pcallGraph)
 {
     std::ofstream fs; /* Output C file 	*/
 
     /* Get output file name */
-    std::string outNam(fileName);
-    outNam = outNam.substr(0,outNam.rfind("."))+".b"; /* b for beta */
+    QString outNam(Project::get()->output_name("b")); /* b for beta */
 
     /* Open output file */
-    fs.open(outNam);
+    fs.open(outNam.toStdString());
     if(!fs.is_open())
-        fatalError (CANNOT_OPEN, outNam.c_str());
-    printf ("dcc: Writing C beta file %s\n", outNam.c_str());
+        fatalError (CANNOT_OPEN, outNam.toStdString().c_str());
+    std::cout<<"dcc: Writing C beta file "<<outNam.toStdString()<<"\n";
 
     /* Header information */
-    writeHeader (fs, option.filename.c_str());
+    writeHeader (fs, option.filename.toStdString());
 
     /* Initialize total Icode instructions statistics */
     stats.totalLL = 0;
@@ -367,7 +368,7 @@ void BackEnd (const std::string &fileName, CALL_GRAPH * pcallGraph)
 
     /* Close output file */
     fs.close();
-    printf ("dcc: Finished writing C beta file\n");
+    std::cout << "dcc: Finished writing C beta file\n";
 }
 
 

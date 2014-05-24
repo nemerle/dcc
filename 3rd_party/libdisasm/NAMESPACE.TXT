@@ -1,0 +1,12 @@
+
+The rewritten libdisasm code uses the following namespaces:
+
+
+	Prefix		Namespace
+----------------------------------------------------
+	x86_		Global 'libdisasm' namespace
+	ia32_		Internal IA32 ISA namespace
+	ia64_		Internal IA64 ISA namespace
+	ix64_		Internal X86-64 ISA namespace
+
+Note that the 64-bit ISAs are not yet supported/written.
