@@ -854,7 +854,6 @@ void readProtoFile(void)
     QString szProFName = dcc->dataDir("prototypes").absoluteFilePath(DCCLIBS); /* Full name of dclibs.lst */
 
     FILE *fProto;
-    char *pPath;                /* Point to the environment string */
     int  i;
 
     if ((fProto = fopen(qPrintable(szProFName), "rb")) == nullptr)
