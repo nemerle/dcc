@@ -1,3 +1,5 @@
+I've fixed many issues in this codebase, among other things - memory reallocation during decompilation.
+To reflect those fixes, I've edited the original readme a bit.
 
 -----------------------------
 Original readme:
@@ -81,10 +83,11 @@ are:
 - the large memory model problem & scanf()
 - dcc's error message shows a p option available which doesn't
   exist, and doesn't show an i option which exists.
-- there is a nasty problem whereby some arrays can get reallocated to
+
+<del>- there is a nasty problem whereby some arrays can get reallocated to
   a new address, and some pointers can become invalid. This mainly
   tends to happen to larger executable files. A major rewrite will
-  probably be required to fix this.
+  probably be required to fix this.</del>
 
 For more information refer to the thesis "Reverse Compilation
 Techniques" by Cristina Cifuentes, Queensland University of
@@ -99,13 +102,13 @@ Using dcc
 
 Here is a very brief summary of switches for dcc: 
 
-   a1, a2: assembler output, before and after re-ordering of input code 
-   c: Attempt to follow control through indirect call instructions 
-   i: Enter interactive disassembler 
-   m: Memory map 
-   s: Statistics summary 
-   v, V: verbose (and Very verbose) 
-   o filename: Use filename as assembler output file 
+*   a1, a2: assembler output, before and after re-ordering of input code 
+*   c: Attempt to follow control through indirect call instructions 
+*   i: Enter interactive disassembler 
+*   m: Memory map 
+*   s: Statistics summary 
+*   v, V: verbose (and Very verbose) 
+*   o filename: Use filename as assembler output file 
 
 If dcc encounters illegal instructions, it will attempt to enter the so called
 interactive disassembler. The idea of this was to allow commands to fix the
