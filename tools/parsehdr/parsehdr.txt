@@ -1,0 +1,217 @@
+				PARSEHDR
+
+1 What is ParseHdr?
+
+2 What is dcclibs.dat?
+
+3 How do I use ParseHdr?
+
+4 What about languages other than C?
+
+5 What is the structure of the dcclibs.dat file?
+
+6 What are all these errors, and why do they happen?
+
+
+1 What is ParseHdr?
+-------------------
+
+ParseHdr is a program that creates a special prototype file for DCC
+from a set of include files (.h files). This allows DCC to be aware
+of the type of library function arguments, and return types. The file
+produced is called dcclibs.dat. ParseHdr is designed specifically for
+C header files.
+
+As an example, this is what allows DCC to recognise that printf has
+(at least) a string argument, and so converts the first argument from
+a numeric constant to a string. So you get
+printf("Hello world")
+instead of
+printf(0x42).
+
+
+2 What is dcclibs.dat?
+----------------------
+
+dcclibs.dat is the file created by the ParseHdr program. It contains
+a list of function names and parameter and return types. See section
+5 for details of the contents of the file.
+
+
+3 How do I use ParseHdr?
+------------------------
+
+To use ParseHdr you need a file containing a list of header files,
+like this:
+\tc\include\alloc.h   
+\tc\include\assert.h  
+\tc\include\bios.h    
+...
+\tc\include\time.h    
+
+There must be one file per line, no blank lines, and unless the
+header files are in the current directory, a full path must be given.
+The easiest way to create such a file is to redirect the output of a
+dir command to a file, like this:
+c>dir \tc\include\*.h > tcfiles.lst
+and then edit the resultant file. Note that the path will not be
+included in this, so you will have to add that manually. Remove
+everything after the .h, such as file size, date, etc.
+
+Once you have this file, you can run parsehdr:
+
+parsehdr <listfile>
+
+For example,
+
+parsehdr tcfiles.lst
+
+You will get some messages indicating which files are being
+processed, but also some error messages. Just ignore the error
+messages, see section 6 for why they occur.
+
+
+
+4 What about languages other than C?
+-----------------------------------------
+
+ParseHdr will only work on C header files. It would be possible to
+process files for other languages that contained type information, to
+produce a dcclibs.dat file specific to that language. Ideally, DCC
+should look for a different file for each language, but since only a
+C version of dcclibs.dat has so far been created, this has not been
+done.
+
+Prototype information for Turbo Pascal exists in the file turbo.tpl,
+at least for things like the graphics library, so it would be
+possible for MakeDsTp to produce a dcclibs.dat file as well as the
+signature file. However, the format of the turbo.tpl file is not
+documented by Borland; for details see 
+
+W. L. Peavy, "Inside Turbo Pascal 6.0 Units", Public domain software
+file tpu6doc.txt in tpu6.zip. Anonymous ftp from garbo.uwasa.fi and
+mirrors, directory /pc/turbopas, 1991.
+
+
+
+
+5 What is the structure of the dcclibs.dat file?
+------------------------------------------------
+
+The first 4 bytes are "dccp", identifying it as a DCC prototype file.
+After this, there are two sections.
+
+The first section begins with "FN", for Function Names. It is
+followed by a two byte integer giving the number of function names
+stored. The remainder of this section is an array of structures, one
+per function name. Each has this structure:
+char Name[SYMLEN];	/* Name of the function, NULL terminated */
+int  type;		/* A 2 byte integer describing the return type */
+int  numArg;		/* The number of arguments */
+int  firstArg;		/* The index of the first arg, see below */
+char bVarArg;		/* 1 if variable arguments, 0 otherwise */
+
+SYMLEN is 16, alowing 15 chars before the NULL. Therefore, the length
+of this structure is 23 bytes.
+
+The types are as defined in locident.h (actually a part of dcc), and
+at present are as follows:
+typedef enum {
+    TYPE_UNKNOWN = 0,   /* unknown so far      	     00	*/
+    TYPE_BYTE_SIGN,	/* signed byte (8 bits)      01	*/
+    TYPE_BYTE_UNSIGN,	/* unsigned byte 	     02	*/
+    TYPE_WORD_SIGN,     /* signed word (16 bits)     03	*/
+    TYPE_WORD_UNSIGN,	/* unsigned word (16 bits)   04	*/
+    TYPE_LONG_SIGN,	/* signed long (32 bits)     05	*/
+    TYPE_LONG_UNSIGN,	/* unsigned long (32 bits)   06	*/
+    TYPE_RECORD,	/* record structure	     07	*/
+    TYPE_PTR,        	/* pointer (32 bit ptr)      08	*/
+    TYPE_STR,        	/* string                    09	*/
+    TYPE_CONST,		/* constant (any type)	     0A	*/
+    TYPE_FLOAT,		/* floating point	     0B	*/
+    TYPE_DOUBLE,	/* double precision float    0C	*/
+} hlType;
+
+firstArg is an index into the array in the second section.
+
+The second section begins with "PM" (for Parameters). It is followed
+by a 2 byte integer giving the number of parameter records. After
+this is the array of parameter structures. Initially, the names of the
+parameters were being stored, but this has been removed at present. 
+The parameter structure is therefore now just a single 2 byte
+integer, representing the type of that argument.
+
+The way it all fits together is perhaps best described by an example.
+Lets consider this entry in dcclibs.dat:
+
+73 74 72 63 6D 70 00            ; "strcmp"
+00 00 00 00 00 00 00 00 00	; Padding to 16 bytes
+03 00				; Return type 3, TYPE_WORD_UNSIGN
+02 00				; 2 arguments
+15 02				; First arg is 0215
+00                              ; Not var args
+
+If we now skip to the "PM" part of the file, skip the number of
+arguments word, then skip 215*2 = 42A bytes, we find this:
+09 00 09 00 09 00 ...
+
+The first 09 00 (TYPE_STR) refers to the type of the first parameter,
+and the second to the second parameter. There are only 2 arguments,
+so the third 09 00 refers to the first parameter of the next
+function. So both parameters are strings, as is expected.
+
+For functions with variable parameters, bVarArg is set to 01, and the
+number of parameters reported is the number of fixed parameters. Here
+is another example:
+
+66 70 72 69 6E 74 66 00		; "fprintf"
+00 00 00 00 00 00 00 00		; padding
+03 00				; return type 3, TYPE_WORD_UNSIGN
+02 00				; 2 fixed args
+81 01				; First arg at index 0181
+01				; Var args
+
+and in the "PM" section at offset 181*2 = 0302, we find 08 00 09 00
+03 00 meaning that the first parameter is a pointer (in fact, we know
+it's a FILE *), and the second parameter is a string.
+
+
+
+
+6 What are all these errors, and why do they happen?
+----------------------------------------------------
+
+When you run ParseHdr, as well as the progress statements like 
+  Processing \tc\include\alloc.h   ...
+
+you can get error messages. Basically, ignore these errors. They occur
+for a variety of reasons, most of which are detailed below.
+
+1)
+  Expected type: got ) (29)
+  void          __emit__()
+                         ^
+This include file contained a non ansi prototype. This is rare, and
+__emit__ is not a standard function anyway. If it really bothers you,
+you could add the word "void" to the empty parentheses in your
+include file.
+
+2) 
+  Expected ',' between parameter defs: got ( (28)
+  void  _Cdecl ctrlbrk (int _Cdecl (*handler)(void))
+
+Here "handler" is a pointer to a function. Being a basically simple
+program, ParseHdr does not expand all typedef and #define statements,
+so it cannot distinguish between types and user defined function
+names. Therefore, it is not possible in general to parse any
+prototypes containing pointers to functions, so at this stage, any
+such prototypes will produce an error of some sort. DCC cannot
+currently make use of this type information anyway, so this is no
+real loss. There are typically half a dozen such errors.
+
+3)
+  Unknown type time_t
+
+Types (such as time_t) that are structures or pointers to structures
+are not handled by ParseHdr, since typedef and #define statements are
+ignored. Again, there are typically only about a dozen of these.

@@ -1,0 +1,221 @@
+			DISPSIG and SRCHSIG
+                        ===================
+
+1 What are DispSig and SrchSig?
+
+2 How do I use DispSig?
+
+3 How do I use SrchSig?
+
+4 What can I do with the binary pattern file from DispSig?
+
+5 How can I create a binary pattern file for SrchSig?
+
+
+
+1 What are DispSig and SrchSig?
+-------------------------------
+
+SrchSig is a program to display the name of a function, given a
+signature (pattern).
+DispSig is a program to display a signature, given a function name.
+Dispsig also writes the signature to a binary file, so you can
+disassemble it, or use it in Srchsig to see if some other signature
+file has the same pattern.
+
+
+2 How do I use DispSig?
+-----------------------
+Just type
+DispSig <SignatureFileName> <FunctionName> <BinaryFileName>
+
+For example:
+
+dispsig dccb2s.sig strcmp strcmp.bin
+Function index 58
+55 8B EC 56 57 8C D8 8E C0 FC 33 C0 8B D8 8B 7E 06 8B F7 32 C0 B9 F4 
+
+This tells us that the function was the 59th function in the
+signature file (and that the signature above will hash to 58
+(decimal)). We can see that it is a standard C function, since it
+starts with "55 8B EC", which is the standard C function prologue.
+The rest of it is a bit hard to follow, but fortunately we have also
+written the pattern to a binary file, strcmp.bin. See section 4 on
+how to disassemble this pattern.
+
+If I type
+
+dispsig dcct4p.sig writeln wl.bin
+
+I get
+Function writeln not found!
+
+In fact, there is no one function that performs the writeln function;
+there are functions like WriteString, WriteInt, CrLf (Carriage
+return, linefeed), and so on. Dispsig is case insensitive, so:
+
+dispsig dcct4p.sig writestring wl.bin
+produces
+
+Function WriteString index 53
+55 8B EC C4 7E 0C E8 F4 F4 75 25 C5 76 08 8B 4E 06 FC AC F4 F4 2B C8 
+
+
+3 How do I use SrchSig?
+-----------------------
+Just type
+
+srchsig <SignatureFileName> <BinaryFileName>
+
+dispsig dcct4p.sig writeln wl.bin
+where BinaryFileName contains a pattern. See section 5 for how to
+create one of these. For now, we can use the pattern file from the
+first example:
+
+srchsig dccb2s.sig strcmp.bin
+
+Pattern:
+55 8B EC 56 57 8C D8 8E C0 FC 33 C0 8B D8 8B 7E 06 8B F7 32 C0 B9 F4 
+Pattern hashed to 58 (0x3A), symbol strcmp
+Pattern matched
+
+Note that the pattern reported above need not be exactly the same as
+the one we provided in <BinaryFileName>. The pattern displayed is the
+wildcarded and chopped version of the pattern provided; it will have
+F4s (wildcards) and possibly zeroes at the end; see the file
+makedstp.txt for a simple explanation of wildcarding and chopping.
+
+If we type
+
+srchsig dccb2s.sig ws.bin
+
+we get
+
+Pattern:
+55 8B EC C4 7E 0C E8 F4 F4 75 25 C5 76 08 8B 4E 06 FC AC F4 F4 2B C8 
+Pattern hashed to 0 (0x0), symbol _IOERROR
+Pattern mismatch: found following pattern
+55 8B EC 56 8B 76 04 0B F6 7C 14 83 FE 58 76 03 BE F4 F4 89 36 F4 F4 
+300
+
+The pattern often hashes to zero when the pattern is unknown, due to
+the sparse nature of the tables used in the hash function. The first
+pattern in dccb2s.sig happens to be _IOERROR, and its pattern is
+completely different, apart from the first three bytes. The "300" at
+the end is actually a running count of signatures searched linearly,
+in case there is a problem with the hash function.
+
+
+
+4 What can I do with the binary pattern file from DispSig?
+----------------------------------------------------------
+
+You can feed it into SrchSig; this might make sense if you wanted to
+know if, e.g. the signature for printf was the same for version 2 as
+it is for version 3. In this case, you would use DispSig on the
+version 2 signature file, and SrchSig on the version 3 file.
+
+You can also disassemble it, using debug (it comes with MS-DOS). For
+example
+debug strcmp.bin
+-u100 l 17
+
+1754:0100 55            PUSH	BP                                 
+1754:0101 8BEC          MOV	BP,SP                              
+1754:0103 56            PUSH	SI                                 
+1754:0104 57            PUSH	DI                                 
+1754:0105 8CD8          MOV	AX,DS                              
+1754:0107 8EC0          MOV	ES,AX                              
+1754:0109 FC            CLD	                                   
+1754:010A 33C0          XOR	AX,AX                              
+1754:010C 8BD8          MOV	BX,AX                              
+1754:010E 8B7E06        MOV	DI,[BP+06]                         
+1754:0111 8BF7          MOV	SI,DI                              
+1754:0113 32C0          XOR	AL,AL                              
+1754:0115 B9F42B        MOV	CX,2BF4                            
+-q
+
+Note that the "2B" at the end is actually past the end of the
+signature. (Signatures are 23 bytes (17 in hex) long, so only
+addresses 100-116 are valid). Remember that most 16 bit operands will
+be "wildcarded", so don't believe the resultant addresses.
+
+
+5 How can I create a binary pattern file for SrchSig?
+-----------------------------------------------------
+
+Again, you can use debug. Suppose you have found an interesing piece
+of code at address 05BE (this example comes from a hello world
+program):
+
+-u 5be
+15FF:05BE 55            PUSH	BP                                 
+15FF:05BF 8BEC          MOV	BP,SP                              
+15FF:05C1 83EC08        SUB	SP,+08                             
+15FF:05C4 57            PUSH	DI                                 
+15FF:05C5 56            PUSH	SI                                 
+15FF:05C6 BE1E01        MOV	SI,011E                            
+15FF:05C9 8D4606        LEA	AX,[BP+06]                         
+15FF:05CC 8946FC        MOV	[BP-04],AX                         
+15FF:05CF 56            PUSH	SI                                 
+15FF:05D0 E8E901        CALL	07BC                               
+15FF:05D3 83C402        ADD	SP,+02                             
+15FF:05D6 8BF8          MOV	DI,AX                              
+15FF:05D8 8D4606        LEA	AX,[BP+06]                         
+15FF:05DB 50            PUSH	AX                                 
+15FF:05DC FF7604        PUSH	[BP+04]                            
+-mcs:5be l 17 cs:100
+-u100 l 17
+15FF:0100 55            PUSH	BP                                 
+15FF:0101 8BEC          MOV	BP,SP                              
+15FF:0103 83EC08        SUB	SP,+08                             
+15FF:0106 57            PUSH	DI                                 
+15FF:0107 56            PUSH	SI                                 
+15FF:0108 BE1E01        MOV	SI,011E                            
+15FF:010B 8D4606        LEA	AX,[BP+06]                         
+15FF:010E 8946FC        MOV	[BP-04],AX                         
+15FF:0111 56            PUSH	SI                                 
+15FF:0112 E8E901        CALL	02FE                               
+15FF:0115 83C41F        ADD	SP,+1F                             
+-nfoo.bin
+-rcx
+CS 268A
+:17
+-w
+Writing 0017 bytes
+-q
+c>dir foo.bin
+foo.bin            23   3-25-94  12:04 
+c>
+
+The binary file has to be exactly 23 bytes long; that's why we
+changed cx to the value 17 (hex 17 = decimal 23). If you are studying
+a large file (> 64K) remember to set bx to 0 as well. The m (block
+move) command moves the code of interest to cs:100, which is where
+debug will write the file from. The "rcx" changes the length of the
+save, and the "nfoo.bin" sets the name of the file to be saved. Now
+we can feed this into srchsig:
+
+srchsig dccb2s.sig foo.bin
+Pattern:
+55 8B EC 83 EC 08 57 56 BE F4 F4 8D 46 06 89 46 FC 56 E8 F4 F4 83 C4 
+Pattern hashed to 278 (0x116), symbol sleep
+Pattern mismatch: found following pattern
+55 8B EC 83 EC 04 56 57 8D 46 FC 50 E8 F4 F4 59 80 7E FE 5A 76 05 BF 
+300 
+
+Hmmm. Not a Borland C version 2 small model signature. Perhaps its a
+Microsoft Version 5 signature:
+
+Pattern:
+55 8B EC 83 EC 08 57 56 BE F4 F4 8D 46 06 89 46 FC 56 E8 F4 F4 83 C4 
+Pattern hashed to 31 (0x1F), symbol printf
+Pattern matched
+
+Yes, it was good old printf. Of course, no need for you to guess, DCC
+will figure out the vendor, version number, and model for you.
+
+
+
+
+

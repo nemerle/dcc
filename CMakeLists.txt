@@ -26,16 +26,23 @@ enable_testing()
     FIND_PACKAGE(GMock)
 ENDIF()
 
-ADD_SUBDIRECTORY(3rd_party)
 
-llvm_map_components_to_libraries(REQ_LLVM_LIBRARIES jit native mc support tablegen)
+llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES jit native mc support tablegen)
 INCLUDE_DIRECTORIES(
     3rd_party/libdisasm
     include
     include/idioms
+    common
     ${Boost_INCLUDE_DIRS}
     ${LLVM_INCLUDE_DIRS}
 )
+
+
+ADD_SUBDIRECTORY(3rd_party)
+ADD_SUBDIRECTORY(common)
+ADD_SUBDIRECTORY(tools)
+
+
 set(dcc_LIB_SOURCES
     src/CallConvention.cpp
     src/ast.cpp
@@ -67,7 +74,6 @@ set(dcc_LIB_SOURCES
     src/locident.cpp
     src/liveness_set.cpp
     src/parser.cpp
-    src/perfhlib.cpp
     src/procs.cpp
     src/project.cpp
     src/Procedure.cpp
@@ -106,7 +112,6 @@ set(dcc_HEADERS
     include/idioms/xor_idioms.h
     include/locident.h
     include/CallConvention.h
-    include/perfhlib.h
     include/project.h
     include/scanner.h
     include/state.h
@@ -118,6 +123,7 @@ set(dcc_HEADERS
     include/dcc_interface.h
 
 )
+
 SOURCE_GROUP(Source FILES ${dcc_SOURCES})
 SOURCE_GROUP(Headers FILES ${dcc_HEADERS})
 
@@ -127,11 +133,10 @@ qt5_use_modules(dcc_lib Core)
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
-TARGET_LINK_LIBRARIES(dcc_original dcc_lib disasm_s ${REQ_LLVM_LIBRARIES} ncurses LLVMSupport)
+TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES} ncurses LLVMSupport)
 qt5_use_modules(dcc_original Core)
 #ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)
 endif()
-
 

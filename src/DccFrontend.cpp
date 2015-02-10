@@ -1,11 +1,13 @@
-#include <QtCore/QFileInfo>
-#include <QtCore/QDebug>
-#include <cstdio>
 #include "dcc.h"
 #include "DccFrontend.h"
 #include "project.h"
 #include "disassem.h"
 #include "CallGraph.h"
+
+#include <QtCore/QFileInfo>
+#include <QtCore/QDebug>
+
+#include <cstdio>
 
 
 class Loader
@@ -158,7 +160,7 @@ bool DccFrontend::FrontEnd ()
 
     if (option.asm1)
     {
-        std::cout << "dcc: writing assembler file "<<asm1_name.toStdString()<<'\n';
+        qWarning() << "dcc: writing assembler file "<<asm1_name<<'\n';
     }
 
     /* Search through code looking for impure references and flag them */

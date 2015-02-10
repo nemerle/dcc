@@ -1,0 +1,97 @@
+				READSIG
+
+1 What is ReadSig?
+
+2 How do I use ReadSig?
+
+3 What are duplicate signatures?
+
+4 How can I make sense of the signatures?
+
+
+1 What is ReadSig?
+------------------
+
+ReadSig is a quick and dirty program to read signatures from a DCC
+signature file. It was originally written as an integrity checker for
+signature files, but can now be used to see what's in a signature
+file, and which functions have duplicate signatures.
+
+2 How do I use ReadSig?
+-----------------------
+
+Just type
+readsig <sigfilename>
+
+or
+
+readsig -a <sigfilename>
+
+
+For example:
+readsig -a dcct2p.sig
+
+Either way, you get a list of duplicate signatures, i.e. functions
+whose first 23 bytes, after wildcarding and chopping, (see section 3
+for details), that have the same signature.
+
+With the -a switch, you also (before the above) get a list of all
+symbolic names in the signature file, and the signatures themselves
+in hex. This could be a dozen or more pages for large signature
+files.
+
+Currently, signatures are 23 bytes long, and the symbolic names are
+truncated to 15 characters.
+
+
+3 What are duplicate signatures?
+--------------------------------
+
+Duplicate signatures arise for 3 reasons. 1: length of the signature.
+2: wildcards. 3: chopping of the signature.
+
+1: Because signatures are only 23 bytes long, there is a chance that
+two distinct signatures (first part of the binary image of a
+function) are identical in the first 23 bytes, but diverge later.
+
+2: Because part of the binary image of a function depends on where it
+is loaded, parts of the signature are replaced with wildcards. It is
+possible that two functions are distinct only in places that are
+replaced by the wildcard byte (F4).
+
+3: Signatures are "chopped" (cut short, and the remainder filled with
+binary zeroes) after an unconditional branch or subroutine return.
+This is to cope with functions shorter than the 23 byte size of
+signatures, so unrelated functions are not included at the end of a
+signature. (This would cause dcc to fail to recognise these short
+signatures if some other function happened to be loaded at the end).
+
+The effect of duplicate signatures is that only one of the functions
+that has the same signature will be recognised. For example, suppose
+that sin, cos, and tan were just one wildcarded instruction followed
+by a jump to the same piece of code. Then all three would have the
+same signature, and calls to sin, cos, or tan would all be reported
+by dcc as just one of these, e.g. tan. If you suspect that this is
+happening, then at least ReadSig can alert you to this problem.
+
+In general, the number of duplicate signatures that would actually be
+used in dcc is small, but it is possible that the above problem will
+occur.
+
+
+
+4 How can I make sense of the signatures?
+-----------------------------------------
+
+If you're one of those unfortunate individuals that can't decode hex
+instructions in your head, you can always use DispSig to copy it to a
+binary file, since you now know the name of the function. Then you
+can use debug or some other debugger to disassemble the binary file.
+Generally, most entries in signature files will be executable code,
+so it should disassemble readily.
+
+Be aware that signatures are wildcarded, so don't pay any attention
+to the destination of jmp or call instructions (three or 5 byte
+jumps, anyway; 2 byte jumps are not wildcarded), and 16 bit immediate
+values. The latter will always be F4F4 (two wildcard bytes),
+regardless of what they were in the original function.
