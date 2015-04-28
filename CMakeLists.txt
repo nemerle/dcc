@@ -27,7 +27,7 @@ enable_testing()
 ENDIF()
 
 
-llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES jit native mc support tablegen)
+llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES native mc support tablegen)
 INCLUDE_DIRECTORIES(
     3rd_party/libdisasm
     include

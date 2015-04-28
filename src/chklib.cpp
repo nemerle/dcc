@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
-
+PerfectHash g_pattern_hasher;
 #define  NIL   -1                   /* Used like NULL, but 0 is valid */
 
 /* Hash table structure */
@@ -331,7 +331,7 @@ void SetupLibCheck(void)
 
     /* Initialise the perfhlib stuff. Also allocates T1, T2, g, etc */
     /* Set the parameters for the hash table */
-    g_pattern_hasher.init(
+    g_pattern_hasher.setHashParams(
                     numKeys,                /* The number of symbols */
                     PatLen,                 /* The length of the pattern to be hashed */
                     256,                    /* The character set of the pattern (0-FF) */

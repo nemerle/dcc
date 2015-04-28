@@ -211,6 +211,7 @@ struct ComLoader : public DosLoader {
         return false;
     }
     bool load(PROG &prog,QFile &fp) {
+        fp.seek(0);
         /* COM file
          * In this case the load module size is just the file length
          */

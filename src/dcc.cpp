@@ -65,7 +65,7 @@ bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
     //        rec = Records.getDef("CCR");
     //        if(rec)
     //            rec->dump();
-    for(auto val : Records.getDefs())
+    for(const auto &val : Records.getDefs())
     {
         //std::cout<< "Def "<<val.first<<"\n";
     }
@@ -73,43 +73,43 @@ bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
 }
 int testTblGen(int argc, char **argv)
 {
-    using namespace llvm;
-    sys::PrintStackTraceOnErrorSignal();
-    PrettyStackTraceProgram(argc,argv);
-    cl::ParseCommandLineOptions(argc,argv);
-    return llvm::TableGenMain(argv[0],TVisitor);
-    InitializeNativeTarget();
-    Triple TheTriple;
-    std::string  def = sys::getDefaultTargetTriple();
-    std::string MCPU="i386";
-    std::string MARCH="x86";
-    InitializeAllTargetInfos();
-    InitializeAllTargetMCs();
-    InitializeAllAsmPrinters();
-    InitializeAllAsmParsers();
-    InitializeAllDisassemblers();
-    std::string TargetTriple("i386-pc-linux-gnu");
-    TheTriple = Triple(Triple::normalize(TargetTriple));
-    MCOperand op=llvm::MCOperand::CreateImm(11);
-    MCAsmInfo info;
-    raw_os_ostream wrap(std::cerr);
-    op.print(wrap,&info);
-    wrap.flush();
-    std::cerr<<"\n";
-    std::string lookuperr;
-    TargetRegistry::printRegisteredTargetsForVersion();
-    const Target *t = TargetRegistry::lookupTarget(MARCH,TheTriple,lookuperr);
-    TargetOptions opts;
-    std::string Features;
-    opts.PrintMachineCode=1;
-    TargetMachine *tm = t->createTargetMachine(TheTriple.getTriple(),MCPU,Features,opts);
-    std::cerr<<tm->getInstrInfo()->getName(97)<<"\n";
-    const MCInstrDesc &ds(tm->getInstrInfo()->get(97));
-    const MCOperandInfo *op1=ds.OpInfo;
-    uint16_t impl_def = ds.getImplicitDefs()[0];
-    std::cerr<<lookuperr<<"\n";
+//    using namespace llvm;
+//    sys::PrintStackTraceOnErrorSignal();
+//    PrettyStackTraceProgram(argc,argv);
+//    cl::ParseCommandLineOptions(argc,argv);
+//    return llvm::TableGenMain(argv[0],TVisitor);
+//    InitializeNativeTarget();
+//    Triple TheTriple;
+//    std::string  def = sys::getDefaultTargetTriple();
+//    std::string MCPU="i386";
+//    std::string MARCH="x86";
+//    InitializeAllTargetInfos();
+//    InitializeAllTargetMCs();
+//    InitializeAllAsmPrinters();
+//    InitializeAllAsmParsers();
+//    InitializeAllDisassemblers();
+//    std::string TargetTriple("i386-pc-linux-gnu");
+//    TheTriple = Triple(Triple::normalize(TargetTriple));
+//    MCOperand op=llvm::MCOperand::CreateImm(11);
+//    MCAsmInfo info;
+//    raw_os_ostream wrap(std::cerr);
+//    op.print(wrap,&info);
+//    wrap.flush();
+//    std::cerr<<"\n";
+//    std::string lookuperr;
+//    TargetRegistry::printRegisteredTargetsForVersion();
+//    const Target *t = TargetRegistry::lookupTarget(MARCH,TheTriple,lookuperr);
+//    TargetOptions opts;
+//    std::string Features;
+//    opts.PrintMachineCode=1;
+//    TargetMachine *tm = t->createTargetMachine(TheTriple.getTriple(),MCPU,Features,opts);
+//    std::cerr<<tm->getInstrInfo()->getName(97)<<"\n";
+//    const MCInstrDesc &ds(tm->getInstrInfo()->get(97));
+//    const MCOperandInfo *op1=ds.OpInfo;
+//    uint16_t impl_def = ds.getImplicitDefs()[0];
+//    std::cerr<<lookuperr<<"\n";
 
-    exit(0);
+//    exit(0);
 
 }
 void setupOptions(QCoreApplication &app) {
