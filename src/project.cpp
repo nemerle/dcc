@@ -25,19 +25,10 @@ void Project::initialize()
 void Project::create(const QString &a)
 {
     initialize();
+    QFileInfo fi(a);
     m_fname=a;
-    auto ext_loc=a.lastIndexOf('.');
-    auto slash_loc=a.lastIndexOf('/',ext_loc);
-    if(slash_loc==-1)
-        slash_loc=0;
-    else
-        slash_loc++;
-    if(ext_loc!=-1) {
-        m_project_name = a.mid(slash_loc,ext_loc-slash_loc);
-    }
-    else
-        m_project_name = a.mid(slash_loc);
-    m_output_path = a.left(slash_loc);
+    m_project_name = fi.completeBaseName();
+    m_output_path = fi.path();
 }
 
 QString Project::output_name(const char *ext) {
