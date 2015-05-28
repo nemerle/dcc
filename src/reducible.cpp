@@ -3,388 +3,418 @@
  *  constructs an equivalent reducible graph if one is not found.
  * (C) Cristina Cifuentes
  ********************************************************************/
-#include <algorithm>
-#include <cassert>
+
 #include "dcc.h"
 #include <stdio.h>
+#ifdef __BORLAND__
+#include <alloc.h>
+#else
 #include <malloc.h>		/* For free() */
+#endif
 #include <string.h>
 
-static int      numInt;     /* Number of intervals      */
+static Int      numInt;     /* Number of intervals      */
 
 
 #define nonEmpty(q)     (q != NULL)
 /* Returns whether the queue q is empty or not */
-bool trivialGraph(BB *G)
-{
-    return G->edges.empty();
-}
+
+#define trivialGraph(G)     (G->numOutEdges == 0)
 /* Returns whether the graph is a trivial graph or not */
 
 
+static BB *firstOfQueue (queue **Q)
 /* Returns the first element in the queue Q, and removes this element
  * from the list.  Q is not an empty queue.                 */
-static BB *firstOfQueue (queue &Q)
-{
-    assert(!Q.empty());
-    BB *res=Q.front();
-    Q.pop_front();
-    return res;
+{ queue *elim;
+  BB *first;
+
+    elim  = *Q;         /* Pointer to first node */
+    first = (*Q)->node;     /* First element */
+    *Q    = (*Q)->next;     /* Pointer to next node */
+    free (elim);            /* Free storage */
+    return (first);
 }
 
 
+queue *appendQueue (queue **Q, BB *node)
 /* Appends pointer to node at the end of the queue Q if node is not present
  * in this queue.  Returns the queue node just appended.        */
-queue::iterator appendQueue (queue &Q, BB *node)
-{
-    auto iter=std::find(Q.begin(),Q.end(),node);
-    if(iter!=Q.end())
-        return iter;
-    Q.push_back(node);
-    iter=Q.end();
-    --iter;
-    return iter;
+{ queue *pq, *l;
+
+    pq = allocStruc(queue);
+    pq->node = node;
+    pq->next = NULL;
+
+    if (Q)
+        if (*Q)
+        {
+           for (l = *Q; l->next && l->node != node; l = l->next)
+              ;
+           if (l->node != node)
+              l->next = pq;
+        }
+        else        /* (*Q) == NULL */
+           *Q = pq;
+    return (pq);
 }
 
 
+static BB *firstOfInt (interval *pI)
 /* Returns the next unprocessed node of the interval list (pointed to by
  * pI->currNode).  Removes this element logically from the list, by updating
  * the currNode pointer to the next unprocessed element.  */
-BB *interval::firstOfInt ()
-{
-    auto pq = currNode;
-    if (pq == nodes.end())
-        return 0;
-    ++currNode;
-    return *pq;
+{ queue *pq;
+
+    pq = pI->currNode;
+    if (pq == NULL)
+       return (NULL);
+    pI->currNode = pq->next;
+    return (pq->node);
 }
 
 
-/* Appends node @node to the end of the interval list @pI, updates currNode
- * if necessary, and removes the node from the header list @pqH if it is
- * there.  The interval header information is placed in the field
+static queue *appendNodeInt (queue *pqH, BB *node, interval *pI)
+/* Appends node node to the end of the interval list I, updates currNode
+ * if necessary, and removes the node from the header list H if it is 
+ * there.  The interval header information is placed in the field 
  * node->inInterval.
  * Note: nodes are added to the interval list in interval order (which
  * topsorts the dominance relation).                    */
-static void appendNodeInt (queue &pqH, BB *node, interval *pI)
-{
-    queue::iterator pq;        /* Pointer to current node of the list      */
+{ queue *pq,        /* Pointer to current node of the list      */
+         *prev;     /* Pointer to previous node in the list     */
 
     /* Append node if it is not already in the interval list */
-    pq = appendQueue (pI->nodes, node);
+    pq = appendQueue (&pI->nodes, node);
 
     /* Update currNode if necessary */
-    if (pI->currNode == pI->nodes.end())
-        pI->currNode = pq;
+    if (pI->currNode == NULL)
+       pI->currNode = pq;
 
-    /* Check header list for occurrence of node, if found, remove it
+    /* Check header list for occurrence of node, if found, remove it 
      * and decrement number of out-edges from this interval.    */
-    if (node->beenOnH && !pqH.empty())
+    if (node->beenOnH && pqH)
     {
-        auto found_iter=std::find(pqH.begin(),pqH.end(),node);
-        if(found_iter!=pqH.end())
-        {
-            pI->numOutEdges -= (uint8_t)(*found_iter)->inEdges.size() - 1;
-            pqH.erase(found_iter);
-        }
+       prev = pqH;
+       for (pq = prev; pq && pq->node != node; pq = pq->next)
+          prev = pq;
+       if (pq == prev)
+       {
+          pqH = pqH->next;
+          pI->numOutEdges -= (byte)pq->node->numInEdges - 1;
+       }
+       else if (pq)
+       {
+          prev->next = pq->next;
+          pI->numOutEdges -= (byte)pq->node->numInEdges - 1;
+       }
     }
+
     /* Update interval header information for this basic block */
     node->inInterval = pI;
+
+    return (pqH);
 }
 
 
-/* Finds the intervals of graph derivedGi->Gi and places them in the list
+static void findIntervals (derSeq *derivedGi)
+/* Finds the intervals of graph derivedGi->Gi and places them in the list 
  * of intervals derivedGi->Ii.
  * Algorithm by M.S.Hecht.                      */
-void derSeq_Entry::findIntervals (Function *c)
-{
-    interval *pI,        /* Interval being processed         */
-            *J;         /* ^ last interval in derivedGi->Ii */
-    BB *h,           /* Node being processed         */
-            *header,          /* Current interval's header node   */
-            *succ;            /* Successor basic block        */
-    int i;           /* Counter              */
-    queue H;            /* Queue of possible header nodes   */
-    boolT first = true;       /* First pass through the loop      */
+{  interval *pI,        /* Interval being processed         */ 
+        *J;         /* ^ last interval in derivedGi->Ii */
+   BB *h,           /* Node being processed         */
+      *header,          /* Current interval's header node   */
+      *succ;            /* Successor basic block        */
+   Int i;           /* Counter              */
+   queue *H;            /* Queue of possible header nodes   */
+   boolT first = TRUE;       /* First pass through the loop      */
 
-    appendQueue (H, Gi);  /* H = {first node of G} */
-    Gi->beenOnH = true;
-    Gi->reachingInt = BB::Create(0,"",c); /* ^ empty BB */
+    H = appendQueue (NULL, derivedGi->Gi);  /* H = {first node of G} */
+    derivedGi->Gi->beenOnH = TRUE;
+    derivedGi->Gi->reachingInt = allocStruc(BB);    /* ^ empty BB */
+	memset (derivedGi->Gi->reachingInt, 0, sizeof(BB));
 
     /* Process header nodes list H */
-    while (!H.empty())
+    while (nonEmpty (H))
     {
-        header = firstOfQueue (H);
-        pI = new interval;
-        pI->numInt = (uint8_t)numInt++;
-        if (first)               /* ^ to first interval  */
-            Ii = J = pI;
-        appendNodeInt (H, header, pI);   /* pI(header) = {header} */
+       header = firstOfQueue (&H);
+	   pI = allocStruc(interval);
+	   memset (pI, 0, sizeof(interval));
+       pI->numInt = (byte)numInt++;
+       if (first)               /* ^ to first interval  */
+          derivedGi->Ii = J = pI;
+       H = appendNodeInt (H, header, pI);   /* pI(header) = {header} */
 
-        /* Process all nodes in the current interval list */
-        while ((h = pI->firstOfInt()) != NULL)
-        {
-            /* Check all immediate successors of h */
-            for (i = 0; i < h->edges.size(); i++)
-            {
-                succ = h->edges[i].BBptr;
-                succ->inEdgeCount--;
+       /* Process all nodes in the current interval list */
+       while ((h = firstOfInt (pI)) != NULL)
+       { 
+         /* Check all immediate successors of h */
+         for (i = 0; i < h->numOutEdges; i++)
+         {
+               succ = h->edges[i].BBptr;
+               succ->inEdgeCount--;
 
-                if (succ->reachingInt == NULL)   /* first visit */
-                {
-                    succ->reachingInt = header;
-                    if (succ->inEdgeCount == 0)
-                        appendNodeInt (H, succ, pI);
-                    else if (! succ->beenOnH) /* out edge */
-                    {
-                        appendQueue (H, succ);
-                        succ->beenOnH = true;
-                        pI->numOutEdges++;
-                    }
-                }
-                else     /* node has been visited before */
-                    if (succ->inEdgeCount == 0)
-                    {
-                        if (succ->reachingInt == header || succ->inInterval == pI) /* same interval */
-                        {
-                            if (succ != header)
-                                appendNodeInt (H, succ, pI);
-                        }
-                        else            /* out edge */
-                            pI->numOutEdges++;
-                    }
-                    else if (succ != header && succ->beenOnH)
-                        pI->numOutEdges++;
+               if (succ->reachingInt == NULL)   /* first visit */
+               {
+              succ->reachingInt = header;
+              if (succ->inEdgeCount == 0) 
+                     H = appendNodeInt (H, succ, pI);
+              else if (! succ->beenOnH) /* out edge */
+              {
+                 appendQueue (&H, succ);
+                 succ->beenOnH = TRUE;
+                 pI->numOutEdges++;
+              }
+               }
+               else     /* node has been visited before */
+              if (succ->inEdgeCount == 0)
+              {
+                 if (succ->reachingInt == header || 
+                 succ->inInterval == pI) /* same interval */
+                 {
+                    if (succ != header)
+                                H = appendNodeInt (H, succ, pI);
+                 }
+                 else            /* out edge */
+                pI->numOutEdges++;
+              }
+              else if (succ != header && succ->beenOnH)
+                   pI->numOutEdges++;
             }
-        }
+       }
 
-        /* Link interval I to list of intervals */
-        if (! first)
-        {
-            J->next = pI;
-            J = pI;
-        }
-        else     /* first interval */
-            first = false;
+       /* Link interval I to list of intervals */
+       if (! first)
+       {
+          J->next = pI;
+          J = pI;
+       }
+       else     /* first interval */
+          first = FALSE;
     }
 }
 
 
-/* Displays the intervals of the graph Gi.              */
 static void displayIntervals (interval *pI)
-{
+/* Displays the intervals of the graph Gi.              */
+{ queue *nodePtr;
 
     while (pI)
     {
-        printf ("  Interval #: %ld\t#OutEdges: %ld\n", pI->numInt, pI->numOutEdges);
-        for(BB *node : pI->nodes)
-        {
-            if (node->correspInt == NULL)    /* real BBs */
-                printf ("    Node: %ld\n", node->begin()->loc_ip);
-            else             // BBs represent intervals
-                printf ("   Node (corresp int): %d\n", node->correspInt->numInt);
-        }
-        pI = pI->next;
+       nodePtr = pI->nodes;
+       printf ("  Interval #: %ld\t#OutEdges: %ld\n", 
+           pI->numInt, pI->numOutEdges);
+
+       while (nodePtr)
+       {
+          if (nodePtr->node->correspInt == NULL)    /* real BBs */
+             printf ("    Node: %ld\n", nodePtr->node->start);
+          else              /* BBs represent intervals */
+         printf ("   Node (corresp int): %d\n",
+             nodePtr->node->correspInt->numInt);
+          nodePtr = nodePtr->next;
+       }
+       pI = pI->next;
     }
 }
 
 
+static derSeq *newDerivedSeq()
 /* Allocates space for a new derSeq node. */
-static derSeq_Entry *newDerivedSeq()
-{
-    return new derSeq_Entry;
+{ derSeq *pder;
+
+	pder = allocStruc(derSeq);
+	memset (pder, 0, sizeof(derSeq));
+    return (pder);
 }
 
 
+static void freeQueue (queue **q)
 /* Frees the storage allocated for the queue q*/
-static void freeQueue (queue &q)
-{
-    q.clear();
+{ queue *queuePtr;
+
+    for (queuePtr = *q; queuePtr; queuePtr = *q)
+    {
+       *q = (*q)->next;
+       free (queuePtr);
+    }
 }
 
 
-/* Frees the storage allocated for the interval pI */
 static void freeInterval (interval **pI)
-{
-    interval *Iptr;
+/* Frees the storage allocated for the interval pI */
+{ interval *Iptr;
 
     while (*pI)
     {
-        (*pI)->nodes.clear();
-        Iptr = *pI;
-        *pI = (*pI)->next;
-        delete (Iptr);
+       freeQueue (&((*pI)->nodes));
+       Iptr = *pI;
+       *pI = (*pI)->next;
+       free (Iptr);
     }
 }
 
 
-/* Frees the storage allocated by the derived sequence structure, except
+void freeDerivedSeq(derSeq *derivedG)
+/* Frees the storage allocated by the derived sequence structure, except 
  * for the original graph cfg (derivedG->Gi).               */
-void freeDerivedSeq(derSeq &derivedG)
-{
-    derivedG.clear();
-}
-derSeq_Entry::~derSeq_Entry()
-{
-    freeInterval (&Ii);
-    //    if(Gi && Gi->nodeType == INTERVAL_NODE)
-    //        freeCFG (Gi);
+{ derSeq *derivedGi;
+
+    while (derivedG)
+    {
+       freeInterval (&(derivedG->Ii));
+       if (derivedG->Gi->nodeType == INTERVAL_NODE)
+        freeCFG (derivedG->Gi);
+       derivedGi = derivedG;
+       derivedG  = derivedG->next;
+       free (derivedGi);
+    }
 }
 
-/* Finds the next order graph of derivedGi->Gi according to its intervals
+
+static boolT nextOrderGraph (derSeq *derivedGi)
+/* Finds the next order graph of derivedGi->Gi according to its intervals 
  * (derivedGi->Ii), and places it in derivedGi->next->Gi.       */
-bool Function::nextOrderGraph (derSeq &derivedGi)
-{
-    interval *Ii;   /* Interval being processed         */
-    BB *BBnode,     /* New basic block of intervals         */
-            *curr,      /* BB being checked for out edges       */
-            *succ       /* Successor node               */
-            ;
-    //queue *listIi;    /* List of intervals                */
-    int i,        /* Index to outEdges array          */
-        j;        /* Index to successors              */
-    boolT   sameGraph; /* Boolean, isomorphic graphs           */
+{ interval *Ii;     /* Interval being processed         */
+  BB *BBnode,       /* New basic block of intervals         */
+     *curr,     /* BB being checked for out edges       */
+     *succ,     /* Successor node               */
+     derInt;
+  queue *listIi;    /* List of intervals                */
+  Int i,        /* Index to outEdges array          */
+      j;        /* Index to successors              */
+  boolT   sameGraph; /* Boolean, isomorphic graphs           */
 
     /* Process Gi's intervals */
-    derSeq_Entry &prev_entry(derivedGi.back());
-    derivedGi.push_back(derSeq_Entry());
-    derSeq_Entry &new_entry(derivedGi.back());
-    Ii = prev_entry.Ii;
-    sameGraph = true;
-    BBnode = 0;
-    std::vector<BB *> bbs;
-    while (Ii)
-    {
-        i = 0;
-        bbs.push_back(BB::Create(-1, -1, INTERVAL_NODE, Ii->numOutEdges, this));
-        BBnode = bbs.back();
-        BBnode->correspInt = Ii;
-        const queue &listIi(Ii->nodes);
+    derivedGi->next = newDerivedSeq();
+    Ii = derivedGi->Ii;
+    sameGraph = TRUE;
+    derInt.next = NULL;
+    BBnode = &derInt;
 
-        /* Check for more than 1 interval */
-        if (sameGraph && (listIi.size()>1))
-            sameGraph = false;
+    while (Ii) {
+       i = 0;
+       BBnode = newBB (BBnode, -1, -1, INTERVAL_NODE, Ii->numOutEdges, NULL);
+       BBnode->correspInt = Ii;
+       listIi = Ii->nodes;
 
-        /* Find out edges */
+       /* Check for more than 1 interval */
+       if (sameGraph && listIi->next)
+          sameGraph = FALSE;
 
-        if (BBnode->edges.size() > 0)
-        {
-            for(BB *curr :  listIi)
-            {
-                for (j = 0; j < curr->edges.size(); j++)
-                {
-                    succ = curr->edges[j].BBptr;
-                    if (succ->inInterval != curr->inInterval)
-                        BBnode->edges[i++].intPtr = succ->inInterval;
-                }
-            }
-        }
+       /* Find out edges */
+       if (BBnode->numOutEdges > 0)
+          while (listIi) {
+         curr = listIi->node;
+         for (j = 0; j < curr->numOutEdges; j++) {
+             succ = curr->edges[j].BBptr;
+             if (succ->inInterval != curr->inInterval)
+                BBnode->edges[i++].intPtr = succ->inInterval;
+         }
+             listIi = listIi->next;
+          }
 
-        /* Next interval */
-        Ii = Ii->next;
+       /* Next interval */
+       Ii = Ii->next;
     }
 
     /* Convert list of pointers to intervals into a real graph.
      * Determines the number of in edges to each new BB, and places it
      * in numInEdges and inEdgeCount for later interval processing. */
-    curr = new_entry.Gi = bbs.front();
-    for(BB *curr : bbs)
-    {
-        for(TYPEADR_TYPE &edge : curr->edges)
-        {
-            BBnode = new_entry.Gi;    /* BB of an interval */
-            auto iter= std::find_if(bbs.begin(),bbs.end(),
-                                    [&edge](BB *node)->bool { return edge.intPtr==node->correspInt;});
-            if(iter==bbs.end())
-                fatalError (INVALID_INT_BB);
-            edge.BBptr = *iter;
-            (*iter)->inEdges.push_back((BB *)nullptr);
-            (*iter)->inEdgeCount++;
-        }
+    curr = derivedGi->next->Gi = derInt.next;
+    while (curr) {
+       for (i = 0; i < curr->numOutEdges; i++) {
+           BBnode = derivedGi->next->Gi;    /* BB of an interval */
+           while (BBnode && curr->edges[i].intPtr != BBnode->correspInt)
+          BBnode = BBnode->next;
+           if (BBnode) {
+          curr->edges[i].BBptr = BBnode;
+          BBnode->numInEdges++;
+          BBnode->inEdgeCount++;
+           }
+           else
+          fatalError (INVALID_INT_BB);
+       }
+       curr = curr->next;
     }
     return (boolT)(! sameGraph);
 }
 
 
 
+static byte findDerivedSeq (derSeq *derivedGi)
 /* Finds the derived sequence of the graph derivedG->Gi (ie. cfg).
  * Constructs the n-th order graph and places all the intermediate graphs
  * in the derivedG list sequence.                   */
-uint8_t Function::findDerivedSeq (derSeq &derivedGi)
-{
-    BB *Gi;      /* Current derived sequence graph       */
+{  BB *Gi;      /* Current derived sequence graph       */
 
-    derSeq::iterator iter=derivedGi.begin();
-    Gi = iter->Gi;
+    Gi = derivedGi->Gi;
     while (! trivialGraph (Gi))
     {
-        /* Find the intervals of Gi and place them in derivedGi->Ii */
-        iter->findIntervals(this);
+         /* Find the intervals of Gi and place them in derivedGi->Ii */
+         findIntervals (derivedGi);
 
-        /* Create Gi+1 and check if it is equivalent to Gi */
-        if (! nextOrderGraph (derivedGi))
-            break;
-        ++iter;
-        Gi = iter->Gi;
-        stats.nOrder++;
+         /* Create Gi+1 and check if it is equivalent to Gi */
+         if (! nextOrderGraph (derivedGi))
+            break; 
+
+         derivedGi = derivedGi->next;
+         Gi = derivedGi->Gi;
+         stats.nOrder++;
     }
 
     if (! trivialGraph (Gi))
     {
-        ++iter;
-        derivedGi.erase(iter,derivedGi.end()); /* remove Gi+1 */
-        //        freeDerivedSeq(derivedGi->next);
-        //        derivedGi->next = NULL;
-        return false;
+        freeDerivedSeq(derivedGi->next);    /* remove Gi+1 */
+        derivedGi->next = NULL;
+        return FALSE;
     }
-    derivedGi.back().findIntervals (this);
-    return true;
+    findIntervals (derivedGi);
+    return TRUE;
 }
 
+
+static void nodeSplitting (BB *G)
 /* Converts the irreducible graph G into an equivalent reducible one, by
  * means of node splitting.  */
-static void nodeSplitting (std::list<BB *> &G)
 {
-    fprintf(stderr,"Attempt to perform node splitting: NOT IMPLEMENTED\n");
+
 }
 
+
+
+void displayDerivedSeq(derSeq *derGi)
 /* Displays the derived sequence and intervals of the graph G */
-void derSeq::display()
 {
-    int n = 1;      /* Derived sequence number */
+    Int n = 1;      /* Derived sequence number */
     printf ("\nDerived Sequence Intervals\n");
-    derSeq::iterator iter=this->begin();
-    while (iter!=this->end())
+    while (derGi)
     {
-        printf ("\nIntervals for G%lX\n", n++);
-        displayIntervals (iter->Ii);
-        ++iter;
+       printf ("\nIntervals for G%lX\n", n++);
+       displayIntervals (derGi->Ii);
+       derGi = derGi->next;
     }
 }
 
 
+void checkReducibility (PPROC pProc, derSeq **derivedG)
 /* Checks whether the control flow graph, cfg, is reducible or not.
  * If it is not reducible, it is converted into an equivalent reducible
  * graph by node splitting.  The derived sequence of graphs built from cfg
  * are returned in the pointer *derivedG.
  */
-derSeq * Function::checkReducibility()
-{
-    derSeq * der_seq;
-    uint8_t    reducible;  /* Reducible graph flag     */
+{ byte    reducible;            /* Reducible graph flag     */
 
     numInt = 1;         /* reinitialize no. of intervals*/
-    stats.nOrder = 1;   /* nOrder(cfg) = 1      */
-    der_seq = new derSeq;
-    der_seq->resize(1);
-    der_seq->back().Gi = m_cfg.front();
-    reducible = findDerivedSeq(*der_seq);
+    stats.nOrder = 1;       /* nOrder(cfg) = 1      */
+    *derivedG = newDerivedSeq();
+    (*derivedG)->Gi = pProc->cfg;
+    reducible = findDerivedSeq(*derivedG);
 
-    if (! reducible)
-    {
-        flg |= GRAPH_IRRED;
-        nodeSplitting (m_cfg);
+    if (! reducible) {
+       pProc->flg |= GRAPH_IRRED;
+       nodeSplitting (pProc->cfg);
     }
-    return der_seq;
 }
 

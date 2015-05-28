@@ -2,32 +2,7 @@
  *  dcc project disassembler header
  * (C) Mike van Emmerik
  ****************************************************************************/
-#pragma once
-#include <sstream>
-#include <fstream>
-#include <vector>
-#include "bundle.h"
-struct LLInst;
-struct Disassembler
-{
-protected:
-    int pass;
-    int g_lab;
-    //bundle &cCode;
-    std::ofstream m_fp;
-    std::vector<std::string> m_decls;
-    std::vector<std::string> m_code;
 
-public:
-    Disassembler(int _p) : pass(_p)
-    {
-        g_lab=0;
-    }
-public:
-    void disassem(Function *ppProc);
-    void disassem(Function *ppProc, int i);
-    void dis1Line(LLInst &inst, int loc_ip, int pass);
-};
 /* Definitions for extended keys (first key is zero) */
 
 #define EXT			0x100		/* "Extended" flag */
@@ -44,10 +19,10 @@ public:
 #ifdef _CONSOLE
 #define KEY_DOWN	0x50		/* Same as keypad scancodes */
 #define KEY_LEFT	0x4B
-#define KEY_UP		0x48
-#define KEY_RIGHT	0x4D
-#define KEY_NPAGE	0x51
-#define KEY_PPAGE	0x49
+#define KEY_UP		0x48		
+#define KEY_RIGHT	0x4D	
+#define KEY_NPAGE	0x51	
+#define KEY_PPAGE	0x49	
 #endif
 
 #ifdef __UNIX__

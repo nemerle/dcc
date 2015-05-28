@@ -2,34 +2,18 @@
  *          dcc project header
  * (C) Cristina Cifuentes, Mike van Emmerik
  ****************************************************************************/
-#pragma once
-#include <stdint.h>
-#include <cstring>
-#include "machine_x86.h"
 
 /* STATE TABLE */
-struct STATE
+typedef struct
 {
-    uint32_t      IP;             /* Offset into Image                    */
-    int16_t       r[INDEX_BX_SI];   /* Value of segs and AX                 */
-    bool          f[INDEX_BX_SI];   /* True if r[.] has a value             */
+    dword       IP;             /* Offset into Image                    */
+    int16       r[INDEXBASE];   /* Value of segs and AX                 */
+    byte        f[INDEXBASE];   /* True if r[.] has a value             */
     struct
-    {                           /* For case stmt indexed reg            */
-        uint8_t    regi;           /*   Last conditional jump              */
-        int16_t   immed;          /*   Contents of the previous register  */
+	{							/* For case stmt indexed reg            */
+        byte    regi;           /*   Last conditional jump              */
+        int16   immed;          /*   Contents of the previous register  */
     }           JCond;
-    void setState(uint16_t reg, int16_t value);
-    void checkStartup();
-    bool isKnown(eReg v) {return f[v];}
-    void kill(eReg v) { f[v]=false;}
-    STATE() : IP(0)
-    {
-        JCond.regi=0;
-        JCond.immed=0;
-
-        memset(r,0,sizeof(int16_t)*INDEX_BX_SI); //TODO: move this to machine_x86
-        memset(f,0,sizeof(uint8_t)*INDEX_BX_SI);
-    }
-};
-
+} STATE;
+typedef STATE *PSTATE;
 

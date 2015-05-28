@@ -5,923 +5,812 @@
  * (C) Cristina Cifuentes, Jeff Ledermann
  ****************************************************************************/
 
-#include <cstring>
 #include "dcc.h"
 #include "scanner.h"
-#include "project.h"
-/*  Parser flags  */
-#define TO_REG      0x000100    /* rm is source  */
-#define S_EXT       0x000200    /* sign extend   */
-#define OP386       0x000400    /* 386 op-code   */
-#define NSP         0x000800    /* NOT_HLL if SP is src or dst */
-#define ICODEMASK   0xFF00FF    /* Masks off parser flags */
+#include <string.h>
 
-static void rm(int i);
-static void modrm(int i);
-static void segrm(int i);
-static void data1(int i);
-static void data2(int i);
-static void regop(int i);
-static void segop(int i);
-static void strop(int i);
-static void escop(int i);
-static void axImp(int i);
-static void alImp(int i);
-static void axSrcIm(int i);
-static void memImp(int i);
-static void memReg0(int i);
-static void memOnly(int i);
-static void dispM(int i);
-static void dispS(int i);
-static void dispN(int i);
-static void dispF(int i);
-static void prefix(int i);
-static void immed(int i);
-static void shift(int i);
-static void arith(int i);
-static void trans(int i);
-static void const1(int i);
-static void const3(int i);
-static void none1(int i);
-static void none2(int i);
-static void checkInt(int i);
-
-#define iZERO (llIcode)0    // For neatness
+#define iZERO (llIcode)0			// For neatness
 #define IC	  llIcode
 
 static struct {
-    void (*state1)(int);
-    void (*state2)(int);
-    uint32_t flg;
-    llIcode opcode;
+	void (*state1)(Int);
+	void (*state2)(Int);
+	flags32 flg;
+	llIcode opcode;
+	byte df;
+	byte uf;
 } stateTable[] = {
-    {  modrm,   none2, B                        , iADD	},  /* 00 */
-    {  modrm,   none2, 0                        , iADD	},  /* 01 */
-    {  modrm,   none2, TO_REG | B               , iADD	},  /* 02 */
-    {  modrm,   none2, TO_REG 			, iADD	},  /* 03 */
-    {  data1,   axImp, B                        , iADD	},  /* 04 */
-    {  data2,   axImp, 0                        , iADD	},  /* 05 */
-    {  segop,   none2, NO_SRC                   , iPUSH	},  /* 06 */
-    {  segop,   none2, NO_SRC 			, iPOP	},  /* 07 */
-    {  modrm,   none2, B                        , iOR	},  /* 08 */
-    {  modrm,   none2, NSP                      , iOR	},  /* 09 */
-    {  modrm,   none2, TO_REG | B               , iOR	},  /* 0A */
-    {  modrm,   none2, TO_REG | NSP		, iOR	},  /* 0B */
-    {  data1,   axImp, B                        , iOR	},  /* 0C */
-    {  data2,   axImp, 0                        , iOR	},	/* 0D */
-    {  segop,   none2, NO_SRC                   , iPUSH	},	/* 0E */
-    {  none1,   none2, OP386                    , iZERO },	/* 0F */
-    {  modrm,   none2, B                        , iADC	},	/* 10 */
-    {  modrm,   none2, NSP                      , iADC	},	/* 11 */
-    {  modrm,   none2, TO_REG | B               , iADC	},	/* 12 */
-    {  modrm,   none2, TO_REG | NSP		, iADC	},	/* 13 */
-    {  data1,   axImp, B                        , iADC	},	/* 14 */
-    {  data2,   axImp, 0			, iADC	},	/* 15 */
-    {  segop,   none2, NOT_HLL | NO_SRC         , iPUSH	},	/* 16 */
-    {  segop,   none2, NOT_HLL | NO_SRC         , iPOP	},	/* 17 */
-    {  modrm,   none2, B			, iSBB	},	/* 18 */
-    {  modrm,   none2, NSP                      , iSBB	},	/* 19 */
-    {  modrm,   none2, TO_REG | B               , iSBB	},	/* 1A */
-    {  modrm,   none2, TO_REG | NSP		, iSBB	},	/* 1B */
-    {  data1,   axImp, B            		, iSBB	},	/* 1C */
-    {  data2,   axImp, 0                        , iSBB  },	/* 1D */
-    {  segop,   none2, NO_SRC                   , iPUSH	},	/* 1E */
-    {  segop,   none2, NO_SRC                   , iPOP	},	/* 1F */
-    {  modrm,   none2, B                        , iAND	},	/* 20 */
-    {  modrm,   none2, NSP                      , iAND	},	/* 21 */
-    {  modrm,   none2, TO_REG | B               , iAND	},	/* 22 */
-    {  modrm,   none2, TO_REG | NSP             , iAND	},	/* 23 */
-    {  data1,   axImp, B                        , iAND	},	/* 24 */
-    {  data2,   axImp, 0                        , iAND	},	/* 25 */
-    { prefix,   none2, 0                        , (IC)rES},	/* 26 */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC	, iDAA	},	/* 27 */
-    {  modrm,   none2, B                        , iSUB	},	/* 28 */
-    {  modrm,   none2, 0                        , iSUB	},	/* 29 */
-    {  modrm,   none2, TO_REG | B               , iSUB	},	/* 2A */
-    {  modrm,   none2, TO_REG                   , iSUB	},	/* 2B */
-    {  data1,   axImp, B                        , iSUB	},	/* 2C */
-    {  data2,   axImp, 0                        , iSUB	},	/* 2D */
-    { prefix,   none2, 0                        , (IC)rCS},	/* 2E */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iDAS  },	/* 2F */
-    {  modrm,   none2, B                        , iXOR  },	/* 30 */
-    {  modrm,   none2, NSP                      , iXOR  },	/* 31 */
-    {  modrm,   none2, TO_REG | B               , iXOR  },	/* 32 */
-    {  modrm,   none2, TO_REG | NSP             , iXOR  },	/* 33 */
-    {  data1,   axImp, B                        , iXOR	},	/* 34 */
-    {  data2,   axImp, 0                        , iXOR	},	/* 35 */
-    { prefix,   none2, 0                        , (IC)rSS},	/* 36 */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iAAA  },	/* 37 */
-    {  modrm,   none2, B                        , iCMP	},	/* 38 */
-    {  modrm,   none2, NSP                      , iCMP	},	/* 39 */
-    {  modrm,   none2, TO_REG | B               , iCMP	},	/* 3A */
-    {  modrm,   none2, TO_REG | NSP             , iCMP	},	/* 3B */
-    {  data1,   axImp, B                        , iCMP	},	/* 3C */
-    {  data2,   axImp, 0                        , iCMP	},	/* 3D */
-    { prefix,   none2, 0                        , (IC)rDS},	/* 3E */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iAAS  },	/* 3F */
-    {  regop,   none2, 0                        , iINC	},	/* 40 */
-    {  regop,   none2, 0                        , iINC	},	/* 41 */
-    {  regop,   none2, 0                        , iINC	},	/* 42 */
-    {  regop,   none2, 0                        , iINC	},	/* 43 */
-    {  regop,   none2, NOT_HLL			, iINC	},	/* 44 */
-    {  regop,   none2, 0                        , iINC	},	/* 45 */
-    {  regop,   none2, 0                        , iINC	},	/* 46 */
-    {  regop,   none2, 0                        , iINC	},	/* 47 */
-    {  regop,   none2, 0                        , iDEC	},	/* 48 */
-    {  regop,   none2, 0                        , iDEC	},	/* 49 */
-    {  regop,   none2, 0                        , iDEC	},	/* 4A */
-    {  regop,   none2, 0                        , iDEC	},	/* 4B */
-    {  regop,   none2, NOT_HLL			, iDEC	},	/* 4C */
-    {  regop,   none2, 0                        , iDEC	},	/* 4D */
-    {  regop,   none2, 0                        , iDEC	},	/* 4E */
-    {  regop,   none2, 0                        , iDEC	},	/* 4F */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 50 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 51 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 52 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 53 */
-    {  regop,   none2, NOT_HLL | NO_SRC         , iPUSH },	/* 54 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 55 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 56 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 57 */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 58 */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 59 */
-    {  regop,   none2, NO_SRC 			, iPOP  },	/* 5A */
-    {  regop,   none2, NO_SRC                   , iPOP	},	/* 5B */
-    {  regop,   none2, NOT_HLL | NO_SRC         , iPOP  },	/* 5C */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 5D */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 5E */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 5F */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHA},	/* 60 */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPOPA },	/* 61 */
-    { memOnly,  modrm, TO_REG | NSP		, iBOUND},	/* 62 */
-    {  none1,   none2, OP386                    , iZERO },	/* 63 */
-    {  none1,   none2, OP386                    , iZERO },	/* 64 */
-    {  none1,   none2, OP386                    , iZERO },	/* 65 */
-    {  none1,   none2, OP386                    , iZERO },	/* 66 */
-    {  none1,   none2, OP386                    , iZERO },	/* 67 */
-    {  data2,   none2, NO_SRC                   , iPUSH },	/* 68 */
-    {  modrm,   data2, TO_REG | NSP             , iIMUL },	/* 69 */
-    {  data1,   none2, S_EXT | NO_SRC           , iPUSH },	/* 6A */
-    {  modrm,   data1, TO_REG | NSP | S_EXT	, iIMUL },	/* 6B */
-    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iINS  },	/* 6C */
-    {  strop,  memImp, NOT_HLL | IM_OPS         , iINS  },	/* 6D */
-    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iOUTS },	/* 6E */
-    {  strop,  memImp, NOT_HLL | IM_OPS         , iOUTS },	/* 6F */
-    {  dispS,   none2, NOT_HLL			, iJO	},	/* 70 */
-    {  dispS,   none2, NOT_HLL			, iJNO	},	/* 71 */
-    {  dispS,   none2, 0                        , iJB	},	/* 72 */
-    {  dispS,   none2, 0                        , iJAE	},	/* 73 */
-    {  dispS,   none2, 0                        , iJE	},	/* 74 */
-    {  dispS,   none2, 0                        , iJNE	},	/* 75 */
-    {  dispS,   none2, 0                        , iJBE	},	/* 76 */
-    {  dispS,   none2, 0                        , iJA	},	/* 77 */
-    {  dispS,   none2, 0                        , iJS	},	/* 78 */
-    {  dispS,   none2, 0                        , iJNS	},	/* 79 */
-    {  dispS,   none2, NOT_HLL			, iJP	},	/* 7A */
-    {  dispS,   none2, NOT_HLL			, iJNP	},	/* 7B */
-    {  dispS,   none2, 0                        , iJL	},	/* 7C */
-    {  dispS,   none2, 0                        , iJGE	},	/* 7D */
-    {  dispS,   none2, 0                        , iJLE	},	/* 7E */
-    {  dispS,   none2, 0                        , iJG	},	/* 7F */
-    {  immed,   data1, B                        , iZERO	},	/* 80 */
-    {  immed,   data2, NSP                      , iZERO	},	/* 81 */
-    {  immed,   data1, B                        , iZERO	},	/* 82 */ /* ?? */
-    {  immed,   data1, NSP | S_EXT		, iZERO	},	/* 83 */
-    {  modrm,   none2, TO_REG | B		, iTEST	},	/* 84 */
-    {  modrm,   none2, TO_REG | NSP		, iTEST	},	/* 85 */
-    {  modrm,   none2, TO_REG | B               , iXCHG	},	/* 86 */
-    {  modrm,   none2, TO_REG | NSP		, iXCHG	},	/* 87 */
-    {  modrm,   none2, B                        , iMOV	},	/* 88 */
-    {  modrm,   none2, 0            		, iMOV	},	/* 89 */
-    {  modrm,   none2, TO_REG | B               , iMOV	},	/* 8A */
-    {  modrm,   none2, TO_REG 			, iMOV	},	/* 8B */
-    {  segrm,   none2, NSP                      , iMOV	},	/* 8C */
-    { memOnly,  modrm, TO_REG | NSP		, iLEA	},	/* 8D */
-    {  segrm,   none2, TO_REG | NSP		, iMOV	},	/* 8E */
-    { memReg0,  none2, NO_SRC                   , iPOP	},	/* 8F */
-    {   none1,  none2, NO_OPS                   , iNOP	},	/* 90 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 91 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 92 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 93 */
-    {  regop,   axImp, NOT_HLL			, iXCHG	},	/* 94 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 95 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 96 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 97 */
-    {  alImp,   axImp, SRC_B | S_EXT            , iSIGNEX},	/* 98 */
-    {axSrcIm,   axImp, IM_DST | S_EXT           , iSIGNEX},	/* 99 */
-    {  dispF,   none2, 0                        , iCALLF },	/* 9A */
-    {  none1,   none2, FLOAT_OP| NO_OPS         , iWAIT	},	/* 9B */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHF},	/* 9C */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPOPF	},	/* 9D */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iSAHF	},	/* 9E */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iLAHF	},	/* 9F */
-    {  dispM,   axImp, B                        , iMOV	},	/* A0 */
-    {  dispM,   axImp, 0                        , iMOV	},	/* A1 */
-    {  dispM,   axImp, TO_REG | B               , iMOV	},	/* A2 */
-    {  dispM,   axImp, TO_REG 			, iMOV	},	/* A3 */
-    {  strop,  memImp, B | IM_OPS               , iMOVS	},	/* A4 */
-    {  strop,  memImp, IM_OPS                   , iMOVS	},	/* A5 */
-    {  strop,  memImp, B | IM_OPS               , iCMPS	},	/* A6 */
-    {  strop,  memImp, IM_OPS                   , iCMPS	},	/* A7 */
-    {  data1,   axImp, B                        , iTEST	},	/* A8 */
-    {  data2,   axImp, 0                        , iTEST	},	/* A9 */
-    {  strop,  memImp, B | IM_OPS               , iSTOS	},	/* AA */
-    {  strop,  memImp, IM_OPS                   , iSTOS	},	/* AB */
-    {  strop,  memImp, B | IM_OPS               , iLODS	},	/* AC */
-    {  strop,  memImp, IM_OPS                   , iLODS	},	/* AD */
-    {  strop,  memImp, B | IM_OPS               , iSCAS	},	/* AE */
-    {  strop,  memImp, IM_OPS                   , iSCAS	},	/* AF */
-    {  regop,   data1, B                        , iMOV	},	/* B0 */
-    {  regop,   data1, B                        , iMOV	},	/* B1 */
-    {  regop,   data1, B                        , iMOV	},	/* B2 */
-    {  regop,   data1, B                        , iMOV	},	/* B3 */
-    {  regop,   data1, B                        , iMOV	},	/* B4 */
-    {  regop,   data1, B                        , iMOV	},	/* B5 */
-    {  regop,   data1, B                        , iMOV	},	/* B6 */
-    {  regop,   data1, B                        , iMOV	},	/* B7 */
-    {  regop,   data2, 0                        , iMOV	},	/* B8 */
-    {  regop,   data2, 0                        , iMOV	},	/* B9 */
-    {  regop,   data2, 0                        , iMOV	},	/* BA */
-    {  regop,   data2, 0                        , iMOV	},	/* BB */
-    {  regop,   data2, NOT_HLL			, iMOV	},	/* BC */
-    {  regop,   data2, 0                        , iMOV	},	/* BD */
-    {  regop,   data2, 0                        , iMOV	},	/* BE */
-    {  regop,   data2, 0                        , iMOV	},	/* BF */
-    {  shift,   data1, B                        , iZERO	},	/* C0 */
-    {  shift,   data1, NSP | SRC_B		, iZERO	},	/* C1 */
-    {  data2,   none2, 0                        , iRET	},	/* C2 */
-    {  none1,   none2, NO_OPS                   , iRET	},	/* C3 */
-    { memOnly,  modrm, TO_REG | NSP		, iLES	},	/* C4 */
-    { memOnly,  modrm, TO_REG | NSP		, iLDS	},	/* C5 */
-    { memReg0,  data1, B                        , iMOV	},	/* C6 */
-    { memReg0,  data2, 0			, iMOV	},	/* C7 */
-    {  data2,   data1, 0                        , iENTER},	/* C8 */
-    {  none1,   none2, NO_OPS                   , iLEAVE},	/* C9 */
-    {  data2,   none2, 0                        , iRETF	},	/* CA */
-    {  none1,   none2, NO_OPS                   , iRETF	},	/* CB */
-    { const3,   none2, NOT_HLL			, iINT	},	/* CC */
-    {  data1,checkInt, NOT_HLL			, iINT	},	/* CD */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iINTO	},	/* CE */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iIRET	},	/* Cf */
-    {  shift,  const1, B                        , iZERO	},	/* D0 */
-    {  shift,  const1, SRC_B                    , iZERO	},	/* D1 */
-    {  shift,   none1, B                        , iZERO	},	/* D2 */
-    {  shift,   none1, SRC_B                    , iZERO	},	/* D3 */
-    {  data1,   axImp, NOT_HLL			, iAAM	},	/* D4 */
-    {  data1,   axImp, NOT_HLL			, iAAD	},	/* D5 */
-    {  none1,   none2, 0                        , iZERO	},	/* D6 */
-    { memImp,   axImp, NOT_HLL | B| IM_OPS      , iXLAT	},	/* D7 */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* D8 */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* D9 */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DA */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DB */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DC */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DD */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DE */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* Df */
-    {  dispS,   none2, 0                        , iLOOPNE},	/* E0 */
-    {  dispS,   none2, 0                        , iLOOPE},	/* E1 */
-    {  dispS,   none2, 0                        , iLOOP	},	/* E2 */
-    {  dispS,   none2, 0                        , iJCXZ	},	/* E3 */
-    {  data1,   axImp, NOT_HLL | B|NO_SRC       , iIN	},	/* E4 */
-    {  data1,   axImp, NOT_HLL | NO_SRC         , iIN	},	/* E5 */
-    {  data1,   axImp, NOT_HLL | B|NO_SRC       , iOUT	},	/* E6 */
-    {  data1,   axImp, NOT_HLL | NO_SRC         , iOUT	},	/* E7 */
-    {  dispN,   none2, 0                        , iCALL	},	/* E8 */
-    {  dispN,   none2, 0                        , iJMP	},	/* E9 */
-    {  dispF,   none2, 0                        , iJMPF	},	/* EA */
-    {  dispS,   none2, 0                        , iJMP	},	/* EB */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iIN	},	/* EC */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iIN	},	/* ED */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iOUT	},	/* EE */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iOUT	},	/* EF */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iLOCK	},	/* F0 */
-    {  none1,   none2, 0                        , iZERO	},	/* F1 */
-    { prefix,   none2, 0                        , iREPNE},	/* F2 */
-    { prefix,   none2, 0                        , iREPE	},	/* F3 */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iHLT	},	/* F4 */
-    {  none1,   none2, NO_OPS                   , iCMC	},	/* F5 */
-    {  arith,   none1, B                        , iZERO	},	/* F6 */
-    {  arith,   none1, NSP			, iZERO	},	/* F7 */
-    {  none1,   none2, NO_OPS                   , iCLC	},	/* F8 */
-    {  none1,   none2, NO_OPS                   , iSTC	},	/* F9 */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iCLI	},	/* FA */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iSTI	},	/* FB */
-    {  none1,   none2, NO_OPS                   , iCLD	},	/* FC */
-    {  none1,   none2, NO_OPS                   , iSTD	},	/* FD */
-    {  trans,   none1, B                        , iZERO	},	/* FE */
-    {  trans,   none1, NSP                      , iZERO	}	/* FF */
+  {  modrm,   none2, B					, iADD	, Sf | Zf | Cf,		},	/* 00 */
+  {  modrm,   none2, 0 					, iADD	, Sf | Zf | Cf,		},	/* 01 */
+  {  modrm,   none2, TO_REG | B			, iADD	, Sf | Zf | Cf,		},	/* 02 */
+  {  modrm,   none2, TO_REG 			, iADD	, Sf | Zf | Cf,		},	/* 03 */
+  {  data1,   axImp, B					, iADD	, Sf | Zf | Cf,		},	/* 04 */
+  {  data2,   axImp, 0					, iADD	, Sf | Zf | Cf,		},	/* 05 */
+  {  segop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 06 */
+  {  segop,   none2, NO_SRC 			, iPOP	, 0	,				},	/* 07 */
+  {  modrm,   none2, B					, iOR	, Sf | Zf | Cf,		},	/* 08 */
+  {  modrm,   none2, NSP				, iOR	, Sf | Zf | Cf,		},	/* 09 */
+  {  modrm,   none2, TO_REG | B			, iOR	, Sf | Zf | Cf,		},	/* 0A */
+  {  modrm,   none2, TO_REG | NSP		, iOR	, Sf | Zf | Cf,		},	/* 0B */
+  {  data1,   axImp, B					, iOR	, Sf | Zf | Cf,		},	/* 0C */
+  {  data2,   axImp, 0					, iOR	, Sf | Zf | Cf,		},	/* 0D */
+  {  segop,   none2, NO_SRC				, iPUSH	, 0			  ,		},	/* 0E */
+  {  none1,	  none2, OP386 				, iZERO , 0			  ,		},	/* 0F */
+  {  modrm,   none2, B					, iADC	, Sf | Zf | Cf, Cf 	},	/* 10 */
+  {  modrm,   none2, NSP				, iADC	, Sf | Zf | Cf, Cf 	},	/* 11 */
+  {  modrm,   none2, TO_REG | B			, iADC	, Sf | Zf | Cf, Cf	},	/* 12 */
+  {  modrm,   none2, TO_REG | NSP		, iADC	, Sf | Zf | Cf, Cf	},	/* 13 */
+  {  data1,   axImp, B					, iADC	, Sf | Zf | Cf, Cf	},	/* 14 */
+  {  data2,   axImp, 0					, iADC	, Sf | Zf | Cf, Cf	},	/* 15 */
+  {  segop,   none2, NOT_HLL | NO_SRC	, iPUSH	, 0	,				},	/* 16 */
+  {  segop,   none2, NOT_HLL | NO_SRC	, iPOP	, 0	,				},	/* 17 */
+  {  modrm,   none2, B					, iSBB	, Sf | Zf | Cf, Cf	},	/* 18 */
+  {  modrm,   none2, NSP				, iSBB	, Sf | Zf | Cf, Cf	},	/* 19 */
+  {  modrm,   none2, TO_REG | B			, iSBB	, Sf | Zf | Cf, Cf	},	/* 1A */
+  {  modrm,   none2, TO_REG | NSP		, iSBB	, Sf | Zf | Cf, Cf	},	/* 1B */
+  {  data1,   axImp, B					, iSBB	, Sf | Zf | Cf, Cf 	},	/* 1C */
+  {  data2,   axImp, 0					, iSBB	, Sf | Zf | Cf, Cf	},	/* 1D */
+  {  segop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 1E */
+  {  segop,   none2, NO_SRC				, iPOP	, 0	,				},	/* 1F */
+  {  modrm,   none2, B					, iAND	, Sf | Zf | Cf,		},	/* 20 */
+  {  modrm,   none2, NSP				, iAND	, Sf | Zf | Cf,		},	/* 21 */
+  {  modrm,   none2, TO_REG | B			, iAND	, Sf | Zf | Cf,		},	/* 22 */
+  {  modrm,   none2, TO_REG | NSP		, iAND	, Sf | Zf | Cf,		},	/* 23 */
+  {  data1,   axImp, B					, iAND	, Sf | Zf | Cf,		},	/* 24 */
+  {  data2,   axImp, 0					, iAND	, Sf | Zf | Cf,		},	/* 25 */
+  { prefix,   none2, 0					, (IC)rES,0			  ,		},	/* 26 */
+  {  none1,   axImp, NOT_HLL | B|NO_SRC	, iDAA	, Sf | Zf | Cf,		},	/* 27 */
+  {  modrm,   none2, B					, iSUB	, Sf | Zf | Cf,		},	/* 28 */
+  {  modrm,   none2, 0					, iSUB	, Sf | Zf | Cf,		},	/* 29 */
+  {  modrm,   none2, TO_REG | B			, iSUB	, Sf | Zf | Cf,		},	/* 2A */
+  {  modrm,   none2, TO_REG				, iSUB	, Sf | Zf | Cf,		},	/* 2B */
+  {  data1,   axImp, B					, iSUB	, Sf | Zf | Cf,		},	/* 2C */
+  {  data2,   axImp, 0					, iSUB	, Sf | Zf | Cf,		},	/* 2D */
+  { prefix,   none2, 0					, (IC)rCS,0			  ,		},	/* 2E */
+  {  none1,   axImp, NOT_HLL | B|NO_SRC	, iDAS	, Sf | Zf | Cf,		},	/* 2F */
+  {  modrm,   none2, B					, iXOR	, Sf | Zf | Cf,		},	/* 30 */
+  {  modrm,   none2, NSP				, iXOR	, Sf | Zf | Cf,		},	/* 31 */
+  {  modrm,   none2, TO_REG | B			, iXOR	, Sf | Zf | Cf,		},	/* 32 */
+  {  modrm,   none2, TO_REG | NSP		, iXOR	, Sf | Zf | Cf,		},	/* 33 */
+  {  data1,   axImp, B					, iXOR	, Sf | Zf | Cf,		},	/* 34 */
+  {  data2,   axImp, 0					, iXOR	, Sf | Zf | Cf,		},	/* 35 */
+  { prefix,   none2, 0					, (IC)rSS,0			  ,		},	/* 36 */
+  {  none1,   axImp, NOT_HLL | NO_SRC	, iAAA	, Sf | Zf | Cf,		},	/* 37 */
+  {  modrm,   none2, B					, iCMP	, Sf | Zf | Cf,		},	/* 38 */
+  {  modrm,   none2, NSP				, iCMP	, Sf | Zf | Cf,		},	/* 39 */
+  {  modrm,   none2, TO_REG | B			, iCMP	, Sf | Zf | Cf,		},	/* 3A */
+  {  modrm,   none2, TO_REG | NSP		, iCMP	, Sf | Zf | Cf,		},	/* 3B */
+  {  data1,   axImp, B					, iCMP	, Sf | Zf | Cf,		},	/* 3C */
+  {  data2,   axImp, 0					, iCMP	, Sf | Zf | Cf,		},	/* 3D */
+  { prefix,   none2, 0					, (IC)rDS,0			  ,		},	/* 3E */
+  {  none1,   axImp, NOT_HLL | NO_SRC	, iAAS	, Sf | Zf | Cf,		},	/* 3F */
+  {  regop,   none2, 0					, iINC	, Sf | Zf,			},	/* 40 */
+  {  regop,   none2, 0					, iINC	, Sf | Zf,			},	/* 41 */
+  {  regop,   none2, 0					, iINC	, Sf | Zf,			},	/* 42 */
+  {  regop,   none2, 0					, iINC	, Sf | Zf,			},	/* 43 */
+  {  regop,   none2, NOT_HLL			, iINC	, Sf | Zf,			},	/* 44 */
+  {  regop,   none2, 0					, iINC	, Sf | Zf,			},	/* 45 */
+  {  regop,   none2, 0					, iINC	, Sf | Zf,			},	/* 46 */
+  {  regop,   none2, 0					, iINC	, Sf | Zf,			},	/* 47 */
+  {  regop,   none2, 0					, iDEC	, Sf | Zf,			},	/* 48 */
+  {  regop,   none2, 0					, iDEC	, Sf | Zf,			},	/* 49 */
+  {  regop,   none2, 0					, iDEC	, Sf | Zf,			},	/* 4A */
+  {  regop,   none2, 0					, iDEC	, Sf | Zf,			},	/* 4B */
+  {  regop,   none2, NOT_HLL			, iDEC	, Sf | Zf,			},	/* 4C */
+  {  regop,   none2, 0					, iDEC	, Sf | Zf,			},	/* 4D */
+  {  regop,   none2, 0					, iDEC	, Sf | Zf,			},	/* 4E */
+  {  regop,   none2, 0					, iDEC	, Sf | Zf,			},	/* 4F */
+  {  regop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 50 */
+  {  regop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 51 */
+  {  regop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 52 */
+  {  regop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 53 */
+  {  regop,   none2, NOT_HLL | NO_SRC	, iPUSH	, 0	,				},	/* 54 */
+  {  regop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 55 */
+  {  regop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 56 */
+  {  regop,   none2, NO_SRC				, iPUSH	, 0	,				},	/* 57 */
+  {  regop,   none2, NO_SRC				, iPOP	, 0	,				},	/* 58 */
+  {  regop,   none2, NO_SRC				, iPOP	, 0	,				},	/* 59 */
+  {  regop,   none2, NO_SRC 			, iPOP	, 0	,				},	/* 5A */
+  {  regop,   none2, NO_SRC				, iPOP	, 0	,				},	/* 5B */
+  {  regop,   none2, NOT_HLL | NO_SRC	, iPOP	, 0	,				},	/* 5C */
+  {  regop,   none2, NO_SRC				, iPOP	, 0	,				},	/* 5D */
+  {  regop,   none2, NO_SRC				, iPOP	, 0	,				},	/* 5E */
+  {  regop,   none2, NO_SRC				, iPOP	, 0	,				},	/* 5F */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iPUSHA, 0	,				},	/* 60 */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iPOPA	, 0	,				},	/* 61 */
+  { memOnly,  modrm, TO_REG | NSP		, iBOUND, 0	,				},	/* 62 */
+  {  none1,   none2, OP386 				, iZERO	, 0	,				},	/* 63 */
+  {  none1,   none2, OP386 				, iZERO	, 0	,				},	/* 64 */
+  {  none1,   none2, OP386 				, iZERO	, 0	,				},	/* 65 */
+  {  none1,   none2, OP386 				, iZERO	, 0	,				},	/* 66 */
+  {  none1,   none2, OP386 				, iZERO	, 0	,				},	/* 67 */
+  {  data2,   none2, NO_SRC				, iPUSH	, 0		,			},	/* 68 */
+  {  modrm,   data2, TO_REG | NSP		, iIMUL	, Sf | Zf | Cf,		},	/* 69 */
+  {  data1,   none2, S | NO_SRC			, iPUSH	, 0	,				},	/* 6A */
+  {  modrm,   data1, TO_REG | NSP | S	, iIMUL	, Sf | Zf | Cf,		},	/* 6B */
+  {  strop,  memImp, NOT_HLL | B|IM_OPS , iINS	, 0	, Df			},	/* 6C */
+  {  strop,  memImp, NOT_HLL | IM_OPS	, iINS	, 0	, Df			},	/* 6D */
+  {  strop,  memImp, NOT_HLL | B|IM_OPS , iOUTS	, 0	, Df			},	/* 6E */
+  {  strop,  memImp, NOT_HLL | IM_OPS	, iOUTS	, 0	, Df			},	/* 6F */
+  {  dispS,   none2, NOT_HLL			, iJO	, 0	,				},	/* 70 */
+  {  dispS,   none2, NOT_HLL			, iJNO	, 0	,				},	/* 71 */
+  {  dispS,   none2, 0					, iJB	, 0	, Cf			},	/* 72 */
+  {  dispS,   none2, 0					, iJAE	, 0	, Cf			},	/* 73 */
+  {  dispS,   none2, 0					, iJE	, 0	, Zf			},	/* 74 */
+  {  dispS,   none2, 0					, iJNE	, 0	, Zf			},	/* 75 */
+  {  dispS,   none2, 0					, iJBE	, 0	, Zf | Cf 		},	/* 76 */
+  {  dispS,   none2, 0					, iJA	, 0	, Zf | Cf 		},	/* 77 */
+  {  dispS,   none2, 0					, iJS	, 0	, Sf			},	/* 78 */
+  {  dispS,   none2, 0					, iJNS	, 0	, Sf			},	/* 79 */
+  {  dispS,   none2, NOT_HLL			, iJP	, 0	,				},	/* 7A */
+  {  dispS,   none2, NOT_HLL			, iJNP	, 0	,				},	/* 7B */
+  {  dispS,   none2, 0					, iJL	, 0	, Sf			},	/* 7C */
+  {  dispS,   none2, 0					, iJGE	, 0	, Sf			},	/* 7D */
+  {  dispS,   none2, 0					, iJLE	, 0	, Sf | Zf 		},	/* 7E */
+  {  dispS,   none2, 0					, iJG	, 0	, Sf | Zf	 	},	/* 7F */
+  {  immed,   data1, B					, iZERO	, 0	,				},	/* 80 */
+  {  immed,   data2, NSP				, iZERO	, 0	,				},	/* 81 */
+  {  immed,   data1, B					, iZERO	, 0	,				},	/* 82 */ /* ?? */
+  {  immed,   data1, NSP | S			, iZERO	, 0	,				},	/* 83 */
+  {  modrm,   none2, TO_REG | B			, iTEST	, Sf | Zf | Cf, 	},	/* 84 */
+  {  modrm,   none2, TO_REG | NSP		, iTEST	, Sf | Zf | Cf, 	},	/* 85 */
+  {  modrm,   none2, TO_REG | B			, iXCHG	, 0	,				},	/* 86 */
+  {  modrm,   none2, TO_REG | NSP		, iXCHG	, 0	,				},	/* 87 */
+  {  modrm,   none2, B					, iMOV	, 0	,				},	/* 88 */
+  {  modrm,   none2, 0					, iMOV	, 0	,				},	/* 89 */
+  {  modrm,   none2, TO_REG | B			, iMOV	, 0	,				},	/* 8A */
+  {  modrm,   none2, TO_REG 			, iMOV	, 0	,				},	/* 8B */
+  {  segrm,   none2, NSP				, iMOV	, 0	,				},	/* 8C */
+  { memOnly,  modrm, TO_REG | NSP		, iLEA	, 0	,				},	/* 8D */
+  {  segrm,   none2, TO_REG | NSP		, iMOV	, 0	,				},	/* 8E */
+  { memReg0,  none2, NO_SRC				, iPOP	, 0	,				},	/* 8F */
+  {   none1,  none2, NO_OPS				, iNOP	, 0	,				},	/* 90 */
+  {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 91 */
+  {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 92 */
+  {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 93 */
+  {  regop,   axImp, NOT_HLL			, iXCHG	, 0	,				},	/* 94 */
+  {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 95 */
+  {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 96 */
+  {  regop,   axImp, 0					, iXCHG	, 0	,				},	/* 97 */
+  {  alImp,   axImp, SRC_B | S			, iSIGNEX,0	,				},	/* 98 */
+  {axSrcIm,   axImp, IM_DST | S			, iSIGNEX,0	,				},	/* 99 */
+  {  dispF,   none2, 0					, iCALLF ,0	,				},	/* 9A */
+  {  none1,   none2, FLOAT_OP| NO_OPS	, iWAIT	, 0	,				},	/* 9B */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iPUSHF, 0	,				},	/* 9C */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iPOPF	, Sf | Zf | Cf | Df,},	/* 9D */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iSAHF	, Sf | Zf | Cf,		},	/* 9E */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iLAHF	, 0 , Sf | Zf | Cf 	},	/* 9F */
+  {  dispM,   axImp, B					, iMOV	, 0	,				},	/* A0 */
+  {  dispM,   axImp, 0					, iMOV	, 0	,				},	/* A1 */
+  {  dispM,   axImp, TO_REG | B			, iMOV	, 0	,				},	/* A2 */
+  {  dispM,   axImp, TO_REG 			, iMOV	, 0	,				},	/* A3 */
+  {  strop,  memImp, B | IM_OPS			, iMOVS	, 0	, Df			},	/* A4 */
+  {  strop,  memImp, IM_OPS				, iMOVS	, 0	, Df			},	/* A5 */
+  {  strop,  memImp, B | IM_OPS			, iCMPS	, Sf | Zf | Cf, Df	},	/* A6 */
+  {  strop,  memImp, IM_OPS				, iCMPS	, Sf | Zf | Cf, Df	},	/* A7 */
+  {  data1,   axImp, B					, iTEST	, Sf | Zf | Cf,		},	/* A8 */
+  {  data2,   axImp, 0					, iTEST	, Sf | Zf | Cf,		},	/* A9 */
+  {  strop,  memImp, B | IM_OPS			, iSTOS	, 0	, Df			},	/* AA */
+  {  strop,  memImp, IM_OPS				, iSTOS	, 0	, Df			},	/* AB */
+  {  strop,  memImp, B | IM_OPS			, iLODS	, 0	, Df			},	/* AC */
+  {  strop,  memImp, IM_OPS				, iLODS	, 0	, Df			},	/* AD */
+  {  strop,  memImp, B | IM_OPS			, iSCAS	, Sf | Zf | Cf, Df  },	/* AE */
+  {  strop,  memImp, IM_OPS				, iSCAS	, Sf | Zf | Cf, Df	},	/* AF */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B0 */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B1 */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B2 */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B3 */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B4 */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B5 */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B6 */
+  {  regop,   data1, B					, iMOV	, 0	,				},	/* B7 */
+  {  regop,   data2, 0					, iMOV	, 0	,				},	/* B8 */
+  {  regop,   data2, 0					, iMOV	, 0	,				},	/* B9 */
+  {  regop,   data2, 0					, iMOV	, 0	,				},	/* BA */
+  {  regop,   data2, 0					, iMOV	, 0	,				},	/* BB */
+  {  regop,   data2, NOT_HLL			, iMOV	, 0	,				},	/* BC */
+  {  regop,   data2, 0					, iMOV	, 0	,				},	/* BD */
+  {  regop,   data2, 0					, iMOV	, 0	,				},	/* BE */
+  {  regop,   data2, 0					, iMOV	, 0	,				},	/* BF */
+  {  shift,   data1, B					, iZERO	, 0	,				},	/* C0 */
+  {  shift,   data1, NSP | SRC_B		, iZERO	, 0	,				},	/* C1 */
+  {  data2,   none2, 0					, iRET	, 0	,				},	/* C2 */
+  {  none1,   none2, NO_OPS				, iRET	, 0	,				},	/* C3 */
+  { memOnly,  modrm, TO_REG | NSP		, iLES	, 0	,				},	/* C4 */
+  { memOnly,  modrm, TO_REG | NSP		, iLDS	, 0	,				},	/* C5 */
+  { memReg0,  data1, B					, iMOV	, 0	,				},	/* C6 */
+  { memReg0,  data2, 0					, iMOV	, 0	,				},	/* C7 */
+  {  data2,   data1, 0					, iENTER, 0	,				},	/* C8 */
+  {  none1,   none2, NO_OPS				, iLEAVE, 0	,				},	/* C9 */
+  {  data2,   none2, 0					, iRETF	, 0	,				},	/* CA */
+  {  none1,   none2, NO_OPS				, iRETF	, 0	,				},	/* CB */
+  { const3,   none2, NOT_HLL			, iINT	, 0	,				},	/* CC */
+  {  data1,checkInt, NOT_HLL			, iINT	, 0	,				},	/* CD */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iINTO	, 0	,				},	/* CE */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iIRET	, 0	,				},	/* Cf */
+  {  shift,  const1, B					, iZERO	, 0	,				},	/* D0 */
+  {  shift,  const1, SRC_B				, iZERO	, 0	,				},	/* D1 */
+  {  shift,   none1, B					, iZERO	, 0	,				},	/* D2 */
+  {  shift,   none1, SRC_B				, iZERO	, 0	,				},	/* D3 */
+  {  data1,   axImp, NOT_HLL			, iAAM	, Sf | Zf | Cf,		},	/* D4 */
+  {  data1,   axImp, NOT_HLL			, iAAD	, Sf | Zf | Cf,		},	/* D5 */
+  {  none1,   none2, 0					, iZERO	, 0	,				},	/* D6 */
+  { memImp,   axImp, NOT_HLL | B| IM_OPS, iXLAT	, 0	,				},	/* D7 */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* D8 */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* D9 */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* DA */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* DB */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* DC */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* DD */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* DE */
+  {  escop,   none2, FLOAT_OP			, iESC	, 0	,				},	/* Df */
+  {  dispS,   none2, 0					, iLOOPNE,0	, Zf			},	/* E0 */
+  {  dispS,   none2, 0					, iLOOPE, 0	, Zf			},	/* E1 */
+  {  dispS,   none2, 0					, iLOOP	, 0	,				},	/* E2 */
+  {  dispS,   none2, 0					, iJCXZ	, 0	,				},	/* E3 */
+  {  data1,   axImp, NOT_HLL | B|NO_SRC , iIN	, 0	,				},	/* E4 */
+  {  data1,   axImp, NOT_HLL | NO_SRC	, iIN	, 0	,				},	/* E5 */
+  {  data1,   axImp, NOT_HLL | B|NO_SRC , iOUT	, 0	,				},	/* E6 */
+  {  data1,   axImp, NOT_HLL | NO_SRC	, iOUT	, 0	,				},	/* E7 */
+  {  dispN,   none2, 0					, iCALL	, 0	,				},	/* E8 */
+  {  dispN,   none2, 0					, iJMP	, 0	,				},	/* E9 */
+  {  dispF,   none2, 0					, iJMPF	, 0	,				},	/* EA */
+  {  dispS,   none2, 0					, iJMP	, 0	,				},	/* EB */
+  {  none1,   axImp, NOT_HLL | B|NO_SRC , iIN	, 0	,				},	/* EC */
+  {  none1,   axImp, NOT_HLL | NO_SRC	, iIN	, 0	,				},	/* ED */
+  {  none1,   axImp, NOT_HLL | B|NO_SRC , iOUT	, 0	,				},	/* EE */
+  {  none1,   axImp, NOT_HLL | NO_SRC	, iOUT	, 0	,				},	/* EF */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iLOCK	, 0	,				},	/* F0 */
+  {  none1,   none2, 0					, iZERO	, 0	,				},	/* F1 */
+  { prefix,   none2, 0					, iREPNE, 0	,				},	/* F2 */
+  { prefix,   none2, 0					, iREPE	, 0	,				},	/* F3 */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iHLT	, 0	,				},	/* F4 */
+  {  none1,   none2, NO_OPS				, iCMC	, Cf, Cf			},	/* F5 */
+  {  arith,   none1, B					, iZERO	, 0	,				},	/* F6 */
+  {  arith,   none1, NSP				, iZERO	, 0	,				},	/* F7 */
+  {  none1,   none2, NO_OPS				, iCLC	, Cf,				},	/* F8 */
+  {  none1,   none2, NO_OPS				, iSTC	, Cf,				},	/* F9 */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iCLI	, 0	,				},	/* FA */
+  {  none1,   none2, NOT_HLL | NO_OPS	, iSTI	, 0	,				},	/* FB */
+  {  none1,   none2, NO_OPS				, iCLD	, Df,				},	/* FC */
+  {  none1,   none2, NO_OPS				, iSTD	, Df,				},	/* FD */
+  {  trans,   none1, B					, iZERO	, 0	,				},	/* FE */
+  {  trans,   none1, NSP				, iZERO	, 0	,				}	/* FF */
 } ;
 
-static uint16_t    SegPrefix, RepPrefix;
-static uint8_t  *pInst;		/* Ptr. to current uint8_t of instruction */
-static ICODE * pIcode;		/* Ptr to Icode record filled in by scan() */
+static word    SegPrefix, RepPrefix;
+static byte  *pInst;		/* Ptr. to current byte of instruction */
+static PICODE pIcode;		/* Ptr to Icode record filled in by scan() */
 
 
 /*****************************************************************************
  Scans one machine instruction at offset ip in prog.Image and returns error.
  At the same time, fill in low-level icode details for the scanned inst.
  ****************************************************************************/
-
-static void convertUsedFlags(x86_insn_t &from,ICODE &to)
+Int scan(dword ip, PICODE p)
 {
-    to.ll()->flagDU.d=0;
-    to.ll()->flagDU.u=0;
-    if(from.containsFlag(insn_eflag_carry,from.flags_set))
-        to.ll()->flagDU.d |= Cf;
-    if(from.containsFlag(insn_eflag_sign,from.flags_set))
-        to.ll()->flagDU.d |= Sf;
-    if(from.containsFlag(insn_eflag_zero,from.flags_set))
-        to.ll()->flagDU.d |= Zf;
-    if(from.containsFlag(insn_eflag_direction,from.flags_set))
-        to.ll()->flagDU.d |= Df;
+	Int  op;
 
-    if(from.containsFlag(insn_eflag_carry,from.flags_tested))
-        to.ll()->flagDU.u |= Cf;
-    if(from.containsFlag(insn_eflag_sign,from.flags_tested))
-        to.ll()->flagDU.u |= Sf;
-    if(from.containsFlag(insn_eflag_zero,from.flags_tested))
-        to.ll()->flagDU.u |= Zf;
-    if(from.containsFlag(insn_eflag_direction,from.flags_tested))
-        to.ll()->flagDU.u |= Df;
-}
-/****************************************************************************
- Checks for int 34 to int 3B - if so, converts to ESC nn instruction
- ****************************************************************************/
-static void fixFloatEmulation(x86_insn_t &insn)
-{
-    if(insn.group!=x86_insn_t::insn_interrupt)
-        return;
-    PROG &prog(Project::get()->prog);
-    uint16_t wOp=insn.x86_get_imm()->data.word;
-    if ((wOp < 0x34) || (wOp > 0x3B))
-        return;
-    uint8_t buf[16];
-    /* This is a Borland/Microsoft floating point emulation instruction.
-       Treat as if it is an ESC opcode */
+	memset(p, 0, sizeof(ICODE));
+	p->type = LOW_LEVEL;
+	p->ic.ll.label = ip;			/* ip is absolute offset into image*/
+	if (ip >= (dword)prog.cbImage)
+	{
+		return (IP_OUT_OF_RANGE);
+	}
 
-    int actual_valid_bytes=std::min(16U,prog.cbImage-insn.offset);
-    memcpy(buf,prog.Image+insn.offset,actual_valid_bytes);
-    X86_Disasm ds(opt_16_bit);
-    x86_insn_t patched_insn;
-    //patch actual instruction into buffer;
-    buf[1] = wOp-0x34+0xD8;
-    ds.x86_disasm(buf,actual_valid_bytes,0,1,&patched_insn);
-    patched_insn.addr   = insn.addr; // actual address
-    patched_insn.offset = insn.offset; // actual offset
-    insn = patched_insn;
-    insn.size += 1; // to account for emulator call INT
-}
+	SegPrefix = RepPrefix = 0;
+	pInst    = prog.Image + ip;
+	pIcode   = p;
 
-int disassembleOneLibDisasm(uint32_t ip,x86_insn_t &l)
-{
-    PROG &prog(Project::get()->prog);
-    X86_Disasm ds(opt_16_bit);
-    int cnt=ds.x86_disasm(prog.Image,prog.cbImage,0,ip,&l);
-    if(cnt && l.is_valid())
-    {
-        fixFloatEmulation(l); //can change 'l'
-    }
-    if(l.is_valid())
-        return l.size;
-    return 0;
-}
-eReg convertRegister(const x86_reg_t &reg)
-{
+	do
+	{
+		op = *pInst++;						/* First state - trivial   */
+		p->ic.ll.opcode = stateTable[op].opcode;  /* Convert to Icode.opcode */
+		p->ic.ll.flg    = stateTable[op].flg & ICODEMASK;
+		p->ic.ll.flagDU.d = stateTable[op].df;
+		p->ic.ll.flagDU.u = stateTable[op].uf;
 
-    eReg regmap[]={ rUNDEF,
-                    rUNDEF,rUNDEF,rUNDEF,rUNDEF,   //eax ecx ebx edx
-                    rUNDEF,rUNDEF,rUNDEF,rUNDEF,   //esp ebp esi edi
-                    rAX,rCX,rDX,rBX,
-                    rSP,rBP,rSI,rDI,
-                    rAL,rCL,rDL,rBL,
-                    rAH,rCH,rDH,rBH
-                  };
-    assert(reg.id<sizeof(regmap)/sizeof(eReg));
-    return regmap[reg.id];
-}
-LLOperand convertOperand(const x86_op_t &from)
-{
-    switch(from.type)
-    {
-        case op_unused:
-            break;
-        case op_register:
-            return LLOperand::CreateReg2(convertRegister(from.data.reg));
-    }
-}
-eErrorId scan(uint32_t ip, ICODE &p)
-{
-    PROG &prog(Project::get()->prog);
-    int  op;
-    p = ICODE();
-    p.type = LOW_LEVEL;
-    p.ll()->label = ip;			/* ip is absolute offset into image*/
-    if (ip >= (uint32_t)prog.cbImage)
-    {
-        return (IP_OUT_OF_RANGE);
-    }
-    int cnt=disassembleOneLibDisasm(ip,p.insn);
-    if(cnt)
-    {
-        convertUsedFlags(p.insn,p);
-    }
+		(*stateTable[op].state1)(op);		/* Second state */
+		(*stateTable[op].state2)(op);		/* Third state  */
 
-    SegPrefix = RepPrefix = 0;
-    pInst    = prog.Image + ip;
-    pIcode   = &p;
+	} while (stateTable[op].state1 == prefix);	/* Loop if prefix */
 
-    do
-    {
-        op = *pInst++;						/* First state - trivial   */
-        /* Convert to Icode.opcode */
-        p.ll()->set(stateTable[op].opcode,stateTable[op].flg & ICODEMASK);
-        (*stateTable[op].state1)(op);		/* Second state */
-        (*stateTable[op].state2)(op);		/* Third state  */
-
-    } while (stateTable[op].state1 == prefix);	/* Loop if prefix */
-    if (p.ll()->getOpcode())
-    {
-        /* Save bytes of image used */
-        p.ll()->numBytes = (uint8_t)((pInst - prog.Image) - ip);
-        if(p.insn.is_valid())
-            assert(p.ll()->numBytes == p.insn.size);
-        return ((SegPrefix)? FUNNY_SEGOVR:  /* Seg. Override invalid */
-                             (RepPrefix ? FUNNY_REP: NO_ERR));/* REP prefix invalid */
-    }
-    /* Else opcode error */
-    return ((stateTable[op].flg & OP386)? INVALID_386OP: INVALID_OPCODE);
-}
-
-/***************************************************************************
- relocItem - returns true if uint16_t pointed at is in relocation table
- **************************************************************************/
-static bool relocItem(uint8_t *p)
-{
-    PROG &prog(Project::get()->prog);
-    int		i;
-    uint32_t	off = p - prog.Image;
-
-    for (i = 0; i < prog.cReloc; i++)
-        if (prog.relocTable[i] == off)
-            return true;
-    return false;
+	if (p->ic.ll.opcode)
+	{
+		/* Save bytes of image used */
+		p->ic.ll.numBytes = (byte)((pInst - prog.Image) - ip);
+		return ((SegPrefix)? FUNNY_SEGOVR:  /* Seg. Override invalid */
+				(RepPrefix ? FUNNY_REP: 0));/* REP prefix invalid */
+	}
+	/* Else opcode error */
+	return ((stateTable[op].flg & OP386)? INVALID_386OP: INVALID_OPCODE);
 }
 
 
 /***************************************************************************
- getWord - returns next uint16_t from image
+ relocItem - returns TRUE if word pointed at is in relocation table
  **************************************************************************/
-static uint16_t getWord(void)
+static boolT relocItem(byte *p)
 {
-    uint16_t w = LH(pInst);
-    pInst += 2;
-    return w;
+	Int		i;
+	dword	off = p - prog.Image;
+
+	for (i = 0; i < prog.cReloc; i++)
+		if (prog.relocTable[i] == off)
+			return TRUE;
+	return FALSE;
+}
+
+
+/***************************************************************************
+ getWord - returns next word from image
+ **************************************************************************/
+static word getWord(void)
+{
+	word w = LH(pInst);
+	pInst += 2;
+	return w;
 }
 
 
 /****************************************************************************
- signex - returns uint8_t sign extended to int
+ signex - returns byte sign extended to Int
  ***************************************************************************/
-static int signex(uint8_t b)
+static Int signex(byte b)
 {
-    long s = b;
-    return ((b & 0x80)? (int)(0xFFFFFF00 | s): (int)s);
+	long s = b;
+	return ((b & 0x80)? (Int)(0xFFFFFF00 | s): (Int)s);
 }
 
+
 /****************************************************************************
- * setAddress - Updates the source or destination field for the current
+ * setAddress - Updates the source or destination field for the current 
  *	icode, based on fdst and the TO_REG flag.
- * 	Note: fdst == true is for the r/m part of the field (dest, unless TO_REG)
- *	      fdst == false is for reg part of the field
+ * 	Note: fdst == TRUE is for the r/m part of the field (dest, unless TO_REG)
+ *	      fdst == FALSE is for reg part of the field
  ***************************************************************************/
-static void setAddress(int i, boolT fdst, uint16_t seg, int16_t reg, uint16_t off)
+static void setAddress(Int i, boolT fdst, word seg, int16 reg, word off)
 {
-    LLOperand *pm;
+	PMEM pm;
 
-    /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
-    pm = (!(stateTable[i].flg & TO_REG) == fdst) ?
-             &pIcode->ll()->dst : &pIcode->ll()->src();
+	/* If not to register (i.e. to r/m), and talking about r/m,
+		then this is dest */
+	pm = (!(stateTable[i].flg & TO_REG) == fdst) ?
+			&pIcode->ic.ll.dst : &pIcode->ic.ll.src;
 
-    /* Set segment.  A later procedure (lookupAddr in proclist.c) will
-         * provide the value of this segment in the field segValue.  */
-    if (seg)  		/* segment override */
-    {
-        pm->seg = pm->segOver = (eReg)seg;
-    }
-    else
-    {	/* no override, check indexed register */
-        if ((reg >= INDEX_BX_SI) && (reg == INDEX_BP_SI || reg == INDEX_BP_DI || reg == INDEX_BP))
-        {
-            pm->seg = rSS;		/* indexed on bp */
-        }
-        else
-        {
-            pm->seg = rDS;		/* any other indexed reg */
-        }
-    }
+	/* Set segment.  A later procedure (lookupAddr in proclist.c) will
+	 * provide the value of this segment in the field segValue.  */
+	if (seg)  		/* segment override */
+	{
+		pm->seg = pm->segOver = (byte)seg;
+	}
+	else
+	{	/* no override, check indexed register */
+		if ((reg >= INDEXBASE) && (reg == INDEXBASE + 2 ||
+		     reg == INDEXBASE + 3 || reg == INDEXBASE + 6))
+		{
+			pm->seg = rSS;		/* indexed on bp */
+		}
+		else
+		{
+			pm->seg = rDS;		/* any other indexed reg */
+		}
+	}
+	pm->regi = (byte)reg;
+	pm->off = (int16)off;
+	if (reg && reg < INDEXBASE && (stateTable[i].flg & B))
+	{
+		pm->regi += rAL - rAX;
+	}
 
-    pm->regi = (eReg)reg;
-    pm->off = (int16_t)off;
-    if (reg && reg < INDEX_BX_SI && (stateTable[i].flg & B))
-    {
-        pm->regi = Machine_X86::subRegL(pm->regi);
-    }
-
-    if (seg)	/* So we can catch invalid use of segment overrides */
-    {
-        SegPrefix = 0;
-    }
+	if (seg)	/* So we can catch invalid use of segment overrides */
+	{
+		SegPrefix = 0;
+	}
 }
 
 
 /****************************************************************************
- rm - Decodes r/m part of modrm uint8_t for dst (unless TO_REG) part of icode
+ rm - Decodes r/m part of modrm byte for dst (unless TO_REG) part of icode
  ***************************************************************************/
-static void rm(int i)
+static void rm(Int i)
 {
-    uint8_t mod = *pInst >> 6;
-    uint8_t rm  = *pInst++ & 7;
+	byte mod = *pInst >> 6;
+	byte rm  = *pInst++ & 7;
 
-    switch (mod) {
-        case 0:		/* No disp unless rm == 6 */
-            if (rm == 6) {
-                setAddress(i, true, SegPrefix, 0, getWord());
-                pIcode->ll()->setFlags(WORD_OFF);
-            }
-            else
-                setAddress(i, true, SegPrefix, rm + INDEX_BX_SI, 0);
-            break;
+	switch (mod) {  
+	case 0:		/* No disp unless rm == 6 */
+		if (rm == 6) {
+			setAddress(i, TRUE, SegPrefix, 0, getWord());
+			pIcode->ic.ll.flg |= WORD_OFF;
+		}
+		else	setAddress(i, TRUE, SegPrefix, rm + INDEXBASE, 0);
+		break;
 
-        case 1:		/* 1 uint8_t disp */
-            setAddress(i, true, SegPrefix, rm+INDEX_BX_SI, (uint16_t)signex(*pInst++));
-            break;
+	case 1:		/* 1 byte disp */
+		setAddress(i, TRUE, SegPrefix, rm+INDEXBASE, (word)signex(*pInst++));
+		break;
 
-        case 2:		/* 2 uint8_t disp */
-            setAddress(i, true, SegPrefix, rm + INDEX_BX_SI, getWord());
-            pIcode->ll()->setFlags(WORD_OFF);
-            break;
+	case 2:		/* 2 byte disp */
+		setAddress(i, TRUE, SegPrefix, rm + INDEXBASE, getWord());
+		pIcode->ic.ll.flg |= WORD_OFF;
+		break;
 
-        case 3:		/* reg */
-            setAddress(i, true, 0, rm + rAX, 0);
-            break;
-    }
+	case 3:		/* reg */
+		setAddress(i, TRUE, 0, rm + rAX, 0);
+		break;
+	}
 
-    if ((stateTable[i].flg & NSP) && (pIcode->ll()->src().getReg2()==rSP ||
-                                      pIcode->ll()->dst.getReg2()==rSP))
-        pIcode->ll()->setFlags(NOT_HLL);
+	if ((stateTable[i].flg & NSP) && (pIcode->ic.ll.src.regi==rSP ||
+									  pIcode->ic.ll.dst.regi==rSP))
+		pIcode->ic.ll.flg |= NOT_HLL;
 }
 
 
 /****************************************************************************
- modrm - Sets up src and dst from modrm uint8_t
+ modrm - Sets up src and dst from modrm byte
  ***************************************************************************/
-static void modrm(int i)
+static void modrm(Int i)
 {
-    setAddress(i, false, 0, REG(*pInst) + rAX, 0);
-    rm(i);
+	setAddress(i, FALSE, 0, REG(*pInst) + rAX, 0);
+	rm(i);
 }
 
 
 /****************************************************************************
  segrm - seg encoded as reg of modrm
  ****************************************************************************/
-static void segrm(int i)
+static void segrm(Int i)
 {
-    int	reg = REG(*pInst) + rES;
+	Int	reg = REG(*pInst) + rES;
 
-    if (reg > rDS || (reg == rCS && (stateTable[i].flg & TO_REG)))
-        pIcode->ll()->setOpcode((llIcode)0); // setCBW because it has that index
-    else {
-        setAddress(i, false, 0, (int16_t)reg, 0);
-        rm(i);
-    }
+	if (reg > rDS || (reg == rCS && (stateTable[i].flg & TO_REG)))
+		pIcode->ic.ll.opcode = (llIcode)0;
+	else {
+		setAddress(i, FALSE, 0, (int16)reg, 0);
+		rm(i);
+	}
 }
 
 
 /****************************************************************************
  regop - src/dst reg encoded as low 3 bits of opcode
  ***************************************************************************/
-static void regop(int i)
+static void regop(Int i)
 {
-    setAddress(i, false, 0, ((int16_t)i & 7) + rAX, 0);
-    pIcode->ll()->replaceDst(LLOperand::CreateReg2(pIcode->ll()->src().getReg2()));
-    //    pIcode->ll()->dst.regi = pIcode->ll()->src.regi;
+	setAddress(i, FALSE, 0, ((int16)i & 7) + rAX, 0);
+	pIcode->ic.ll.dst.regi = pIcode->ic.ll.src.regi;
 }
 
 
 /*****************************************************************************
  segop - seg encoded in middle of opcode
  *****************************************************************************/
-static void segop(int i)
+static void segop(Int i)
 {
-    setAddress(i, true, 0, (((int16_t)i & 0x18) >> 3) + rES, 0);
+	setAddress(i, TRUE, 0, (((int16)i & 0x18) >> 3) + rES, 0);
 }
 
 
 /****************************************************************************
  axImp - Plugs an implied AX dst
  ***************************************************************************/
-static void axImp(int i)
+static void axImp(Int i)
 {
-    setAddress(i, true, 0, rAX, 0);
+	setAddress(i, TRUE, 0, rAX, 0); 
 }
 
+
+static void axSrcIm (Int i)
 /* Implied AX source */
-static void axSrcIm (int )
 {
-    pIcode->ll()->replaceSrc(rAX);//src.regi = rAX;
+	pIcode->ic.ll.src.regi = rAX;
 }
 
+
+static void alImp (Int i)
 /* Implied AL source */
-static void alImp (int )
 {
-    pIcode->ll()->replaceSrc(rAL);//src.regi = rAL;
+	pIcode->ic.ll.src.regi = rAL;
 }
 
 
 /*****************************************************************************
  memImp - Plugs implied src memory operand with any segment override
  ****************************************************************************/
-static void memImp(int i)
+static void memImp(Int i)
 {
-    setAddress(i, false, SegPrefix, 0, 0);
+	setAddress(i, FALSE, SegPrefix, 0, 0);
 }
 
 
 /****************************************************************************
  memOnly - Instruction is not valid if modrm refers to register (i.e. mod == 3)
  ***************************************************************************/
-static void memOnly(int )
+static void memOnly(Int i)
 {
-    if ((*pInst & 0xC0) == 0xC0)
-        pIcode->ll()->setOpcode((llIcode)0);
+	if ((*pInst & 0xC0) == 0xC0)
+		pIcode->ic.ll.opcode = (llIcode)0;
 }
 
 
 /****************************************************************************
  memReg0 - modrm for 'memOnly' and Reg field must also be 0
  ****************************************************************************/
-static void memReg0(int i)
+static void memReg0(Int i)
 {
-    if (REG(*pInst) || (*pInst & 0xC0) == 0xC0)
-        pIcode->ll()->setOpcode((llIcode)0);
-    else
-        rm(i);
+	if (REG(*pInst) || (*pInst & 0xC0) == 0xC0)
+		pIcode->ic.ll.opcode = (llIcode)0;
+	else
+		rm(i);
 }
 
 
 /***************************************************************************
- immed - Sets up dst and opcode from modrm uint8_t
+ immed - Sets up dst and opcode from modrm byte
  **************************************************************************/
-static void immed(int i)
+static void immed(Int i)
 {
-    static llIcode immedTable[8] = {iADD, iOR, iADC, iSBB, iAND, iSUB, iXOR, iCMP};
+ static llIcode immedTable[8] = {iADD, iOR, iADC, iSBB, iAND, iSUB, iXOR, iCMP};
+ static byte uf[8] = { 0,  0,  Cf,  Cf,  0,   0,   0,   0  };
 
-    pIcode->ll()->setOpcode(immedTable[REG(*pInst)]) ;
-    rm(i);
+	pIcode->ic.ll.opcode = immedTable[REG(*pInst)];
+	pIcode->ic.ll.flagDU.u = uf[REG(*pInst)];
+	pIcode->ic.ll.flagDU.d = (Sf | Zf | Cf);
+	rm(i);
 
-    if (pIcode->ll()->getOpcode() == iADD || pIcode->ll()->getOpcode() == iSUB)
-        pIcode->ll()->clrFlags(NOT_HLL);	/* Allow ADD/SUB SP, immed */
+	if (pIcode->ic.ll.opcode == iADD || pIcode->ic.ll.opcode == iSUB)
+		pIcode->ic.ll.flg &= ~NOT_HLL;	/* Allow ADD/SUB SP, immed */
 }
 
 
 /****************************************************************************
- shift  - Sets up dst and opcode from modrm uint8_t
+ shift  - Sets up dst and opcode from modrm byte
  ***************************************************************************/
-static void shift(int i)
+static void shift(Int i)
 {
-    static llIcode shiftTable[8] =
-    {
-        (llIcode)iROL, (llIcode)iROR, (llIcode)iRCL, (llIcode)iRCR,
-        (llIcode)iSHL, (llIcode)iSHR, (llIcode)0,	 (llIcode)iSAR};
+  static llIcode shiftTable[8] =
+  {
+  	(llIcode)iROL, (llIcode)iROR, (llIcode)iRCL, (llIcode)iRCR,
+  	(llIcode)iSHL, (llIcode)iSHR, (llIcode)0,	 (llIcode)iSAR};
+  static byte uf[8]	  = {0,   0,   Cf,  Cf,  0,   0,   0, 0  };
+  static byte df[8]	  = {Cf,  Cf,  Cf,  Cf, Sf | Zf | Cf,
+					 	 Sf | Zf | Cf, 0, Sf | Zf | Cf};
 
-    pIcode->ll()->setOpcode(shiftTable[REG(*pInst)]);
-    rm(i);
-    pIcode->ll()->replaceSrc(rCL); //src.regi =
+	pIcode->ic.ll.opcode = shiftTable[REG(*pInst)];
+	pIcode->ic.ll.flagDU.u = uf[REG(*pInst)];
+	pIcode->ic.ll.flagDU.d = df[REG(*pInst)];
+	rm(i);
+	pIcode->ic.ll.src.regi = rCL;
 }
 
 
 /****************************************************************************
- trans - Sets up dst and opcode from modrm uint8_t
+ trans - Sets up dst and opcode from modrm byte
  ***************************************************************************/
-static void trans(int i)
+static void trans(Int i)
 {
-    static llIcode transTable[8] =
-    {
-        (llIcode)iINC, (llIcode)iDEC, (llIcode)iCALL, (llIcode)iCALLF,
-        (llIcode)iJMP, (llIcode)iJMPF,(llIcode)iPUSH, (llIcode)0
-    };
-    LLInst *ll = pIcode->ll();
-    if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */
-        ll->setOpcode(transTable[REG(*pInst)]);   /* valid on bytes */
-        rm(i);
-        ll->replaceSrc( pIcode->ll()->dst );
-        if (ll->match(iJMP) || ll->match(iCALL) || ll->match(iCALLF))
-            ll->setFlags(NO_OPS);
-        else if (ll->match(iINC) || ll->match(iPUSH) || ll->match(iDEC))
-            ll->setFlags(NO_SRC);
-    }
+  static llIcode transTable[8] =
+  {
+  	(llIcode)iINC, (llIcode)iDEC, (llIcode)iCALL, (llIcode)iCALLF,
+  	(llIcode)iJMP, (llIcode)iJMPF,(llIcode)iPUSH, (llIcode)0
+  };
+  static byte df[8]	= {Sf | Zf, Sf | Zf, 0, 0, 0, 0, 0, 0};
+
+	if ((byte)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */
+		pIcode->ic.ll.opcode = transTable[REG(*pInst)];   /* valid on bytes */
+		pIcode->ic.ll.flagDU.d = df[REG(*pInst)];
+		rm(i);
+		memcpy(&pIcode->ic.ll.src, &pIcode->ic.ll.dst, sizeof(ICODEMEM));
+		if (pIcode->ic.ll.opcode == iJMP || pIcode->ic.ll.opcode == iCALL ||
+			pIcode->ic.ll.opcode == iCALLF)
+			pIcode->ic.ll.flg |= NO_OPS;
+		else if (pIcode->ic.ll.opcode == iINC || pIcode->ic.ll.opcode == iPUSH 
+				 || pIcode->ic.ll.opcode == iDEC)
+			pIcode->ic.ll.flg |= NO_SRC;
+	}
 }
 
 
 /****************************************************************************
- arith - Sets up dst and opcode from modrm uint8_t
+ arith - Sets up dst and opcode from modrm byte
  ****************************************************************************/
-static void arith(int i)
+static void arith(Int i)
+{ byte opcode;
+static llIcode arithTable[8] =
 {
-    uint8_t opcode;
-    static llIcode arithTable[8] =
-    {
-        iTEST , (llIcode)0, iNOT, iNEG,
-        iMUL ,       iIMUL, iDIV, iIDIV
-    };
-    opcode = arithTable[REG(*pInst)];
-    pIcode->ll()->setOpcode((llIcode)opcode);
-    rm(i);
-    if (opcode == iTEST)
-    {
-        if (stateTable[i].flg & B)
-            data1(i);
-        else
-            data2(i);
-    }
-    else if (!(opcode == iNOT || opcode == iNEG))
-    {
-        pIcode->ll()->replaceSrc( pIcode->ll()->dst );
-        setAddress(i, true, 0, rAX, 0);			/* dst = AX  */
-    }
-    else if (opcode == iNEG || opcode == iNOT)
-        pIcode->ll()->setFlags(NO_SRC);
+	(llIcode)iTEST, (llIcode)0,		(llIcode)iNOT, (llIcode)iNEG,
+	(llIcode)iMUL,  (llIcode)iIMUL, (llIcode)iDIV, (llIcode)iIDIV
+};
+static byte df[8]	  = {Sf | Zf | Cf, 0, 0, Sf | Zf | Cf, 
+				     	 Sf | Zf | Cf, Sf | Zf | Cf, Sf | Zf | Cf, 
+				     	 Sf | Zf | Cf};
 
-    if ((opcode == iDIV) || (opcode == iIDIV))
-    {
-        if ( not pIcode->ll()->testFlags(B) )
-            pIcode->ll()->setFlags(IM_TMP_DST);
-    }
+	opcode = pIcode->ic.ll.opcode = arithTable[REG(*pInst)];
+	pIcode->ic.ll.flagDU.d = df[REG(*pInst)];
+	rm(i);
+	if (opcode == iTEST)
+	{
+	   if (stateTable[i].flg & B)
+		  data1(i);
+	   else
+		  data2(i);
+	}
+	else if (!(opcode == iNOT || opcode == iNEG)) 
+	{
+		memcpy(&pIcode->ic.ll.src, &pIcode->ic.ll.dst, sizeof(ICODEMEM));
+		setAddress(i, TRUE, 0, rAX, 0);			/* dst = AX  */
+	}
+	else if (opcode == iNEG || opcode == iNOT)
+		pIcode->ic.ll.flg |= NO_SRC;
+
+	if ((opcode == iDIV) || (opcode == iIDIV))
+	{
+		if ((pIcode->ic.ll.flg & B) != B)
+			pIcode->ic.ll.flg |= IM_TMP_DST;
+	}
 }
 
 
 /*****************************************************************************
- data1 - Sets up immed from 1 uint8_t data
+ data1 - Sets up immed from 1 byte data
  *****************************************************************************/
-static void data1(int i)
+static void data1(Int i)
 {
-    pIcode->ll()->replaceSrc(LLOperand::CreateImm2((stateTable[i].flg & S_EXT)? signex(*pInst++): *pInst++));
-    pIcode->ll()->setFlags(I);
+	pIcode->ic.ll.immed.op = (stateTable[i].flg & S)? signex(*pInst++):
+													  *pInst++;
+	pIcode->ic.ll.flg |= I;
 }
 
 
 /*****************************************************************************
- data2 - Sets up immed from 2 uint8_t data
+ data2 - Sets up immed from 2 byte data
  ****************************************************************************/
-static void data2(int )
+static void data2(Int i)
 {
-    if (relocItem(pInst))
-        pIcode->ll()->setFlags(SEG_IMMED);
+	if (relocItem(pInst))
+		pIcode->ic.ll.flg |= SEG_IMMED;
 
-    /* ENTER is a special case, it does not take a destination operand,
-         * but this field is being used as the number of bytes to allocate
-         * on the stack.  The procedure level is stored in the immediate
-         * field.  There is no source operand; therefore, the flag flg is
-         * set to NO_OPS.	*/
-    if (pIcode->ll()->getOpcode() == iENTER)
-    {
-        pIcode->ll()->dst.off = getWord();
-        pIcode->ll()->setFlags(NO_OPS);
-    }
-    else
-        pIcode->ll()->replaceSrc(getWord());
-    pIcode->ll()->setFlags(I);
+	/* ENTER is a special case, it does not take a destination operand,
+	 * but this field is being used as the number of bytes to allocate
+	 * on the stack.  The procedure level is stored in the immediate
+	 * field.  There is no source operand; therefore, the flag flg is
+	 * set to NO_OPS.	*/
+	if (pIcode->ic.ll.opcode == iENTER) 
+	{
+		pIcode->ic.ll.dst.off = getWord();
+		pIcode->ic.ll.flg |= NO_OPS;
+	}
+	else
+		pIcode->ic.ll.immed.op = getWord();
+	pIcode->ic.ll.flg |= I;
 }
 
 
 /****************************************************************************
- dispM - 2 uint8_t offset without modrm (== mod 0, rm 6) (Note:TO_REG bits are
-         reversed)
+ dispM - 2 byte offset without modrm (== mod 0, rm 6) (Note:TO_REG bits are
+	 reversed)
  ****************************************************************************/
-static void dispM(int i)
+static void dispM(Int i)
 {
-    setAddress(i, false, SegPrefix, 0, getWord());
+	setAddress(i, FALSE, SegPrefix, 0, getWord());
 }
 
 
 /****************************************************************************
- dispN - 2 uint8_t disp as immed relative to ip
+ dispN - 2 byte disp as immed relative to ip
  ****************************************************************************/
-static void dispN(int )
+static void dispN(Int i)
 {
-    PROG &prog(Project::get()->prog);
-    long off = (short)getWord();	/* Signed displacement */
-
+	long off = (short)getWord();	/* Signed displacement */
+    
     /* Note: the result of the subtraction could be between 32k and 64k, and
-        still be positive; it is an offset from prog.Image. So this must be
-        treated as unsigned */
-    pIcode->ll()->replaceSrc((uint32_t)(off + (unsigned)(pInst - prog.Image)));
-    pIcode->ll()->setFlags(I);
+    	still be positive; it is an offset from prog.Image. So this must be
+    	treated as unsigned */
+	pIcode->ic.ll.immed.op = (dword)(off + (unsigned)(pInst - prog.Image));
+	pIcode->ic.ll.flg |= I;
 }
 
 
 /***************************************************************************
- dispS - 1 uint8_t disp as immed relative to ip
+ dispS - 1 byte disp as immed relative to ip
  ***************************************************************************/
-static void dispS(int )
+static void dispS(Int i)
 {
-    PROG &prog(Project::get()->prog);
-    long off = signex(*pInst++); 	/* Signed displacement */
+	long off = signex(*pInst++); 	/* Signed displacement */
 
-    pIcode->ll()->replaceSrc((uint32_t)(off + (unsigned)(pInst - prog.Image)));
-    pIcode->ll()->setFlags(I);
+	pIcode->ic.ll.immed.op = (dword)(off + (unsigned)(pInst - prog.Image));
+	pIcode->ic.ll.flg |= I;
 }
 
 
 /****************************************************************************
- dispF - 4 uint8_t disp as immed 20-bit target address
+ dispF - 4 byte disp as immed 20-bit target address
  ***************************************************************************/
-static void dispF(int )
+static void dispF(Int i)
 {
-    uint32_t off = (unsigned)getWord();
-    uint32_t seg = (unsigned)getWord();
+	dword off = (unsigned)getWord();
+	dword seg = (unsigned)getWord();
 
-    pIcode->ll()->replaceSrc(off + ((uint32_t)(unsigned)seg << 4));
-    pIcode->ll()->setFlags(I);
+	pIcode->ic.ll.immed.op = off + ((dword)(unsigned)seg << 4);
+	pIcode->ic.ll.flg |= I;
 }
 
 
 /****************************************************************************
- prefix - picks up prefix uint8_t for following instruction (LOCK is ignored
-          on purpose)
+ prefix - picks up prefix byte for following instruction (LOCK is ignored
+	  on purpose)
  ****************************************************************************/
-static void prefix(int )
+static void prefix(Int i)
 {
-    if (pIcode->ll()->getOpcode() == iREPE || pIcode->ll()->getOpcode() == iREPNE)
-        RepPrefix = pIcode->ll()->getOpcode();
-    else
-        SegPrefix = pIcode->ll()->getOpcode();
+	if (pIcode->ic.ll.opcode == iREPE || pIcode->ic.ll.opcode == iREPNE)
+		RepPrefix = pIcode->ic.ll.opcode;
+	else
+		SegPrefix = pIcode->ic.ll.opcode;
 }
 
-inline void BumpOpcode(LLInst &ll)
+inline void BumpOpcode(llIcode& ic)
 {
-    llIcode ic((llIcode)ll.getOpcode());
-    ic = (llIcode)(((int)ic)+1);		// Bump this icode via the int type
-    ll.setOpcode(ic);
+	ic = (llIcode)(((int)ic)+1);		// Bump this icode via the int type
 }
 
 /*****************************************************************************
  strop - checks RepPrefix and converts string instructions accordingly
  *****************************************************************************/
-static void strop(int )
+static void strop(Int i)
 {
-    if (RepPrefix)
-    {
-        //		pIcode->ll()->getOpcode() += ((pIcode->ll()->getOpcode() == iCMPS ||
-        //								  pIcode->ll()->getOpcode() == iSCAS)
-        //								&& RepPrefix == iREPE)? 2: 1;
-        if ((pIcode->ll()->match(iCMPS) || pIcode->ll()->match(iSCAS) ) && RepPrefix == iREPE)
-            BumpOpcode(*pIcode->ll());	// += 2
-        BumpOpcode(*pIcode->ll());		// else += 1
-        if (pIcode->ll()->match(iREP_LODS) )
-            pIcode->ll()->setFlags(NOT_HLL);
-        RepPrefix = 0;
-    }
+	if (RepPrefix)
+	{
+//		pIcode->ic.ll.opcode += ((pIcode->ic.ll.opcode == iCMPS ||
+//								  pIcode->ic.ll.opcode == iSCAS)
+//								&& RepPrefix == iREPE)? 2: 1;
+		if ((pIcode->ic.ll.opcode == iCMPS || pIcode->ic.ll.opcode == iSCAS)
+			&& RepPrefix == iREPE)
+			BumpOpcode(pIcode->ic.ll.opcode);	// += 2
+		BumpOpcode(pIcode->ic.ll.opcode);		// else += 1
+		if (pIcode->ic.ll.opcode == iREP_LODS)
+			pIcode->ic.ll.flg |= NOT_HLL;
+		RepPrefix = 0;
+	}
 }
 
 
 /***************************************************************************
  escop - esc operands
  ***************************************************************************/
-static void escop(int i)
+static void escop(Int i)
 {
-    pIcode->ll()->replaceSrc(REG(*pInst) + (uint32_t)((i & 7) << 3));
-    pIcode->ll()->setFlags(I);
-    rm(i);
+	pIcode->ic.ll.immed.op = REG(*pInst) + (dword)((i & 7) << 3);
+	pIcode->ic.ll.flg |= I;
+	rm(i);
 }
 
 
 /****************************************************************************
  const1
  ****************************************************************************/
-static void const1(int )
+static void const1(Int i)
 {
-    pIcode->ll()->replaceSrc(1);
-    pIcode->ll()->setFlags(I);
+	pIcode->ic.ll.immed.op = 1;
+	pIcode->ic.ll.flg |= I;
 }
 
 
 /*****************************************************************************
  const3
  ****************************************************************************/
-static void const3(int )
+static void const3(Int i)
 {
-    pIcode->ll()->replaceSrc(3);
-    pIcode->ll()->setFlags(I);
+	pIcode->ic.ll.immed.op = 3;
+	pIcode->ic.ll.flg |= I;
 }
 
 
 /****************************************************************************
  none1
  ****************************************************************************/
-static void none1(int )
+static void none1(Int i)
 {
 }
 
@@ -929,24 +818,25 @@ static void none1(int )
 /****************************************************************************
  none2 - Sets the NO_OPS flag if the operand is immediate
  ****************************************************************************/
-static void none2(int )
+static void none2(Int i)
 {
-    if ( pIcode->ll()->testFlags(I) )
-        pIcode->ll()->setFlags(NO_OPS);
+	if (pIcode->ic.ll.flg & I)
+	   pIcode->ic.ll.flg |= NO_OPS;
 }
 
 /****************************************************************************
  Checks for int 34 to int 3B - if so, converts to ESC nn instruction
  ****************************************************************************/
-static void checkInt(int )
+static void checkInt(Int i)
 {
-    uint16_t wOp = (uint16_t) pIcode->ll()->src().getImm2();
+    word wOp = (word) pIcode->ic.ll.immed.op;
     if ((wOp >= 0x34) && (wOp <= 0x3B))
     {
         /* This is a Borland/Microsoft floating point emulation instruction.
             Treat as if it is an ESC opcode */
-        pIcode->ll()->replaceSrc(wOp - 0x34);
-        pIcode->ll()->set(iESC,FLOAT_OP);
+        pIcode->ic.ll.immed.op = wOp - 0x34;
+        pIcode->ic.ll.opcode = iESC;
+        pIcode->ic.ll.flg |= FLOAT_OP;
 
         escop(wOp - 0x34 + 0xD8);
 

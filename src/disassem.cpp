@@ -2,146 +2,288 @@
  *          dcc project disassembler
  * (C) Cristina Cifuentes, Mike van Emmerik, Jeff Ledermann
  ****************************************************************************/
-#include <stdint.h>
-#include <vector>
-#include <map>
-#include <sstream>
-#include <iomanip>
-#include <stdio.h>
-#include <string.h>
 
 #include "dcc.h"
 #include "symtab.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#ifdef __BORLAND__
+#include <alloc.h>
+#else
+#include <malloc.h>		/* For free() */
+#endif
+#ifdef _CONSOLE
+#include <windows.h>	/* For console mode routines */
+#endif
 #include "disassem.h"
-#include "project.h"
 // Note: for the time being, there is no interactive disassembler
 // for unix
+#ifndef __UNIX__
+#include <conio.h>	// getch() etc
+#endif
 
-using namespace std;
 
+#ifndef max
+#define max(a,b)  (((a) > (b)) ? (a) : (b))
+#endif
 
 #define POS_LAB     15              /* Position of label */
 #define POS_OPC     20              /* Position of opcode */
 #define POS_OPR     25              /* Position of operand */
-#define	WID_PTR     10              /* Width of the "xword ptr" lingo */
+#define	WID_PTR		10				/* Width of the "xword ptr" lingo */
 #define POS_OPR2    POS_OPR+WID_PTR /* Position of operand after "xword ptr" */
 #define POS_CMT     54              /* Position of comment */
 
-static const char *szFlops0C[] =
+
+#define DELTA_ICODE 16              /* Number of icodes to realloc by each time */
+
+static char *szOps[] =
 {
-    "FCHS",  "FABS",  "???",   "???",   "FTST", "FXAM",  "???",   "???"
+"CBW",  "AAA",      "AAD",      "AAM",      "AAS",      "ADC",  "ADD",  "AND",
+"BOUND","CALL",     "CALL",     "CLC",      "CLD",      "CLI",  "CMC",  "CMP",
+"CMPS", "REPNE CMPS","REPE CMPS","DAA",     "DAS",      "DEC",  "DIV",  "ENTER",
+"ESC",  "HLT",      "IDIV",     "IMUL",     "IN",       "INC",  "INS",  "REP INS",
+"INT",  "IRET",     "JB",       "JBE",      "JAE",      "JA",   "JE",   "JNE",
+"JL",   "JGE",      "JLE",      "JG",       "JS",       "JNS",  "JO",   "JNO",
+"JP",   "JNP",      "JCXZ",     "JMP",      "JMP",      "LAHF", "LDS",  "LEA",
+"LEAVE","LES",      "LOCK",     "LODS",     "REP LODS", "LOOP", "LOOPE","LOOPNE",
+"MOV",  "MOVS",     "REP MOVS", "MUL",      "NEG",      "NOT",  "OR",   "OUT",
+"OUTS", "REP OUTS", "POP",      "POPA",     "POPF",     "PUSH", "PUSHA","PUSHF",
+"RCL",  "RCR",      "ROL",      "ROR",      "RET",      "RETF", "SAHF", "SAR",
+"SHL",  "SHR",      "SBB",      "SCAS",     "REPNE SCAS","REPE SCAS",   "CWD",  "STC",
+"STD",  "STI",      "STOS",     "REP STOS", "SUB",      "TEST", "WAIT", "XCHG",
+"XLAT", "XOR",      "INTO",     "NOP",		"REPNE",	"REPE",	"MOD"
 };
 
-static const char *szFlops0D[] =
+/* The following opcodes are for mod != 3 */
+static char *szFlops1[] =
 {
-    "FLD1",  "FLDL2T","FLDL2E","FLDP1", "FLDLG2","FLDLN2","FLDZ", "???"
+/* 0        1        2       3        4        5        6        7  */
+"FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
+"FLD",   "???",   "FST",  "???",   "FLDENV","FLDCW", "FSTENV","FSTSW",  /* 08 */
+"FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "FISUBR","FIDIV", "FIDIVR", /* 10 */
+"FILD",  "???",   "FIST", "FISTP", "???",   "???",   "???",   "FSTP",   /* 18 */
+"FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 20 */
+"FLD",   "FLD",   "FST",  "FSTP",  "FRESTOR","???",  "FSAVE", "FSTSW",  /* 28 */
+"FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "FISUBR","FIDIV", "FIDIVR", /* 30 */
+"FILD",  "???",   "FIST", "FISTP", "FBLD",  "???",   "FBSTP", "FISTP"   /* 38 */
 };
 
-static const char *szFlops0E[] =
+/* The following opcodes are for mod == 3 */
+static char *szFlops2[] =
 {
-    "F2XM1", "FYL2X", "FPTAN", "FPATAN","FXTRACT","FPREM1","FDECSTP","FINCSTP"
+/* 0        1        2       3        4        5        6        7  */
+"FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
+"FLD",   "FXCH",  "FNOP", "???",   "",      "",      "",      "",       /* 08 */
+"FIADD", "FIMUL", "FICOM","FICOMP","FISUB", "",      "FIDIV", "FIDIVR", /* 10 */
+"FILD",  "???",   "FIST", "FISTP", "???",   "???",   "???",   "FSTP",   /* 18 */
+"FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 20 */
+"FFREE", "FSTP",  "FST",  "???",   "FUCOM", "FUCOMP","???",   "???",    /* 28 */
+"FADDP", "FMULP", "FICOM","",      "FSUBRP","FISUBR","FDIVRP","FDIVP",  /* 30 */
+"FILD",  "???",   "FIST", "FISTP", "",      "???",   "FBSTP", "FISTP"   /* 38 */
 };
 
-static const char *szFlops0F[] =
+static char *szFlops0C[] =
 {
-    "FPREM", "FYLXP1","FSQRT", "FSINCOS","FRNDINT","FSCALE","FSIN","FCOS"
+"FCHS",  "FABS",  "???",   "???",   "FTST", "FXAM",  "???",   "???"
 };
 
-static const char *szFlops15[] =
+static char *szFlops0D[] =
 {
-    "???",  "FUCOMPP",  "???", "???", "???", "???",  "???",   "???"
+"FLD1",  "FLDL2T","FLDL2E","FLDP1", "FLDLG2","FLDLN2","FLDZ", "???"
 };
 
-static const char *szFlops1C[] =
+static char *szFlops0E[] =
 {
-    "???",  "???",  "FCLEX", "FINIT", "FTST", "FXAM",  "???",   "???"
+"F2XM1", "FYL2X", "FPTAN", "FPATAN","FXTRACT","FPREM1","FDECSTP","FINCSTP"
 };
 
-static const char *szFlops33[] =
+static char *szFlops0F[] =
 {
-    "???",  "FCOMPP",  "???", "???", "???", "???",  "???",   "???"
+"FPREM", "FYLXP1","FSQRT", "FSINCOS","FRNDINT","FSCALE","FSIN","FCOS"
 };
 
-static const char *szFlops3C[] =
+static char *szFlops15[] =
 {
-    "FSTSWAX","???",  "???", "???", "???", "???",  "???",   "???"
+"???",  "FUCOMPP",  "???", "???", "???", "???",  "???",   "???"
+};
+
+static char *szFlops1C[] =
+{
+"???",  "???",  "FCLEX", "FINIT", "FTST", "FXAM",  "???",   "???"
+};
+
+static char *szFlops33[] =
+{
+"???",  "FCOMPP",  "???", "???", "???", "???",  "???",   "???"
+};
+
+static char *szFlops3C[] =
+{
+"FSTSWAX","???",  "???", "???", "???", "???",  "???",   "???"
 };
 
 
-static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
+static char *szIndex[8] = {"bx+si", "bx+di", "bp+si", "bp+di", "si", "di","bp","bx" };
+static char *szBreg[8]  = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
+static char *szWreg[12] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di",
+                            "es", "cs", "ss", "ds" };
+static char *szPtr[2]   = { " word ptr ", " byte ptr " };
 
-static void  formatRM(ostringstream &p, uint32_t flg, const LLOperand &pm);
-static ostringstream &strDst(ostringstream &os, uint32_t flg, const LLOperand &pm);
 
-static char *strHex(uint32_t d);
-//static int   checkScanned(uint32_t pcCur);
-//static void  setProc(Function * proc);
-//static void  dispData(uint16_t dataSeg);
-boolT callArg(uint16_t off, char *temp);  /* Check for procedure name */
+static void  dis1Line  (Int i, boolT fWin, char attr, Int pass);
+       void  dis1LineOp(Int i, boolT fWin, char attr, word *len, PPROC pProc);
+static void  formatRM(char *p, flags32 flg, PMEM pm);
+static char *strDst(flags32 flg, PMEM pm);
+static char *strSrc(PICODE pc);
+static char *strHex(dword d);
+static Int   checkScanned(dword pcCur);
+static void  setProc(PPROC proc);
+static void  dispData(word dataSeg);
+static void  flops(PICODE pi);
+       boolT callArg(word off, char *temp);  /* Check for procedure name */
 
-//static  FILE   *dis_g_fp;
-static  CIcodeRec pc;
-static  int     cb, j, numIcode, allocIcode;
-static  map<int,int> pl;
-static  uint32_t   nextInst;
+static  FILE   *fp;
+static  PICODE  pc;
+static  char    buf[200], *p;
+static  Int     cb, j, numIcode, allocIcode, eop, *pl;
+static  dword   nextInst;
 static  boolT    fImpure;
-//static  int     g_lab;
-static  Function *   pProc;          /* Points to current proc struct */
+static  Int     lab, prevPass;
+static  PPROC   pProc;          /* Points to current proc struct */
 
-struct POSSTACK_ENTRY
+typedef struct _POSSTACK
 {
-    int     ic;                 /* An icode offset */
-    Function *   pProc;              /* A pointer to a PROCEDURE structure */
-} ;
-static vector<POSSTACK_ENTRY> posStack; /* position stack */
-static uint8_t              iPS;          /* Index into the stack */
+    Int     ic;                 /* An icode offset */
+    PPROC   pProc;              /* A pointer to a PROCEDURE structure */
+} POSSTACK;
 
+static  POSSTACK *posStack;     /* Pointer to the position stack */
+byte              iPS;          /* Index into the stack */
+
+static  char    cbuf[256];      /* Has to be 256 for wgetstr() to work */
 
 // These are "curses equivalent" functions. (Used to use curses for all this,
 // but it was too much of a distribution hassle
+
+#if _CONSOLE
+HANDLE	hConsole;		/* All 32 bit console style routines need this handle */
+#endif
+
+void attrSet(char attrib)
+{
+#ifdef _CONSOLE
+    switch (attrib)
+    {
+        case A_NORMAL:
+            SetConsoleTextAttribute(hConsole,
+                FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+            break;
+        case A_REVERSE:
+            SetConsoleTextAttribute(hConsole,
+                BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED);
+            break;
+        case A_BOLD:
+            SetConsoleTextAttribute(hConsole,
+                FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED |
+                FOREGROUND_INTENSITY);
+            break;
+    }
+#else
+    /* Set the attribute, using VT100 codes */
+    switch (attrib)
+    {
+        case A_NORMAL:
+            printf("\033[0m");
+            break;
+        case A_REVERSE:
+            printf("\033[7m");
+            break;
+        case A_BOLD:
+            printf("\033[1m");
+            break;
+    }
+#endif
+}
+
+#ifdef _CONSOLE
+void initConsole()
+{
+    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+}
+#endif
+
+void erase(void)
+{
+#ifdef _CONSOLE
+   COORD coordScreen = { 0, 0 };    /* here's where we'll home the
+                                       cursor */
+   DWORD cCharsWritten;
+   CONSOLE_SCREEN_BUFFER_INFO csbi; /* to get buffer info */
+   DWORD dwConSize;                 /* number of character cells in
+                                       the current buffer */
+
+   /* get the number of character cells in the current buffer */
+   GetConsoleScreenBufferInfo( hConsole, &csbi );
+   dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
+
+   /* fill the entire screen with blanks */
+   FillConsoleOutputCharacter( hConsole, (TCHAR) ' ',
+      dwConSize, coordScreen, &cCharsWritten );
+
+   /* get the current text attribute */
+//   GetConsoleScreenBufferInfo( hConsole, &csbi );
+
+   /* now set the buffer's attributes accordingly */
+   FillConsoleOutputAttribute( hConsole, csbi.wAttributes,
+      dwConSize, coordScreen, &cCharsWritten );
+
+   /* put the cursor at (0, 0) */
+   SetConsoleCursorPosition( hConsole, coordScreen );
+
+#else
+    // Assume that ANSI is supported
+    printf("\033[2J");
+#endif
+}
+
+void move(int r, int c)
+{
+#ifdef _CONSOLE
+   COORD pos;
+    pos.X = c;
+    pos.Y = r;
+    SetConsoleCursorPosition( hConsole, pos );
+#else
+    printf("\033[%d;%dH", r+1, c+1);
+#endif
+}
 
 #define printfd(x) printf(x)
 #define dis_newline() printf("\n")
 #define dis_show()					// Nothing to do unless using Curses
 
 
-void LLInst::findJumpTargets(CIcodeRec &_pc)
-{
-    if (testFlags(I) && ! testFlags(JMP_ICODE) && isJmpInst())
-    {
-        /* Replace the immediate operand with an icode index */
-        iICODE labTgt=_pc.labelSrch(src().getImm2());
-        if (labTgt!=_pc.end())
-        {
-            m_src.SetImmediateOp(labTgt->loc_ip);
-            /* This icode is the target of a jump */
-            labTgt->ll()->setFlags(TARGET);
-            setFlags(JMP_ICODE);   /* So its not done twice */
-        }
-        else
-        {
-            /* This jump cannot be linked to a label */
-            setFlags(NO_LABEL);
-        }
-    }
-
-}
 /*****************************************************************************
  * disassem - Prints a disassembled listing of a procedure.
  *			  pass == 1 generates output on file .a1
  *			  pass == 2 generates output on file .a2
  *			  pass == 3 generates output on file .b
  ****************************************************************************/
-
-void Disassembler::disassem(Function * ppProc)
+void disassem(Int pass, PPROC ppProc)
 {
-
+    Int         i;
 
     pProc = ppProc;             /* Save the passes pProc */
+    if (pass != prevPass)
+    {
+        prevPass = pass;
+        lab = 0; 	/* Restart label numbers */
+    }
     createSymTables();
-    allocIcode = numIcode = pProc->Icode.size();
-    cb = allocIcode * sizeof(ICODE);
-    if (numIcode == 0)
+    allocIcode = numIcode = pProc->Icode.GetNumIcodes();
+    if ((cb = allocIcode * sizeof(ICODE)) == 0)
     {
         return;  /* No Icode */
     }
@@ -149,401 +291,441 @@ void Disassembler::disassem(Function * ppProc)
     /* Open the output file (.a1 or .a2 only) */
     if (pass != 3)
     {
-        auto p = (pass == 1)? asm1_name: asm2_name;
-        m_fp.open(p,ios_base::app);
-        if (!m_fp.is_open())
+        p = (pass == 1)? asm1_name: asm2_name;
+        fp = fopen(p, "a+");
+        if (!fp)
         {
             fatalError(CANNOT_OPEN, p);
         }
     }
+
     /* Create temporary code array */
     // Mike: needs objectising!
-    pc=pProc->Icode;
+    pc = (PICODE)memcpy(allocMem(cb), pProc->Icode.GetFirstIcode(), (size_t)cb);
 
     if (pass == 1)
     {
         /* Bind jump offsets to labels */
-        //for (i = 0; i < numIcode; i++)
-        for( ICODE &icode : pc)
+        for (i = 0; i < numIcode; i++)
         {
-            LLInst *ll=icode.ll();
-            ll->findJumpTargets(pc);
+            if ((pc[i].ic.ll.flg & I) && !(pc[i].ic.ll.flg & JMP_ICODE) &&
+                JmpInst(pc[i].ic.ll.opcode))
+            {
+                /* Replace the immediate operand with an icode index */
+                if (labelSrch(pc, numIcode, pc[i].ic.ll.immed.op,
+                    (Int *)&pc[i].ic.ll.immed.op))
+                {
+                    /* This icode is the target of a jump */
+                    pc[pc[i].ic.ll.immed.op].ic.ll.flg |= TARGET;
+                    pc[i].ic.ll.flg |= JMP_ICODE;   /* So its not done twice */
+                }
+                else
+                {
+                    /* This jump cannot be linked to a label */
+                    pc[i].ic.ll.flg |= NO_LABEL;
+                }
+            }
         }
     }
 
     /* Create label array to keep track of location => label name */
-    pl.clear();
+    pl = (Int*)memset(allocMem(numIcode * sizeof(Int)), 0,
+        (size_t)(numIcode * sizeof(Int)));
 
     /* Write procedure header */
     if (pass != 3)
-    {
-        std::string near_far=(pProc->flg & PROC_FAR)? "FAR": "NEAR";
-        m_fp << "\t\t"<<pProc->name<<"  PROC  "<< near_far<<"\n";
-    }
+        fprintf(fp, "\t\t%s  PROC  %s\n", pProc->name,
+            (pProc->flg & PROC_FAR)? "FAR": "NEAR");
 
     /* Loop over array printing each record */
-    nextInst = 0;
-    for( ICODE &icode : pc)
+    for (i = nextInst = 0; i < numIcode; i++)
     {
-        this->dis1Line(*icode.ll(),icode.loc_ip,pass);
+        dis1Line(i, FALSE, 0, pass);
     }
 
     /* Write procedure epilogue */
     if (pass != 3)
     {
-        m_fp << "\n\t\t"<<pProc->name<<"  ENDP\n\n";
-        m_fp.close();
+        fprintf(fp, "\n\t\t%s  ENDP\n\n", pProc->name);
+        fclose(fp);
     }
 
-    pc.clear();
+    free(pc);
+    free(pl);
     destroySymTables();
 }
+
 /****************************************************************************
- * dis1Line() - disassemble one line to stream fp                           *
+ * dis1Line() - disassemble one line to stream fp                           *                                   *
  * i is index into Icode for this proc                                      *
  * It is assumed that icode i is already scanned                            *
  ****************************************************************************/
-void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
+static void
+dis1Line(Int i, boolT fWindow, char attr, Int pass)
 {
-    PROG &prog(Project::get()->prog);
-    ostringstream oper_stream;
-    ostringstream hex_bytes;
-    ostringstream result_stream;
-    ostringstream opcode_with_mods;
-    ostringstream operands_s;
-    oper_stream << uppercase;
-    hex_bytes << uppercase;
+    PICODE pIcode = &pc[i];
+
     /* Disassembly stage 1 --
-         * Do not try to display NO_CODE entries or synthetic instructions,
-         * other than JMPs, that have been introduced for def/use analysis. */
+     * Do not try to display NO_CODE entries or synthetic instructions,
+     * other than JMPs, that have been introduced for def/use analysis. */
     if ((option.asm1) &&
-            ( inst.testFlags(NO_CODE) ||
-             (inst.testFlags(SYNTHETIC) && (inst.getOpcode() != iJMP))))
+        ((pIcode->ic.ll.flg & NO_CODE) ||
+         ((pIcode->ic.ll.flg & SYNTHETIC) && (pIcode->ic.ll.opcode != iJMP))))
     {
         return;
     }
-    else if (inst.testFlags(NO_CODE))
+    else if (pIcode->ic.ll.flg & NO_CODE)
     {
         return;
     }
-    if (inst.testFlags(TARGET | CASE))
+
+    /* p points to the current position in buf[] */
+    p = (char*)memset(buf, ' ', sizeof(buf));
+
+    if (pIcode->ic.ll.flg & (TARGET | CASE))
     {
-        if (pass == 3)
-            cCode.appendCode("\n"); /* Print to c code buffer */
+        if (fWindow)                        /* Printing to disassem window? */
+            dis_newline();					/* Yes */
+        else if (pass == 3)
+            appendStrTab (&cCode.code, "\n"); /* No, print to c code buffer */
         else
-            m_fp<< "\n";              /* No, print to the stream */
+            fprintf(fp, "\n");              /* No, print to the stream */
     }
 
     /* Find next instruction label and print hex bytes */
-    if (inst.testFlags(SYNTHETIC))
-        nextInst = inst.label;
+    if (pIcode->ic.ll.flg & SYNTHETIC)
+        nextInst = pIcode->ic.ll.label;
     else
     {
-        cb = (uint32_t) inst.numBytes;
-        nextInst = inst.label + cb;
+        cb = (dword) pIcode->ic.ll.numBytes;
+        nextInst = pIcode->ic.ll.label + cb;
 
         /* Output hexa code in program image */
         if (pass != 3)
         {
-            for (j = 0; j < cb; j++)
-            {
-                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.Image[inst.label + j]);
-            }
-            hex_bytes << ' ';
+            for (j = 0; j < cb; j++, p += 2)
+                sprintf(p, "%02X", prog.Image[pIcode->ic.ll.label + j]);
+            *p = ' ';
         }
     }
-    oper_stream << setw(POS_LAB) <<  left<< hex_bytes.str();
+
     /* Check if there is a symbol here */
     selectTable(Label);
-    oper_stream << setw(5)<<left; // align for the labels
+    if (readVal(&buf[POS_LAB], pIcode->ic.ll.label, 0))
     {
-        ostringstream lab_contents;
-        if (readVal(lab_contents, inst.label, 0))
-        {
-            lab_contents << ':';             /* Also removes the null */
-        }
-        else if (inst.testFlags(TARGET))    /* Symbols override Lnn labels */
-        {
-            /* Print label */
-            if (pl.count(loc_ip)==0)
-            {
-                pl[loc_ip] = ++g_lab;
-            }
-            lab_contents<< "L"<<pl[loc_ip]<<':';
-        }
-        oper_stream<< lab_contents.str();
+        buf[strlen(buf)] = ':';             /* Also removes the null */
     }
-    if ((inst.getOpcode()==iSIGNEX )&& inst.testFlags(B))
-    {
-        inst.setOpcode(iCBW);
-    }
-    opcode_with_mods<<Machine_X86::opcodeName(inst.getOpcode());
 
-    switch ( inst.getOpcode() )
-    {
-        case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
-        case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-            strDst(operands_s,inst.getFlag(), inst.dst);
-            inst.strSrc(operands_s);
-            break;
-
-        case iESC:
-            inst.flops(operands_s);
-            break;
-
-        case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
-        case iROR:
-            strDst(operands_s,inst.getFlag() | I, inst.dst);
-            if(inst.testFlags(I))
-                inst.strSrc(operands_s);
-            else
-                operands_s<<", cl";
-            break;
-
-        case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-            strDst(operands_s,inst.getFlag() | I, inst.dst);
-            break;
-
-        case iPUSH:
-            if (inst.testFlags(I))
-            {
-                operands_s<<strHex(inst.src().getImm2());
-            }
-            else
-            {
-                strDst(operands_s,inst.getFlag() | I, inst.dst);
-            }
-            break;
-
-        case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
-            if (inst.testFlags(I))
-            {
-                strDst(operands_s,inst.getFlag(), inst.dst) <<", ";
-                formatRM(operands_s, inst.getFlag(), inst.src());
-                inst.strSrc(operands_s);
-            }
-            else
-                strDst(operands_s,inst.getFlag() | I, inst.src());
-            break;
-
-        case iLDS:  case iLES:  case iBOUND:
-            strDst(operands_s,inst.getFlag(), inst.dst)<<", dword ptr";
-            inst.strSrc(operands_s,true);
-            break;
-
-        case iJB:  case iJBE:  case iJAE:  case iJA:
-        case iJL:  case iJLE:  case iJGE:  case iJG:
-        case iJE:  case iJNE:  case iJS:   case iJNS:
-        case iJO:  case iJNO:  case iJP:   case iJNP:
-        case iJCXZ:case iLOOP: case iLOOPE:case iLOOPNE:
-        case iJMP: case iJMPF:
-
-            /* Check if there is a symbol here */
-    {
-        ICODE *lab=pc.GetIcode(inst.src().getImm2());
-            selectTable(Label);
-        if ((inst.src().getImm2() < (uint32_t)numIcode) &&  /* Ensure in range */
-                readVal(operands_s, lab->ll()->label, 0))
-            {
-                break;                          /* Symbolic label. Done */
-        }
-            }
-
-            if (inst.testFlags(NO_LABEL))
-            {
-                //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
-                operands_s<<strHex(inst.src().getImm2());
-            }
-            else if (inst.testFlags(I) )
-            {
-                j = inst.src().getImm2();
-                if (pl.count(j)==0)       /* Forward jump */
-                {
-                    pl[j] = ++g_lab;
-                }
-                if (inst.getOpcode() == iJMPF)
-                {
-                    operands_s<<" far ptr ";
-                }
-                operands_s<<"L"<<pl[j];
-            }
-            else if (inst.getOpcode() == iJMPF)
-            {
-                operands_s<<"dword ptr";
-                inst.strSrc(operands_s,true);
-            }
-            else
-            {
-                strDst(operands_s,I, inst.src());
-            }
-            break;
-
-        case iCALL: case iCALLF:
-            if (inst.testFlags(I))
-            {
-                if((inst.getOpcode() == iCALL))
-                    operands_s<< "near";
-                else
-                    operands_s<< " far";
-                operands_s<<" ptr "<<(inst.src().proc.proc)->name;
-            }
-            else if (inst.getOpcode() == iCALLF)
-            {
-                operands_s<<"dword ptr ";
-                inst.strSrc(operands_s,true);
-            }
-            else
-                strDst(operands_s,I, inst.src());
-            break;
-
-        case iENTER:
-            operands_s<<strHex(inst.dst.off)<<", ";
-            operands_s<<strHex(inst.src().getImm2());
-            break;
-
-        case iRET:  case iRETF:  case iINT:
-            if (inst.testFlags(I))
-            {
-                operands_s<<strHex(inst.src().getImm2());
-            }
-            break;
-
-        case iCMPS:  case iREPNE_CMPS:  case iREPE_CMPS:
-        case iSCAS:  case iREPNE_SCAS:  case iREPE_SCAS:
-        case iSTOS:  case iREP_STOS:
-        case iLODS:  case iREP_LODS:
-        case iMOVS:  case iREP_MOVS:
-        case iINS:   case iREP_INS:
-        case iOUTS:  case iREP_OUTS:
-            if (inst.src().segOver)
-            {
-                bool is_dx_src=(inst.getOpcode() == iOUTS || inst.getOpcode() == iREP_OUTS);
-                if(is_dx_src)
-                    operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
-                else
-                    operands_s<<szPtr[inst.getFlag() & B];
-                if (inst.getOpcode() == iLODS ||
-                    inst.getOpcode() == iREP_LODS ||
-                    inst.getOpcode() == iOUTS ||
-                    inst.getOpcode() == iREP_OUTS)
-                {
-                    operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
-                }
-                else
-                {
-                    operands_s<<"es:[di], "<<Machine_X86::regName(inst.src().segOver);
-                }
-                operands_s<<":[si]";
-            }
-            else
-            {
-                (inst.getFlag() & B)? opcode_with_mods<< "B": opcode_with_mods<< "W";
-            }
-        break;
-
-        case iXLAT:
-            if (inst.src().segOver)
-            {
-                operands_s<<" "<<szPtr[1];
-                operands_s<<Machine_X86::regName(inst.src().segOver)<<":[bx]";
-            }
-            break;
-
-        case iIN:
-            (inst.getFlag() & B)? operands_s<<"al, " : operands_s<< "ax, ";
-            (inst.testFlags(I))? operands_s << strHex(inst.src().getImm2()) : operands_s<< "dx";
-            break;
-
-        case iOUT:
+    else if (pIcode->ic.ll.flg & TARGET)    /* Symbols override Lnn labels */
+    {   /* Print label */
+        if (! pl[i])
         {
-            std::string d1=((inst.testFlags(I))? strHex(inst.src().getImm2()): "dx");
-            std::string d2=((inst.getFlag() & B) ? ", al": ", ax");
-            operands_s<<d1 << d2;
+            pl[i] = ++lab;
         }
-        break;
-
-        default:
-            break;
+        if (pass == 3)
+            sprintf(buf, "L%ld", pl[i]);
+        else
+            sprintf(&buf[15], "L%ld", pl[i]);
+        buf[strlen(buf)] = ':';             /* Also removes the null */
     }
-    oper_stream << setw(15) << left <<opcode_with_mods.str();
-    oper_stream << operands_s.str();
-    /* Comments */
-    if (inst.testFlags(SYNTHETIC))
+
+    if (pIcode->ic.ll.opcode == iSIGNEX && (pIcode->ic.ll.flg & B))
     {
-        fImpure = false;
+        pIcode->ic.ll.opcode = iCBW;
+    }
+
+    if (pass == 3)
+    {
+        strcpy (&buf[8], szOps[pIcode->ic.ll.opcode]);
+        buf[eop = strlen(buf)] = ' ';
+        p = buf + 8 + (POS_OPR - POS_OPC);
     }
     else
     {
-        for (j = inst.label, fImpure = 0; j > 0 && j < (int)nextInst; j++)
+        strcpy(&buf[POS_OPC], szOps[pIcode->ic.ll.opcode]);
+        buf[eop = strlen(buf)] = ' ';
+        p = buf + POS_OPR;
+    }
+
+    switch (pIcode->ic.ll.opcode)
+    {
+    case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
+    case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
+        strcpy(p, strDst(pIcode->ic.ll.flg, &pIcode->ic.ll.dst));
+        strcat(p, strSrc(pIcode));
+        break;
+
+    case iESC:
+        flops(pIcode);
+        break;
+
+    case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
+    case iROR:
+        strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst));
+        strcat(p, (pIcode->ic.ll.flg & I)? strSrc(pIcode): ", cl");
+        break;
+
+    case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
+        strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst));
+        break;
+
+    case iPUSH:
+        if (pIcode->ic.ll.flg & I)
+        {
+            strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+        }
+        else
+        {
+            strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.dst));
+        }
+        break;
+
+    case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
+        if (pIcode->ic.ll.flg & I)
+        {
+            strcat(strcpy(p, strDst(pIcode->ic.ll.flg, &pIcode->ic.ll.dst)),
+                    ", ");
+            formatRM(p + strlen(p), pIcode->ic.ll.flg, &pIcode->ic.ll.src);
+            strcat(p, strSrc(pIcode));
+        }
+        else
+            strcpy(p, strDst(pIcode->ic.ll.flg | I, &pIcode->ic.ll.src));
+        break;
+
+    case iLDS:  case iLES:  case iBOUND:
+        strcpy(p, strDst(pIcode->ic.ll.flg, &pIcode->ic.ll.dst));
+        strcat(strcat(p, ", dword ptr"), strSrc(pIcode)+1);
+        break;
+
+    case iJB:  case iJBE:  case iJAE:  case iJA:
+    case iJL:  case iJLE:  case iJGE:  case iJG:
+    case iJE:  case iJNE:  case iJS:   case iJNS:
+    case iJO:  case iJNO:  case iJP:   case iJNP:
+    case iJCXZ:case iLOOP: case iLOOPE:case iLOOPNE:
+    case iJMP: case iJMPF:
+
+        /* Check if there is a symbol here */
+        selectTable(Label);
+        if ((pIcode->ic.ll.immed.op < (dword)numIcode) &&  /* Ensure in range */
+            readVal(p+WID_PTR, pc[pIcode->ic.ll.immed.op].ic.ll.label, 0))
+        {
+            break;                          /* Symbolic label. Done */
+        }
+
+        if (pIcode->ic.ll.flg & NO_LABEL)
+        {
+            strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+        }
+        else if (pIcode->ic.ll.flg & I)
+        {
+            j = pIcode->ic.ll.immed.op;
+            if (! pl[j])       /* Forward jump */
+            {
+                pl[j] = ++lab;
+            }
+            if (pIcode->ic.ll.opcode == iJMPF)
+            {
+                sprintf(p, " far ptr L%ld", pl[j]);
+            }
+            else
+            {
+                sprintf(p + WID_PTR, "L%ld", pl[j]);
+            }
+        }
+        else if (pIcode->ic.ll.opcode == iJMPF)
+        {
+            strcat(strcpy(p-1, "dword ptr"), strSrc(pIcode)+1);
+        }
+        else
+        {
+            strcpy(p, strDst(I, &pIcode->ic.ll.src));
+        }
+        break;
+
+    case iCALL: case iCALLF:
+        if (pIcode->ic.ll.flg & I)
+        {
+            sprintf(p, "%s ptr %s",
+                (pIcode->ic.ll.opcode == iCALL) ?" near":"  far",
+                (pIcode->ic.ll.immed.proc.proc)->name);
+        }
+        else if (pIcode->ic.ll.opcode == iCALLF)
+        {
+            strcat(strcpy(p, "dword ptr"),strSrc(pIcode)+1);
+        }
+        else
+        {
+            strcpy(p, strDst(I, &pIcode->ic.ll.src));
+        }
+        break;
+
+    case iENTER:
+        strcat(strcpy(p + WID_PTR, strHex(pIcode->ic.ll.dst.off)), ", ");
+        strcat(p, strHex(pIcode->ic.ll.immed.op));
+        break;
+
+    case iRET:  case iRETF:  case iINT:
+        if (pIcode->ic.ll.flg & I)
+        {
+            strcpy(p + WID_PTR, strHex(pIcode->ic.ll.immed.op));
+        }
+        else
+        {
+            buf[eop] = '\0';
+        }
+        break;
+
+    case iCMPS:  case iREPNE_CMPS:  case iREPE_CMPS:
+    case iSCAS:  case iREPNE_SCAS:  case iREPE_SCAS:
+    case iSTOS:  case iREP_STOS:
+    case iLODS:  case iREP_LODS:
+    case iMOVS:  case iREP_MOVS:
+    case iINS:   case iREP_INS:
+    case iOUTS:  case iREP_OUTS:
+        if (pIcode->ic.ll.src.segOver)
+        {
+            (pIcode->ic.ll.opcode == iOUTS || pIcode->ic.ll.opcode == iREP_OUTS)
+                ? strcat(strcpy(p+WID_PTR,"dx, "), szPtr[pIcode->ic.ll.flg & B])
+                : strcpy(&buf[eop+1], szPtr[pIcode->ic.ll.flg & B]);
+            if (pIcode->ic.ll.opcode == iLODS ||
+                pIcode->ic.ll.opcode == iREP_LODS ||
+                pIcode->ic.ll.opcode == iOUTS ||
+                pIcode->ic.ll.opcode == iREP_OUTS)
+            {
+                strcat(p, szWreg[pIcode->ic.ll.src.segOver-rAX]);
+            }
+            else
+            {
+                strcat(strcat(p, "es:[di], "),
+                    szWreg[pIcode->ic.ll.src.segOver - rAX]);
+            }
+            strcat(p, ":[si]");
+        }
+        else    strcpy(&buf[eop], (pIcode->ic.ll.flg & B)? "B": "W");
+        break;
+
+    case iXLAT:
+        if (pIcode->ic.ll.src.segOver)
+        {
+            strcpy(&buf[eop+1], szPtr[1]);
+            strcat(strcat(p, szWreg[pIcode->ic.ll.src.segOver-rAX]), ":[bx]");
+        }
+        else    buf[eop] = '\0';
+        break;
+
+    case iIN:
+        strcpy(p+WID_PTR, (pIcode->ic.ll.flg & B)?"al, ": "ax, ");
+        strcat(p+WID_PTR, (pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx");
+        break;
+
+    case iOUT:
+        strcpy(p+WID_PTR, (pIcode->ic.ll.flg & I)? strHex(pIcode->ic.ll.immed.op): "dx");
+        strcat(p+WID_PTR, (pIcode->ic.ll.flg & B)?", al": ", ax");
+        break;
+
+    default:
+        buf[eop] = '\0';
+        break;
+    }
+
+    /* Comments */
+    if (pIcode->ic.ll.flg & SYNTHETIC)
+    {
+        fImpure = FALSE;
+    }
+    else
+    {
+        for (j = pIcode->ic.ll.label, fImpure = 0; j > 0 && j < (Int)nextInst;
+             j++)
         {
             fImpure |= BITMAP(j, BM_DATA);
         }
     }
 
-    result_stream << setw(54) << left << oper_stream.str();
+
     /* Check for user supplied comment */
     selectTable(Comment);
-    ostringstream cbuf;
-    if (readVal(cbuf, inst.label, 0))
+    if (readVal(cbuf, pIcode->ic.ll.label, 0))
     {
-        result_stream <<"; "<<cbuf.str();
+        buf[strlen(buf)] = ' ';             /* Removes the null */
+        buf[POS_CMT] = ';';
+        strcpy(buf+POS_CMT+1, cbuf);
     }
-    else if (fImpure || (inst.testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
+
+    else if (fImpure || (pIcode->ic.ll.flg & (SWITCH | CASE | SEG_IMMED |
+                IMPURE | SYNTHETIC | TERMINATES)))
     {
-        if (inst.testFlags(CASE))
+        buf[strlen(buf)] = ' ';
+        buf[POS_CMT] = '\0';
+        if (pIcode->ic.ll.flg & CASE)
         {
-            result_stream << ";Case l"<< inst.caseEntry;
+            sprintf(buf+POS_CMT, ";Case l%ld", pIcode->ic.ll.caseTbl.numEntries);
         }
-        if (inst.testFlags(SWITCH))
+        if (pIcode->ic.ll.flg & SWITCH)
         {
-            result_stream << ";Switch ";
+            strcat(buf, ";Switch ");
         }
         if (fImpure)
         {
-            result_stream << ";Accessed as data ";
+            strcat(buf, ";Accessed as data ");
         }
-        if (inst.testFlags(IMPURE))
+        if (pIcode->ic.ll.flg & IMPURE)
         {
-            result_stream << ";Impure operand ";
+            strcat(buf, ";Impure operand ");
         }
-        if (inst.testFlags(SEG_IMMED))
+        if (pIcode->ic.ll.flg & SEG_IMMED)
         {
-            result_stream << ";Segment constant";
+            strcat(buf, ";Segment constant");
         }
-        if (inst.testFlags(TERMINATES))
+        if (pIcode->ic.ll.flg & TERMINATES)
         {
-            result_stream << ";Exit to DOS";
+            strcat(buf, ";Exit to DOS");
         }
     }
 
     /* Comment on iINT icodes */
-    if (inst.getOpcode() == iINT)
-        inst.writeIntComment(result_stream);
+    if (pIcode->ic.ll.opcode == iINT)
+        writeIntComment (pIcode, buf);
 
     /* Display output line */
-    if(pass==3)
+    if (! (pIcode->ic.ll.flg & SYNTHETIC))
     {
-        /* output to .b code buffer */
-        if (inst.testFlags(SYNTHETIC))
-            result_stream<<";Synthetic inst";
-        if (pass == 3)		/* output to .b code buffer */
-            cCode.appendCode("%s\n", result_stream.str().c_str());
+        if (fWindow)
+        {
+            word off;
+            char szOffset[6];
 
+            off = (word)(pIcode->ic.ll.label - ((dword)pProc->state.r[rCS] << 4));
+            attrSet(attr);
+
+            sprintf(szOffset, "%04X ", off);
+            printfd(szOffset);
+            printfd(buf);
+            dis_newline();
+            attrSet(A_NORMAL);
+        }
+        else if (pass == 3)		/* output to .b code buffer */
+            appendStrTab (&cCode.code, "%s\n", buf);
+        else					/* output to .a1 or .a2 file */
+            fprintf (fp, "%03ld %06lX %s\n", i, pIcode->ic.ll.label, buf);
     }
-    else
+    else		/* SYNTHETIC instruction */
     {
-        char buf[12];
-        /* output to .a1 or .a2 file */
-        if (not inst.testFlags(SYNTHETIC) )
+        strcat (buf, ";Synthetic inst");
+        if (fWindow)
         {
-            sprintf(buf,"%03d %06X",loc_ip, inst.label);
+            printfd("     ");
+            printfd(buf);
+            dis_newline();
         }
-        else		/* SYNTHETIC instruction */
+        else if (pass == 3)		/* output to .b code buffer */
         {
-            sprintf(buf,"%03d       ",loc_ip);
-            result_stream<<";Synthetic inst";
+            appendStrTab (&cCode.code, "%s\n", buf);
         }
-        m_fp<<buf<< " " << result_stream.str() << "\n";
+        else					/* output to .a1 or .a2 file */
+        {
+            fprintf (fp, "%03ld        %s\n", i, buf);
+        }
     }
 }
 
@@ -552,77 +734,92 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(std::ostringstream &p, uint32_t flg, const LLOperand &pm)
+static void formatRM(char *p, flags32 flg, PMEM pm)
 {
-    //char    seg[4];
+    char    seg[4];
 
-    if (pm.segOver)
+    if (pm->segOver)
     {
-        p <<Machine_X86::regName(pm.segOver)<<':';
+        strcat(strcpy(seg, szWreg[pm->segOver - rAX]), ":");
+    }
+    else    *seg = '\0';
+
+    if (pm->regi == 0)
+    {
+        sprintf(p,"%s[%s]", seg, strHex((dword)pm->off));
     }
 
-    if (pm.regi == rUNDEF)
+    else if (pm->regi == (INDEXBASE - 1))
     {
-        p<<"["<<strHex((uint32_t)pm.off)<<"]";
-    }
-    else if (pm.isReg())
-    {
-        p<<Machine_X86::regName(pm.regi);
+        strcpy (p, "tmp");
     }
 
-    else if (pm.off)
+    else if (pm->regi < INDEXBASE)
     {
-        if (pm.off < 0)
+        strcpy(p, (flg & B)? szBreg[pm->regi - rAL]: szWreg[pm->regi - rAX]);
+    }
+
+    else if (pm->off)
+    {
+        if (pm->off < 0)
         {
-            p <<"["<<Machine_X86::regName(pm.regi)<<"-"<<strHex((uint32_t)(- pm.off))<<"]";
+            sprintf(p,"%s[%s-%s]", seg, szIndex[pm->regi - INDEXBASE],
+                     strHex((dword)(- pm->off)));
         }
         else
         {
-            p <<"["<<Machine_X86::regName(pm.regi)<<"+"<<strHex((uint32_t)(pm.off))<<"]";
+            sprintf(p,"%s[%s+%s]", seg, szIndex[pm->regi - INDEXBASE],
+                     strHex((dword)pm->off));
         }
     }
-    else
-        p <<"["<<Machine_X86::regName(pm.regi)<<"]";
+    else    sprintf(p,"%s[%s]", seg, szIndex[pm->regi - INDEXBASE]);
 }
 
 
 /*****************************************************************************
  * strDst
  ****************************************************************************/
-static ostringstream & strDst(ostringstream &os,uint32_t flg, const LLOperand &pm)
+static char *strDst(flags32 flg, PMEM pm)
 {
+    static char buf[30];
+
     /* Immediates to memory require size descriptor */
-    //os << setw(WID_PTR);
-    if ((flg & I) and not pm.isReg())
-        os << szPtr[flg & B];
-    formatRM(os, flg, pm);
-    return os;
+    if ((flg & I) && (pm->regi == 0 || pm->regi >= INDEXBASE))
+    {
+        memcpy(buf, szPtr[flg & B], WID_PTR);
+    }
+    else
+    {
+        memset(buf, ' ', WID_PTR);
+    }
+
+    formatRM(buf + WID_PTR, flg, pm);
+    return buf;
 }
 
 
 /****************************************************************************
  * strSrc                                                                   *
  ****************************************************************************/
-ostringstream &LLInst::strSrc(ostringstream &os,bool skip_comma)
+static char *strSrc(PICODE pc)
 {
-    if(false==skip_comma)
-        os<<", ";
-    if (testFlags(I))
-        os<<strHex(src().getImm2());
-    else if (testFlags(IM_SRC))		/* level 2 */
-        os<<"dx:ax";
+    static char buf[30] = {", "};
+
+    if (pc->ic.ll.flg & I)
+        strcpy(buf + 2, strHex(pc->ic.ll.immed.op));
+    else if (pc->ic.ll.flg & IM_SRC)		/* level 2 */
+        strcpy (buf + 2, "dx:ax");
     else
-        formatRM(os, getFlag(), src());
+        formatRM(buf + 2, pc->ic.ll.flg, &pc->ic.ll.src);
 
-    return os;
+    return buf;
 }
-
 
 
 /****************************************************************************
  * strHex                                                                   *
  ****************************************************************************/
-static char *strHex(uint32_t d)
+static char *strHex(dword d)
 {
     static char buf[10];
 
@@ -631,107 +828,817 @@ static char *strHex(uint32_t d)
     return (buf + (buf[1] <= '9'));
 }
 
+
+
+
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+
+<           Interactive Disassembler and Associated Routines                >
+
+ \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+
+
+dword   pcTop;                  /* Image offset of top line */
+Int     icTop;                  /* Icode index  of top line */
+dword   pcCur;                  /* Image offset of cursor */
+dword	oldPcCur;				/* As above, before latest command */
+Int     icCur;                  /* Icode index  of cursor */
+dword   pcBot;                  /* Image offset of bottom line */
+Int     icBot;                  /* Icode index  of bottom line */
+dword   pcLast;                 /* Image offset of last instr in proc */
+int     NSCROLL;                /* Number of limes to scroll. Pseudo constant */
+
+/* Paint the title line */
+void dispTitle(void)
+{
+    char buf[80];
+
+    move(0, 0);					/* Must move before setting attributes */
+    attrSet(A_BOLD);
+    sprintf(buf, "Proc %s at %06lX (%04X:%04X): %d bytes of parameters ",
+        pProc->name, pProc->Icode.GetFirstIcode()->ic.ll.label,
+        pProc->state.r[rCS],
+        (word)(pProc->Icode.GetFirstIcode()->ic.ll.label - ((dword)(pProc->state.r[rCS]) << 4)),
+        pProc->cbParam);
+    printfd(buf);
+    if (pProc->flg & PROC_ISLIB) printfd(" LIBRARY");
+    attrSet(A_NORMAL);
+}
+
+
+/****************************************************************************
+*           updateScr - update the screen                                    *
+ ****************************************************************************/
+/* bNew is true if must recalculate the top line */
+void
+updateScr(boolT bNew)
+{
+    int y, x;
+    Int i, ic;
+
+    bNew |= (pcCur > pcBot) || (pcCur < pcTop);
+    if (bNew)
+    {
+        /* We need to redo the screen completely */
+        erase();
+        dispTitle();
+        icTop = icCur;
+        for (x=0; x < NSCROLL; x++)
+        {
+            if (icTop && pc[icTop-1].ic.ll.label +
+                (dword)pc[icTop-1].ic.ll.numBytes == pc[icTop].ic.ll.label)
+            {
+                /* Then this instruction is contiguous with the current */
+                icTop--;
+            }
+            else break;
+        }
+        pcTop = pc[icTop].ic.ll.label;
+    }
+    else
+    {
+        dispTitle();
+    }
+
+    move(1, 0);
+    nextInst = pcTop;
+    for (y=1, ic=icTop; y < LINES-1; ic++, y++)
+    {
+        if ((ic >= numIcode) || (nextInst != pc[ic].ic.ll.label))
+        {
+            if (labelSrch(pc, numIcode, nextInst, &i))
+            {
+                ic = i;
+            }
+            else
+            {
+                pcLast = pc[ic-1].ic.ll.label;    /* Remember end of proc */
+                break;                      /* Must be past last */
+            }
+        }
+
+        /* Save pc of current line. Last assignment will be pc of bott line */
+        pcBot = nextInst;
+        icBot = ic;
+
+        // Only have to repaint if screen is new, or repainting formerly highlighted
+        // line, or newly highlighted line
+        if (bNew || (pcCur == nextInst) || (oldPcCur == nextInst))
+            dis1Line(ic, TRUE, (char)((pcCur == nextInst) ? A_REVERSE : A_NORMAL), 0);
+
+        if (ic == numIcode-1)
+        {
+            switch (pc[ic].ic.ll.opcode)
+            {
+                case iJMP:  case iJMPF:
+                case iRET:  case iRETF:
+                case iIRET:
+                break;
+
+                default:
+                /* We have other than a break of control flow instruction
+                    at the end of the proc. Parse more instructions to
+                    complete the basic block
+                */
+                if ((ic = checkScanned(nextInst)) == -1)
+                {
+                    /* Some error. */
+                    pcLast = pcCur;    /* Remember end of proc */
+                    break;             /* Must be past last */
+                }
+
+            }
+        }
+    }
+    dis_show();			/* Make it happen */
+}
+
+#if 0
+/* An opcode based version of updateScr() */
+/****************************************************************************
+*           updateScrOp - update the screen                                  *
+ ****************************************************************************/
+/* bNew is true if must recalculate the top line */
+void
+updateScrOp(boolT bNew)
+{
+    int y, x;
+    dword pc;
+    word len;
+
+    dispTitle();
+    if (bNew || (pcCur > pcBot) || (pcCur < pcTop))
+    {
+        /* We need to redo the screen completely */
+        pcTop = pcCur;
+    }
+
+    move(1, 0);
+    for (y=1, pc = pcTop; y < LINES-1;)
+    {
+        /* Save pc of current line. Last assignment will be pc of bott line */
+        pcBot = pc;
+
+        dis1LineOp(pc, TRUE, (pcCur == pc) ? A_REVERSE : A_NORMAL, &len,
+            pProc);
+        pc += len;
+        getyx(stdscr, y, x);
+    }
+
+    refresh();
+}
+
+#endif
+
+void pushPosStack(void)
+{
+    /* Push the current position on the position stack */
+    posStack[iPS].ic = icCur;
+    posStack[iPS++].pProc = pProc;
+}
+
+void popPosStack(void)
+{
+    /* Push the current position on the position stack */
+    /* Note: relies on the byte wraparound. Beware! */
+    if ((intptr_t)(posStack[--iPS].pProc) != -1)
+    {
+        if (posStack[iPS].pProc != pProc)
+        {
+            setProc(posStack[iPS].pProc);
+        }
+        icCur = posStack[iPS].ic;
+        pcCur = pc[icCur].ic.ll.label;
+    }
+    else iPS++;                             /* Stack empty.. don't pop */
+}
+
+
+/* Check to see if there is an icode for given image offset.
+    Scan it if necessary, adjusting the allocation of pc[] and pl[]
+    if necessary. Returns -1 if an error, otherwise the icode offset
+*/
+static Int
+checkScanned(dword pcCur)
+{
+    Int i;
+
+    /* First we check if the current icode is in range */
+    /* A sanity check first */
+    if (pcCur >= (dword)prog.cbImage)
+    {
+        /* Couldn't be! */
+        return -1;
+    }
+
+    if (!labelSrch(pc, numIcode, pcCur, &i))
+    {
+        /* This icode does not exist yet. Tack it on the end of the existing */
+        if (numIcode >= allocIcode)
+        {
+            allocIcode = numIcode + DELTA_ICODE;      /* Make space for this one, and a few more */
+            pc = (PICODE)reallocVar(pc, allocIcode * sizeof(ICODE));
+            /* It is important to clear the new icodes, to ensure that the type
+                is set to NOT_SCANNED */
+            memset(&pc[numIcode], 0, (size_t)(allocIcode-numIcode)*sizeof(ICODE));
+            pl = (Int*)reallocVar(pl, allocIcode * sizeof(Int));
+            memset(&pl[numIcode], 0, (size_t)(allocIcode-numIcode)*sizeof(Int));
+        }
+        i = numIcode++;
+    }
+
+    if (pc[i].type == NOT_SCANNED)
+    {
+        /* This is a new icode not even scanned yet. Scan it now */
+        /* Ignore most errors... at this stage */
+        if (scan(pcCur, &pc[i]) == IP_OUT_OF_RANGE)
+        {
+            /* Something went wrong... just forget it */
+            return -1;
+        }
+    }
+
+    return i;
+}
+
+
+
+
+
+/* Set up to use the procedure proc */
+/* This includes some important initialisations, allocations, etc that are
+    normally done in disassem() */
+static void
+setProc(PPROC proc)
+{
+    Int i;
+
+    pProc = proc;                           /* Keep in a static */
+
+    /* Free old arrays, if any */
+    if (pc) free(pc);
+    if (pl) free(pl);
+
+
+    /* Create temporary code array */
+    numIcode = pProc->Icode.GetNumIcodes();
+    cb = numIcode * sizeof(ICODE);
+    // Mike: needs objectising
+    pc = (PICODE)memcpy(allocMem(cb), pProc->Icode.GetFirstIcode(), (size_t)cb);
+
+    /* Create label array to keep track of location => label name */
+    pl = (Int*)memset(allocMem(numIcode * sizeof(Int)), 0,
+        (size_t)(numIcode * sizeof(Int)));
+
+    /* Bind jump offsets to labels */
+    for (i = 0; i < numIcode; i++)
+    {
+        if ((pc[i].ic.ll.flg & I) && !(pc[i].ic.ll.flg & JMP_ICODE) &&
+            JmpInst(pc[i].ic.ll.opcode))
+        {
+            /* Immediate jump instructions. Make dest an icode index */
+            if (labelSrch(pc, numIcode, pc[i].ic.ll.immed.op,
+                          (Int *)&pc[i].ic.ll.immed.op))
+            {
+                /* This icode is the target of a jump */
+                pc[pc[i].ic.ll.immed.op].ic.ll.flg |= TARGET;
+                pc[i].ic.ll.flg |= JMP_ICODE;   /* So its not done twice */
+            }
+            else
+            {
+                /* This jump cannot be linked to a label */
+                pc[i].ic.ll.flg |= NO_LABEL;
+            }
+        }
+    }
+
+    /* Window initially scrolled with entry point on top */
+    pcCur = pcTop = pProc->procEntry;
+    labelSrch(pc, numIcode, pcCur, &icCur);
+    /* pcLast is set properly in updateScr(), at least for now */
+    pcLast = (dword)-1;
+
+}
+
 /****************************************************************************
  *          interactDis - interactive disassembler                          *
  ****************************************************************************/
-void interactDis(Function * initProc, int initIC)
+void interactDis(PPROC initProc, Int initIC)
 {
+
+
+#ifdef __UNIX__
     printf("Sorry - interactive disasassembler option not available for Unix\n");
     return;
+#else
+    boolT   fInteract;
+    int		nEsc = 0;		/* This cycles 0 1 2 for Esc [ X under Unix */
+                            /* and 0 1 for NULL X under Dos */
+    int     ch;
+    Int     i;
+    pProc = initProc;                       /* Keep copy of init proc */
+    NSCROLL = max(3, LINES >> 3);           /* Number of lines to scroll */
+
+    /* Allocate the position stack */
+    posStack = (POSSTACK*)allocMem(256 * sizeof(POSSTACK));
+    iPS = 0;
+    memset(posStack, -1, 256 * sizeof(POSSTACK));
+
+
+    /* Initialise the console interface, if required */
+    initConsole();
+
+    /* Initially, work on the given proc */
+    setProc(initProc);
+    if (initIC)
+    {
+        icCur = initIC;
+        pcCur = pc[icCur].ic.ll.label;
+    }
+
+    /* Initialise the symbol table */
+    createSymTables();
+
+    strcpy(cbuf, "label");                  /* Provide a default label string */
+
+    updateScr(TRUE);
+
+    fInteract = TRUE;
+    while (fInteract)
+    {
+        ch = ::_getch();			// Mike: need a Unix equivalent of getch()!
+#ifdef __MSDOS__
+        if (nEsc)
+        {
+            ch += EXT;		/* Got the NULL before, so this is extended */
+            nEsc = 0;
+        }
+        else if (ch == 0)
+        {
+            nEsc = 1;		/* Got one escape (actually, NULL) char */
+            break;
+        }
+#endif
+#ifdef __UNIX__
+        switch (nEsc)
+        {
+            case 1:			/* Already got one escape */
+                if (ch == '[')
+                {
+                    nEsc++;		/* Got 2 chars in the escape sequence */
+                    break;
+                }
+                else
+                {
+                    /* Escape something else. Ignore */
+                    nEsc = 0;
+                }
+                break;
+            case 2:
+                /* Already got Esc [ ... */
+                ch += EXT;		/* Make it an extended key */
+                nEsc = 0;		/* Reset the escape state */
+                break;
+            case 0:
+                /* No escapes... yet */
+                if (ch == 0x1B)
+                {
+                    nEsc++;		/* That's one escape... */
+                    break;
+                }
+        }
+#endif
+
+// For consoles, we get a 0xE0 then KEY_DOWN for the normal down arrow character.
+// We simply ignore the 0xE0; this has the effect that the numeric keypad keys
+// work as well (regardless of numlock state).
+        oldPcCur = pcCur;
+        switch (ch)
+        {
+            case KEY_DOWN:
+
+                if (pcCur >= pcLast) continue;  /* Ignore it */
+                pcCur += pc[icCur].ic.ll.numBytes;
+                labelSrch(pc, numIcode, pcCur, &icCur);
+                if (pcCur >= pcBot)
+                {
+                    int j;
+
+                    /* We have gone past the bottom line. Scroll a few lines */
+                    for (j=0; j < NSCROLL; j++)
+                    {
+                        if (pcTop >= pcLast)
+                        {
+                            break;
+                        }
+                        pcTop += pc[icTop].ic.ll.numBytes;
+                        if (labelSrch(pc, numIcode, pcTop, &i))
+                            icTop = i;
+                        else break;         /* Some problem... no more scroll */
+                    }
+                }
+                updateScr(FALSE);
+                break;
+
+            case KEY_UP:
+                /* First simply try the prev icode */
+                if ((icCur == 0) ||
+                    pc[--icCur].ic.ll.label + (dword)pc[icCur].ic.ll.numBytes != pcCur)
+                {
+                    for (i = 0; i < numIcode; i++)
+                    {
+                        if (pc[i].ic.ll.label + (dword)pc[i].ic.ll.numBytes == pcCur)
+                        {
+                            break;          /* This is the one! */
+                        }
+                    }
+                    if (pc[i].ic.ll.label + pc[i].ic.ll.numBytes != pcCur)
+                        break;              /* Not found. Sorry! */
+                    icCur = i;
+                }
+                pcCur = pc[icCur].ic.ll.label;
+                updateScr(FALSE);
+                break;
+
+
+            case '2':		/* Think up a better key... */
+                /* As for right arrow, but considers source operand first */
+                if  (pc[icCur].ic.ll.src.off != 0)
+                {
+                    pushPosStack();
+                    pcCur = pc[icCur].ic.ll.src.off;
+                    if (!labelSrch(pc, numIcode, pcCur, &icCur))
+                        break;
+                    updateScr(FALSE);
+                }
+                /* Fall through to KEY_RIGHT processing */
+
+            case KEY_RIGHT:
+                if (pc[icCur].ic.ll.flg & I)
+                {
+                    if ((pc[icCur].ic.ll.opcode >= iJB) &&
+                        (pc[icCur].ic.ll.opcode <= iJMPF))
+                    {
+                        /* An immediate jump op. Jump to it */
+                        pushPosStack();
+                        if (pc[icCur].ic.ll.flg & JMP_ICODE)
+                        {
+                            /* immed.op is an icode offset */
+                            icCur = pc[icCur].ic.ll.immed.op;
+                            pcCur = pc[icCur].ic.ll.label;
+                        }
+                        else
+                        {
+                            /* immed.op is still an image offset.
+                                Quite likely we need to scan */
+                            pcCur = pc[icCur].ic.ll.immed.op;
+                            if ((icCur = checkScanned(pcCur)) == -1)
+                                break;
+                        }
+                    }
+                    else if ((pc[icCur].ic.ll.opcode == iCALL) ||
+                             (pc[icCur].ic.ll.opcode == iCALLF))
+                    {
+                        /* The dest is a pointer to a proc struct */
+                        // First check that the procedure has icodes (e.g. may be
+                        // a library function, or just not disassembled yet)
+                        PPROC pp = (PPROC)pc[icCur].ic.ll.immed.op;
+                        if (pp->Icode.GetFirstIcode() != NULL)
+                        {
+                            pushPosStack();
+                            setProc(pp);
+                        }
+                    }
+                    else
+                    {
+                        /* Other immediate */
+                        pushPosStack();
+                        pcCur = pc[icCur].ic.ll.immed.op;
+                        dispData(pProc->state.r[rDS]);
+                        break;
+                    }
+                }
+                else if (pc[icCur].ic.ll.dst.off != 0)
+                {
+                    pushPosStack();
+                    pcCur = pc[icCur].ic.ll.dst.off;
+                    if (!labelSrch(pc, numIcode, pcCur, &icCur))
+                    {
+                        dispData(pProc->state.r[rDS]);
+                        break;
+                    }
+                }
+                else if (pc[icCur].ic.ll.src.off != 0)
+                {
+                    pushPosStack();
+                    pcCur = pc[icCur].ic.ll.src.off;
+                    if (!labelSrch(pc, numIcode, pcCur, &icCur))
+                    {
+                        dispData(pProc->state.r[rDS]);
+                        break;
+                    }
+                }
+                updateScr(TRUE);
+                break;
+
+            case KEY_LEFT:
+                popPosStack();
+                pcCur = pc[icCur].ic.ll.label;
+                updateScr(TRUE);
+                break;
+
+
+            case KEY_NPAGE:
+                pcCur = pcTop = pcBot;      /* Put bottom line at top now */
+                icCur = icTop = icBot;
+                updateScr(FALSE);
+                break;
+
+            case KEY_PPAGE:
+                pcTop -= (LINES-2) * 2; /* Average of 2 bytes per inst */
+                for (i = 0; i < numIcode; i++)
+                {
+                    if  ((pc[i].ic.ll.label <= pcTop) &&
+                         (pc[i].ic.ll.label + (dword)pc[i].ic.ll.numBytes >= pcTop))
+                    {
+                        break;          /* This is the spot! */
+                    }
+                }
+                if (i >= numIcode)
+                {
+                    /* Something went wrong. Goto to first icode */
+                    i = 0;
+                }
+                icCur = icTop = i;
+                pcCur = pcTop = pc[i].ic.ll.label;
+                updateScr(FALSE);
+                break;
+
+            case 'l':                       /* Add a symbolic label here */
+            {
+                char    *pStr;
+
+                move(LINES, 0);
+                printf("Enter symbol: ");
+                gets(cbuf);         /* Get a string to buf */
+                move (LINES, 0);
+                printf("%50c", ' ');
+
+                if (strlen(cbuf) >= SYMLEN)
+                {
+                    /* Name too ling. Truncate */
+                    cbuf[SYMLEN-1] = '\0';
+                }
+                pStr = addStrTbl(cbuf);     /* Add to the string table */
+
+                selectTable(Label);         /* Select the label table */
+                /* Add the symbol to both value- and symbol- hashed tables */
+                enterSym(pStr, pcCur, pProc, TRUE);
+
+                if (icCur == 0)
+                {
+                    /* We are at the first icode of a function.
+                        Assume it is the entry point, and rename the function */
+                    strcpy(pProc->name, cbuf);
+                }
+
+                updateScr(FALSE);
+                break;
+            }
+
+            case ';':
+            {
+                char    *pStr;
+                word w;
+
+                if (findVal(pcCur, 0, &w))
+                {
+                    readVal(cbuf, pcCur, 0);/* Make it the default string */
+                    deleteVal(pcCur, 0, FALSE);
+                }
+                else
+                {
+                    cbuf[0] = '\0';             /* Remove prev string */
+                }
+
+                /* Enter a comment here, from a window */
+                move(LINES, 0);
+                printf("Enter comment: ");
+                gets(cbuf);			        /* Get a string to buf */
+                move(LINES, 0);
+                printf("%50c", ' ');
+
+                pStr = addStrTbl(cbuf);     /* Add to the string table */
+
+                selectTable(Comment);
+                enterSym(pStr, pcCur, pProc, FALSE);/* Add the symbol */
+
+                updateScr(FALSE);
+                break;
+            }
+
+
+            case 'X' & 0x1F:                /* Control X; can't use Alt with Unix */
+                fInteract = FALSE;          /* Exit interactive mode */
+                attrSet(A_NORMAL);			/* Normal attributes */
+                break;
+        }
+    }
+
+    free(posStack);
+    destroySymTables();
+#endif			// #ifdef unix
+}
+
+
+/****************************************************************************
+ *          Display the current image position as data                      *
+ ****************************************************************************/
+static void
+dispData(word dataSeg)
+{
+    int y, c, i;
+    Int pc, pcStart;
+    Int off = (Int)dataSeg << 4;
+    char szOffset[6], szByte[4];
+
+    if (pcCur >= (dword)prog.cbImage)
+    {
+        /* We're at an invalid address. Use 0x100 instead */
+        pcCur = 0;
+    }
+    erase();
+    dispTitle();
+
+    pcStart = pc = pcCur;           /* pc at start of line */
+    for (y=1; y < LINES-1; y++)
+    {
+        move (y, 1);
+        sprintf(szOffset, "%04lX ", pc);
+        printfd(szOffset);
+        for (i=0; i < 16; i++)
+        {
+            sprintf(szByte, "%02X ", prog.Image[pc++ + off]);
+            printfd(szByte);
+            if ((pc + off) > prog.cbImage) break;
+        }
+        pc = pcStart;
+        for (i=0; i < 16; i++)
+        {
+            c = prog.Image[pc++ + off];
+            if ((c < 0x20) || (c > 0x7E))
+            {
+                c = '.';
+            }
+            szByte[0] = (char)c;
+            szByte[1] = '\0';
+            printfd(szByte);
+            if ((pc + off) > prog.cbImage) break;
+        }
+        dis_newline();
+        pcStart = pc;
+
+        if ((pc + off) > prog.cbImage) break;
+
+/*       getyx(stdscr, y, x);	*/
+    }
+
+}
+
+
+boolT callArg(word off, char *sym)
+{
+    dword   imageOff;
+    PPROC   p, pPrev;
+
+    imageOff = off + ((dword)pProc->state.r[rCS] << 4);
+    /* Search procedure list for one with appropriate entry point */
+    for (p = pProcList; p && p->procEntry != imageOff; p = p->next)
+    {
+        pPrev = p;
+    }
+
+    if (p == 0)
+    {
+        /* No existing proc entry */
+        LibCheck(p);
+        if (p->flg & PROC_ISLIB)
+        {
+            /* No entry for this proc, but it is a library function.
+                Create an entry for it */
+            p = (PPROC)memset(allocStruc(PROCEDURE), 0, sizeof(PROCEDURE));
+            pPrev->next = p;
+            p->procEntry = imageOff;
+        }
+    }
+
+    if (p)
+    {
+        /* We have a proc entry for this procedure. Copy the name */
+        strcpy(sym, p->name);
+        return TRUE;
+    }
+
+    return FALSE;
+
 }
 
 /* Handle the floating point opcodes (icode iESC) */
-void LLInst::flops(std::ostringstream &out)
+static void flops(PICODE pIcode)
 {
     char bf[30];
-    uint8_t op = (uint8_t)src().getImm2();
+    byte op = (byte)pIcode->ic.ll.immed.op;
 
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */
 
-    if ( not dst.isReg() )
+    if ((pIcode->ic.ll.dst.regi == 0) || (pIcode->ic.ll.dst.regi >= INDEXBASE))
     {
-        /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
-        out<<Machine_X86::floatOpName(op)<<' ';
-        out <<setw(10);
+        /* The mod/rm mod bits are not set to 11 (i.e. register).
+           This is the normal floating point opcode */
+        strcpy(&buf[POS_OPC], szFlops1[op]);
+        buf[strlen(buf)] = ' ';
+
         if ((op == 0x29) || (op == 0x1F))
         {
-            out <<  "tbyte ptr ";
+            strcpy(bf, "tbyte ptr ");
         }
         else switch (op & 0x30)
         {
             case 0x00:
             case 0x10:
-                out << "dword ptr ";
+                strcpy(bf, "dword ptr ");
                 break;
             case 0x20:
-                out << "qword ptr ";
+                strcpy(bf, "qword ptr ");
                 break;
             case 0x30:
                 switch (op)
                 {
                     case 0x3C:       /* FBLD */
                     case 0x3E:       /* FBSTP */
-                        out << "tbyte ptr ";
+                        strcpy(bf, "tbyte ptr ");
                         break;
                     case 0x3D:       /* FILD 64 bit */
                     case 0x3F:       /* FISTP 64 bit */
-                        out << "qword ptr ";
+                        strcpy(bf, "qword ptr ");
                         break;
 
                     default:
-                        out << "uint16_t  ptr ";
+                        strcpy(bf, "word  ptr ");
                         break;
                 }
         }
 
-        formatRM(out, getFlag(), dst);
+        formatRM(bf + 10, pIcode->ic.ll.flg, &pIcode->ic.ll.dst);
+        strcpy(p, bf);
     }
     else
     {
         /* The mod/rm mod bits are set to 11 (i.e. register).
            Could be specials (0x0C-0x0F, etc), or the st(i) versions of
-            normal opcodes. Because the opcodes are slightly different for
-            this case (e.g. op=04 means FSUB if reg != 3, but FSUBR for
-            reg == 3), a separate table is used (szFlops2). */
-        int destRegIdx=dst.regi - rAX;
+           normal opcodes. Because the opcodes are slightly different for
+           this case (e.g. op=04 means FSUB if reg != 3, but FSUBR for
+           reg == 3), a separate table is used (szFlops2). */
         switch (op)
         {
             case 0x0C:
-                out << szFlops0C[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops0C[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             case 0x0D:
-                out << szFlops0D[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops0D[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             case 0x0E:
-                out << szFlops0E[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops0E[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             case 0x0F:
-                out << szFlops0F[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops0F[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             case 0x15:
-                out << szFlops15[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops15[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             case 0x1C:
-                out << szFlops1C[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops1C[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             case 0x33:
-                out << szFlops33[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops33[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             case 0x3C:
-                out << szFlops3C[destRegIdx];
+                strcpy(&buf[POS_OPC], szFlops3C[pIcode->ic.ll.dst.regi - rAX]);
                 break;
             default:
-                out << Machine_X86::floatOpName(0x40+op);
+                strcpy(&buf[POS_OPC], szFlops2[op]);
+                buf[strlen(buf)] = ' ';
                 if ((op >= 0x20) && (op <= 0x27))
                 {
                     /* This is the ST(i), ST form. */
-                    out << "ST("<<destRegIdx - rAX<<"),ST";
+                    sprintf(&buf[POS_OPR2], "ST(%d),ST", pIcode->ic.ll.dst.regi - rAX);
                 }
                 else
                 {
                     /* ST, ST(i) */
-                    out << "ST,ST("<<destRegIdx;
+                    sprintf(&buf[POS_OPR2], "ST,ST(%d)", pIcode->ic.ll.dst.regi - rAX);
                 }
 
                 break;
