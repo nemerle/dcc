@@ -19,7 +19,6 @@ ENDIF()
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 include(cotire)
-FIND_PACKAGE(LLVM)
 FIND_PACKAGE(Boost)
 IF(dcc_build_tests)
 enable_testing()
@@ -27,7 +26,10 @@ enable_testing()
 ENDIF()
 
 
+IF(LLVM_EXPERIMENTAL)
+FIND_PACKAGE(LLVM)
 llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES native mc support tablegen)
+ENDIF()
 INCLUDE_DIRECTORIES(
     3rd_party/libdisasm
     include

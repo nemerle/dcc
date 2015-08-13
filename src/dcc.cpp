@@ -8,6 +8,7 @@
 #include <iostream>
 #include <QtCore/QCoreApplication>
 #include <QCommandLineParser>
+#ifdef LLVM_EXPERIMENTAL
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/TargetSelect.h>
@@ -19,10 +20,10 @@
 #include <llvm/Target/TargetInstrInfo.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/CodeGen/MachineInstrBuilder.h>
-
 #include <llvm/TableGen/Main.h>
 #include <llvm/TableGen/TableGenBackend.h>
 #include <llvm/TableGen/Record.h>
+#endif
 #include <QtCore/QFile>
 
 #include "dcc.h"
@@ -41,6 +42,7 @@ static void displayTotalStats(void);
 /****************************************************************************
  * main
  ***************************************************************************/
+#ifdef LLVM_EXPERIMENTAL
 using namespace llvm;
 bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
 {
@@ -65,10 +67,10 @@ bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
     //        rec = Records.getDef("CCR");
     //        if(rec)
     //            rec->dump();
-    for(const auto &val : Records.getDefs())
-    {
-        //std::cout<< "Def "<<val.first<<"\n";
-    }
+//    for(auto val : Records.getDefs())
+//    {
+//        //std::cout<< "Def "<<val.first<<"\n";
+//    }
     return false;
 }
 int testTblGen(int argc, char **argv)
@@ -112,6 +114,7 @@ int testTblGen(int argc, char **argv)
 //    exit(0);
 
 }
+#endif
 void setupOptions(QCoreApplication &app) {
     //[-a1a2cmsi]
     QCommandLineParser parser;

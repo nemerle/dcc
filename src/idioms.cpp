@@ -3,12 +3,12 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
-#include <llvm/Config/llvm-config.h>
-#if( (LLVM_VERSION_MAJOR==3 ) && (LLVM_VERSION_MINOR>3) )
-#include <llvm/IR/PatternMatch.h>
-#else
-#include <llvm/Support/PatternMatch.h>
-#endif
+//#include <llvm/Config/llvm-config.h>
+//#if( (LLVM_VERSION_MAJOR==3 ) && (LLVM_VERSION_MINOR>3) )
+//#include <llvm/IR/PatternMatch.h>
+//#else
+//#include <llvm/Support/PatternMatch.h>
+//#endif
 #include <boost/iterator/filter_iterator.hpp>
 #include <cstring>
 #include <deque>
