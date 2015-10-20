@@ -3,14 +3,14 @@ I've fixed many issues in this codebase, among other things - memory reallocatio
 To reflect those fixes, I've edited the original readme a bit.
 
 * * *
-
 dcc Distribution
 ================
 
 The code provided in this distribution is (C) by their authors:
-- 	Cristina Cifuentes (most of dcc code)
+-	Cristina Cifuentes (most of dcc code)
 -	Mike van Emmerik (signatures and prototype code)
 -	Jeff Ledermann (some disassembly code)
+
 and is provided "as is". Additional contributor list is available
 [on GitHub](https://github.com/nemerle/dcc/graphs/contributors).
 
@@ -44,19 +44,19 @@ broken in some cases, and we do not have the time to work in this
 project at present so we cannot provide any changes.
 Comments on individual files:
 - fibo (fibonacci): the small model (fibos.exe) decompiles correctly,
-  the large model (fibol.exe) expects an extra argument for scanf().
-  This argument is the segment and is not displayed.
-- benchsho: the first scanf() takes loc0 as an argument.  This is
+  the large model (fibol.exe) expects an extra argument for
+  `scanf()`. This argument is the segment and is not displayed.
+- benchsho: the first `scanf()` takes loc0 as an argument.  This is
   part of a long variable, but dcc does not have any clue at that
   stage that the stack offset pushed on the stack is to be used
   as a long variable rather than an integer variable.
-- benchlng: as part of the main() code, LO(loc1) | HI(loc1) should
-  be displayed instead of loc3 | loc9.  These two integer variables
+- benchlng: as part of the `main()` code, `LO(loc1) | HI(loc1)` should
+  be displayed instead of `loc3 | loc9`.  These two integer variables
   are equivalent to the one long loc1 variable.
 - benchfn: see benchsho.
 - benchmul: see benchsho.
 - byteops: decompiles correctly.
-- intops: the du analysis for DIV and MOD is broken.  dcc currently
+- intops: the du analysis for `DIV` and `MOD` is broken.  dcc currently
   generates code for a long and an integer temporary register that
   were used as part of the analysis.
 - longops: decompiles correctly.
@@ -77,12 +77,12 @@ Comments on individual files:
 - dhamp: this program has far more data types than what dcc recognizes
   at present.
 
-Our thanks to Gary Shaffstall for some debugging work.  Current bugs
+Our thanks to Gary Shaffstall for some debugging work. Current bugs
 are:
 - [ ] if the code generated in the one line is too long, the (static)
   buffer used for that line is clobbered.  Solution: make the buffer
   larger (currently 200 chars).
-- [ ] the large memory model problem & scanf()
+- [ ] the large memory model problem & `scanf()`
 - [ ] dcc's error message shows a p option available which doesn't
   exist, and doesn't show an i option which exists.
 - [x] there is a nasty problem whereby some arrays can get reallocated
@@ -104,24 +104,24 @@ Using dcc
 
 Here is a very brief summary of switches for dcc: 
 
-*   a1, a2: assembler output, before and after re-ordering of input code 
-*   c: Attempt to follow control through indirect call instructions 
-*   i: Enter interactive disassembler 
-*   m: Memory map 
-*   s: Statistics summary 
-*   v, V: verbose (and Very verbose) 
-*   o filename: Use filename as assembler output file 
+*   `a1`, `a2`: assembler output, before and after re-ordering of input code 
+*   `c`: Attempt to follow control through indirect call instructions 
+*   `i`: Enter interactive disassembler 
+*   `m`: Memory map 
+*   `s`: Statistics summary 
+*   `v`, `V`: verbose (and Very verbose) 
+*   `o` filename: Use filename as assembler output file 
 
 If dcc encounters illegal instructions, it will attempt to enter the so called
 interactive disassembler. The idea of this was to allow commands to fix the
 problem so that dcc could continue, but no such changes are implemented
 as yet. (Note: the Unix versions do not have the interactive disassembler). If
-you get into this, you can get out of it by pressing ^X (control-X). Once dcc
+you get into this, you can get out of it by pressing `^X` (control-X). Once dcc
 has entered the interactive disassembler, however, there is little chance that
 it will recover and produce useful output.
 
-If dcc loads the signature file dccxxx.sig, this means that it has not
+If dcc loads the signature file `dccxxx.sig`, this means that it has not
 recognised the compiler library used. You can place the signatures in a
 different direcory to where you are working if you set the DCC environment
-variable to point to their path. Note that if dcc can't find its signature files, it
-will be severely handicapped. 
+variable to point to their path. Note that if dcc can't find its signature
+files, it will be severely handicapped. 
