@@ -1,16 +1,18 @@
 I've fixed many issues in this codebase, among other things - memory reallocation during decompilation.
+
 To reflect those fixes, I've edited the original readme a bit.
 
------------------------------
-Original readme:
+* * *
 
-			   dcc Distribution
+dcc Distribution
+================
 
 The code provided in this distribution is (C) by their authors:
-	Cristina Cifuentes (most of dcc code)
-	Mike van Emmerik (signatures and prototype code)
-	Jeff Ledermann (some disassembly code)
-and is provided "as is".
+- 	Cristina Cifuentes (most of dcc code)
+-	Mike van Emmerik (signatures and prototype code)
+-	Jeff Ledermann (some disassembly code)
+and is provided "as is". Additional contributor list is available
+[on GitHub](https://github.com/nemerle/dcc/graphs/contributors).
 
 The following files are included in the dccoo.tar.gz distribution:
 - dcc.zip (dcc.exe DOS program, 1995)
@@ -77,28 +79,28 @@ Comments on individual files:
 
 Our thanks to Gary Shaffstall for some debugging work.  Current bugs
 are:
-- if the code generated in the one line is too long, the (static)
+- [ ] if the code generated in the one line is too long, the (static)
   buffer used for that line is clobbered.  Solution: make the buffer
   larger (currently 200 chars).
-- the large memory model problem & scanf()
-- dcc's error message shows a p option available which doesn't
+- [ ] the large memory model problem & scanf()
+- [ ] dcc's error message shows a p option available which doesn't
   exist, and doesn't show an i option which exists.
-
-<del>- there is a nasty problem whereby some arrays can get reallocated to
-  a new address, and some pointers can become invalid. This mainly
+- [x] there is a nasty problem whereby some arrays can get reallocated
+  to a new address, and some pointers can become invalid. This mainly
   tends to happen to larger executable files. A major rewrite will
-  probably be required to fix this.</del>
+  probably be required to fix this.
 
 For more information refer to the thesis "Reverse Compilation
 Techniques" by Cristina Cifuentes, Queensland University of
 Technology, 1994, and the dcc home page:
-	http://www.it.uq.edu.au/groups/csm/dcc_readme.html
+http://www.it.uq.edu.au/groups/csm/dcc_readme.html
 
 Please note that the executable version of dcc provided in this
 distribution does not necessarily match the source code provided,
 some changes were done without us keeping track of every change.
 
 Using dcc
+---------
 
 Here is a very brief summary of switches for dcc: 
 
