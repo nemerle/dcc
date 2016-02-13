@@ -26,10 +26,10 @@ enable_testing()
 ENDIF()
 
 
-IF(LLVM_EXPERIMENTAL)
-FIND_PACKAGE(LLVM)
+
+find_package(LLVM REQUIRED CONFIG)
 llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES native mc support tablegen)
-ENDIF()
+
 INCLUDE_DIRECTORIES(
     3rd_party/libdisasm
     include
@@ -135,7 +135,7 @@ qt5_use_modules(dcc_lib Core)
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
-TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES} ncurses LLVMSupport)
+TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES}  LLVMSupport)
 qt5_use_modules(dcc_original Core)
 #ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
