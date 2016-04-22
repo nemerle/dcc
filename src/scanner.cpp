@@ -742,7 +742,7 @@ static void regop(int i)
 static void segop(int i)
 {
     if(i==0x1E) {
-        printf("es");
+//        printf("es");
     }
     setAddress(i, true, 0, (((int16_t)i & 0x18) >> 3) + rES, 0);
 }
