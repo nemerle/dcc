@@ -633,9 +633,12 @@ static char *strHex(uint32_t d)
 /****************************************************************************
  *          interactDis - interactive disassembler                          *
  ****************************************************************************/
-void interactDis(Function * /*initProc*/, int /*initIC*/)
+void interactDis(Function * initProc, int initIC)
 {
-    printf("Sorry - interactive disasassembler option not available for Unix\n");
+    const char *procname = "UNKNOWN";
+    if(initProc)
+        procname = initProc->name.c_str();
+    printf("Wanted to start interactive disasassembler for %s at %x\n",procname,initIC);
     return;
 }
 
