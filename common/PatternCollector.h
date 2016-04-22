@@ -5,18 +5,18 @@
 #include <stdlib.h>
 #include <vector>
 
-#define	SYMLEN	16			/* Number of chars in the symbol name, incl null */
-#define PATLEN	23			/* Number of bytes in the pattern part */
+#define SYMLEN  16          /* Number of chars in the symbol name, incl null */
+#define PATLEN  23          /* Number of bytes in the pattern part */
 
 struct HASHENTRY
 {
-    char name[SYMLEN];		/* The symbol name */
-    uint8_t pat [PATLEN];		/* The pattern */
-    uint16_t offset;			/* Offset (needed temporarily) */
+    char name[SYMLEN];      /* The symbol name */
+    uint8_t pat [PATLEN];   /* The pattern */
+    uint16_t offset;        /* Offset (needed temporarily) */
 };
 
 struct PatternCollector {
-    uint8_t buf[100], bufSave[7];	/* Temp buffer for reading the file */
+    uint8_t buf[100], bufSave[7];   /* Temp buffer for reading the file */
     uint16_t readShort(FILE *f)
     {
         uint8_t b1, b2;

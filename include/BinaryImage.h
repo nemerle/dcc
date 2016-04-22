@@ -14,7 +14,7 @@ struct PROG /* Loaded program image parameters  */
     int         cProcs;     /* Number of procedures so far      */
     int         offMain;    /* The offset  of the main() proc   */
     uint16_t    segMain;    /* The segment of the main() proc   */
-    bool        bSigs;		/* True if signatures loaded		*/
+    bool        bSigs;      /* True if signatures loaded        */
     int         cbImage;    /* Length of image in bytes         */
     uint8_t *   Imagez;      /* Allocated by loader to hold entire program image */
     int         addressingMode;

@@ -638,7 +638,8 @@ void interactDis(Function * initProc, int initIC)
     const char *procname = "UNKNOWN";
     if(initProc)
         procname = initProc->name.c_str();
-    printf("Wanted to start interactive disasassembler for %s at %x\n",procname,initIC);
+
+    printf("Wanted to start interactive disasassembler for %s:%d\n",procname,initIC);
     return;
 }
 

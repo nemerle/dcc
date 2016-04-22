@@ -59,10 +59,10 @@ public:
     ICODE &front();
     ICODE &back();
     size_t size();
-    uint8_t            nodeType;       /* Type of node                 */
-    eDFS             traversed;      /* last traversal id is held here traversed yet?      */
-    int             numHlIcodes;	/* No. of high-level icodes		*/
-    uint32_t         flg;			/* BB flags						*/
+    uint8_t            nodeType;    /* Type of node                                     */
+    eDFS             traversed;     /* last traversal id is held here traversed yet?    */
+    int             numHlIcodes;    /* No. of high-level icodes                         */
+    uint32_t         flg;           /* BB flags                                         */
 
     /* In edges and out edges */
     std::vector<BB *> inEdges; // does not own held pointers
@@ -80,10 +80,10 @@ public:
     interval       *correspInt;     //!< Corresponding interval in derived graph Gi-1
     // For live register analysis
     //  LiveIn(b) = LiveUse(b) U (LiveOut(b) - Def(b))
-    LivenessSet liveUse;		/* LiveUse(b)					*/
-    LivenessSet def;                /* Def(b)						*/
-    LivenessSet liveIn;             /* LiveIn(b)					*/
-    LivenessSet liveOut;		/* LiveOut(b)					*/
+    LivenessSet liveUse;            /* LiveUse(b)               */
+    LivenessSet def;                /* Def(b)                   */
+    LivenessSet liveIn;             /* LiveIn(b)                */
+    LivenessSet liveOut;            /* LiveOut(b)               */
 
     /* For structuring analysis */
     int             dfsFirstNum;    /* DFS #: first visit of node   */

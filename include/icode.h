@@ -544,8 +544,8 @@ public:
         }
     };
     icodeType           type;           /* Icode type                       */
-    DU_ICODE		du;             /* Def/use regs/vars                */
-    DU1			du1;        	/* du chain 1                       */
+    DU_ICODE            du;             /* Def/use regs/vars                */
+    DU1                 du1;            /* du chain 1                       */
     int                 loc_ip; // used by CICodeRec to number ICODEs
 
     LLInst *            ll() { return &m_ll;}

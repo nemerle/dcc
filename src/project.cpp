@@ -8,10 +8,10 @@
 using namespace std;
 //Project g_proj;
 QString asm1_name, asm2_name;     /* Assembler output filenames     */
-SYMTAB  symtab;             /* Global symbol table      			  */
-STATS   stats;              /* cfg statistics       				  */
-//PROG    prog;               /* programs fields      				  */
-OPTION  option;             /* Command line options     			  */
+SYMTAB  symtab;             /* Global symbol table                  */
+STATS   stats;              /* cfg statistics                       */
+//PROG    prog;               /* programs fields                    */
+OPTION  option;             /* Command line options                 */
 Project *Project::s_instance = nullptr;
 Project::Project() : callGraph(nullptr)
 {
