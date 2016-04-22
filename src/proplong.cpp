@@ -546,7 +546,7 @@ void Function::propLongReg (int loc_ident_idx, const ID &pLocId)
  * Transforms some LOW_LEVEL icodes into HIGH_LEVEL     */
 void Function::propLongGlb (int /*i*/, const ID &/*pLocId*/)
 {
-    printf("WARN: Function::propLongGlb not implemented");
+    printf("WARN: Function::propLongGlb not implemented\n");
 }
 
 
