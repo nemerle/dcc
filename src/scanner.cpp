@@ -330,7 +330,7 @@ static void decodeBranchTgt(x86_insn_t &insn)
     int32_t addr = tgt_op->getAddress();
     if(tgt_op->is_relative())
     {
-        addr +=  insn.addr+insn.size;
+        addr = (uint16_t)(addr + insn.addr + insn.size);
     }
     pIcode->ll()->replaceSrc((uint32_t)addr);
     pIcode->ll()->setFlags(I);
