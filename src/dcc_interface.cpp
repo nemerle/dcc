@@ -12,12 +12,6 @@ public:
     void Init(QObject *tgt)
     {
     }
-    ilFunction GetFirstFuncHandle()
-    {
-    }
-    ilFunction GetCurFuncHandle()
-    {
-    }
     void analysis_Once()
     {
     }
@@ -30,9 +24,6 @@ public:
     {
     }
     void prtout_cpp(IXmlTarget *, int level)
-    {
-    }
-    size_t getFuncCount()
     {
     }
     const lFunction &validFunctions() const

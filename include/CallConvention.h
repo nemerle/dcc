@@ -1,6 +1,8 @@
 #pragma once
 #include "ast.h"
 
+#undef PASCAL
+
 struct CConv {
     enum Type {
         UNKNOWN=0,

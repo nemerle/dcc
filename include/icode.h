@@ -56,7 +56,7 @@ public:
         swap(*this,other);
         return *this;
     }
-    friend void swap(LivenessSet& first, LivenessSet& second) // nothrow
+    void swap(LivenessSet& first, LivenessSet& second) // nothrow
     {
         // enable ADL (not necessary in our case, but good practice)
         using std::swap;
@@ -102,13 +102,13 @@ public:
     }
     bool any() const
     {
-        return not registers.empty();
+        return !registers.empty();
     }
     bool operator==(const LivenessSet &other) const
     {
         return registers==other.registers;
     }
-    bool operator!=(const LivenessSet &other) const { return not(*this==other);}
+    bool operator!=(const LivenessSet &other) const { return !(*this==other);}
 
     LivenessSet &setReg(int r);
     LivenessSet &addReg(int r);
@@ -157,9 +157,9 @@ struct CallType : public HlTypeSupport
     void placeStkArg(Expr *exp, int pos);
     virtual Expr * toAst();
 public:
-    bool removeRegFromLong(eReg /*regi*/, LOCAL_ID */*locId*/)
+    bool removeRegFromLong(eReg /*regi*/, LOCAL_ID * /*locId*/)
     {
-        printf("CallType : removeRegFromLong not supproted");
+        printf("CallType : removeRegFromLong not supproted\n");
         return false;
     }
     std::string writeOut(Function *pProc, int *numLoc) const;
@@ -244,7 +244,7 @@ public:
     std::string write1HlIcode(Function *pProc, int *numLoc) const;
     void setAsgn(Expr *lhs, Expr *rhs);
 } ;
-/* LOW_LEVEL icode operand record */
+/* LOW__LEVEL icode operand record */
 struct LLOperand
 {
     eReg     seg;               /* CS, DS, ES, SS                       */
@@ -306,7 +306,7 @@ struct LLOperand
     }
     bool isSet()
     {
-        return not (*this == LLOperand());
+        return !(*this == LLOperand());
     }
     void addProcInformation(int param_count, CConv::Type call_conv);
     bool isImmediate() const { return immed;}
@@ -354,7 +354,7 @@ public:
     }
     bool matchWithRegDst(llIcode op)
     {
-        return (getOpcode()==op) and m_dst.isReg();
+        return (getOpcode()==op) && m_dst.isReg();
     }
     bool match(llIcode op,eReg dest)
     {
@@ -362,7 +362,7 @@ public:
     }
     bool match(llIcode op,eReg dest,uint32_t flgs)
     {
-        return (getOpcode()==op) and (m_dst.regi==dest) and testFlags(flgs);
+        return (getOpcode()==op) && (m_dst.regi==dest) && testFlags(flgs);
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
@@ -378,7 +378,7 @@ public:
     }
     bool match(llIcode op,uint32_t flgs)
     {
-        return (getOpcode()==op) and testFlags(flgs);
+        return (getOpcode()==op) && testFlags(flgs);
     }
     void set(llIcode op,uint32_t flags)
     {
@@ -439,7 +439,7 @@ public:
     LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &m_dst; }
 };
 
-/* Icode definition: LOW_LEVEL and HIGH_LEVEL */
+/* Icode definition: LOW__LEVEL and HIGH__LEVEL */
 struct ICODE
 {
     // use llvm names at least
@@ -448,7 +448,7 @@ protected:
     LLInst m_ll;
     HLTYPE m_hl;
     MachineBasicBlock * Parent;      	/* BB to which this icode belongs   */
-    bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
+    bool                invalid;        /* Has no HIGH__LEVEL equivalent     */
 public:
     x86_insn_t insn;
     template<int FLAG>
@@ -460,17 +460,17 @@ public:
     template<int TYPE>
     struct TypeFilter
     {
-        bool operator()(ICODE *ic) {return ic->type==HIGH_LEVEL;}
-        bool operator()(ICODE &ic) {return ic.type==HIGH_LEVEL;}
+        bool operator()(ICODE *ic) {return ic->type==HIGH__LEVEL;}
+        bool operator()(ICODE &ic) {return ic.type==HIGH__LEVEL;}
     };
     template<int TYPE>
     struct TypeAndValidFilter
     {
-        bool operator()(ICODE *ic) {return (ic->type==HIGH_LEVEL)&&(ic->valid());}
-        bool operator()(ICODE &ic) {return (ic.type==HIGH_LEVEL)&&ic.valid();}
+        bool operator()(ICODE *ic) {return (ic->type==HIGH__LEVEL)&&(ic->valid());}
+        bool operator()(ICODE &ic) {return (ic.type==HIGH__LEVEL)&&ic.valid();}
     };
-    static TypeFilter<HIGH_LEVEL> select_high_level;
-    static TypeAndValidFilter<HIGH_LEVEL> select_valid_high_level;
+    static TypeFilter<HIGH__LEVEL> select_high_level;
+    static TypeAndValidFilter<HIGH__LEVEL> select_valid_high_level;
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
     {
@@ -515,7 +515,7 @@ public:
         //int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
         bool    used(int regIdx)
         {
-            return not idx[regIdx].uses.empty();
+            return !idx[regIdx].uses.empty();
         }
         int     numUses(int regIdx)
         {
@@ -552,12 +552,12 @@ public:
     const LLInst *      ll() const { return &m_ll;}
 
     HLTYPE *            hlU() {
-        //        assert(type==HIGH_LEVEL);
+        //        assert(type==HIGH__LEVEL);
         //        assert(m_hl.opcode!=HLI_INVALID);
         return &m_hl;
     }
     const HLTYPE *      hl() const {
-        //        assert(type==HIGH_LEVEL);
+        //        assert(type==HIGH__LEVEL);
         //        assert(m_hl.opcode!=HLI_INVALID);
         return &m_hl;
     }
@@ -572,7 +572,7 @@ public:
     // set this icode to be an assign
     void setAsgn(Expr *lhs, Expr *rhs)
     {
-        type=HIGH_LEVEL;
+        type=HIGH__LEVEL;
         hlU()->setAsgn(lhs,rhs);
     }
     void setUnary(hlIcode op, Expr *_exp);
@@ -580,7 +580,7 @@ public:
 
     void emitGotoLabel(int indLevel);
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
-    bool valid() {return not invalid;}
+    bool valid() {return !invalid;}
     void setParent(MachineBasicBlock *P) { Parent = P; }
 public:
     bool removeDefRegi(eReg regi, int thisDefIdx, LOCAL_ID *locId);
@@ -589,7 +589,7 @@ public:
     {
         return hlU()->call.newStkArg(exp,opcode,pproc);
     }
-    ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT_SCANNED),loc_ip(0)
+    ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT__SCANNED),loc_ip(0)
     {
     }
 public:

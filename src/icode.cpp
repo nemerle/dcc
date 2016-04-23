@@ -9,8 +9,8 @@
 #include "icode.h"
 
 
-ICODE::TypeFilter<HIGH_LEVEL> ICODE::select_high_level;
-ICODE::TypeAndValidFilter<HIGH_LEVEL> ICODE::select_valid_high_level;
+ICODE::TypeFilter<HIGH__LEVEL> ICODE::select_high_level;
+ICODE::TypeAndValidFilter<HIGH__LEVEL> ICODE::select_valid_high_level;
 CIcodeRec::CIcodeRec()
 {
 }
@@ -69,7 +69,7 @@ extern bundle cCode;
  *       onto code in cCode.code */
 void LLInst::emitGotoLabel (int indLevel)
 {
-    if ( not testFlags(HLL_LABEL) ) /* node hasn't got a lab */
+    if (!testFlags(HLL_LABEL) ) /* node hasn't got a lab */
     {
         /* Generate new label */
         hllLabNum = getNextLabel();

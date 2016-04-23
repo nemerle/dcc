@@ -296,7 +296,7 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
             (*iter)->inEdgeCount++;
         }
     }
-    return not sameGraph;
+    return !sameGraph;
 }
 
 

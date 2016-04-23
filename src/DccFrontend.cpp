@@ -206,7 +206,7 @@ struct ComLoader : public DosLoader {
         fp.seek(0);
         char sig[2];
         if(2==fp.read(sig,2)) {
-            return not (sig[0] == 0x4D && sig[1] == 0x5A);
+            return !(sig[0] == 0x4D && sig[1] == 0x5A);
         }
         return false;
     }
@@ -244,7 +244,7 @@ struct ExeLoader : public DosLoader {
         MZHeader tmp_header;
         fp.seek(0);
         fp.read((char *)&tmp_header, sizeof(header));
-        if(not (tmp_header.sigLo == 0x4D && tmp_header.sigHi == 0x5A))
+        if(!(tmp_header.sigLo == 0x4D && tmp_header.sigHi == 0x5A))
             return false;
 
         /* This is a typical DOS kludge! */
@@ -312,7 +312,8 @@ struct ExeLoader : public DosLoader {
         memset(prog.map, BM_UNKNOWN, (size_t)cb);
 
         /* Relocate segment constants */
-        for(uint32_t v : prog.relocTable) {
+		for(size_t i = 0; i < prog.relocTable.size(); ++i) {
+			uint32_t v = prog.relocTable[i];
             uint8_t *p = &prog.Imagez[v];
             uint16_t  w = (uint16_t)LH(p) + EXE_RELOCATION;
             *p++    = (uint8_t)(w & 0x00FF);

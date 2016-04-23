@@ -41,7 +41,7 @@ ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
 
     ICODE eIcode = ICODE();
 
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW__LEVEL;
     eIcode.ll()->set(iMOV,0,rTMP);
     if (ll->testFlags(B) )
     {
@@ -65,7 +65,7 @@ ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
 
     /* iMOD */
     eIcode = ICODE();
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW__LEVEL;
     eIcode.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
     eIcode.ll()->replaceSrc(_Icode.ll()->src());
     eIcode.du = _Icode.du;
@@ -76,7 +76,7 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
 {
     /* MOV rTMP, regDst */
     ICODE eIcode;
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW__LEVEL;
     eIcode.ll()->set(iMOV,SYNTHETIC,rTMP,ll->m_dst);
     eIcode.setRegDU( rTMP, eDEF);
     if(eIcode.ll()->src().getReg2())
@@ -96,7 +96,7 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
 
     /* MOV regSrc, rTMP */
     eIcode = ICODE();
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW__LEVEL;
     eIcode.ll()->set(iMOV,SYNTHETIC);
     eIcode.ll()->replaceDst(ll->src());
     if(eIcode.ll()->m_dst.regi)
@@ -156,7 +156,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         iICODE labLoc = Icode.labelSrch(ll->label);
         if (Icode.end()!=labLoc)
         {   /* Synthetic jump */
-            _Icode.type = LOW_LEVEL;
+            _Icode.type = LOW__LEVEL;
             ll->set(iJMP,I | SYNTHETIC | NO_OPS);
             ll->replaceSrc(LLOperand::CreateImm2(labLoc->ll()->GetLlLabel()));
             ll->label = SynthLab++;
@@ -568,8 +568,8 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
     seg = (pIcode.ll()->src().seg)? pIcode.ll()->src().seg: rDS;
 
     /* Ensure we have a uint16_t offset & valid seg */
-    if (pIcode.ll()->match(iJMP) and (pIcode.ll()->testFlags(WORD_OFF)) and
-            pstate->f[seg] and
+    if (pIcode.ll()->match(iJMP) && (pIcode.ll()->testFlags(WORD_OFF)) &&
+            pstate->f[seg] &&
             (pIcode.ll()->src().regi == INDEX_SI ||
              pIcode.ll()->src().regi == INDEX_DI || /* Idx reg. BX, SI, DI */
              pIcode.ll()->src().regi == INDEX_BX))
@@ -681,7 +681,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
     /* For Indirect Calls, find the function address */
     bool indirect = false;
     //pIcode.ll()->immed.proc.proc=fakeproc;
-    if ( not pIcode.ll()->testFlags(I) )
+    if (!pIcode.ll()->testFlags(I) )
     {
         /* Not immediate, i.e. indirect call */
 
@@ -702,9 +702,9 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
                         segment for the pointer is in SS! - Mike */
         if(pIcode.ll()->m_dst.isReg())
         {
-            if( not  pstate->isKnown(pIcode.ll()->m_dst.regi)
-                    or
-                    not  pstate->isKnown(pIcode.ll()->m_dst.seg)
+            if(!pstate->isKnown(pIcode.ll()->m_dst.regi)
+				||
+				!pstate->isKnown(pIcode.ll()->m_dst.seg)
                     )
             {
                 fprintf(stderr,"Indirect call with unknown register values\n");
@@ -740,7 +740,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
         ilFunction iter = Project::get()->findByEntry(pIcode.ll()->src().getImm2());
 
         /* Create a new procedure node and save copy of the state */
-        if ( not Project::get()->valid(iter) )
+        if (!Project::get()->valid(iter) )
         {
             iter = Project::get()->createFunction(0,"");
             Function &x(*iter);
@@ -958,7 +958,7 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
         }
     }
     /* Check for out of bounds */
-    if (psym and (psym->label < (uint32_t)prog.cbImage))
+    if (psym && (psym->label < (uint32_t)prog.cbImage))
         return psym;
     return nullptr;
 }
@@ -1070,7 +1070,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     }
 
     /* Use of register */
-    else if ((d == DST) || ((d == SRC) && (not pIcode.ll()->testFlags(I))))
+    else if ((d == DST) || ((d == SRC) && (!pIcode.ll()->testFlags(I))))
         pIcode.du.use.addReg(pm->regi);
 }
 
@@ -1119,9 +1119,9 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         }
     }
     /* Definition of register */
-    else if ((d == DST) || ((d == SRC) && (not pIcode.ll()->testFlags(I))))
+    else if ((d == DST) || ((d == SRC) && (!pIcode.ll()->testFlags(I))))
     {
-        assert(not pIcode.ll()->match(iPUSH));
+        assert(!pIcode.ll()->match(iPUSH));
         pIcode.du1.addDef(pm->regi);
         pIcode.du.def.addReg(pm->regi);
     }
@@ -1139,7 +1139,7 @@ static void use_def(opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, i
 
     if (pm->regi < INDEX_BX_SI)                   /* register */
     {
-        assert(not pIcode.ll()->match(iPUSH));
+        assert(!pIcode.ll()->match(iPUSH));
         pIcode.du1.addDef(pm->regi);
         pIcode.du.def.addReg(pm->regi);
     }

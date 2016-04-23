@@ -37,7 +37,7 @@ void Function::buildCFG(Disassembler &ds)
     /* Idiom analysis and propagation of long type */
     lowLevelAnalysis();
 
-    /* Generate HIGH_LEVEL icodes whenever possible */
+    /* Generate HIGH__LEVEL icodes whenever possible */
     highLevelGen();
 }
 void Function::controlFlowAnalysis()

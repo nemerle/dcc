@@ -145,7 +145,7 @@ void Function::elimCondCodes ()
         {
             llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
-            if ((useAt->type != LOW_LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
+            if ((useAt->type != LOW__LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
                 continue;
             /* Find definition within the same basic block */
             defAt=useAt;
@@ -268,7 +268,7 @@ void Function::genLiveKtes ()
             continue;	// skip invalid BBs
         for(ICODE &insn : *pbb)
         {
-            if ((insn.type == HIGH_LEVEL) && ( insn.valid() ))
+            if ((insn.type == HIGH__LEVEL) && ( insn.valid() ))
             {
                 liveUse |= (insn.du.use - def);
                 def |= insn.du.def;
@@ -419,7 +419,7 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
     if (distance(start_at,end())>1) /* several instructions */
     {
         iICODE ticode=end();
-        // Only check uses of HIGH_LEVEL icodes
+        // Only check uses of HIGH__LEVEL icodes
         auto hl_range=make_iterator_range(start_at,end()) | filtered(ICODE::select_high_level);
         auto checked_icode=hl_range.begin();
         ++checked_icode;
@@ -440,7 +440,7 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
             ticode=(++riICODE(rbegin())).base();
 
         /* Check if last definition of this register */
-        if (not ticode->du.def.testRegAndSubregs(regi) and liveOut.testRegAndSubregs(regi) )
+        if (!ticode->du.def.testRegAndSubregs(regi) && liveOut.testRegAndSubregs(regi) )
             start_at->du.lastDefRegi.addReg(regi);
     }
     else		/* only 1 instruction in this basic block */
@@ -487,9 +487,9 @@ void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
  * account by the programmer). 	*/
 void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
 {
-    if (picode->valid() and not picode->du1.used(defRegIdx) and
-            (not picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
-            (not ((picode->hl()->opcode == HLI_CALL) &&
+    if (picode->valid() && !picode->du1.used(defRegIdx) &&
+            (!picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
+            (!((picode->hl()->opcode == HLI_CALL) &&
                   (picode->hl()->call.proc->flg & PROC_ISLIB))))
     {
         if (! (this->liveOut.testRegAndSubregs(regi)))	/* not liveOut */
@@ -514,7 +514,7 @@ void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
 
 void BB::genDU1()
 {
-    /* Process each register definition of a HIGH_LEVEL icode instruction.
+    /* Process each register definition of a HIGH__LEVEL icode instruction.
      * Note that register variables should not be considered registers.
      */
     assert(nullptr!=Parent);
@@ -526,7 +526,7 @@ void BB::genDU1()
         // foreach defined register
         for (int k = rAX; k < INDEX_BX_SI; k++)
         {
-            if (not ic.du.def.testReg(k))
+            if (!ic.du.def.testReg(k))
                 continue;
             eReg regi = (eReg)(k);      /* Register that was defined */
             picode->du1.regi[defRegIdx] = regi;
@@ -882,7 +882,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     numHlIcodes = 0;
     assert(&fnc->localId==&locals);
     // register(s) to be forward substituted	*/
-    auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
+    auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH__LEVEL>());
     for (auto picode = valid_and_highlevel.begin(); picode != valid_and_highlevel.end(); picode++)
     {
         ICODE &_ic(*picode);
@@ -1014,7 +1014,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
         else if (picode->du1.getNumRegsDef() == 2)   /* long regs */
         {
             /* Check for only one use of these registers */
-            if ((picode->du1.numUses(0) == 1) and (picode->du1.numUses(1) == 1))
+            if ((picode->du1.numUses(0) == 1) && (picode->du1.numUses(1) == 1))
             {
                 regi = picode->du1.regi[0]; //TODO: verify that regi actually should be assigned this
 
@@ -1117,7 +1117,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
             }
         }
 
-        if( not _ic.valid())
+        if(!_ic.valid())
             continue; // instruction was invalidated, try the next one
 
         /* HLI_PUSH doesn't define any registers, only uses registers.
@@ -1135,14 +1135,14 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
          * procedure's argument list */
         if(_icHl.opcode == HLI_CALL)
         {
-            if ( not _icHl.call.proc->hasRegArgs())
+            if (!_icHl.call.proc->hasRegArgs())
             {
                 fnc->processHliCall(_exp, picode.base());
             }
 
             /* If we could not substitute the result of a function,
              * assign it to the corresponding registers */
-            if ( not _icHl.call.proc->isLibrary() and (not picode->du1.used(0)) and (picode->du1.getNumRegsDef() > 0))
+            if (!_icHl.call.proc->isLibrary() && (!picode->du1.used(0)) && (picode->du1.getNumRegsDef() > 0))
             {
                 _exp = new FuncNode(_icHl.call.proc, _icHl.call.args);
                 auto lhs = AstIdent::idID (&_icHl.call.proc->retVal, &locals, picode.base());
@@ -1179,7 +1179,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
             {
                 fprintf(stderr,"LivenessSet probably screwed up, %s register as an liveOut in preprocessReturnDU\n",names[i]);
                 _liveOut.clrReg(bad_regs[i]);
-                if(not _liveOut.any())
+                if(!_liveOut.any())
                     return;
             }
         flg |= PROC_IS_FUNC;

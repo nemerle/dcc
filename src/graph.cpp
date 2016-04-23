@@ -53,10 +53,10 @@ void Function::createCFG()
             continue;
         /* Stick a NOWHERE_NODE on the end if we terminate
          * with anything other than a ret, jump or terminate */
-        if (nextIcode == Icode.end() and
-                (not ll->testFlags(TERMINATES)) and
-                (not ll->match(iJMP)) and (not ll->match(iJMPF)) and
-                (not ll->match(iRET)) and (not ll->match(iRETF)))
+        if (nextIcode == Icode.end() &&
+                (!ll->testFlags(TERMINATES)) &&
+                (!ll->match(iJMP)) && (!ll->match(iJMPF)) &&
+                (!ll->match(iRET)) && (!ll->match(iRETF)))
         {
             pBB=BB::Create(current_range, NOWHERE_NODE, this);
         }
@@ -71,7 +71,7 @@ void Function::createCFG()
 CondJumps:
                 pBB->addOutEdge(nextIcode->loc_ip);
                 /* This is checking for jumps off into nowhere */
-                if ( not ll->testFlags(NO_LABEL) )
+                if (!ll->testFlags(NO_LABEL) )
                     pBB->addOutEdge(ll->src().getImm2());
                 break;
 
@@ -100,7 +100,7 @@ CondJumps:
             {
                 Function * p = ll->src().proc.proc;
                 pBB = BB::Create(current_range,  CALL_NODE, this);
-                if (p && not ((p->flg) & TERMINATES) )
+                if (p && !((p->flg) & TERMINATES) )
                     pBB->addOutEdge(nextIcode->loc_ip);
                 break;
             }
@@ -132,6 +132,9 @@ CondJumps:
             // end iterator will be updated by expression in for statement
             current_range=make_iterator_range(nextIcode,nextIcode);
         }
+
+		if (nextIcode == Icode.end())
+			break;
     }
     for (auto pr : m_ip_to_bb)
     {
@@ -159,7 +162,7 @@ void Function::markImpure()
     PROG &prog(Project::get()->prog);
     for(ICODE &icod : Icode)
     {
-        if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
+        if (!icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
         //assert that case tbl has less entries then symbol table ????
         //WARNING: Case entries are held in symbol table !
@@ -210,7 +213,7 @@ void Function::compressCFG()
             ip   = pBB->rbegin()->loc_ip;
             pNxt = edgeRef.BBptr->rmJMP(ip, edgeRef.BBptr);
 
-            if (not pBB->edges.empty())   /* Might have been clobbered */
+            if (!pBB->edges.empty())   /* Might have been clobbered */
             {
                 edgeRef.BBptr = pNxt;
                 assert(pBB->back().loc_ip==ip);
@@ -271,7 +274,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
         {
             pBB->traversed = (eDFS)marker;
             pBB->inEdges.pop_back();
-            if (not pBB->inEdges.empty())
+            if (!pBB->inEdges.empty())
             {
                 pBB->edges[0].BBptr->inEdges.push_back((BB *)nullptr);
             }
@@ -328,7 +331,7 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
             if(back().loc_ip>pChild->front().loc_ip) // back edege
                 break;
             auto iter=std::find_if(this->end(),pChild->begin(),[](ICODE &c)
-            {return not c.ll()->testFlags(NO_CODE);});
+            {return !c.ll()->testFlags(NO_CODE);});
 
             if (iter != pChild->begin())
                 break;

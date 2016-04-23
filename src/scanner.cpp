@@ -5,6 +5,7 @@
  * (C) Cristina Cifuentes, Jeff Ledermann
  ****************************************************************************/
 
+#define NOMINMAX
 #include <cstring>
 #include <map>
 #include <string>
@@ -534,7 +535,7 @@ eErrorId scan(uint32_t ip, ICODE &p)
     PROG &prog(Project::get()->prog);
     int  op;
     p = ICODE();
-    p.type = LOW_LEVEL;
+    p.type = LOW__LEVEL;
     p.ll()->label = ip;			/* ip is absolute offset into image*/
     if (ip >= (uint32_t)prog.cbImage)
     {
@@ -888,7 +889,7 @@ static void arith(int i)
 
     if ((opcode == iDIV) || (opcode == iIDIV))
     {
-        if ( not pIcode->ll()->testFlags(B) )
+        if (!pIcode->ll()->testFlags(B) )
             pIcode->ll()->setFlags(IM_TMP_DST);
     }
 }

@@ -29,7 +29,7 @@ void ICODE::checkHlCall()
 /* Places the new HLI_CALL high-level operand in the high-level icode array */
 void ICODE::newCallHl()
 {
-    type = HIGH_LEVEL;
+    type = HIGH__LEVEL;
     hlU()->setCall(ll()->src().proc.proc);
 
     if (ll()->src().proc.cb != 0)
@@ -48,7 +48,7 @@ void ICODE::newCallHl()
  * array */
 void ICODE::setUnary(hlIcode op, Expr *_exp)
 {
-    type = HIGH_LEVEL;
+    type = HIGH__LEVEL;
     hlU()->set(op,_exp);
 }
 
@@ -56,7 +56,7 @@ void ICODE::setUnary(hlIcode op, Expr *_exp)
 /* Places the new HLI_JCOND high-level operand in the high-level icode array */
 void ICODE::setJCond(Expr *cexp)
 {
-    type = HIGH_LEVEL;
+    type = HIGH__LEVEL;
     hlU()->set(HLI_JCOND,cexp);
 }
 
@@ -94,7 +94,7 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
         return true;
     }
     HlTypeSupport *p=hlU()->get();
-    if(p and p->removeRegFromLong(regi,locId))
+    if(p && p->removeRegFromLong(regi,locId))
     {
         du1.removeDef(regi); //du1.numRegsDef--;
         //du.def &= maskDuReg[regi];
@@ -300,9 +300,9 @@ static bool  needsLhs(unsigned opc)
             return true;
     }
 }
-/* Translates LOW_LEVEL icodes to HIGH_LEVEL icodes - 1st stage.
+/* Translates LOW__LEVEL icodes to HIGH__LEVEL icodes - 1st stage.
  * Note: this process should be done before data flow analysis, which
- *       refines the HIGH_LEVEL icodes. */
+ *       refines the HIGH__LEVEL icodes. */
 void Function::highLevelGen()
 {
     size_t numIcode;        /* number of icode instructions */
@@ -320,13 +320,13 @@ void Function::highLevelGen()
         LLOperand *src_ll = ll->get(SRC);
         if ( ll->testFlags(NOT_HLL) )
             pIcode->invalidate();
-        if ((pIcode->type != LOW_LEVEL) or not pIcode->valid() )
+        if ((pIcode->type != LOW__LEVEL) || !pIcode->valid() )
             continue;
         _flg = ll->getFlag();
-        if (not ll->testFlags(IM_OPS))   /* not processing IM_OPS yet */
-            if ( not ll->testFlags(NO_OPS) )       /* if there are opers */
+        if (!ll->testFlags(IM_OPS))   /* not processing IM_OPS yet */
+            if (!ll->testFlags(NO_OPS) )       /* if there are opers */
             {
-                if ( not ll->testFlags(NO_SRC) )   /* if there is src op */
+                if (!ll->testFlags(NO_SRC) )   /* if there is src op */
                     rhs = AstIdent::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
                 if(ll->m_dst.isSet() || (ll->getOpcode()==iMOD))
                     lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
@@ -353,7 +353,7 @@ void Function::highLevelGen()
 
             case iCALL:
             case iCALLF:
-                pIcode->type = HIGH_LEVEL;
+                pIcode->type = HIGH__LEVEL;
                 pIcode->hl( ll->createCall() );
                 break;
 
@@ -635,7 +635,7 @@ void ICODE::writeDU()
     printf ("# regs defined = %d\n", du1.getNumRegsDef());
     for (int i = 0; i < MAX_REGS_DEF; i++)
     {
-        if (not du1.used(i))
+        if (!du1.used(i))
             continue;
         printf ("%d: du1[%d][] = ", my_idx, i);
         for(auto j : du1.idx[i].uses)

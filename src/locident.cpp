@@ -10,7 +10,7 @@
 #include "dcc.h"
 bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 {
-    return (a->ll()->src().getReg2()==m_l) and (b->ll()->m_dst.getReg2()==m_h);
+    return (a->ll()->src().getReg2()==m_l) && (b->ll()->m_dst.getReg2()==m_h);
 }
 
 ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
@@ -23,7 +23,7 @@ ID::ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
     macro[0]=0;
     memset(&id,0,sizeof(id));
     loc=f;
-    assert(not ((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN)));
+    assert(!((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN)));
 }
 ID::ID(hlType t,const LONGID_TYPE &s) : type(t),illegal(false),hasMacro(false)
 {
@@ -142,7 +142,7 @@ int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
  *            off: offset from segment
  *            regi: indexed register into global variable
  *            ix: index into icode array
- *            t: HIGH_LEVEL type            */
+ *            t: HIGH__LEVEL type            */
 int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t)
 {
     /* Check for entry in the table */
@@ -340,17 +340,17 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
 
 
 /* Checks whether the long stack identifier is equivalent to the source or
- * destination operands of pIcode and pIcode+1 (ie. these are LOW_LEVEL
+ * destination operands of pIcode and pIcode+1 (ie. these are LOW__LEVEL
  * icodes at present).  If so, returns the rhs and lhs of this instruction.
  * Arguments: longId    : long stack identifier
- *            pIcode    : ptr to first LOW_LEVEL icode instruction
+ *            pIcode    : ptr to first LOW__LEVEL icode instruction
  *            i         : idx into local identifier table for longId
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
 bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
-    /* pointers to LOW_LEVEL icodes */
+    /* pointers to LOW__LEVEL icodes */
     const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
     pmHdst = &pIcode->ll()->m_dst;
@@ -378,7 +378,7 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
     {
         asgn.lhs = AstIdent::LongIdx (i);
 
-        if ( not pIcode->ll()->testFlags(NO_SRC) )
+        if (!pIcode->ll()->testFlags(NO_SRC) )
         {
             asgn.rhs = AstIdent::Long (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, atOffset);
         }
@@ -395,10 +395,10 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
 
 
 /* Checks whether the long stack identifier is equivalent to the source or
- * destination operands of pIcode and pIcode+1 (ie. these are LOW_LEVEL
+ * destination operands of pIcode and pIcode+1 (ie. these are LOW__LEVEL
  * icodes at present).  If so, returns the rhs and lhs of this instruction.
  * Arguments: longId    : long stack identifier
- *            pIcode    : ptr to first LOW_LEVEL icode instruction
+ *            pIcode    : ptr to first LOW__LEVEL icode instruction
  *            i         : idx into local identifier table for longId
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
@@ -406,7 +406,7 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
 bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
                       Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
-    /* pointers to LOW_LEVEL icodes */
+    /* pointers to LOW__LEVEL icodes */
     const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
     pmHdst = &pIcode->ll()->m_dst;
@@ -417,7 +417,7 @@ bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
     if ((longId.h() == pmHdst->regi) && (longId.l() == pmLdst->regi))
     {
         asgn.lhs = AstIdent::LongIdx (i);
-        if ( not pIcode->ll()->testFlags(NO_SRC) )
+        if (!pIcode->ll()->testFlags(NO_SRC) )
         {
             asgn.rhs = AstIdent::Long (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, atOffset);
         }
@@ -464,7 +464,7 @@ void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const char *name)
     {
         if (rid.typeBitsize()!=16)
             continue;
-        if ( (rid.id.regi != regL) and (rid.id.regi != regH) )
+        if ( (rid.id.regi != regL) && (rid.id.regi != regH) )
             continue;
         // otherwise at least 1 is ok
         rid.name = name;

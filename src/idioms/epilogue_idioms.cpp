@@ -46,7 +46,7 @@ bool Idiom2::match(iICODE pIcode)
     iICODE nicode;
     if(pIcode==m_func->Icode.begin()) // pIcode->loc_ip == 0
         return false;
-    if ( pIcode->ll()->testFlags(I) || (not pIcode->ll()->match(rSP,rBP)) )
+    if ( pIcode->ll()->testFlags(I) || (!pIcode->ll()->match(rSP,rBP)) )
         return false;
     if(distance(pIcode,m_end)<3)
         return false;
@@ -118,7 +118,7 @@ bool Idiom4::match(iICODE pIcode)
     {
         iICODE prev1 = --iICODE(pIcode);
         /* Check for POP BP */
-        if (prev1->ll()->match(iPOP,rBP) && not prev1->ll()->testFlags(I) )
+        if (prev1->ll()->match(iPOP,rBP) && !prev1->ll()->testFlags(I) )
             m_icodes.push_back(prev1);
         else if(prev1!=m_func->Icode.begin())
         {

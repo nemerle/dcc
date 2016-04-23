@@ -62,13 +62,13 @@ bool Idiom15::match(iICODE pIcode)
     if(distance(pIcode,m_end)<2)
         return false;
     /* Match SHL reg, 1 */
-    if (not pIcode->ll()->testFlags(I) or (pIcode->ll()->src().getImm2() != 1))
+    if (!pIcode->ll()->testFlags(I) || (pIcode->ll()->src().getImm2() != 1))
         return false;
     m_icodes.clear();
     regi = pIcode->ll()->m_dst.regi;
     m_icodes.push_back(pIcode++);
-    while(  (pIcode!=m_end) and
-            pIcode->ll()->match(iSHL,(eReg)regi,I) and
+    while(  (pIcode!=m_end) &&
+            pIcode->ll()->match(iSHL,(eReg)regi,I) &&
             (pIcode->ll()->src().getImm2() == 1) )
     {
         m_icodes.push_back(pIcode++);

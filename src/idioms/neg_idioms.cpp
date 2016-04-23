@@ -27,7 +27,7 @@ bool Idiom11::match (iICODE picode)
         return false;
     /* Check NEG reg/mem
      *       SBB reg/mem, 0*/
-    if (not m_icodes[1]->ll()->match(iNEG) or not m_icodes[2]->ll()->match(iSBB))
+    if (!m_icodes[1]->ll()->match(iNEG) || !m_icodes[2]->ll()->match(iSBB))
         return false;
     switch (type)
     {
