@@ -157,9 +157,9 @@ struct CallType : public HlTypeSupport
     void placeStkArg(Expr *exp, int pos);
     virtual Expr * toAst();
 public:
-    bool removeRegFromLong(eReg /*regi*/, LOCAL_ID */*locId*/)
+    bool removeRegFromLong(eReg /*regi*/, LOCAL_ID * /*locId*/)
     {
-        printf("CallType : removeRegFromLong not supproted");
+        printf("CallType : removeRegFromLong not supproted\n");
         return false;
     }
     std::string writeOut(Function *pProc, int *numLoc) const;
