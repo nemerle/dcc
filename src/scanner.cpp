@@ -5,6 +5,7 @@
  * (C) Cristina Cifuentes, Jeff Ledermann
  ****************************************************************************/
 
+#define NOMINMAX
 #include <cstring>
 #include <map>
 #include <string>
@@ -888,7 +889,7 @@ static void arith(int i)
 
     if ((opcode == iDIV) || (opcode == iIDIV))
     {
-        if ( not pIcode->ll()->testFlags(B) )
+        if (!pIcode->ll()->testFlags(B) )
             pIcode->ll()->setFlags(IM_TMP_DST);
     }
 }
