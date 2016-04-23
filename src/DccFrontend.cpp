@@ -206,7 +206,7 @@ struct ComLoader : public DosLoader {
         fp.seek(0);
         char sig[2];
         if(2==fp.read(sig,2)) {
-            return not (sig[0] == 0x4D && sig[1] == 0x5A);
+            return !(sig[0] == 0x4D && sig[1] == 0x5A);
         }
         return false;
     }
@@ -244,7 +244,7 @@ struct ExeLoader : public DosLoader {
         MZHeader tmp_header;
         fp.seek(0);
         fp.read((char *)&tmp_header, sizeof(header));
-        if(not (tmp_header.sigLo == 0x4D && tmp_header.sigHi == 0x5A))
+        if(!(tmp_header.sigLo == 0x4D && tmp_header.sigHi == 0x5A))
             return false;
 
         /* This is a typical DOS kludge! */
