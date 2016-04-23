@@ -56,7 +56,7 @@ public:
         swap(*this,other);
         return *this;
     }
-    friend void swap(LivenessSet& first, LivenessSet& second) // nothrow
+    void swap(LivenessSet& first, LivenessSet& second) // nothrow
     {
         // enable ADL (not necessary in our case, but good practice)
         using std::swap;
