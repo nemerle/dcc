@@ -568,8 +568,8 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
     seg = (pIcode.ll()->src().seg)? pIcode.ll()->src().seg: rDS;
 
     /* Ensure we have a uint16_t offset & valid seg */
-    if (pIcode.ll()->match(iJMP) and (pIcode.ll()->testFlags(WORD_OFF)) and
-            pstate->f[seg] and
+    if (pIcode.ll()->match(iJMP) && (pIcode.ll()->testFlags(WORD_OFF)) &&
+            pstate->f[seg] &&
             (pIcode.ll()->src().regi == INDEX_SI ||
              pIcode.ll()->src().regi == INDEX_DI || /* Idx reg. BX, SI, DI */
              pIcode.ll()->src().regi == INDEX_BX))
@@ -681,7 +681,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
     /* For Indirect Calls, find the function address */
     bool indirect = false;
     //pIcode.ll()->immed.proc.proc=fakeproc;
-    if ( not pIcode.ll()->testFlags(I) )
+    if (!pIcode.ll()->testFlags(I) )
     {
         /* Not immediate, i.e. indirect call */
 
@@ -702,9 +702,9 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
                         segment for the pointer is in SS! - Mike */
         if(pIcode.ll()->m_dst.isReg())
         {
-            if( not  pstate->isKnown(pIcode.ll()->m_dst.regi)
-                    or
-                    not  pstate->isKnown(pIcode.ll()->m_dst.seg)
+            if(!pstate->isKnown(pIcode.ll()->m_dst.regi)
+				||
+				!pstate->isKnown(pIcode.ll()->m_dst.seg)
                     )
             {
                 fprintf(stderr,"Indirect call with unknown register values\n");
@@ -740,7 +740,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
         ilFunction iter = Project::get()->findByEntry(pIcode.ll()->src().getImm2());
 
         /* Create a new procedure node and save copy of the state */
-        if ( not Project::get()->valid(iter) )
+        if (!Project::get()->valid(iter) )
         {
             iter = Project::get()->createFunction(0,"");
             Function &x(*iter);
@@ -958,7 +958,7 @@ static SYM * lookupAddr (LLOperand *pm, STATE *pstate, int size, uint16_t duFlag
         }
     }
     /* Check for out of bounds */
-    if (psym and (psym->label < (uint32_t)prog.cbImage))
+    if (psym && (psym->label < (uint32_t)prog.cbImage))
         return psym;
     return nullptr;
 }
@@ -1070,7 +1070,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     }
 
     /* Use of register */
-    else if ((d == DST) || ((d == SRC) && (not pIcode.ll()->testFlags(I))))
+    else if ((d == DST) || ((d == SRC) && (!pIcode.ll()->testFlags(I))))
         pIcode.du.use.addReg(pm->regi);
 }
 
@@ -1119,9 +1119,9 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         }
     }
     /* Definition of register */
-    else if ((d == DST) || ((d == SRC) && (not pIcode.ll()->testFlags(I))))
+    else if ((d == DST) || ((d == SRC) && (!pIcode.ll()->testFlags(I))))
     {
-        assert(not pIcode.ll()->match(iPUSH));
+        assert(!pIcode.ll()->match(iPUSH));
         pIcode.du1.addDef(pm->regi);
         pIcode.du.def.addReg(pm->regi);
     }
@@ -1139,7 +1139,7 @@ static void use_def(opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, i
 
     if (pm->regi < INDEX_BX_SI)                   /* register */
     {
-        assert(not pIcode.ll()->match(iPUSH));
+        assert(!pIcode.ll()->match(iPUSH));
         pIcode.du1.addDef(pm->regi);
         pIcode.du.def.addReg(pm->regi);
     }
