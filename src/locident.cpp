@@ -10,7 +10,7 @@
 #include "dcc.h"
 bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 {
-    return (a->ll()->src().getReg2()==m_l) and (b->ll()->m_dst.getReg2()==m_h);
+    return (a->ll()->src().getReg2()==m_l) && (b->ll()->m_dst.getReg2()==m_h);
 }
 
 ID::ID() : type(TYPE_UNKNOWN),illegal(false),loc(STK_FRAME),hasMacro(false)
@@ -23,7 +23,7 @@ ID::ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
     macro[0]=0;
     memset(&id,0,sizeof(id));
     loc=f;
-    assert(not ((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN)));
+    assert(!((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN)));
 }
 ID::ID(hlType t,const LONGID_TYPE &s) : type(t),illegal(false),hasMacro(false)
 {
@@ -378,7 +378,7 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
     {
         asgn.lhs = AstIdent::LongIdx (i);
 
-        if ( not pIcode->ll()->testFlags(NO_SRC) )
+        if (!pIcode->ll()->testFlags(NO_SRC) )
         {
             asgn.rhs = AstIdent::Long (&pProc->localId, SRC, pIcode, HIGH_FIRST, pIcode, eUSE, atOffset);
         }
@@ -417,7 +417,7 @@ bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
     if ((longId.h() == pmHdst->regi) && (longId.l() == pmLdst->regi))
     {
         asgn.lhs = AstIdent::LongIdx (i);
-        if ( not pIcode->ll()->testFlags(NO_SRC) )
+        if (!pIcode->ll()->testFlags(NO_SRC) )
         {
             asgn.rhs = AstIdent::Long (&pProc->localId, SRC, pIcode, HIGH_FIRST,  pIcode, eUSE, atOffset);
         }
@@ -464,7 +464,7 @@ void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const char *name)
     {
         if (rid.typeBitsize()!=16)
             continue;
-        if ( (rid.id.regi != regL) and (rid.id.regi != regH) )
+        if ( (rid.id.regi != regL) && (rid.id.regi != regH) )
             continue;
         // otherwise at least 1 is ok
         rid.name = name;
