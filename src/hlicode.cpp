@@ -94,7 +94,7 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
         return true;
     }
     HlTypeSupport *p=hlU()->get();
-    if(p and p->removeRegFromLong(regi,locId))
+    if(p && p->removeRegFromLong(regi,locId))
     {
         du1.removeDef(regi); //du1.numRegsDef--;
         //du.def &= maskDuReg[regi];
@@ -320,13 +320,13 @@ void Function::highLevelGen()
         LLOperand *src_ll = ll->get(SRC);
         if ( ll->testFlags(NOT_HLL) )
             pIcode->invalidate();
-        if ((pIcode->type != LOW__LEVEL) or not pIcode->valid() )
+        if ((pIcode->type != LOW__LEVEL) || !pIcode->valid() )
             continue;
         _flg = ll->getFlag();
-        if (not ll->testFlags(IM_OPS))   /* not processing IM_OPS yet */
-            if ( not ll->testFlags(NO_OPS) )       /* if there are opers */
+        if (!ll->testFlags(IM_OPS))   /* not processing IM_OPS yet */
+            if (!ll->testFlags(NO_OPS) )       /* if there are opers */
             {
-                if ( not ll->testFlags(NO_SRC) )   /* if there is src op */
+                if (!ll->testFlags(NO_SRC) )   /* if there is src op */
                     rhs = AstIdent::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
                 if(ll->m_dst.isSet() || (ll->getOpcode()==iMOD))
                     lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
@@ -635,7 +635,7 @@ void ICODE::writeDU()
     printf ("# regs defined = %d\n", du1.getNumRegsDef());
     for (int i = 0; i < MAX_REGS_DEF; i++)
     {
-        if (not du1.used(i))
+        if (!du1.used(i))
             continue;
         printf ("%d: du1[%d][] = ", my_idx, i);
         for(auto j : du1.idx[i].uses)
