@@ -102,10 +102,10 @@ bool Idiom18::match(iICODE picode)
     m_is_dec = m_icodes[1]->ll()->match(iDEC);
 
     uint8_t regi;		/* register of the MOV */
-    if(not m_icodes[0]->ll()->matchWithRegDst(iMOV) )
+    if(!m_icodes[0]->ll()->matchWithRegDst(iMOV) )
         return false;
     regi = m_icodes[0]->ll()->m_dst.regi;
-    if( not ( m_icodes[2]->ll()->match(iCMP,regi)  &&
+    if(!( m_icodes[2]->ll()->match(iCMP,regi)  &&
               m_icodes[3]->ll()->conditionalJump() ) )
         return false;
     // Simple matching finished, select apropriate matcher based on dst type
@@ -198,7 +198,7 @@ bool Idiom19::match(iICODE picode)
     for(int i=0; i<2; ++i)
         m_icodes[i] =picode++;
     m_is_dec = m_icodes[0]->ll()->match(iDEC);
-    if ( not m_icodes[1]->ll()->conditionalJump() )
+    if (!m_icodes[1]->ll()->conditionalJump() )
         return false;
     if (m_icodes[0]->ll()->m_dst.regi == 0)	/* global variable */
         /* not supported yet */ ;
@@ -257,7 +257,7 @@ bool Idiom20::match(iICODE picode)
     for(int i=0; i<4; ++i)
         m_icodes[i] =picode++;
     /* Check second instruction for a MOV */
-    if( not m_icodes[1]->ll()->matchWithRegDst(iMOV) )
+    if(!m_icodes[1]->ll()->matchWithRegDst(iMOV) )
         return false;
 
     m_is_dec = m_icodes[0]->ll()->match(iDEC) ? PRE_DEC : PRE_INC;
