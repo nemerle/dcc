@@ -43,12 +43,12 @@ bool LivenessSet::testRegAndSubregs(int r) const
 }
 void LivenessSet::postProcessCompositeRegs()
 {
-    if(testReg(rAL) and testReg(rAH))
+    if(testReg(rAL) && testReg(rAH))
         registers.insert(rAX);
-    if(testReg(rCL) and testReg(rCH))
+    if(testReg(rCL) && testReg(rCH))
         registers.insert(rCX);
-    if(testReg(rDL) and testReg(rDH))
+    if(testReg(rDL) && testReg(rDH))
         registers.insert(rDX);
-    if(testReg(rBL) and testReg(rBH))
+    if(testReg(rBL) && testReg(rBH))
         registers.insert(rBX);
 }
