@@ -210,7 +210,7 @@ static int longJCond22 (Assignment &asgn, iICODE pIcode,iICODE pEnd)
         iter=std::find(tbb->inEdges.begin(),tbb->inEdges.end(),obb1);
         assert(iter!=tbb->inEdges.end());
         tbb->inEdges.erase(iter);
-        if (icodes[3]->ll()->getOpcode() == iJE)	/* replace */
+        if (icodes[3]->ll()->getOpcode() == iJE)    /* replace */
             tbb->inEdges.push_back(pbb);
 
         /* Update statistics */
@@ -264,9 +264,9 @@ void Function::propLongStk (int i, const ID &pLocId)
                         condOp oper = DUMMY;
                         switch (pIcode->ll()->getOpcode())
                         {
-                            case iAND: 	oper=AND; break;
-                            case iOR: 	oper=OR;  break;
-                            case iXOR: 	oper=XOR; break;
+                            case iAND:  oper=AND; break;
+                            case iOR:   oper=OR;  break;
+                            case iXOR:  oper=XOR; break;
                         }
                         if(DUMMY!=oper)
                         {
@@ -503,7 +503,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
             if (pLocId.longId().srcDstRegMatch(pIcode,pIcode))
             {
                 asgn.lhs = AstIdent::LongIdx (loc_ident_idx);
-                asgn.rhs = new Constant(0, 4);	/* long 0 */
+                asgn.rhs = new Constant(0, 4);  /* long 0 */
                 asgn.lhs = new BinaryOperator(condOpJCond[next1->ll()->getOpcode() - iJB],asgn.lhs, asgn.rhs);
                 next1->setJCond(asgn.lhs);
                 next1->copyDU(*pIcode, eUSE, eUSE);
@@ -546,7 +546,7 @@ void Function::propLongReg (int loc_ident_idx, const ID &pLocId)
  * Transforms some LOW_LEVEL icodes into HIGH_LEVEL     */
 void Function::propLongGlb (int /*i*/, const ID &/*pLocId*/)
 {
-    printf("WARN: Function::propLongGlb not implemented");
+    printf("WARN: Function::propLongGlb not implemented\n");
 }
 
 

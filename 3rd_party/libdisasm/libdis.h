@@ -317,7 +317,10 @@ struct x86_op_t{
             case op_offset:
                 return data.offset;
             case op_relative_far:
-                return (int32_t) data.relative_far;
+                if (data.relative_far & 0x8000)
+                        return (data.relative_far & 0xFFFF) | 0xFFFF0000;
+		else
+			return (int32_t)data.relative_far;
             default:
                 assert(false);
                 break;

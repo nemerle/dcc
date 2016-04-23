@@ -885,6 +885,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
     for (auto picode = valid_and_highlevel.begin(); picode != valid_and_highlevel.end(); picode++)
     {
+        ICODE &_ic(*picode);
         HLTYPE &_icHl(*picode->hlU());
         numHlIcodes++;
         if (picode->du1.getNumRegsDef() == 1)    /* uint8_t/uint16_t regs */
@@ -1115,6 +1116,10 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                 } /* eos */
             }
         }
+
+        if( not _ic.valid())
+            continue; // instruction was invalidated, try the next one
+
         /* HLI_PUSH doesn't define any registers, only uses registers.
          * Push the associated expression to the register on the local
          * expression stack */

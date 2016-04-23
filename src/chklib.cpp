@@ -502,6 +502,7 @@ bool LibCheck(Function & pProc)
                         case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
                             pProc.liveOut.setReg(rAL);
                             break;
+                        case TYPE_STR:
                         case TYPE_PTR:
                             fprintf(stderr,"Warning assuming Large memory model\n");
                             pProc.liveOut.setReg(rAX).addReg(rDS);
