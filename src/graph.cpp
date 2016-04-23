@@ -132,6 +132,9 @@ CondJumps:
             // end iterator will be updated by expression in for statement
             current_range=make_iterator_range(nextIcode,nextIcode);
         }
+
+		if (nextIcode == Icode.end())
+			break;
     }
     for (auto pr : m_ip_to_bb)
     {
