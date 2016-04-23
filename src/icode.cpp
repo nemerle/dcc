@@ -69,7 +69,7 @@ extern bundle cCode;
  *       onto code in cCode.code */
 void LLInst::emitGotoLabel (int indLevel)
 {
-    if ( not testFlags(HLL_LABEL) ) /* node hasn't got a lab */
+    if (!testFlags(HLL_LABEL) ) /* node hasn't got a lab */
     {
         /* Generate new label */
         hllLabNum = getNextLabel();
