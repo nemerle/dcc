@@ -102,13 +102,13 @@ public:
     }
     bool any() const
     {
-        return not registers.empty();
+        return !registers.empty();
     }
     bool operator==(const LivenessSet &other) const
     {
         return registers==other.registers;
     }
-    bool operator!=(const LivenessSet &other) const { return not(*this==other);}
+    bool operator!=(const LivenessSet &other) const { return !(*this==other);}
 
     LivenessSet &setReg(int r);
     LivenessSet &addReg(int r);
@@ -306,7 +306,7 @@ struct LLOperand
     }
     bool isSet()
     {
-        return not (*this == LLOperand());
+        return !(*this == LLOperand());
     }
     void addProcInformation(int param_count, CConv::Type call_conv);
     bool isImmediate() const { return immed;}
@@ -354,7 +354,7 @@ public:
     }
     bool matchWithRegDst(llIcode op)
     {
-        return (getOpcode()==op) and m_dst.isReg();
+        return (getOpcode()==op) && m_dst.isReg();
     }
     bool match(llIcode op,eReg dest)
     {
@@ -362,7 +362,7 @@ public:
     }
     bool match(llIcode op,eReg dest,uint32_t flgs)
     {
-        return (getOpcode()==op) and (m_dst.regi==dest) and testFlags(flgs);
+        return (getOpcode()==op) && (m_dst.regi==dest) && testFlags(flgs);
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
@@ -378,7 +378,7 @@ public:
     }
     bool match(llIcode op,uint32_t flgs)
     {
-        return (getOpcode()==op) and testFlags(flgs);
+        return (getOpcode()==op) && testFlags(flgs);
     }
     void set(llIcode op,uint32_t flags)
     {
@@ -515,7 +515,7 @@ public:
         //int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
         bool    used(int regIdx)
         {
-            return not idx[regIdx].uses.empty();
+            return !idx[regIdx].uses.empty();
         }
         int     numUses(int regIdx)
         {
@@ -580,7 +580,7 @@ public:
 
     void emitGotoLabel(int indLevel);
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
-    bool valid() {return not invalid;}
+    bool valid() {return !invalid;}
     void setParent(MachineBasicBlock *P) { Parent = P; }
 public:
     bool removeDefRegi(eReg regi, int thisDefIdx, LOCAL_ID *locId);
