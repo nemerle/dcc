@@ -29,7 +29,7 @@ void ICODE::checkHlCall()
 /* Places the new HLI_CALL high-level operand in the high-level icode array */
 void ICODE::newCallHl()
 {
-    type = HIGH_LEVEL;
+    type = HIGH__LEVEL;
     hlU()->setCall(ll()->src().proc.proc);
 
     if (ll()->src().proc.cb != 0)
@@ -48,7 +48,7 @@ void ICODE::newCallHl()
  * array */
 void ICODE::setUnary(hlIcode op, Expr *_exp)
 {
-    type = HIGH_LEVEL;
+    type = HIGH__LEVEL;
     hlU()->set(op,_exp);
 }
 
@@ -56,7 +56,7 @@ void ICODE::setUnary(hlIcode op, Expr *_exp)
 /* Places the new HLI_JCOND high-level operand in the high-level icode array */
 void ICODE::setJCond(Expr *cexp)
 {
-    type = HIGH_LEVEL;
+    type = HIGH__LEVEL;
     hlU()->set(HLI_JCOND,cexp);
 }
 
@@ -300,9 +300,9 @@ static bool  needsLhs(unsigned opc)
             return true;
     }
 }
-/* Translates LOW_LEVEL icodes to HIGH_LEVEL icodes - 1st stage.
+/* Translates LOW__LEVEL icodes to HIGH__LEVEL icodes - 1st stage.
  * Note: this process should be done before data flow analysis, which
- *       refines the HIGH_LEVEL icodes. */
+ *       refines the HIGH__LEVEL icodes. */
 void Function::highLevelGen()
 {
     size_t numIcode;        /* number of icode instructions */
@@ -320,7 +320,7 @@ void Function::highLevelGen()
         LLOperand *src_ll = ll->get(SRC);
         if ( ll->testFlags(NOT_HLL) )
             pIcode->invalidate();
-        if ((pIcode->type != LOW_LEVEL) or not pIcode->valid() )
+        if ((pIcode->type != LOW__LEVEL) or not pIcode->valid() )
             continue;
         _flg = ll->getFlag();
         if (not ll->testFlags(IM_OPS))   /* not processing IM_OPS yet */
@@ -353,7 +353,7 @@ void Function::highLevelGen()
 
             case iCALL:
             case iCALLF:
-                pIcode->type = HIGH_LEVEL;
+                pIcode->type = HIGH__LEVEL;
                 pIcode->hl( ll->createCall() );
                 break;
 

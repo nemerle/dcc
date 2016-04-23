@@ -41,7 +41,7 @@ bool LLInst::isJmpInst()
 }
 
 /*****************************************************************************
- * findIdioms  - translates LOW_LEVEL icode idioms into HIGH_LEVEL icodes.
+ * findIdioms  - translates LOW__LEVEL icode idioms into HIGH__LEVEL icodes.
  ****************************************************************************/
 void Function::findIdioms()
 {
@@ -275,6 +275,6 @@ void Function::bindIcodeOff()
 void Function::lowLevelAnalysis ()
 {
 
-    findIdioms(); // Idiom analysis - sets up some flags and creates some HIGH_LEVEL icodes
-    propLong();   // Propagate HIGH_LEVEL idiom information for long operands
+    findIdioms(); // Idiom analysis - sets up some flags and creates some HIGH__LEVEL icodes
+    propLong();   // Propagate HIGH__LEVEL idiom information for long operands
 }

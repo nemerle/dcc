@@ -11,7 +11,7 @@
  * functions that were not recognised before are recognised now.
  *
  * Revision 1.7  93/10/11  11:37:01  cifuente
- * First walk of HIGH_LEVEL icodes.
+ * First walk of HIGH__LEVEL icodes.
  *
  * Revision 1.6  93/10/01  14:36:21  emmerik
  * Added $ log, and made independant of dcc.h

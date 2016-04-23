@@ -90,9 +90,9 @@ enum eLLFlags
 /* Types of icodes */
 enum icodeType
 {
-    NOT_SCANNED = 0,    // not even scanned yet
-    LOW_LEVEL,          // low-level icode
-    HIGH_LEVEL          // high-level icode
+    NOT__SCANNED = 0,    // not even scanned yet
+    LOW__LEVEL,          // low-level icode
+    HIGH__LEVEL          // high-level icode
 };
 
 

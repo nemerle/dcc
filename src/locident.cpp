@@ -142,7 +142,7 @@ int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
  *            off: offset from segment
  *            regi: indexed register into global variable
  *            ix: index into icode array
- *            t: HIGH_LEVEL type            */
+ *            t: HIGH__LEVEL type            */
 int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t)
 {
     /* Check for entry in the table */
@@ -340,17 +340,17 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
 
 
 /* Checks whether the long stack identifier is equivalent to the source or
- * destination operands of pIcode and pIcode+1 (ie. these are LOW_LEVEL
+ * destination operands of pIcode and pIcode+1 (ie. these are LOW__LEVEL
  * icodes at present).  If so, returns the rhs and lhs of this instruction.
  * Arguments: longId    : long stack identifier
- *            pIcode    : ptr to first LOW_LEVEL icode instruction
+ *            pIcode    : ptr to first LOW__LEVEL icode instruction
  *            i         : idx into local identifier table for longId
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
  *            rhs, lhs  : return expressions if successful. */
 bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
-    /* pointers to LOW_LEVEL icodes */
+    /* pointers to LOW__LEVEL icodes */
     const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
     pmHdst = &pIcode->ll()->m_dst;
@@ -395,10 +395,10 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
 
 
 /* Checks whether the long stack identifier is equivalent to the source or
- * destination operands of pIcode and pIcode+1 (ie. these are LOW_LEVEL
+ * destination operands of pIcode and pIcode+1 (ie. these are LOW__LEVEL
  * icodes at present).  If so, returns the rhs and lhs of this instruction.
  * Arguments: longId    : long stack identifier
- *            pIcode    : ptr to first LOW_LEVEL icode instruction
+ *            pIcode    : ptr to first LOW__LEVEL icode instruction
  *            i         : idx into local identifier table for longId
  *            idx       : idx into icode array
  *            pProc     : ptr to current procedure record
@@ -406,7 +406,7 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
 bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
                       Function * pProc, Assignment &asgn, LLInst &atOffset)
 {
-    /* pointers to LOW_LEVEL icodes */
+    /* pointers to LOW__LEVEL icodes */
     const LLOperand *pmHdst, *pmLdst, *pmHsrc, *pmLsrc;
 
     pmHdst = &pIcode->ll()->m_dst;

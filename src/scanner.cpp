@@ -534,7 +534,7 @@ eErrorId scan(uint32_t ip, ICODE &p)
     PROG &prog(Project::get()->prog);
     int  op;
     p = ICODE();
-    p.type = LOW_LEVEL;
+    p.type = LOW__LEVEL;
     p.ll()->label = ip;			/* ip is absolute offset into image*/
     if (ip >= (uint32_t)prog.cbImage)
     {

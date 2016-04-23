@@ -244,7 +244,7 @@ public:
     std::string write1HlIcode(Function *pProc, int *numLoc) const;
     void setAsgn(Expr *lhs, Expr *rhs);
 } ;
-/* LOW_LEVEL icode operand record */
+/* LOW__LEVEL icode operand record */
 struct LLOperand
 {
     eReg     seg;               /* CS, DS, ES, SS                       */
@@ -439,7 +439,7 @@ public:
     LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &m_dst; }
 };
 
-/* Icode definition: LOW_LEVEL and HIGH_LEVEL */
+/* Icode definition: LOW__LEVEL and HIGH__LEVEL */
 struct ICODE
 {
     // use llvm names at least
@@ -448,7 +448,7 @@ protected:
     LLInst m_ll;
     HLTYPE m_hl;
     MachineBasicBlock * Parent;      	/* BB to which this icode belongs   */
-    bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
+    bool                invalid;        /* Has no HIGH__LEVEL equivalent     */
 public:
     x86_insn_t insn;
     template<int FLAG>
@@ -460,17 +460,17 @@ public:
     template<int TYPE>
     struct TypeFilter
     {
-        bool operator()(ICODE *ic) {return ic->type==HIGH_LEVEL;}
-        bool operator()(ICODE &ic) {return ic.type==HIGH_LEVEL;}
+        bool operator()(ICODE *ic) {return ic->type==HIGH__LEVEL;}
+        bool operator()(ICODE &ic) {return ic.type==HIGH__LEVEL;}
     };
     template<int TYPE>
     struct TypeAndValidFilter
     {
-        bool operator()(ICODE *ic) {return (ic->type==HIGH_LEVEL)&&(ic->valid());}
-        bool operator()(ICODE &ic) {return (ic.type==HIGH_LEVEL)&&ic.valid();}
+        bool operator()(ICODE *ic) {return (ic->type==HIGH__LEVEL)&&(ic->valid());}
+        bool operator()(ICODE &ic) {return (ic.type==HIGH__LEVEL)&&ic.valid();}
     };
-    static TypeFilter<HIGH_LEVEL> select_high_level;
-    static TypeAndValidFilter<HIGH_LEVEL> select_valid_high_level;
+    static TypeFilter<HIGH__LEVEL> select_high_level;
+    static TypeAndValidFilter<HIGH__LEVEL> select_valid_high_level;
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
     {
@@ -552,12 +552,12 @@ public:
     const LLInst *      ll() const { return &m_ll;}
 
     HLTYPE *            hlU() {
-        //        assert(type==HIGH_LEVEL);
+        //        assert(type==HIGH__LEVEL);
         //        assert(m_hl.opcode!=HLI_INVALID);
         return &m_hl;
     }
     const HLTYPE *      hl() const {
-        //        assert(type==HIGH_LEVEL);
+        //        assert(type==HIGH__LEVEL);
         //        assert(m_hl.opcode!=HLI_INVALID);
         return &m_hl;
     }
@@ -572,7 +572,7 @@ public:
     // set this icode to be an assign
     void setAsgn(Expr *lhs, Expr *rhs)
     {
-        type=HIGH_LEVEL;
+        type=HIGH__LEVEL;
         hlU()->setAsgn(lhs,rhs);
     }
     void setUnary(hlIcode op, Expr *_exp);
@@ -589,7 +589,7 @@ public:
     {
         return hlU()->call.newStkArg(exp,opcode,pproc);
     }
-    ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT_SCANNED),loc_ip(0)
+    ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT__SCANNED),loc_ip(0)
     {
     }
 public:

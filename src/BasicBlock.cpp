@@ -380,7 +380,7 @@ void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
 
     for(ICODE &pHli : instructions)
     {
-        if ((pHli.type == HIGH_LEVEL) && ( pHli.valid() )) //TODO: use filtering range here.
+        if ((pHli.type == HIGH__LEVEL) && ( pHli.valid() )) //TODO: use filtering range here.
         {
             std::string line = pHli.hl()->write1HlIcode(pProc, numLoc);
             if (!line.empty())

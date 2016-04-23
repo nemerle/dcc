@@ -145,7 +145,7 @@ void Function::elimCondCodes ()
         {
             llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
-            if ((useAt->type != LOW_LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
+            if ((useAt->type != LOW__LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
                 continue;
             /* Find definition within the same basic block */
             defAt=useAt;
@@ -268,7 +268,7 @@ void Function::genLiveKtes ()
             continue;	// skip invalid BBs
         for(ICODE &insn : *pbb)
         {
-            if ((insn.type == HIGH_LEVEL) && ( insn.valid() ))
+            if ((insn.type == HIGH__LEVEL) && ( insn.valid() ))
             {
                 liveUse |= (insn.du.use - def);
                 def |= insn.du.def;
@@ -419,7 +419,7 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
     if (distance(start_at,end())>1) /* several instructions */
     {
         iICODE ticode=end();
-        // Only check uses of HIGH_LEVEL icodes
+        // Only check uses of HIGH__LEVEL icodes
         auto hl_range=make_iterator_range(start_at,end()) | filtered(ICODE::select_high_level);
         auto checked_icode=hl_range.begin();
         ++checked_icode;
@@ -514,7 +514,7 @@ void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
 
 void BB::genDU1()
 {
-    /* Process each register definition of a HIGH_LEVEL icode instruction.
+    /* Process each register definition of a HIGH__LEVEL icode instruction.
      * Note that register variables should not be considered registers.
      */
     assert(nullptr!=Parent);
@@ -882,7 +882,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     numHlIcodes = 0;
     assert(&fnc->localId==&locals);
     // register(s) to be forward substituted	*/
-    auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
+    auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH__LEVEL>());
     for (auto picode = valid_and_highlevel.begin(); picode != valid_and_highlevel.end(); picode++)
     {
         ICODE &_ic(*picode);
