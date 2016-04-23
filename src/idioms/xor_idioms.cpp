@@ -23,7 +23,7 @@ bool Idiom21::match (iICODE picode)
     m_icodes[0]=picode++;
     m_icodes[1]=picode++;
 
-    if (not m_icodes[1]->ll()->testFlags(I))
+    if (!m_icodes[1]->ll()->testFlags(I))
         return false;
 
     dst = &m_icodes[0]->ll()->m_dst;
@@ -114,7 +114,7 @@ bool Idiom10::match(iICODE pIcode)
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
     /* Check OR reg, reg */
-    if (not m_icodes[0]->ll()->testFlags(I)  &&
+    if (!m_icodes[0]->ll()->testFlags(I)  &&
             m_icodes[0]->ll()->src().isReg() &&
             (m_icodes[0]->ll()->src().getReg2() == m_icodes[0]->ll()->m_dst.getReg2()))
         if (m_icodes[1]->ll()->match(iJNE)) //.conditionalJump()
