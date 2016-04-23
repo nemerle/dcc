@@ -4,6 +4,7 @@
  * Date: September 1993
  * (C) Cristina Cifuentes
  */
+#define NOMINMAX
 #include <stdint.h>
 #include <string>
 #include <sstream>
@@ -122,7 +123,7 @@ GlobalVariable::GlobalVariable(int16_t segValue, int16_t off)
     ident.idType = GLOB_VAR;
     adr = opAdr(segValue, off);
     auto i=Project::get()->getSymIdxByAdd(adr);
-    if ( not Project::get()->validSymIdx(i) )
+    if (!Project::get()->validSymIdx(i) )
     {
         printf ("Error, glob var not found in symtab\n");
         valid = false;
@@ -296,8 +297,8 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
 
     const LLOperand &pm(*ll_insn.get(sd));
 
-    if (    ((sd == DST) && ll_insn.testFlags(IM_DST)) or
-            ((sd == SRC) && ll_insn.testFlags(IM_SRC)) or
+    if (    ((sd == DST) && ll_insn.testFlags(IM_DST)) ||
+            ((sd == SRC) && ll_insn.testFlags(IM_SRC)) ||
             (sd == LHS_OP))             /* for MUL lhs */
     {                                                   /* implicit dx:ax */
         idx = pProc->localId.newLongReg (TYPE_LONG_SIGN, LONGID_TYPE(rDX, rAX), ix_);
@@ -554,7 +555,6 @@ string AstIdent::walkCondExpr(Function *pProc, int *numLoc) const
 {
     int16_t off;              /* temporal - for OTHER */
     ID* id;                 /* Pointer to local identifier table */
-    BWGLB_TYPE* bwGlb;      /* Ptr to BWGLB_TYPE (global indexed var) */
     STKSYM * psym;          /* Pointer to argument in the stack */
     std::ostringstream outStr,codeOut;
 
