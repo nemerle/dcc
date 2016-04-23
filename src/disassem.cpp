@@ -533,7 +533,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     {
         char buf[12];
         /* output to .a1 or .a2 file */
-        if (not inst.testFlags(SYNTHETIC) )
+        if (!inst.testFlags(SYNTHETIC) )
         {
             sprintf(buf,"%03d %06X",loc_ip, inst.label);
         }
@@ -592,7 +592,7 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, const LLOperand &p
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);
-    if ((flg & I) and not pm.isReg())
+    if ((flg & I) && !pm.isReg())
         os << szPtr[flg & B];
     formatRM(os, pm);
     return os;
@@ -652,7 +652,7 @@ void LLInst::flops(std::ostringstream &out)
     /* Note that op is set to the escape number, e.g.
         esc 0x38 is FILD */
 
-    if ( not m_dst.isReg() )
+    if (!m_dst.isReg() )
     {
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
         out<<Machine_X86::floatOpName(op)<<' ';
