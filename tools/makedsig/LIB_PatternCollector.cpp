@@ -3,7 +3,7 @@
 #include "msvc_fixes.h"
 
 #include <cstring>
-#include <cstring>
+#include <algorithm>
 /** \note there is an untested assumption that the *first* segment definition
     with class CODE will be the one containing all useful functions in the
     LEDATA records. Functions such as _exit() have more than one segment
