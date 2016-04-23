@@ -371,7 +371,7 @@ void DccFrontend::parse(Project &proj)
     /* Check for special settings of initial state, based on idioms of the
           startup code */
     state.checkStartup();
-    Function *start_proc;
+    ilFunction start_proc;
     /* Make a struct for the initial procedure */
     if (prog.offMain != -1)
     {

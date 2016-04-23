@@ -233,6 +233,9 @@ protected:
     void    genLiveKtes();
     bool    findDerivedSeq(derSeq &derivedGi);
     bool    nextOrderGraph(derSeq &derivedGi);
+private:
+    bool    decodeIndirectJMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
+    bool    decodeIndirectJMP2(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
 };
 namespace llvm {
 template<> struct ilist_traits<typename ::Function>

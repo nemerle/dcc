@@ -9,6 +9,9 @@
 #include <sstream>
 #include <stdio.h>
 #include <algorithm>
+#include <deque>
+#include <QMap>
+#include <QtCore/QDebug>
 
 #include "dcc.h"
 #include "project.h"
@@ -193,11 +196,9 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                         pstate->JCond.immed++;
                     if (ll->getOpcode() == iJAE || ll->getOpcode() == iJA)
                         pstate->JCond.regi = prev.ll()->m_dst.regi;
-                    fBranch = (bool)
-                              (ll->getOpcode() == iJB || ll->getOpcode() == iJBE);
+                    fBranch = (bool) (ll->getOpcode() == iJB || ll->getOpcode() == iJBE);
                 }
                 StCopy = *pstate;
-                //memcpy(&StCopy, pstate, sizeof(STATE));
 
                 /* Straight line code */
                 this->FollowCtrl (pcallGraph, &StCopy); // recurrent ?
@@ -367,6 +368,178 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
     }
     return true;
 }
+bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
+{
+    PROG &prog(Project::get()->prog);
+//    mov cx,NUM_CASES
+//    mov bx,JUMP_TABLE
+
+//  LAB1:
+//    mov ax, [bx]
+//    cmp ax,VAL
+//    jz LAB2
+//    add bx,2
+//    loop LAB1
+//    jmp DEFAULT_CASE
+//  LAB2
+//    jmp word ptr [bx+2*NUM_CASES]
+    static const llIcode match_seq[] = {iMOV,iMOV,iMOV,iCMP,iJE,iADD,iLOOP,iJMP,iJMP};
+
+    if(Icode.size()<8)
+        return false;
+    if(&Icode.back()!=&pIcode) // not the last insn in the list skip it
+        return false;
+    if(pIcode.ll()->src().regi != INDEX_BX) {
+        return false;
+    }
+    // find address-wise predecessors of the icode
+    std::deque<ICODE *> matched;
+    QMap<uint32_t,ICODE *> addrmap;
+    for(ICODE & ic : Icode) {
+        addrmap[ic.ll()->GetLlLabel()] = &ic;
+    }
+    auto iter = addrmap.find(pIcode.ll()->GetLlLabel());
+    while(matched.size()<9) {
+        matched.push_front(*iter);
+        --iter;
+        if(iter==addrmap.end())
+            return false;
+    }
+    // pattern starts at the last jmp
+    ICODE *load_num_cases = matched[0];
+    ICODE *load_jump_table_addr = matched[1];
+    ICODE *read_case_entry_insn = matched[2];
+    ICODE *cmp_case_val_insn = matched[3];
+    ICODE *exit_loop_insn = matched[4];
+    ICODE *add_bx_insn = matched[5];
+    ICODE *loop_insn = matched[6];
+    ICODE *default_jmp = matched[7];
+    ICODE *last_jmp = matched[8];
+    for(int i=0; i<8; ++i) {
+        if(matched[i+1]->ll()->GetLlLabel()!=matched[i]->ll()->GetLlLabel()+matched[i]->ll()->numBytes) {
+            qDebug() << "Matching jump pattern impossible - undecoded instructions in pattern area ";
+            return false;
+        }
+    }
+    for(int i=0; i<9; ++i) {
+        if(matched[i]->ll()->getOpcode()!=match_seq[i]) {
+            return false;
+        }
+    }
+    // verify that bx+offset == 2* case count
+    uint32_t num_cases = load_num_cases->ll()->src().getImm2();
+    if(last_jmp->ll()->src().off != 2*num_cases)
+        return false;
+    const LLOperand &op = last_jmp->ll()->src();
+    if(op.regi != INDEX_BX)
+        return false;
+    if(!load_jump_table_addr->ll()->src().isImmediate())
+        return false;
+    uint32_t cs = (uint32_t)(uint16_t)pstate->r[rCS] << 4;
+    uint32_t table_addr = cs + load_jump_table_addr->ll()->src().getImm2();
+    uint32_t default_label = cs + default_jmp->ll()->src().getImm2();
+    setBits(BM_DATA, table_addr, num_cases*2 + num_cases*2); // num_cases of short values + num cases short ptrs
+    pIcode.ll()->setFlags(SWITCH);
+
+    for(int i=0; i<num_cases; ++i) {
+        STATE   StCopy = *pstate;
+        uint32_t jump_target_location = table_addr + num_cases*2 + i*2;
+        StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
+        iICODE last_current_insn = (++Icode.rbegin()).base();
+        FollowCtrl (pcallGraph, &StCopy);
+        ++last_current_insn;
+        last_current_insn->ll()->caseEntry = i;
+        last_current_insn->ll()->setFlags(CASE);
+        pIcode.ll()->caseTbl2.push_back( last_current_insn->ll()->GetLlLabel() );
+    }
+    return true;
+}
+bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
+{
+    PROG &prog(Project::get()->prog);
+//    mov cx,NUM_CASES
+//    mov bx,JUMP_TABLE
+
+//  LAB1:
+//    mov ax, [bx]
+//    cmp ax, LOW_WORD_OF_VAL
+//    jnz LAB2
+//    mov ax, [bx + 2 * NUM_CASES]
+//    cmp ax, HIGH_WORD_OF_VAL
+//    jz LAB3
+//  LAB2
+//    add bx,2
+//    loop LAB1
+//    jmp DEFAULT_CASE
+//  LAB3
+//    jmp word ptr [bx+2*NUM_CASES]
+    static const llIcode match_seq[] = {iMOV,iMOV,iMOV,iCMP,iJNE,iMOV,iCMP,iJE,iADD,iLOOP,iJMP,iJMP};
+
+    if(Icode.size()<12)
+        return false;
+    if(&Icode.back()!=&pIcode) // not the last insn in the list skip it
+        return false;
+    if(pIcode.ll()->src().regi != INDEX_BX) {
+        return false;
+    }
+    // find address-wise predecessors of the icode
+    std::deque<ICODE *> matched;
+    QMap<uint32_t,ICODE *> addrmap;
+    for(ICODE & ic : Icode) {
+        addrmap[ic.ll()->GetLlLabel()] = &ic;
+    }
+    auto iter = addrmap.find(pIcode.ll()->GetLlLabel());
+    while(matched.size()<12) {
+        matched.push_front(*iter);
+        --iter;
+        if(iter==addrmap.end())
+            return false;
+    }
+    // pattern starts at the last jmp
+    ICODE *load_num_cases = matched[0];
+    ICODE *load_jump_table_addr = matched[1];
+    ICODE *default_jmp = matched[10];
+    ICODE *last_jmp = matched[11];
+
+    for(int i=0; i<11; ++i) {
+        if(matched[i+1]->ll()->GetLlLabel()!=matched[i]->ll()->GetLlLabel()+matched[i]->ll()->numBytes) {
+            qDebug() << "Matching jump pattern impossible - undecoded instructions in pattern area ";
+            return false;
+        }
+    }
+    for(int i=0; i<12; ++i) {
+        if(matched[i]->ll()->getOpcode()!=match_seq[i]) {
+            return false;
+        }
+    }
+    // verify that bx+offset == 2* case count
+    uint32_t num_cases = load_num_cases->ll()->src().getImm2();
+    if(last_jmp->ll()->src().off != 4*num_cases)
+        return false;
+    const LLOperand &op = last_jmp->ll()->src();
+    if(op.regi != INDEX_BX)
+        return false;
+    if(!load_jump_table_addr->ll()->src().isImmediate())
+        return false;
+    uint32_t cs = (uint32_t)(uint16_t)pstate->r[rCS] << 4;
+    uint32_t table_addr = cs + load_jump_table_addr->ll()->src().getImm2();
+    int default_label = cs + default_jmp->ll()->src().getImm2();
+    setBits(BM_DATA, table_addr, num_cases*4 + num_cases*2); // num_cases of long values + num cases short ptrs
+    pIcode.ll()->setFlags(SWITCH);
+
+    for(int i=0; i<num_cases; ++i) {
+        STATE   StCopy = *pstate;
+        uint32_t jump_target_location = table_addr + num_cases*4 + i*2;
+        StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
+        iICODE last_current_insn = (++Icode.rbegin()).base();
+        FollowCtrl (pcallGraph, &StCopy);
+        ++last_current_insn;
+        last_current_insn->ll()->caseEntry = i;
+        last_current_insn->ll()->setFlags(CASE);
+        pIcode.ll()->caseTbl2.push_back( last_current_insn->ll()->GetLlLabel() );
+    }
+    return true;
+}
 
 bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
 {
@@ -390,14 +563,13 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
         /* Return true if jump target is already parsed */
         return Icode.alreadyDecoded(i);
     }
-
     /* We've got an indirect JMP - look for switch() stmt. idiom of the form
      *   JMP  uint16_t ptr  word_offset[rBX | rSI | rDI]        */
     seg = (pIcode.ll()->src().seg)? pIcode.ll()->src().seg: rDS;
 
     /* Ensure we have a uint16_t offset & valid seg */
-    if (pIcode.ll()->match(iJMP) and (pIcode.ll()->testFlags(WORD_OFF)) &&
-            pstate->f[seg] &&
+    if (pIcode.ll()->match(iJMP) and (pIcode.ll()->testFlags(WORD_OFF)) and
+            pstate->f[seg] and
             (pIcode.ll()->src().regi == INDEX_SI ||
              pIcode.ll()->src().regi == INDEX_DI || /* Idx reg. BX, SI, DI */
              pIcode.ll()->src().regi == INDEX_BX))
@@ -474,6 +646,12 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
             }
             return true;
         }
+    }
+    if(decodeIndirectJMP(pIcode,pstate,pcallGraph)) {
+        return true;
+    }
+    if(decodeIndirectJMP2(pIcode,pstate,pcallGraph)) {
+        return true;
     }
 
     /* Can't do anything with this jump */
