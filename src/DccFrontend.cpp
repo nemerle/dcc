@@ -312,7 +312,8 @@ struct ExeLoader : public DosLoader {
         memset(prog.map, BM_UNKNOWN, (size_t)cb);
 
         /* Relocate segment constants */
-        for(uint32_t v : prog.relocTable) {
+		for(size_t i = 0; i < prog.relocTable.size(); ++i) {
+			uint32_t v = prog.relocTable[i];
             uint8_t *p = &prog.Imagez[v];
             uint16_t  w = (uint16_t)LH(p) + EXE_RELOCATION;
             *p++    = (uint8_t)(w & 0x00FF);
