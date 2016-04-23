@@ -246,7 +246,7 @@ void Function::propLongStk (int i, const ID &pLocId)
         next1 = ++iICODE(pIcode);
         if(next1==pEnd)
             break;
-        if ((pIcode->type == HIGH__LEVEL) || ( not pIcode->valid() ))
+        if ((pIcode->type == HIGH__LEVEL) || (!pIcode->valid() ))
             continue;
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
         {
@@ -314,14 +314,14 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
     iICODE pIcode;
     riICODE rev(beg);
     bool forced_finish=false;
-    for (; not forced_finish and rev!=Icode.rend();rev++) //idx = pLocId_idx - 1; idx > 0 ; idx--
+    for (; !forced_finish && rev!=Icode.rend();rev++) //idx = pLocId_idx - 1; idx > 0 ; idx--
     {
         pIcode = (++riICODE(rev)).base();//forward iterator from rev
         iICODE next1((++iICODE(pIcode))); // next instruction
         ICODE &icode(*pIcode);
 
 
-        if ((icode.type == HIGH__LEVEL) || ( not icode.valid() ))
+        if ((icode.type == HIGH__LEVEL) || (!icode.valid() ))
             continue;
         if (icode.ll()->getOpcode() != next1->ll()->getOpcode())
             continue;
@@ -391,7 +391,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
     auto pEnd=Icode.end();
     iICODE long_loc;
     Assignment asgn;
-    for (auto pIcode=beg; not forced_finish; ++pIcode)
+    for (auto pIcode=beg; !forced_finish; ++pIcode)
     {
         iICODE next1(++iICODE(pIcode));
         if(next1==pEnd)
@@ -399,7 +399,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         LLOperand * pmH,* pmL;            /* Pointers to dst LOW__LEVEL icodes */
         int arc;
 
-        if ((pIcode->type == HIGH__LEVEL) || ( not pIcode->valid() ))
+        if ((pIcode->type == HIGH__LEVEL) || (!pIcode->valid() ))
             continue;
 
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
@@ -559,7 +559,7 @@ void Function::propLong()
     for (size_t i = 0; i < localId.csym(); i++)
     {
         const ID &pLocId(localId.id_arr[i]);
-        if ((pLocId.type!=TYPE_LONG_SIGN) and (pLocId.type!=TYPE_LONG_UNSIGN))
+        if ((pLocId.type!=TYPE_LONG_SIGN) && (pLocId.type!=TYPE_LONG_UNSIGN))
             continue;
         switch (pLocId.loc)
         {
