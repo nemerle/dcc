@@ -251,7 +251,7 @@ void Function::bindIcodeOff()
     for(ICODE &icode : Icode)
     {
         LLInst *ll=icode.ll();
-        if (not ll->isJmpInst())
+        if (!ll->isJmpInst())
             continue;
         if (ll->testFlags(I) )
         {
