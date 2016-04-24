@@ -19,6 +19,14 @@ extern Project g_proj;
 //static void mergeFallThrough(Function * pProc, BB * pBB);
 //static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, int *first, int *last);
 
+void Function::addOutEdgesForConditionalJump(BB * pBB,int next_ip, LLInst *ll)
+{
+    pBB->addOutEdge(next_ip);
+    /* This is checking for jumps off into nowhere */
+    if ( not ll->testFlags(NO_LABEL) )
+        pBB->addOutEdge(ll->src().getImm2());
+}
+
 /*****************************************************************************
  * createCFG - Create the basic control flow graph
  ****************************************************************************/
@@ -68,16 +76,13 @@ void Function::createCFG()
             case iJO:  case iJNO:  case iJP:   case iJNP:
             case iJCXZ:
                 pBB = BB::Create(current_range, TWO_BRANCH, this);
-CondJumps:
-                pBB->addOutEdge(nextIcode->loc_ip);
-                /* This is checking for jumps off into nowhere */
-                if ( not ll->testFlags(NO_LABEL) )
-                    pBB->addOutEdge(ll->src().getImm2());
+                addOutEdgesForConditionalJump(pBB,nextIcode->loc_ip, ll);
                 break;
 
             case iLOOP: case iLOOPE: case iLOOPNE:
                 pBB = BB::Create(current_range, LOOP_NODE, this);
-                goto CondJumps;
+                addOutEdgesForConditionalJump(pBB,nextIcode->loc_ip, ll);
+                break;
 
             case iJMPF: case iJMP:
                 if (ll->testFlags(SWITCH))
@@ -132,6 +137,8 @@ CondJumps:
             // end iterator will be updated by expression in for statement
             current_range=make_iterator_range(nextIcode,nextIcode);
         }
+        if (nextIcode == Icode.end())
+            break;
     }
     for (auto pr : m_ip_to_bb)
     {
