@@ -39,6 +39,7 @@ typedef struct {            /* Command line option flags */
     unsigned Interact       : 1;    /* Interactive mode */
     unsigned Calls          : 1;    /* Follow register indirect calls */
     QString	filename;			/* The input filename */
+    uint32_t CustomEntryPoint;
 } OPTION;
 
 extern OPTION option;       /* Command line options             */

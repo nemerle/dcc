@@ -12,6 +12,7 @@
 #include <list>
 #include <cassert>
 #include <stdio.h>
+#include <CallGraph.h>
 extern Project g_proj;
 //static void displayCFG(Function * pProc);
 //static void displayDfs(BB * pBB);
@@ -75,9 +76,16 @@ void udm(void)
 
     /* Build the control flow graph, find idioms, and convert low-level
      * icodes to high-level ones */
+    Project *proj = Project::get();
     Disassembler ds(2);
-    for (auto iter = Project::get()->pProcList.rbegin(); iter!=Project::get()->pProcList.rend(); ++iter)
+    for (auto iter = proj->pProcList.rbegin(); iter!=proj->pProcList.rend(); ++iter)
     {
+        Function &f(*iter);
+        if(option.CustomEntryPoint) {
+            if(f.procEntry!=option.CustomEntryPoint) {
+                continue;
+            }
+        }
         iter->buildCFG(ds);
     }
     if (option.asm2)
@@ -88,10 +96,23 @@ void udm(void)
      * and intermediate instructions.  Find expressions by forward
      * substitution algorithm */
     LivenessSet live_regs;
-    Project::get()->pProcList.front().dataFlow (live_regs);
+    if(option.CustomEntryPoint) {
+        ilFunction iter = proj->findByEntry(option.CustomEntryPoint);
+        if(iter==proj->pProcList.end()) {
+            qCritical()<< "No function found at entry point" << QString::number(option.CustomEntryPoint,16);
+            return;
+        }
+        iter->dataFlow(live_regs);
+        iter->controlFlowAnalysis();
+        delete proj->callGraph;
+        proj->callGraph = new CALL_GRAPH;
+        proj->callGraph->proc = iter;
+        return;
+    }
+    proj->pProcList.front().dataFlow (live_regs);
 
     /* Control flow analysis - structuring algorithm */
-    for (auto iter = Project::get()->pProcList.rbegin(); iter!=Project::get()->pProcList.rend(); ++iter)
+    for (auto iter = proj->pProcList.rbegin(); iter!=proj->pProcList.rend(); ++iter)
     {
         iter->controlFlowAnalysis();
     }

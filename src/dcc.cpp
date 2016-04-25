@@ -137,14 +137,17 @@ void setupOptions(QCoreApplication &app) {
         parser.addOption(o);
     }
     QCommandLineOption assembly("a", QCoreApplication::translate("main", "Produce assembly"),"assembly_level");
-    // A boolean option with multiple names (-f, --force)
-    //QCommandLineOption forceOption(QStringList() << "f" << "force", "Overwrite existing files.");
-    // An option with a value
     QCommandLineOption targetFileOption(QStringList() << "o" << "output",
                                         QCoreApplication::translate("main", "Place output into <file>."),
                                         QCoreApplication::translate("main", "file"));
+    QCommandLineOption entryPointOption(QStringList() << "E",
+                                        QCoreApplication::translate("main", "Custom entry point as hex"),
+                                        QCoreApplication::translate("main", "offset"),
+                                        "0"
+                                        );
     parser.addOption(targetFileOption);
     parser.addOption(assembly);
+    parser.addOption(entryPointOption);
     //parser.addOption(forceOption);
     // Process the actual command line arguments given by the user
     parser.addPositionalArgument("source", QCoreApplication::translate("main", "Dos Executable file to decompile."));
@@ -166,6 +169,7 @@ void setupOptions(QCoreApplication &app) {
     option.Interact = false;
     option.Calls = parser.isSet(boolOpts[2]);
     option.filename = args.first();
+    option.CustomEntryPoint = parser.value(entryPointOption).toUInt(0,16);
     if(parser.isSet(targetFileOption))
         asm1_name = asm2_name = parser.value(targetFileOption);
     else if(option.asm1 or option.asm2) {
