@@ -1121,9 +1121,6 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
             }
         }
 
-        if( not _ic.valid())
-            continue; // instruction was invalidated, try the next one
-
         /* HLI_PUSH doesn't define any registers, only uses registers.
          * Push the associated expression to the register on the local
          * expression stack */
