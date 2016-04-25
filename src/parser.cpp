@@ -761,7 +761,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
 
             if (x.name.isEmpty())     /* Don't overwrite existing name */
             {
-                x.name = QString("proc_%1").arg(++prog.cProcs);
+                x.name = QString("proc_%1_%2").arg(x.procEntry ,6,16,QChar('0')).arg(++prog.cProcs);
             }
             x.depth = x.depth + 1;
             x.flg |= TERMINATES;
