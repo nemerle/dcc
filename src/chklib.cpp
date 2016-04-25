@@ -11,7 +11,9 @@
 #include "perfhlib.h"
 #include "dcc_interface.h"
 
-#include <QDir>
+#include <QtCore/QDir>
+#include <QtCore/QString>
+#include <QtCore/QDebug>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -468,7 +470,7 @@ bool LibCheck(Function & pProc)
     if (memcmp(ht[h].htPat, pat, PATLEN) == 0)
     {
         /* We have a match. Save the name, if not already set */
-        if (pProc.name.empty() )     /* Don't overwrite existing name */
+        if (pProc.name.isEmpty() )     /* Don't overwrite existing name */
         {
             /* Give proc the new name */
             pProc.name = ht[h].htSym;
@@ -510,7 +512,8 @@ bool LibCheck(Function & pProc)
                             pProc.liveOut.setReg(rAX).addReg(rDS);
                             break;
                         default:
-                            fprintf(stderr,"Unknown retval type %d for %s in LibCheck\n",pProc.retVal.type,pProc.name.c_str());
+                            qCritical() << QString("Unknown retval type %1 for %2 in LibCheck")
+                                       .arg(pProc.retVal.type).arg(pProc.name);
                             /*** other types are not considered yet ***/
                     }
                 }

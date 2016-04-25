@@ -9,6 +9,8 @@
 #include "symtab.h"
 #include "project.h"
 
+#include <QtCore/QFile>
+#include <QtCore/QDebug>
 #include <stdint.h>
 #include <vector>
 #include <map>
@@ -16,6 +18,7 @@
 #include <iomanip>
 #include <stdio.h>
 #include <string.h>
+
 // Note: for the time being, there is no interactive disassembler
 // for unix
 
@@ -72,8 +75,8 @@ static const char *szFlops3C[] =
 
 static const char *szPtr[2]   = { "word ptr ", "byte ptr " };
 
-static void  formatRM(ostringstream &p, const LLOperand &pm);
-static ostringstream &strDst(ostringstream &os, uint32_t flg, const LLOperand &pm);
+static void  formatRM(QTextStream & p, const LLOperand &pm);
+static QTextStream & strDst(QTextStream & os, uint32_t flg, const LLOperand &pm);
 
 static char *strHex(uint32_t d);
 //static int   checkScanned(uint32_t pcCur);
@@ -152,11 +155,11 @@ void Disassembler::disassem(Function * ppProc)
     if (pass != 3)
     {
         auto p = (pass == 1)? asm1_name: asm2_name;
-        m_fp.open(p.toStdString(),ios_base::app);
-        if (!m_fp.is_open())
-        {
+        m_disassembly_target = new QFile(p);
+        if(!m_disassembly_target->open(QFile::WriteOnly|QFile::Text|QFile::Append)) {
             fatalError(CANNOT_OPEN, p.toStdString().c_str());
         }
+        m_fp.setDevice(m_disassembly_target);
     }
     /* Create temporary code array */
     // Mike: needs objectising!
@@ -179,7 +182,7 @@ void Disassembler::disassem(Function * ppProc)
     /* Write procedure header */
     if (pass != 3)
     {
-        std::string near_far=(pProc->flg & PROC_FAR)? "FAR": "NEAR";
+        const char * near_far=(pProc->flg & PROC_FAR)? "FAR": "NEAR";
         m_fp << "\t\t"<<pProc->name<<"  PROC  "<< near_far<<"\n";
     }
 
@@ -194,7 +197,10 @@ void Disassembler::disassem(Function * ppProc)
     if (pass != 3)
     {
         m_fp << "\n\t\t"<<pProc->name<<"  ENDP\n\n";
-        m_fp.close();
+        m_fp.setDevice(nullptr);
+        m_disassembly_target->close();
+        delete m_disassembly_target;
+
     }
 
     pc.clear();
@@ -208,16 +214,20 @@ void Disassembler::disassem(Function * ppProc)
 void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 {
     PROG &prog(Project::get()->prog);
-    ostringstream oper_stream;
-    ostringstream hex_bytes;
-    ostringstream result_stream;
-    ostringstream opcode_with_mods;
-    ostringstream operands_s;
-    oper_stream << uppercase;
-    hex_bytes << uppercase;
+    QString oper_contents;
+    QTextStream oper_stream(&oper_contents);
+    QString hex_bytes;
+    QString result_contents;
+    QTextStream result_stream(&result_contents);
+    QString opcode_with_mods;
+
+    QString operands_contents;
+    QTextStream operands_s(&operands_contents);
+    oper_stream.setNumberFlags(QTextStream::UppercaseBase|QTextStream::UppercaseDigits);
+
     /* Disassembly stage 1 --
-         * Do not try to display NO_CODE entries or synthetic instructions,
-         * other than JMPs, that have been introduced for def/use analysis. */
+     * Do not try to display NO_CODE entries or synthetic instructions,
+     * other than JMPs, that have been introduced for def/use analysis. */
     if ((option.asm1) and
             ( inst.testFlags(NO_CODE) or
               (inst.testFlags(SYNTHETIC) and (inst.getOpcode() != iJMP))))
@@ -244,25 +254,28 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         cb = (uint32_t) inst.numBytes;
         nextInst = inst.label + cb;
 
-        /* Output hexa code in program image */
+        /* Output hex code in program image */
         if (pass != 3)
         {
             for (j = 0; j < cb; j++)
             {
-                hex_bytes << hex << setw(2) << setfill('0') << uint16_t(prog.image()[inst.label + j]);
+                hex_bytes += QString("%1").arg(uint16_t(prog.image()[inst.label + j]),2,16,QChar('0')).toUpper();
             }
-            hex_bytes << ' ';
+            hex_bytes += ' ';
         }
     }
-    oper_stream << setw(POS_LAB) <<  left<< hex_bytes.str();
+    oper_stream.setFieldWidth(POS_LAB);
+    oper_stream.setFieldAlignment(QTextStream::AlignLeft);
+    oper_stream << hex_bytes;
     /* Check if there is a symbol here */
     selectTable(Label);
-    oper_stream << setw(5)<<left; // align for the labels
+    oper_stream.setFieldWidth(5); // align for the labels
     {
-        ostringstream lab_contents;
-        if (readVal(lab_contents, inst.label, nullptr))
+        QString lab_contents;
+        QTextStream lab_stream(&lab_contents);
+        if (readVal(lab_stream, inst.label, nullptr))
         {
-            lab_contents << ':';             /* Also removes the null */
+            lab_stream << ':';             /* Also removes the null */
         }
         else if (inst.testFlags(TARGET))    /* Symbols override Lnn labels */
         {
@@ -271,15 +284,17 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             {
                 pl[loc_ip] = ++g_lab;
             }
-            lab_contents<< "L"<<pl[loc_ip]<<':';
+            lab_stream<< "L"<<pl[loc_ip]<<':';
         }
-        oper_stream<< lab_contents.str();
+        lab_stream.flush();
+        oper_stream << lab_contents;
+        oper_stream.setFieldWidth(0);
     }
     if ((inst.getOpcode()==iSIGNEX )and inst.testFlags(B))
     {
         inst.setOpcode(iCBW);
     }
-    opcode_with_mods<<Machine_X86::opcodeName(inst.getOpcode());
+    opcode_with_mods += Machine_X86::opcodeName(inst.getOpcode());
 
     switch ( inst.getOpcode() )
     {
@@ -383,11 +398,10 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         case iCALL: case iCALLF:
             if (inst.testFlags(I))
             {
-                if((inst.getOpcode() == iCALL))
-                    operands_s<< "near";
-                else
-                    operands_s<< " far";
-                operands_s<<" ptr "<<(inst.src().proc.proc)->name;
+                QString oper = QString("%1 ptr %2")
+                        .arg((inst.getOpcode() == iCALL) ? "near" : "far")
+                        .arg((inst.src().proc.proc)->name);
+                operands_s<< qPrintable(oper);
             }
             else if (inst.getOpcode() == iCALLF)
             {
@@ -438,7 +452,10 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             }
             else
             {
-                (inst.getFlag() & B)? opcode_with_mods<< "B": opcode_with_mods<< "W";
+                if(inst.getFlag() & B)
+                    opcode_with_mods+='B';
+                else
+                    opcode_with_mods+='W';
             }
             break;
 
@@ -457,8 +474,8 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 
         case iOUT:
         {
-            std::string d1=((inst.testFlags(I))? strHex(inst.src().getImm2()): "dx");
-            std::string d2=((inst.getFlag() & B) ? ", al": ", ax");
+            QString d1=((inst.testFlags(I))? strHex(inst.src().getImm2()): "dx");
+            QString d2=((inst.getFlag() & B) ? ", al": ", ax");
             operands_s<<d1 << d2;
         }
             break;
@@ -466,8 +483,9 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         default:
             break;
     }
-    oper_stream << setw(15) << left <<opcode_with_mods.str();
-    oper_stream << operands_s.str();
+    oper_stream.setFieldWidth(15);
+    operands_s.flush();
+    oper_stream << qSetFieldWidth(15) << opcode_with_mods << qSetFieldWidth(0) << operands_contents;
     /* Comments */
     if (inst.testFlags(SYNTHETIC))
     {
@@ -480,14 +498,18 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             fImpure |= BITMAP(j, BM_DATA);
         }
     }
-
-    result_stream << setw(54) << left << oper_stream.str();
+    result_stream.setFieldWidth(54);
+    result_stream.setFieldAlignment(QTextStream::AlignLeft);
+    oper_stream.flush();
+    result_stream << oper_contents;
     /* Check for user supplied comment */
     selectTable(Comment);
-    ostringstream cbuf;
+    QString cbuf_contents;
+    QTextStream cbuf(&cbuf_contents);
     if (readVal(cbuf, inst.label, nullptr))
     {
-        result_stream <<"; "<<cbuf.str();
+        cbuf.flush();
+        result_stream <<"; "<<*cbuf.string();
     }
     else if (fImpure or (inst.testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
     {
@@ -527,8 +549,9 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         /* output to .b code buffer */
         if (inst.testFlags(SYNTHETIC))
             result_stream<<";Synthetic inst";
-        if (pass == 3)		/* output to .b code buffer */
-            cCode.appendCode("%s\n", result_stream.str().c_str());
+        if (pass == 3) {		/* output to .b code buffer */
+            cCode.appendCode("%s\n", qPrintable(result_contents));
+        }
 
     }
     else
@@ -544,7 +567,8 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
             sprintf(buf,"%03d       ",loc_ip);
             result_stream<<";Synthetic inst";
         }
-        m_fp<<buf<< " " << result_stream.str() << "\n";
+        result_stream.flush();
+        m_fp<<buf<< " " << result_contents << "\n";
     }
 }
 
@@ -553,7 +577,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 /****************************************************************************
  * formatRM
  ***************************************************************************/
-static void formatRM(std::ostringstream &p, const LLOperand &pm)
+static void formatRM(QTextStream &p, const LLOperand &pm)
 {
     //char    seg[4];
 
@@ -590,7 +614,7 @@ static void formatRM(std::ostringstream &p, const LLOperand &pm)
 /*****************************************************************************
  * strDst
  ****************************************************************************/
-static ostringstream & strDst(ostringstream &os,uint32_t flg, const LLOperand &pm)
+static QTextStream & strDst(QTextStream &os,uint32_t flg, const LLOperand &pm)
 {
     /* Immediates to memory require size descriptor */
     //os << setw(WID_PTR);
@@ -604,7 +628,7 @@ static ostringstream & strDst(ostringstream &os,uint32_t flg, const LLOperand &p
 /****************************************************************************
  * strSrc                                                                   *
  ****************************************************************************/
-ostringstream &LLInst::strSrc(ostringstream &os,bool skip_comma)
+QTextStream &LLInst::strSrc(QTextStream &os,bool skip_comma)
 {
     if(false==skip_comma)
         os<<", ";
@@ -637,16 +661,16 @@ static char *strHex(uint32_t d)
  ****************************************************************************/
 void interactDis(Function * initProc, int initIC)
 {
-    const char *procname = "UNKNOWN";
+    QString procname = "UNKNOWN";
     if(initProc)
-        procname = initProc->name.c_str();
+        procname = initProc->name;
 
-    printf("Wanted to start interactive disasassembler for %s:%d\n",procname,initIC);
+    qDebug() << "Wanted to start interactive disasassembler for "<<procname<<":"<<initIC;
     return;
 }
 
 /* Handle the floating point opcodes (icode iESC) */
-void LLInst::flops(std::ostringstream &out)
+void LLInst::flops(QTextStream &out)
 {
     //char bf[30];
     uint8_t op = (uint8_t)src().getImm2();
@@ -658,7 +682,7 @@ void LLInst::flops(std::ostringstream &out)
     {
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
         out<<Machine_X86::floatOpName(op)<<' ';
-        out <<setw(10);
+        out.setFieldWidth(10);
         if ((op == 0x29) or (op == 0x1F))
         {
             out <<  "tbyte ptr ";
@@ -689,7 +713,7 @@ void LLInst::flops(std::ostringstream &out)
                         break;
                 }
         }
-
+        out.setFieldWidth(0);
         formatRM(out, m_dst);
     }
     else

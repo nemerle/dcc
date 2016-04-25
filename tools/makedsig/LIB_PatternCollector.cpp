@@ -52,7 +52,7 @@ int LIB_PatternCollector::readSyms(FILE *fl)
         exit(10);
     }
 
-    while (!feof(fl))
+    while (not feof(fl))
     {
         type = readByte(fl);
         len = readWord(fl);

@@ -4,16 +4,16 @@
  * Date:    September-October 1993
  * (C) Cristina Cifuentes
  */
+#include "dcc.h"
+
+#include <QtCore/QDebug>
+#include <QtCore/QString>
+
 #include <cassert>
 #include <string.h>
 #include <string>
 #include <sstream>
-#include "dcc.h"
 using namespace std;
-
-static char buf[lineSize];     /* Line buffer for hl icode output */
-
-
 
 /* Places the new HLI_ASSIGN high-level operand in the high-level icode array */
 void HLTYPE::setAsgn(Expr *lhs, Expr *rhs)
@@ -477,82 +477,68 @@ void Function::highLevelGen()
 
 /* Returns the string that represents the procedure call of tproc (ie. with
  * actual parameters) */
-std::string Function::writeCall (Function * tproc, STKFRAME & args, int *numLoc)
+QString Function::writeCall (Function * tproc, STKFRAME & args, int *numLoc)
 {
     //string condExp;
-    ostringstream ostr;
-    ostr<<tproc->name<<" (";
+    QString ostr;
+    ostr+=tproc->name+" (";
     for(const STKSYM &sym : args)
     {
         if(sym.actual)
-            ostr << sym.actual->walkCondExpr (this, numLoc);
+            ostr += sym.actual->walkCondExpr(this, numLoc);
         else
-            ostr <<  "";
+            ostr +=  "";
         if((&sym)!=&(args.back()))
-            ostr << ", ";
+            ostr += ", ";
     }
-    ostr << ")";
-    return ostr.str();
+    ostr += ")";
+    return ostr;
 }
 
 
 /* Displays the output of a HLI_JCOND icode. */
-const char *writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
+QString writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
 {
-    memset (buf, ' ', sizeof(buf));
-    buf[0] = '\0';
-    strcat (buf, "if ");
     if(h.opcode==HLI_INVALID)
     {
         return "if (*HLI_INVALID*) {\n";
     }
+
     assert(h.expr());
     Expr *inverted=h.expr()->inverse();
     //inverseCondOp (&h.exp);
-    std::string e = inverted->walkCondExpr (pProc, numLoc);
+    QString inverted_form = inverted->walkCondExpr (pProc, numLoc);
     delete inverted;
-    strcat (buf, e.c_str());
-    strcat (buf, " {\n");
-    return (buf);
+
+    return QString("if %1 {\n").arg(inverted_form);
 }
 
 
 /* Displays the inverse output of a HLI_JCOND icode.  This is used in the case
  * when the THEN clause of an if..then..else is empty.  The clause is
  * negated and the ELSE clause is used instead.	*/
-const char *writeJcondInv(HLTYPE h, Function * pProc, int *numLoc)
+QString writeJcondInv(HLTYPE h, Function * pProc, int *numLoc)
 {
-    memset (buf, ' ', sizeof(buf));
-    buf[0] = '\0';
-    strcat (buf, "if ");
-    std::string e;
+    QString _form;
+
     if(h.expr()==nullptr)
-        e = "( *failed condition recovery* )";
+        _form = "( *failed condition recovery* )";
     else
-        e = h.expr()->walkCondExpr (pProc, numLoc);
-
-    strcat (buf, e.c_str());
-    strcat (buf, " {\n");
-    return (buf);
+        _form = h.expr()->walkCondExpr (pProc, numLoc);
+    return QString("if %1 {\n").arg(_form);
 }
 
-string AssignType::writeOut(Function *pProc, int *numLoc) const
+QString AssignType::writeOut(Function *pProc, int *numLoc) const
 {
-    ostringstream ostr;
-    ostr << m_lhs->walkCondExpr (pProc, numLoc);
-    ostr << " = ";
-    ostr << rhs->walkCondExpr (pProc, numLoc);
-    ostr << ";\n";
-    return ostr.str();
+    return QString("%1 = %2;\n")
+            .arg(m_lhs->walkCondExpr (pProc, numLoc))
+            .arg(rhs->walkCondExpr (pProc, numLoc));
 }
-string CallType::writeOut(Function *pProc, int *numLoc) const
+QString CallType::writeOut(Function *pProc, int *numLoc) const
 {
-    ostringstream ostr;
-    ostr << pProc->writeCall (proc, *args, numLoc);
-    ostr << ";\n";
-    return ostr.str();
+    return pProc->writeCall (proc, *args, numLoc) + ";\n";
 }
-string ExpType::writeOut(Function *pProc, int *numLoc) const
+QString ExpType::writeOut(Function *pProc, int *numLoc) const
 {
     if(v==nullptr)
         return "";
@@ -573,38 +559,33 @@ void HLTYPE::set(Expr *l, Expr *r)
  * Note: this routine does not output the contens of HLI_JCOND icodes.  This is
  * 		 done in a separate routine to be able to support the removal of
  *		 empty THEN clauses on an if..then..else.	*/
-string HLTYPE::write1HlIcode (Function * pProc, int *numLoc) const
+QString HLTYPE::write1HlIcode (Function * pProc, int *numLoc) const
 {
-    string e;
-    ostringstream ostr;
     const HlTypeSupport *p = get();
     switch (opcode)
     {
-        case HLI_ASSIGN:
-            return p->writeOut(pProc,numLoc);
-        case HLI_CALL:
-            return p->writeOut(pProc,numLoc);
-        case HLI_RET:
-            e = p->writeOut(pProc,numLoc);
-            if (! e.empty())
-                ostr << "return (" << e << ");\n";
-            break;
-        case HLI_POP:
-            ostr << "HLI_POP ";
-            ostr << p->writeOut(pProc,numLoc);
-            ostr << "\n";
-            break;
-        case HLI_PUSH:
-            ostr << "HLI_PUSH ";
-            ostr << p->writeOut(pProc,numLoc);
-            ostr << "\n";
-            break;
-        case HLI_JCOND: //Handled elsewhere
-            break;
-        default:
-            fprintf(stderr," HLTYPE::write1HlIcode - Unhandled opcode %d\n",opcode);
+    case HLI_ASSIGN:
+        return p->writeOut(pProc,numLoc);
+    case HLI_CALL:
+        return p->writeOut(pProc,numLoc);
+    case HLI_RET:
+    {
+        QString e;
+        e = p->writeOut(pProc,numLoc);
+        if (not e.isEmpty())
+            return QString("return (%1);\n").arg(e);
+        break;
     }
-    return ostr.str();
+    case HLI_POP:
+        return QString("HLI_POP %1\n").arg(p->writeOut(pProc,numLoc));
+    case HLI_PUSH:
+        return QString("HLI_PUSH %1\n").arg(p->writeOut(pProc,numLoc));
+    case HLI_JCOND: //Handled elsewhere
+        break;
+    default:
+        qCritical() << " HLTYPE::write1HlIcode - Unhandled opcode" << opcode;
+    }
+    return "";
 }
 
 
@@ -619,16 +600,22 @@ void ICODE::writeDU()
 {
     int my_idx = loc_ip;
     {
-        ostringstream ostr;
-        Machine_X86::writeRegVector(ostr,du.def);
-        if (!ostr.str().empty())
-            printf ("Def (reg) = %s\n", ostr.str().c_str());
+        QString ostr_contents;
+        {
+            QTextStream ostr(&ostr_contents);
+            Machine_X86::writeRegVector(ostr,du.def);
+        }
+        if (not ostr_contents.isEmpty())
+            qDebug() << QString("Def (reg) = %1\n").arg(ostr_contents);
     }
     {
-        ostringstream ostr;
-        Machine_X86::writeRegVector(ostr,du.use);
-        if (!ostr.str().empty())
-            printf ("Use (reg) = %s\n", ostr.str().c_str());
+        QString ostr_contents;
+        {
+            QTextStream ostr(&ostr_contents);
+            Machine_X86::writeRegVector(ostr,du.use);
+        }
+        if (not ostr_contents.isEmpty())
+            qDebug() << QString("Use (reg) = %1\n").arg(ostr_contents);
     }
 
     /* Print du1 chain */

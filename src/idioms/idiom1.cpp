@@ -122,7 +122,7 @@ bool Idiom1::match(iICODE picode)
             m_icodes.push_back(picode++);
 
     }
-    return !m_icodes.empty();
+    return not m_icodes.empty();
 }
 int Idiom1::action()
 {

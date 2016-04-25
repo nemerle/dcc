@@ -214,7 +214,7 @@ static struct {
     {  regop,   axImp, 0                        , iXCHG	},	/* 97 */
     {  alImp,   axImp, SRC_B | S_EXT            , iSIGNEX},	/* 98 */
     {axSrcIm,   axImp, IM_DST | S_EXT           , iSIGNEX},	/* 99 */
-    {  dispF,   none2, 0                        , iCALLF },	/* 9A */
+    {  dispF,   none2, TO_REG                   , iCALLF },	/* 9A */ // TO_REG set to use SRC when processing setAddress
     {  none1,   none2, FLOAT_OP| NO_OPS         , iWAIT	},	/* 9B */
     {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHF},	/* 9C */
     {  none1,   none2, NOT_HLL | NO_OPS         , iPOPF	},	/* 9D */
@@ -508,7 +508,7 @@ LLOperand convertOperand(const x86_op_t &from)
         case op_register:
             res.regi = convertRegister(from.data.reg); break;
         case op_immediate:
-            res.opz = from.data.sdword;
+            res.opz = from.data.sdword; break;
         case op_expression:
             res = convertExpression(from.data.expression); break;
         case op_offset:
@@ -630,7 +630,7 @@ static int signex(uint8_t b)
 static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off)
 {
     /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
-    LLOperand *pm = ((stateTable[i].flg & TO_REG) != fdst) ? &pIcode->ll()->m_dst : &pIcode->ll()->src();
+    LLOperand *pm = (! (stateTable[i].flg & TO_REG) == fdst) ? &pIcode->ll()->m_dst : &pIcode->ll()->src();
 
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
      * provide the value of this segment in the field segValue.
@@ -973,6 +973,7 @@ static void dispF(int i)
 {
     uint16_t off = (unsigned)getWord();
     uint16_t seg = (unsigned)getWord();
+    // FIXME: this is wrong since seg here is seg value, but setAddress treats it as register id
     setAddress(i, true, seg, 0, off);
     //    decodeBranchTgt();
 }

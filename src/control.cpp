@@ -470,7 +470,7 @@ void Function::structIfs ()
             if ((follow != 0) and (followInEdges > 1))
             {
                 currNode->ifFollow = follow;
-                if (!unresolved.empty())
+                if (not unresolved.empty())
                     flagNodes (unresolved, follow, this);
             }
             else
@@ -624,7 +624,7 @@ void Function::compoundCond()
                     --i;
             }
 
-            /* Check (!X and Y) case */
+            /* Check (not X and Y) case */
             else if ((thenBB->nodeType == TWO_BRANCH) and (thenBB->numHlIcodes == 1) and
                      (thenBB->inEdges.size() == 1) and (thenBB->edges[THEN].BBptr == elseBB))
             {
@@ -640,7 +640,7 @@ void Function::compoundCond()
                     --i;
             }
 
-            /* Check (!X or Y) case */
+            /* Check (not X or Y) case */
             else if ((elseBB->nodeType == TWO_BRANCH) and (elseBB->numHlIcodes == 1) and
                      (elseBB->inEdges.size() == 1) and (elseBB->edges[ELSE].BBptr == thenBB))
             {

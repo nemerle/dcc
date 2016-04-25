@@ -222,7 +222,7 @@ void Function::elimCondCodes ()
                 {
                     ICODE &a(*defAt);
                     ICODE &b(*useAt);
-                    reportError (NOT_DEF_USE,a.ll()->getOpcode(),b.ll()->getOpcode());
+                    reportError (NOT_DEF_USE,a.ll()->label,a.ll()->getOpcode(),b.ll()->getOpcode());
                     flg |= PROC_ASM;		/* generate asm */
                 }
                 break;
@@ -364,7 +364,8 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                     if ((not (pcallee->flg & PROC_ISLIB)) or ( pbb->liveOut.any() ))
                     {
                         switch (pcallee->retVal.type) {
-                        case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
+                        case TYPE_LONG_SIGN:
+                        case TYPE_LONG_UNSIGN:
                             ticode.du1.setDef(rAX).addDef(rDX);
                             //TODO: use Calling convention to properly set regs here
                             break;
@@ -977,7 +978,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         assert(ti_hl->asgn.rhs);
                         _exp = _icHl.call.toAst();
                         res = Expr::insertSubTreeReg (ti_hl->asgn.rhs,_exp, _retVal->id.regi, &locals);
-                        if (! res)
+                        if (not res)
                             Expr::insertSubTreeReg (ti_hl->asgn.m_lhs, _exp,_retVal->id.regi, &locals);
                         //TODO: HERE missing: 2 regs
                         picode->invalidate();
@@ -1225,7 +1226,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
             retVal.loc = REG_FRAME;
             retVal.longId() = LONGID_TYPE(rDX,rAX);
             /*idx = */localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), Icode.begin());
-            localId.propLongId (rAX, rDX, "\0");
+            localId.propLongId (rAX, rDX, "");
         }
         else if (isAx or isBx or isCx or isDx)	/* uint16_t */
         {
@@ -1291,7 +1292,7 @@ void Function::dataFlow(LivenessSet &_liveOut)
     elimCondCodes();
     genLiveKtes();
     liveRegAnalysis (_liveOut);   /* calls dataFlow() recursively */
-    if (! (flg & PROC_ASM))		/* can generate C for pProc		*/
+    if (not (flg & PROC_ASM))		/* can generate C for pProc		*/
     {
         genDU1 ();			/* generate def/use level 1 chain */
         findExps (); 		/* forward substitution algorithm */

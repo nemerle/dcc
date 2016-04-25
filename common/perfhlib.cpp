@@ -333,7 +333,7 @@ void PerfectHash::traverse(int u)
     while (e)
     {
         w = graphNode[NumEntry+e]-1;
-        if (!visited[w])
+        if (not visited[w])
         {
             g[w] = (abs(e)-1 - g[u]) % NumEntry;
             if (g[w] < 0) g[w] += NumEntry;     /* Keep these positive */
@@ -357,7 +357,7 @@ void PerfectHash::assign(void)
 
     for (v=0; v < NumVert; v++)
     {
-        if (!visited[v])
+        if (not visited[v])
         {
             g[v] = 0;
             traverse(v);

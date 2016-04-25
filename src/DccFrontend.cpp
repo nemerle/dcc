@@ -332,7 +332,7 @@ bool Project::load()
     const char *fname = binary_path().toLocal8Bit().data();
     QFile finfo(binary_path());
     /* Open the input file */
-    if(!finfo.open(QFile::ReadOnly)) {
+    if(not finfo.open(QFile::ReadOnly)) {
         fatalError(CANNOT_OPEN, fname);
     }
     /* Read in first 2 bytes to check EXE signature */

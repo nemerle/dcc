@@ -124,7 +124,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     eErrorId err;
     bool   done = false;
     SYMTAB &global_symbol_table(Project::get()->symtab);
-    if (name.find("chkstk") != string::npos)
+    if (name.contains("chkstk"))
     {
         // Danger! Dcc will likely fall over in this code.
         // So we act as though we have done with this proc
@@ -136,7 +136,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     }
     if (option.VeryVerbose)
     {
-        printf("Parsing proc %s at %X\n", name.c_str(), pstate->IP);
+        qDebug() << "Parsing proc" << name << "at"<< QString::number(pstate->IP,16).toUpper();
     }
 
     while (not done )
@@ -759,11 +759,9 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
             if (indirect)
                 x.flg |= PROC_ICALL;
 
-            if (x.name.empty())     /* Don't overwrite existing name */
+            if (x.name.isEmpty())     /* Don't overwrite existing name */
             {
-                ostringstream os;
-                os<<"proc_"<< ++prog.cProcs;
-                x.name = os.str();
+                x.name = QString("proc_%1").arg(++prog.cProcs);
             }
             x.depth = x.depth + 1;
             x.flg |= TERMINATES;
@@ -1194,7 +1192,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
 
         case iMUL:  case iIMUL:
             use(SRC, pIcode, this, pstate, cb);
-            if (! Imm)
+            if (not Imm)
             {
                 use (DST, pIcode, this, pstate, cb);
                 if (cb == 1)
@@ -1231,7 +1229,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
         case iCALLF:            /* Ignore def's on CS for now */
             cb = 4;
         case iCALL:  case iPUSH:  case iPOP:
-            if (! Imm) {
+            if (not Imm) {
                 if (pIcode.ll()->getOpcode() == iPOP)
                     def(DST, pIcode, this, pstate, cb);
                 else
@@ -1269,7 +1267,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
         case iJMPF:
             cb = 4;
         case iJMP:
-            if (! Imm)
+            if (not Imm)
                 use(SRC, pIcode, this, pstate, cb);
             break;
 
@@ -1330,7 +1328,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
 
         case iIN:  case iOUT:
             def(DST, pIcode, this, pstate, cb);
-            if (! Imm)
+            if (not Imm)
             {
                 pIcode.du.use.addReg(rDX);
             }

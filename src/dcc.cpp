@@ -188,7 +188,7 @@ int main(int argc, char **argv)
     Project::get()->create(option.filename);
 
     DccFrontend fe(&app);
-    if(!Project::get()->load()) {
+    if(not Project::get()->load()) {
         return -1;
     }
     if (option.verbose)

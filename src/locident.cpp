@@ -181,7 +181,7 @@ int LOCAL_ID::newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_)
     for (idx = 0; idx < id_arr.size(); idx++)
     {
         ID &entry(id_arr[idx]);
-        if(!entry.isLong() or (entry.loc != REG_FRAME))
+        if(not entry.isLong() or (entry.loc != REG_FRAME))
             continue;
         if (/*(locSym->id[idx].type == t) and   Not checking type */
                 (entry.longId().h() == regH) and
@@ -461,7 +461,7 @@ eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
  * the local identifier table.  If so, macros for these registers are
  * placed in the local identifier table, as these registers belong to a
  * long register identifier.	*/
-void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const char *name)
+void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const QString &name)
 {
     for (ID &rid : id_arr)
     {

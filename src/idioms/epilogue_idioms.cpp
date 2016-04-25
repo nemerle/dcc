@@ -64,13 +64,13 @@ bool Idiom2::match(iICODE pIcode)
     if(nicode == m_end)
         return false;
 
-    if (nicode->ll()->match(iPOP,rBP) and ! (nicode->ll()->testFlags(I | TARGET | CASE)) )
+    if (nicode->ll()->match(iPOP,rBP) and not (nicode->ll()->testFlags(I | TARGET | CASE)) )
     {
         m_icodes.push_back(nicode++); // Matched POP BP
 
         /* Match RET(F) */
         if (    nicode != m_end and
-                !(nicode->ll()->testFlags(I | TARGET | CASE)) and
+                not (nicode->ll()->testFlags(I | TARGET | CASE)) and
                 (nicode->ll()->match(iRET) or nicode->ll()->match(iRETF))
                 )
         {
@@ -140,7 +140,7 @@ bool Idiom4::match(iICODE pIcode)
 }
 int Idiom4::action()
 {
-    if( ! m_icodes.empty()) // if not an empty RET[F] N
+    if( not m_icodes.empty()) // if not an empty RET[F] N
     {
     for(size_t idx=0; idx<m_icodes.size()-1; ++idx) // don't invalidate last entry
             m_icodes[idx]->invalidate();

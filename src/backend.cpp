@@ -10,8 +10,10 @@
 #include "project.h"
 #include "CallGraph.h"
 
-#include <QDir>
-#include <QFile>
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QStringList>
+#include <QtCore/QDebug>
 #include <cassert>
 #include <string>
 #include <boost/range.hpp>
@@ -41,14 +43,14 @@ int getNextLabel()
 /* displays statistics on the subroutine */
 void Function::displayStats ()
 {
-    printf("\nStatistics - Subroutine %s\n", name.c_str());
-    printf ("Number of Icode instructions:\n");
-    printf ("  Low-level : %4d\n", stats.numLLIcode);
-    if (! (flg & PROC_ASM))
+    qDebug() << "\nStatistics - Subroutine" << name;
+    qDebug() << "Number of Icode instructions:";
+    qDebug() << "  Low-level :" << stats.numLLIcode;
+    if (not (flg & PROC_ASM))
     {
-        printf ("  High-level: %4d\n", stats.numHLIcode);
-        printf ("  Percentage reduction: %2.2f%%\n", 100.0 - (stats.numHLIcode *
-                                                              100.0) / stats.numLLIcode);
+        qDebug() << "  High-level:"<<stats.numHLIcode;
+        qDebug() << QString("  Percentage reduction: %1%%").arg(100.0 - (stats.numHLIcode *
+                                                              100.0) / stats.numLLIcode,4,'f',2,QChar('0'));
     }
 }
 
@@ -106,7 +108,7 @@ char *cChar (uint8_t c)
  * Note: to get to the value of the variable:
  *		com file: prog.Image[operand]
  *		exe file: prog.Image[operand+0x100] 	*/
-static void printGlobVar (std::ostream &ostr,SYM * psym)
+static void printGlobVar (QTextStream &ostr,SYM * psym)
 {
     int j;
     PROG &prog(Project::get()->prog);
@@ -129,10 +131,10 @@ static void printGlobVar (std::ostream &ostr,SYM * psym)
             break;
         default:
         {
-            ostringstream strContents;
+            QString strContents;
             for (j=0; j < psym->size; j++)
-                strContents << cChar(prog.image()[relocOp + j]);
-            ostr << "char\t*"<<psym->name<<" = \""<<strContents.str()<<"\";\n";
+                strContents += cChar(prog.image()[relocOp + j]);
+            ostr << "char\t*"<<psym->name<<" = \""<<strContents<<"\";\n";
         }
     }
 }
@@ -143,7 +145,8 @@ static void printGlobVar (std::ostream &ostr,SYM * psym)
  * initialization. */
 void Project::writeGlobSymTable()
 {
-    std::ostringstream ostr;
+    QString contents;
+    QTextStream ostr(&contents);
 
     if (symtab.empty())
         return;
@@ -151,7 +154,7 @@ void Project::writeGlobSymTable()
         for (SYM &sym : symtab)
         {
             if (sym.duVal.isUSE_VAL())	/* first used */
-            printGlobVar (ostr,&sym);
+                printGlobVar (ostr,&sym);
             else {					/* first defined */
                 switch (sym.size) {
                 case 1:  ostr<<"uint8_t\t"; break;
@@ -167,13 +170,14 @@ void Project::writeGlobSymTable()
             }
         }
     ostr<< "\n";
-    cCode.appendDecl( ostr.str() );
+    ostr.flush();
+    cCode.appendDecl( contents );
 }
 
 
 /* Writes the header information and global variables to the output C file
  * fp. */
-static void writeHeader (std::ostream &_ios, const std::string &fileName)
+static void writeHeader (QIODevice &_ios, const std::string &fileName)
 {
     PROG &prog(Project::get()->prog);
     /* Write header information */
@@ -210,10 +214,11 @@ static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 
 /* Writes the procedure's declaration (including arguments), local variables,
  * and invokes the procedure that writes the code of the given record *hli */
-void Function::codeGen (std::ostream &fs)
+void Function::codeGen (QIODevice &fs)
 {
     int numLoc;
-    ostringstream ostr;
+    QString ostr_contents;
+    QTextStream ostr(&ostr_contents);
     //STKFRAME * args;       /* Procedure arguments              */
     //char buf[200],        /* Procedure's definition           */
     //        arg[30];         /* One argument                     */
@@ -222,30 +227,27 @@ void Function::codeGen (std::ostream &fs)
     /* Write procedure/function header */
     cCode.init();
     if (flg & PROC_IS_FUNC)      /* Function */
-        ostr<< "\n"<<TypeContainer::typeName(retVal.type)<<" "<<name<<" (";
+        ostr << QString("\n%1 %2 (").arg(TypeContainer::typeName(retVal.type)).arg(name);
     else                                /* Procedure */
-        ostr<< "\nvoid "<<name<<" (";
+        ostr << "\nvoid "+name+" (";
 
     /* Write arguments */
     struct validArg
     {
         bool operator()(STKSYM &s) { return s.invalid==false;}
     };
-    auto valid_args = args | filtered(validArg());
-    int count_valid = std::distance(valid_args.begin(),valid_args.end());
-    for (STKSYM &arg : valid_args)
+    QStringList parts;
+    for (STKSYM &arg : (args | filtered(validArg())))
     {
-        ostr<<hlTypes[arg.type]<<" "<<arg.name;
-        if(--count_valid!=0)
-            ostr<<", ";
+        parts << QString("%1 %2").arg(hlTypes[arg.type]).arg(arg.name);
     }
-    ostr<<")\n";
+    ostr << parts.join(", ")+")\n";
 
     /* Write comments */
     writeProcComments( ostr );
 
     /* Write local variables */
-    if (! (flg & PROC_ASM))
+    if (not (flg & PROC_ASM))
     {
         numLoc = 0;
         for (ID &refId : localId )
@@ -273,7 +275,9 @@ void Function::codeGen (std::ostream &fs)
             }
         }
     }
-    fs<<ostr.str();
+    ostr.flush();
+    fs.write(ostr_contents.toLatin1());
+
     /* Write procedure's code */
     if (flg & PROC_ASM)		/* generate assembler */
     {
@@ -290,30 +294,35 @@ void Function::codeGen (std::ostream &fs)
     freeBundle (&cCode);
 
     /* Write Live register analysis information */
-    if (option.verbose)
+    if (option.verbose) {
+        QString debug_contents;
+        QTextStream debug_stream(&debug_contents);
         for (size_t i = 0; i < numBBs; i++)
         {
             pBB = m_dfsLast[i];
             if (pBB->flg & INVALID_BB)	continue;	/* skip invalid BBs */
-            cout << "BB "<<i<<"\n";
-            cout << "  Start = "<<pBB->begin()->loc_ip;
-            cout << ", end = "<<pBB->begin()->loc_ip+pBB->size()<<"\n";
-            cout << "  LiveUse = ";
-            Machine_X86::writeRegVector(cout,pBB->liveUse);
-            cout << "\n  Def = ";
-            Machine_X86::writeRegVector(cout,pBB->def);
-            cout << "\n  LiveOut = ";
-            Machine_X86::writeRegVector(cout,pBB->liveOut);
-            cout << "\n  LiveIn = ";
-            Machine_X86::writeRegVector(cout,pBB->liveIn);
-            cout <<"\n\n";
+            debug_stream << "BB "<<i<<"\n";
+            debug_stream << "  Start = "<<pBB->begin()->loc_ip;
+            debug_stream << ", end = "<<pBB->begin()->loc_ip+pBB->size()<<"\n";
+            debug_stream << "  LiveUse = ";
+            Machine_X86::writeRegVector(debug_stream,pBB->liveUse);
+            debug_stream << "\n  Def = ";
+            Machine_X86::writeRegVector(debug_stream,pBB->def);
+            debug_stream << "\n  LiveOut = ";
+            Machine_X86::writeRegVector(debug_stream,pBB->liveOut);
+            debug_stream << "\n  LiveIn = ";
+            Machine_X86::writeRegVector(debug_stream,pBB->liveIn);
+            debug_stream <<"\n\n";
         }
+        debug_stream.flush();
+        qDebug() << debug_contents.toLatin1();
+    }
 }
 
 
 /* Recursive procedure. Displays the procedure's code in depth-first order
  * of the call graph.	*/
-static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
+static void backBackEnd (CALL_GRAPH * pcallGraph, QIODevice &_ios)
 {
 
     //	IFace.Yield();			/* This is a good place to yield to other apps */
@@ -338,7 +347,7 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
     /* Generate statistics */
     if (option.Stats)
         pcallGraph->proc->displayStats ();
-    if (! (pcallGraph->proc->flg & PROC_ASM))
+    if (not (pcallGraph->proc->flg & PROC_ASM))
     {
         stats.totalLL += stats.numLLIcode;
         stats.totalHL += stats.numHLIcode;
@@ -349,16 +358,15 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
 /* Invokes the necessary routines to produce code one procedure at a time. */
 void BackEnd(CALL_GRAPH * pcallGraph)
 {
-    std::ofstream fs; /* Output C file 	*/
-
     /* Get output file name */
     QString outNam(Project::get()->output_name("b")); /* b for beta */
+    QFile fs(outNam); /* Output C file 	*/
 
     /* Open output file */
-    fs.open(outNam.toStdString());
-    if(!fs.is_open())
+    if(not fs.open(QFile::WriteOnly|QFile::Text))
         fatalError (CANNOT_OPEN, outNam.toStdString().c_str());
-    std::cout<<"dcc: Writing C beta file "<<outNam.toStdString()<<"\n";
+
+    qDebug()<<"dcc: Writing C beta file"<<outNam;
 
     /* Header information */
     writeHeader (fs, option.filename.toStdString());
@@ -372,7 +380,7 @@ void BackEnd(CALL_GRAPH * pcallGraph)
 
     /* Close output file */
     fs.close();
-    std::cout << "dcc: Finished writing C beta file\n";
+    qDebug() << "dcc: Finished writing C beta file";
 }
 
 

@@ -28,7 +28,7 @@ bool trivialGraph(BB *G)
  * from the list.  Q is not an empty queue.                 */
 static BB *firstOfQueue (queue &Q)
 {
-    assert(!Q.empty());
+    assert(not Q.empty());
     BB *res=Q.front();
     Q.pop_front();
     return res;
@@ -81,7 +81,7 @@ void interval::appendNodeInt(queue &pqH, BB *node)
 
     /* Check header list for occurrence of node, if found, remove it
      * and decrement number of out-edges from this interval.    */
-    if (node->beenOnH and !pqH.empty())
+    if (node->beenOnH and not pqH.empty())
     {
         auto found_iter=std::find(pqH.begin(),pqH.end(),node);
         if(found_iter!=pqH.end())
@@ -113,7 +113,7 @@ void derSeq_Entry::findIntervals (Function *c)
     Gi->reachingInt = BB::Create(nullptr,"",c); /* ^ empty BB */
 
     /* Process header nodes list H */
-    while (!H.empty())
+    while (not H.empty())
     {
         header = firstOfQueue (H);
         pI = new interval;
@@ -139,7 +139,7 @@ void derSeq_Entry::findIntervals (Function *c)
                     succ->reachingInt = header;
                     if (succ->inEdgeCount == 0)
                         pI->appendNodeInt (H, succ);
-                    else if (! succ->beenOnH) /* out edge */
+                    else if (not succ->beenOnH) /* out edge */
                     {
                         appendQueue (H, succ);
                         succ->beenOnH = true;
@@ -163,7 +163,7 @@ void derSeq_Entry::findIntervals (Function *c)
         }
 
         /* Link interval I to list of intervals */
-        if (! first)
+        if (not first)
         {
             m_intervals.push_back(pI);
             J->next = pI;
@@ -311,20 +311,20 @@ bool Function::findDerivedSeq (derSeq &derivedGi)
     derSeq::iterator iter=derivedGi.begin();
     assert(iter!=derivedGi.end());
     BB *Gi = iter->Gi;      /* Current derived sequence graph       */
-    while (! trivialGraph (Gi))
+    while (not trivialGraph (Gi))
     {
         /* Find the intervals of Gi and place them in derivedGi->Ii */
         iter->findIntervals(this);
 
         /* Create Gi+1 and check if it is equivalent to Gi */
-        if (! nextOrderGraph (derivedGi))
+        if (not nextOrderGraph (derivedGi))
             break;
         ++iter;
         Gi = iter->Gi;
         stats.nOrder++;
     }
 
-    if (! trivialGraph (Gi))
+    if (not trivialGraph (Gi))
     {
         ++iter;
         derivedGi.erase(iter,derivedGi.end()); /* remove Gi+1 */
@@ -368,7 +368,7 @@ derSeq * Function::checkReducibility()
     der_seq->back().Gi = *m_actual_cfg.begin(); /*m_cfg.front()*/;
     reducible = findDerivedSeq(*der_seq);
 
-    if (! reducible)
+    if (not reducible)
     {
         flg |= GRAPH_IRRED;
         m_actual_cfg.nodeSplitting();

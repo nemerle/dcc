@@ -7,8 +7,10 @@
 #pragma once
 #include <stdio.h>
 #include <vector>
-#include <string>
-struct strTable : std::vector<std::string>
+#include <QtCore/QString>
+#include <QtCore/QIODevice>
+
+struct strTable : std::vector<QString>
 {
     /* Returns the next available index into the table */
     size_t nextIdx() {return size();}
@@ -20,9 +22,9 @@ struct bundle
 {
 public:
     void appendCode(const char *format, ...);
-    void appendCode(const std::string &s);
+    void appendCode(const QString &s);
     void appendDecl(const char *format, ...);
-    void appendDecl(const std::string &);
+    void appendDecl(const QString &);
     void init()
     {
         decl.clear();
@@ -37,6 +39,6 @@ extern bundle cCode;
 #define lineSize	360		/* 3 lines in the mean time */
 
 //void    newBundle (bundle *procCode);
-void    writeBundle (std::ostream &ios, bundle procCode);
+void    writeBundle (QIODevice & ios, bundle procCode);
 void    freeBundle (bundle *procCode);
 

@@ -7,6 +7,7 @@
 #include "types.h"
 #include "msvc_fixes.h"
 
+#include <QtCore/QString>
 #include <string>
 #include <stdint.h>
 struct Expr;
@@ -17,7 +18,7 @@ struct TypeContainer;
 /* * * * * * * * * * * * * * * * * */
 struct SymbolCommon
 {
-    std::string name;   /* New name for this variable/symbol/argument */
+    QString     name;   /* New name for this variable/symbol/argument */
     int         size;   /* Size/maximum size                */
     hlType      type;       /* probable type                */
     eDuVal      duVal;      /* DEF, USE, VAL    						*/
@@ -38,12 +39,12 @@ struct SYM : public SymbolCommon
 struct STKSYM : public SymbolCommon
 {
     typedef int16_t tLabel;
-    Expr	*actual=0;	/* Expression tree of actual parameter 		*/
-    AstIdent 	*regs=0;		/* For register arguments only				*/
+    Expr	*   actual=0;       /* Expression tree of actual parameter 		*/
+    AstIdent *  regs=0;         /* For register arguments only				*/
     tLabel      label=0;        /* Immediate off from BP (+:args, -:params) */
-    uint8_t     regOff=0;     /* Offset is a register (e.g. SI, DI)       */
+    uint8_t     regOff=0;       /* Offset is a register (e.g. SI, DI)       */
     bool        hasMacro=false;	/* This type needs a macro					*/
-    std::string macro;  	/* Macro name								*/
+    QString     macro;          /* Macro name								*/
     bool        invalid=false;	/* Boolean: invalid entry in formal arg list*/
     void setArgName(int i)
     {
@@ -106,6 +107,6 @@ constexpr int NUM_TABLE_TYPES = int(Comment)+1; /* Number of entries: must be la
 
 void    createSymTables(void);
 void    destroySymTables(void);
-bool    readVal (std::ostringstream &symName, uint32_t   symOff, Function *symProc);
+bool    readVal (QTextStream & symName, uint32_t   symOff, Function *symProc);
 void    selectTable(tableType);     /* Select a particular table */
 

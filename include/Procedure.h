@@ -1,14 +1,20 @@
 #pragma once
-#include <llvm/ADT/ilist.h>
-//#include <llvm/ADT/ilist_node.h>
-#include <bitset>
-#include <map>
 #include "BasicBlock.h"
 #include "locident.h"
 #include "state.h"
 #include "icode.h"
 #include "StackFrame.h"
 #include "CallConvention.h"
+
+#include <llvm/ADT/ilist.h>
+//#include <llvm/ADT/ilist_node.h>
+#include <QtCore/QString>
+#include <bitset>
+#include <map>
+
+class QIODevice;
+class QTextStream;
+
 /* PROCEDURE NODE */
 struct CALL_GRAPH;
 struct Expr;
@@ -126,8 +132,8 @@ public:
     FunctionType *  type;
     CConv *         m_call_conv;
     uint32_t        procEntry; /* label number                         	 */
-    std::string  name;      /* Meaningful name for this proc     	 */
-    STATE        state;     /* Entry state                          	 */
+    QString         name;      /* Meaningful name for this proc     	 */
+    STATE           state;     /* Entry state                          	 */
     int          depth;     /* Depth at which we found it - for printing */
     uint32_t     flg;       /* Combination of Icode & Proc flags    	 */
     int16_t      cbParam;   /* Probable no. of bytes of parameters  	 */
@@ -153,7 +159,7 @@ public:
         delete type;
     }
 public:
-    static Function *Create(FunctionType *ty=0,int /*Linkage*/=0,const std::string &nm="",void */*module*/=0)
+    static Function *Create(FunctionType *ty=0,int /*Linkage*/=0,const QString &nm="",void */*module*/=0)
     {
         Function *r=new Function(ty);
         r->name = nm;
@@ -185,14 +191,14 @@ public:
     bool process_JMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     bool process_CALL(ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
     void freeCFG();
-    void codeGen(std::ostream &fs);
+    void codeGen(QIODevice & fs);
     void mergeFallThrough(BB *pBB);
     void structIfs();
     void structLoops(derSeq *derivedG);
     void buildCFG(Disassembler &ds);
     void controlFlowAnalysis();
     void newRegArg(iICODE picode, iICODE ticode);
-    void writeProcComments(std::ostream &ostr);
+    void writeProcComments(QTextStream & ostr);
 
     void displayCFG();
     void displayStats();
@@ -200,7 +206,7 @@ public:
 
     void preprocessReturnDU(LivenessSet &_liveOut);
     Expr * adjustActArgType(Expr *_exp, hlType forType);
-    std::string writeCall(Function *tproc, STKFRAME &args, int *numLoc);
+    QString writeCall(Function *tproc, STKFRAME &args, int *numLoc);
     void processDosInt(STATE *pstate, PROG &prog, bool done);
     ICODE *translate_DIV(LLInst *ll, ICODE &_Icode);
     ICODE *translate_XCHG(LLInst *ll, ICODE &_Icode);

@@ -93,8 +93,8 @@ bool    LibCheck(Function &p);                              /* chklib.c     */
 
 
 /* Exported functions from hlicode.c */
-const char *writeJcond(const HLTYPE &, Function *, int *);
-const char  *writeJcondInv (HLTYPE, Function *, int *);
+QString writeJcond(const HLTYPE &, Function *, int *);
+QString writeJcondInv(HLTYPE, Function *, int *);
 
 
 /* Exported funcions from locident.c */

@@ -28,7 +28,7 @@ void JumpTable::pruneEntries(uint16_t cs)
     {
         uint32_t target = cs + LH(&prg->image()[i]);
         /* Be wary of 00 00 as code - it's probably data */
-        if (! (prg->image()[target] or prg->image()[target+1]) or scan(target, _Icode))
+        if (not (prg->image()[target] or prg->image()[target+1]) or scan(target, _Icode))
             finish = i;
     }
 

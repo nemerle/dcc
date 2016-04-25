@@ -54,7 +54,7 @@ ilFunction Project::findByEntry(uint32_t entry)
 return iter;
 }
 
-ilFunction Project::createFunction(FunctionType *f,const std::string &name)
+ilFunction Project::createFunction(FunctionType *f,const QString &name)
 {
     pProcList.push_back(Function::Create(f,0,name,0));
     return (++pProcList.rbegin()).base();
@@ -87,7 +87,7 @@ hlType Project::symbolType(size_t idx)
     return symtab[idx].type;
 }
 
-const std::string &Project::symbolName(size_t idx)
+const QString &Project::symbolName(size_t idx)
 {
     assert(validSymIdx(idx));
     return symtab[idx].name;

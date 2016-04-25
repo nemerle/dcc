@@ -58,7 +58,7 @@ public:
     /** Recursively deallocates the abstract syntax tree rooted at *exp */
     virtual ~Expr() {}
 public:
-    virtual std::string walkCondExpr (Function * pProc, int* numLoc) const=0;
+    virtual QString walkCondExpr (Function * pProc, int* numLoc) const=0;
     virtual Expr *inverse() const=0; // return new COND_EXPR that is invarse of this
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId)=0;
     virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)=0;
@@ -100,10 +100,12 @@ struct UnaryOperator : public Expr
     }
 public:
     int hlTypeSize(Function *pproc) const;
-    virtual std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    virtual QString walkCondExpr(Function *pProc, int *numLoc) const;
     virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
     virtual hlType expType(Function *pproc) const;
     virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
+private:
+    QString wrapUnary(Function *pProc, int *numLoc, QChar op) const;
 };
 
 struct BinaryOperator : public Expr
@@ -188,7 +190,7 @@ struct BinaryOperator : public Expr
     condOp op() const { return m_op;}
     /* Changes the boolean conditional operator at the root of this expression */
     void op(condOp o) { m_op=o;}
-    std::string walkCondExpr (Function * pProc, int* numLoc) const;
+    QString walkCondExpr(Function * pProc, int* numLoc) const;
 public:
     hlType expType(Function *pproc) const;
     int hlTypeSize(Function *pproc) const;
@@ -215,7 +217,7 @@ struct AstIdent : public UnaryOperator
     virtual int hlTypeSize(Function *pproc) const;
     virtual hlType expType(Function *pproc) const;
     virtual Expr * performLongRemoval(eReg regi, LOCAL_ID *locId);
-    virtual std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    virtual QString walkCondExpr(Function *pProc, int *numLoc) const;
     virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
     virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);
@@ -232,7 +234,7 @@ struct GlobalVariable : public AstIdent
         return new GlobalVariable(*this);
     }
     GlobalVariable(int16_t segValue, int16_t off);
-    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const;
     int hlTypeSize(Function *pproc) const;
     hlType expType(Function *pproc) const;
 };
@@ -246,7 +248,7 @@ struct GlobalVariableIdx : public AstIdent
         return new GlobalVariableIdx(*this);
     }
     GlobalVariableIdx(int16_t segValue, int16_t off, uint8_t regi, const LOCAL_ID *locSym);
-    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const;
     int hlTypeSize(Function *pproc) const;
     hlType expType(Function *pproc) const;
 };
@@ -268,7 +270,7 @@ struct Constant : public AstIdent
     {
         return new Constant(*this);
     }
-    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const;
     int hlTypeSize(Function *pproc) const;
     hlType expType(Function *pproc) const;
 };
@@ -288,7 +290,7 @@ struct FuncNode : public AstIdent
     {
         return new FuncNode(*this);
     }
-    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const;
     int hlTypeSize(Function *pproc) const;
     hlType expType(Function *pproc) const;
 };
@@ -314,7 +316,7 @@ struct RegisterNode : public AstIdent
     {
         return new RegisterNode(*this);
     }
-    std::string walkCondExpr(Function *pProc, int *numLoc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const;
     int hlTypeSize(Function *) const;
     hlType expType(Function *pproc) const;
     bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);

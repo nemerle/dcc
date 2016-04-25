@@ -15,6 +15,7 @@
 #include <llvm/MC/MCInst.h>
 #include <llvm/IR/Instruction.h>
 #include <boost/range/iterator_range.hpp>
+#include <QtCore/QString>
 
 #include <memory>
 #include <vector>
@@ -145,8 +146,8 @@ struct UnaryOperator;
 struct HlTypeSupport
 {
     //hlIcode              opcode;    /* hlIcode opcode           */
-    virtual bool        removeRegFromLong(eReg regi, LOCAL_ID *locId)=0;
-    virtual std::string writeOut(Function *pProc, int *numLoc) const=0;
+    virtual bool    removeRegFromLong(eReg regi, LOCAL_ID *locId)=0;
+    virtual QString writeOut(Function *pProc, int *numLoc) const=0;
 protected:
     Expr * performLongRemoval (eReg regi, LOCAL_ID *locId, Expr *tree);
 };
@@ -166,7 +167,7 @@ public:
         printf("CallType : removeRegFromLong not supproted");
         return false;
     }
-    std::string writeOut(Function *pProc, int *numLoc) const;
+    QString writeOut(Function *pProc, int *numLoc) const;
 };
 struct AssignType : public HlTypeSupport
 {
@@ -179,7 +180,7 @@ public:
     Expr *lhs() const {return m_lhs;}
     void lhs(Expr *l);
     bool removeRegFromLong(eReg regi, LOCAL_ID *locId);
-    std::string writeOut(Function *pProc, int *numLoc) const;
+    QString writeOut(Function *pProc, int *numLoc) const;
 };
 struct ExpType : public HlTypeSupport
 {
@@ -191,7 +192,7 @@ struct ExpType : public HlTypeSupport
         v=performLongRemoval(regi,locId,v);
         return true;
     }
-    std::string writeOut(Function *pProc, int *numLoc) const;
+    QString writeOut(Function *pProc, int *numLoc) const;
 };
 
 struct HLTYPE
@@ -245,7 +246,7 @@ public:
         return *this;
     }
 public:
-    std::string write1HlIcode(Function *pProc, int *numLoc) const;
+    QString write1HlIcode(Function *pProc, int *numLoc) const;
     void setAsgn(Expr *lhs, Expr *rhs);
 } ;
 /* LOW_LEVEL icode operand record */
@@ -404,11 +405,11 @@ public:
     }
     void emitGotoLabel(int indLevel);
     void findJumpTargets(CIcodeRec &_pc);
-    void writeIntComment(std::ostringstream &s);
+    void writeIntComment(QTextStream & s);
     void dis1Line(int loc_ip, int pass);
-    std::ostringstream &strSrc(std::ostringstream &os,bool skip_comma=false);
+    QTextStream & strSrc(QTextStream & os, bool skip_comma=false);
 
-    void flops(std::ostringstream &out);
+    void flops(QTextStream & out);
     bool isJmpInst();
     HLTYPE createCall();
     LLInst(ICODE *container) : flg(0),codeIdx(0),numBytes(0),m_link(container)

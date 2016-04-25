@@ -1,8 +1,10 @@
 #pragma once
+
+#include <QtCore/QString>
 #include <stdint.h>
-#include <string>
-#include <sstream>
 #include <bitset>
+
+class QTextStream;
 
 struct LivenessSet;
 /* Machine registers */
@@ -60,13 +62,13 @@ class Machine_X86 : public SourceMachine
 public:
     Machine_X86();
     virtual ~Machine_X86() {}
-    static const std::string &regName(eReg r);
-    static const std::string &opcodeName(unsigned r);
-    static const std::string &floatOpName(unsigned r);
+    static const QString & regName(eReg r);
+    static const QString & opcodeName(unsigned r);
+    static const QString & floatOpName(unsigned r);
     bool physicalReg(eReg r);
     /* Writes the registers that are set in the bitvector */
     //TODO: move this into Machine_X86 ?
-    static void writeRegVector (std::ostream &ostr,const LivenessSet &regi);
+    static void writeRegVector (QTextStream & ostr, const LivenessSet &regi);
     static eReg subRegH(eReg reg);
     static eReg subRegL(eReg reg);
     static bool isMemOff(eReg r);

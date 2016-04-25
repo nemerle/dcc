@@ -10,6 +10,7 @@
 #include "project.h"
 #include "CallGraph.h"
 
+#include <QtCore/QDebug>
 #include <cstring>
 #include <cassert>
 
@@ -66,7 +67,7 @@ bool CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
  * the nodes the procedure invokes. */
 void CALL_GRAPH::writeNodeCallGraph(int indIdx)
 {
-    printf ("%s%s\n", indentStr(indIdx), proc->name.c_str());
+    qDebug() << indentStr(indIdx)+proc->name;
     for (CALL_GRAPH *cg : outEdges)
         cg->writeNodeCallGraph (indIdx + 1);
 }
@@ -178,7 +179,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
             newsym.type = TYPE_LONG_SIGN;
             assert(regL!=rUNDEF);
             tproc->localId.id_arr[tidx].name = newsym.name;
-            tproc->localId.propLongId (regL, regH, tproc->localId.id_arr[tidx].name.c_str());
+            tproc->localId.propLongId (regL, regH, tproc->localId.id_arr[tidx].name);
         }
         target_stackframe->push_back(newsym);
         target_stackframe->numArgs++;

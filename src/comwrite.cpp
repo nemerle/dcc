@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <sstream>
+#include <QTextStream>
 using namespace std;
 #define intSize		40
 
@@ -150,7 +151,7 @@ static const char *intOthers[] = {
 
 /* Writes the description of the current interrupt. Appends it to the
  * string s.	*/
-void LLInst::writeIntComment (std::ostringstream &s)
+void LLInst::writeIntComment (QTextStream &s)
 {
     uint32_t src_immed=src().getImm2();
     s<<"\t/* ";
@@ -188,12 +189,15 @@ void LLInst::writeIntComment (std::ostringstream &s)
 //, &cCode.decl
 void Function::writeProcComments()
 {
-    std::ostringstream ostr;
-    writeProcComments(ostr);
-    cCode.appendDecl(ostr.str());
+    QString dest_str;
+    {
+        QTextStream ostr(&dest_str);
+        writeProcComments(ostr);
+    }
+    cCode.appendDecl(dest_str);
 }
 
-void Function::writeProcComments(std::ostream &ostr)
+void Function::writeProcComments(QTextStream &ostr)
 {
     int i;
     ID *id;			/* Pointer to register argument identifier */

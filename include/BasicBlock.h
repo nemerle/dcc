@@ -111,7 +111,7 @@ public:
     ///
     const Function *getParent() const { return Parent; }
     Function *getParent()       { return Parent; }
-    void    writeBB(std::ostream &ostr, int lev, Function *pProc, int *numLoc);
+    void    writeBB(QTextStream & ostr, int lev, Function *pProc, int *numLoc);
     BB *    rmJMP(int marker, BB *pBB);
     void    genDU1();
     void findBBExps(LOCAL_ID &locals, Function *f);

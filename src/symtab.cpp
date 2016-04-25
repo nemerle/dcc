@@ -133,7 +133,7 @@ void destroySymTables(void)
 }
 
 /* Using the value, read the symbolic name */
-bool readVal(std::ostringstream &/*symName*/, uint32_t /*symOff*/, Function * /*symProc*/)
+bool readVal(QTextStream &/*symName*/, uint32_t /*symOff*/, Function * /*symProc*/)
 {
     return false; // no symbolic names for now
 }

@@ -5,6 +5,7 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
+#include <QtCore/QTextStream>
 #include <cassert>
 #include <string>
 #include <boost/range/rbegin.hpp>
@@ -143,7 +144,8 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
     if(loopType == eNodeHeaderType::NO_TYPE)
         return nullptr;
     latch = pProc->m_dfsLast[this->latchNode];
-    std::ostringstream ostr;
+    QString ostr_contents;
+    QTextStream ostr(&ostr_contents);
     ICODE* picode;
     switch (loopType)
     {
@@ -169,7 +171,7 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
                 picode->hlU()->replaceExpr(picode->hl()->expr()->inverse());
             }
             {
-                string e=picode->hl()->expr()->walkCondExpr (pProc, numLoc);
+                QString e=picode->hl()->expr()->walkCondExpr (pProc, numLoc);
                 ostr << "\n"<<indentStr(indLevel)<<"while ("<<e<<") {\n";
             }
             picode->invalidate();
@@ -186,7 +188,8 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
             picode = &latch->back();
         break;
     }
-    cCode.appendCode(ostr.str());
+    ostr.flush();
+    cCode.appendCode(ostr_contents);
     stats.numHLIcode += 1;
     indLevel++;
     return picode;
@@ -199,11 +202,11 @@ bool BB::isEndOfPath(int latch_node_idx) const
 void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode, int _ifFollow)
 {
     int follow;						/* ifFollow                 	*/
-    BB * succ, *latch;					/* Successor and latching node 	*/
+    BB * succ, *latch;				/* Successor and latching node 	*/
     ICODE * picode;					/* Pointer to HLI_JCOND instruction	*/
-    std::string l;                  /* Pointer to HLI_JCOND expression	*/
+    QString l;                      /* Pointer to HLI_JCOND expression	*/
     bool emptyThen,					/* THEN clause is empty			*/
-            repCond;					/* Repeat condition for while() */
+            repCond;				/* Repeat condition for while() */
 
     /* Check if this basic block should be analysed */
     if ((_ifFollow != UN_INIT) and (this == pProc->m_dfsLast[_ifFollow]))
@@ -221,9 +224,11 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
     /* Write the code for this basic block */
     if (repCond == false)
     {
-        std::ostringstream ostr;
+        QString ostr_contents;
+        QTextStream ostr(&ostr_contents);
         writeBB(ostr,indLevel, pProc, numLoc);
-        cCode.appendCode(ostr.str());
+        ostr.flush();
+        cCode.appendCode(ostr_contents);
     }
 
     /* Check for end of path */
@@ -254,7 +259,8 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
         indLevel--;
         if (loopType == eNodeHeaderType::WHILE_TYPE)
         {
-            std::ostringstream ostr;
+            QString ostr_contents;
+            QTextStream ostr(&ostr_contents);
             /* Check if there is need to repeat other statements involved
                          * in while condition, then, emit the loop trailer */
             if (repCond)
@@ -262,13 +268,14 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                 writeBB(ostr,indLevel+1, pProc, numLoc);
             }
             ostr <<indentStr(indLevel)<< "}	/* end of while */\n";
-            cCode.appendCode(ostr.str());
+            ostr.flush();
+            cCode.appendCode(ostr_contents);
         }
         else if (loopType == eNodeHeaderType::ENDLESS_TYPE)
             cCode.appendCode( "%s}	/* end of loop */\n",indentStr(indLevel));
         else if (loopType == eNodeHeaderType::REPEAT_TYPE)
         {
-            string e = "//*failed*//";
+            QString e = "//*failed*//";
             if (picode->hl()->opcode != HLI_JCOND)
             {
                 reportError (REPEAT_FAIL);
@@ -277,7 +284,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             {
                 e=picode->hl()->expr()->walkCondExpr (pProc, numLoc);
             }
-            cCode.appendCode( "%s} while (%s);\n", indentStr(indLevel),e.c_str());
+            cCode.appendCode( "%s} while (%s);\n", indentStr(indLevel),qPrintable(e));
         }
 
         /* Recurse on the loop follow */
@@ -309,13 +316,13 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                     if (succ->dfsLastNum != follow)	/* THEN part */
                     {
                         l = writeJcond ( *back().hl(), pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l.c_str());
+                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), qPrintable(l));
                         succ->writeCode (indLevel, pProc, numLoc, _latchNode,follow);
                     }
                     else		/* empty THEN part => negate ELSE part */
                     {
                         l = writeJcondInv ( *back().hl(), pProc, numLoc);
-                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), l.c_str());
+                        cCode.appendCode( "\n%s%s", indentStr(indLevel-1), qPrintable(l));
                         edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, follow);
                         emptyThen = true;
                     }
@@ -335,7 +342,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                     }
                     /* else (empty ELSE part) */
                 }
-                else if (! emptyThen) 	/* already visited => emit label */
+                else if (not emptyThen) 	/* already visited => emit label */
                 {
                     cCode.appendCode( "%s}\n%selse {\n",
                                       indentStr(indLevel-1), indentStr(indLevel - 1));
@@ -351,7 +358,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             else		/* no follow => if..then..else */
             {
                 l = writeJcond ( *back().hl(), pProc, numLoc);
-                cCode.appendCode( "%s%s", indentStr(indLevel-1), l.c_str());
+                cCode.appendCode( "%s%s", indentStr(indLevel-1), qPrintable(l));
                 edges[THEN].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);
                 cCode.appendCode( "%s}\n%selse {\n", indentStr(indLevel-1), indentStr(indLevel - 1));
                 edges[ELSE].BBptr->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);
@@ -374,7 +381,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
  * Args: pBB: pointer to the current basic block.
  *		 Icode: pointer to the array of icodes for current procedure.
  *		 lev: indentation level - used for formatting.	*/
-void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
+void BB::writeBB(QTextStream &ostr,int lev, Function * pProc, int *numLoc)
 {
     /* Save the index into the code table in case there is a later goto
      * into this instruction (first instruction of the BB) */
@@ -386,8 +393,8 @@ void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
     {
         if ((pHli.type == HIGH_LEVEL) and ( pHli.valid() )) //TODO: use filtering range here.
         {
-            std::string line = pHli.hl()->write1HlIcode(pProc, numLoc);
-            if (!line.empty())
+            QString line = pHli.hl()->write1HlIcode(pProc, numLoc);
+            if (not line.isEmpty())
             {
                 ostr<<indentStr(lev)<<line;
                 stats.numHLIcode++;

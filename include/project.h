@@ -52,14 +52,14 @@ public:
     QString output_name(const char *ext);
     ilFunction funcIter(Function *to_find);
     ilFunction findByEntry(uint32_t entry);
-    ilFunction createFunction(FunctionType *f,const std::string &name);
+    ilFunction createFunction(FunctionType *f, const QString & name);
     bool valid(ilFunction iter);
 
     int     getSymIdxByAdd(uint32_t adr);
     bool    validSymIdx(size_t idx);
     size_t  symbolSize(size_t idx);
     hlType  symbolType(size_t idx);
-    const std::string &symbolName(size_t idx);
+    const QString & symbolName(size_t idx);
     const SYM &getSymByIdx(size_t idx) const;
 
     static Project *get();

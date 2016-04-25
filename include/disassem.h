@@ -5,9 +5,12 @@
 ***************************************************************************
 */
 #pragma once
+#include "bundle.h"
+
 #include <fstream>
 #include <vector>
-#include "bundle.h"
+#include <QString>
+#include <QTextStream>
 struct LLInst;
 struct Function;
 struct Disassembler
@@ -16,7 +19,8 @@ protected:
     int pass;
     int g_lab;
     //bundle &cCode;
-    std::ofstream m_fp;
+    QIODevice *m_disassembly_target;
+    QTextStream m_fp;
     std::vector<std::string> m_decls;
     std::vector<std::string> m_code;
 

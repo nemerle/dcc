@@ -211,7 +211,7 @@ void Function::findIdioms()
     }
 
     /* Check if number of parameter bytes match their calling convention */
-    if ((flg & PROC_HLL) and (!args.empty()))
+    if ((flg & PROC_HLL) and (not args.empty()))
     {
         args.m_minOff += (flg & PROC_FAR ? 4 : 2);
         delta = args.maxOff - args.m_minOff;
@@ -258,7 +258,7 @@ void Function::bindIcodeOff()
         if (ll->testFlags(I) )
         {
             uint32_t found;
-            if (! Icode.labelSrch(ll->src().getImm2(), found))
+            if (not Icode.labelSrch(ll->src().getImm2(), found))
                 ll->setFlags( NO_LABEL );
             else
                 ll->replaceSrc(LLOperand::CreateImm2(found));

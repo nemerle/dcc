@@ -3,6 +3,8 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
+#include <QtCore/QDebug>
+
 using namespace std;
 
 /*****************************************************************************
@@ -134,7 +136,8 @@ bool Idiom18::match(iICODE picode)
         /* not supported yet */
         ICODE &ic(*picode);
         const Function *my_proc(ic.getParent()->getParent());
-        printf("Unsupported idiom18 type at %x in %s:%x : indexed\n",ic.loc_ip,my_proc->name.c_str(),my_proc->procEntry);
+        qWarning() << "Unsupported idiom18 type at"<< QString::number(ic.loc_ip,16)
+                   << "in"<< my_proc->name <<':'<< QString::number(my_proc->procEntry,16) << "- indexed";
     }
 
     switch(m_idiom_type)

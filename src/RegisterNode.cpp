@@ -56,26 +56,26 @@ RegisterNode::RegisterNode(const LLOperand &op, LOCAL_ID *locsym)
 //    regiType = reg_type;
 //}
 
-string RegisterNode::walkCondExpr(Function *pProc, int *numLoc) const
+QString RegisterNode::walkCondExpr(Function *pProc, int *numLoc) const
 {
-    std::ostringstream codeOut;
+    QString codeOut;
 
-    std::ostringstream o;
+    QString o;
     assert(&pProc->localId==m_syms);
     ID *id = &pProc->localId.id_arr[regiIdx];
     if (id->name[0] == '\0')	/* no name */
     {
         id->setLocalName(++(*numLoc));
-        codeOut <<TypeContainer::typeName(id->type)<< " "<<id->name<<"; ";
-        codeOut <<"/* "<<Machine_X86::regName(id->id.regi)<<" */\n";
+        codeOut += QString("%1 %2; ").arg(TypeContainer::typeName(id->type)).arg(id->name);
+        codeOut += QString("/* %1 */\n").arg(Machine_X86::regName(id->id.regi));
     }
     if (id->hasMacro)
-        o << id->macro << "("<<id->name<<")";
+        o += QString("%1(%2)").arg(id->macro).arg(id->name);
     else
-        o << id->name;
+        o += id->name;
 
-    cCode.appendDecl(codeOut.str());
-    return o.str();
+    cCode.appendDecl(codeOut);
+    return o;
 }
 
 int RegisterNode::hlTypeSize(Function *) const

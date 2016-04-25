@@ -28,7 +28,7 @@
       {IP_OUT_OF_RANGE  ,"Instruction at location %06lX goes beyond loaded image\n"},
       {DEF_NOT_FOUND    ,"Definition not found for condition code usage at opcode %d\n"},
       {JX_NOT_DEF       ,"JX use, definition not supported at opcode #%d\n"},
-      {NOT_DEF_USE      ,"Def - use not supported.  Def op = %d, use op = %d.\n"},
+      {NOT_DEF_USE      ,"%x: Def - use not supported.  Def op = %d, use op = %d.\n"},
       {REPEAT_FAIL      ,"Failed to construct repeat..until() condition.\n"},
       {WHILE_FAIL       ,"Failed to construct while() condition.\n"},
     };

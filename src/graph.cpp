@@ -155,7 +155,7 @@ void Function::createCFG()
             }
             auto iter2=m_ip_to_bb.find(ip);
             if(iter2==m_ip_to_bb.end())
-                fatalError(NO_BB, ip, name.c_str());
+                fatalError(NO_BB, ip, qPrintable(name));
             psBB = iter2->second;
             elem.BBptr = psBB;
             psBB->inEdges.push_back((BB *)nullptr);

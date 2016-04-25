@@ -3,10 +3,11 @@
 #include "msvc_fixes.h"
 #include "icode.h"
 
+#include <QtCore/QTextStream>
 #include <cassert>
 
 // Index registers **** temp solution
-static const std::string regNames[] = {
+static const QString regNames[] = {
     "undef",
     "ax", "cx", "dx", "bx",
     "sp", "bp", "si", "di",
@@ -21,17 +22,17 @@ static const std::string regNames[] = {
 /* uint8_t and uint16_t registers */
 Machine_X86::Machine_X86()
 {
-    static_assert((sizeof(regNames)/sizeof(std::string))==LAST_REG,
+    static_assert((sizeof(regNames)/sizeof(QString))==LAST_REG,
                   "Reg count not equal number of strings");
 }
 
-const std::string &Machine_X86::regName(eReg r)
+const QString &Machine_X86::regName(eReg r)
 {
-    assert(r<(sizeof(regNames)/sizeof(std::string)));
+    assert(r<(sizeof(regNames)/sizeof(QString)));
     return regNames[r];
 }
 
-static const std::string szOps[] =
+static const QString szOps[] =
 {
     "CBW",  "AAA",      "AAD",      "AAM",      "AAS",      "ADC",  "ADD",  "AND",
     "BOUND","CALL",     "CALL",     "CLC",      "CLD",      "CLI",  "CMC",  "CMP",
@@ -49,7 +50,7 @@ static const std::string szOps[] =
     "XLAT", "XOR",      "INTO",     "NOP",      "REPNE",    "REPE",	"MOD"
 };
 /* The following opcodes are for mod != 3 */
-static std::string szFlops1[] =
+static const QString szFlops1[] =
 {
     /* 0        1        2       3        4        5        6        7  */
     "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
@@ -62,7 +63,7 @@ static std::string szFlops1[] =
     "FILD",  "???",   "FIST", "FISTP", "FBLD",  "???",   "FBSTP", "FISTP"   /* 38 */
 };
 /* The following opcodes are for mod == 3 */
-static std::string szFlops2[] =
+static const QString szFlops2[] =
 {
     /* 0        1        2       3        4        5        6        7  */
     "FADD",  "FMUL",  "FCOM", "FCOMP", "FSUB",  "FSUBR", "FDIV",  "FDIVR",  /* 00 */
@@ -75,17 +76,17 @@ static std::string szFlops2[] =
     "FILD",  "???",   "FIST", "FISTP", "",      "???",   "FBSTP", "FISTP"   /* 38 */
 };
 
-const std::string &Machine_X86::opcodeName(unsigned r)
+const QString &Machine_X86::opcodeName(unsigned r)
 {
-    assert(r<(sizeof(szOps)/sizeof(std::string)));
+    assert(r<(sizeof(szOps)/sizeof(QString)));
     return szOps[r];
 }
-const std::string &Machine_X86::floatOpName(unsigned r)
+const QString &Machine_X86::floatOpName(unsigned r)
 {
-    if(r>=(sizeof(szFlops1)/sizeof(std::string)))
+    if(r>=(sizeof(szFlops1)/sizeof(QString)))
     {
-        r-= (sizeof(szFlops1)/sizeof(std::string));
-        assert(r<(sizeof(szFlops2)/sizeof(std::string)));
+        r-= (sizeof(szFlops1)/sizeof(QString));
+        assert(r<(sizeof(szFlops2)/sizeof(QString)));
         return szFlops2[r];
     }
     return szFlops1[r];
@@ -137,7 +138,7 @@ eReg Machine_X86::compositeParent(eReg reg)
     }
     return rUNDEF;
 }
-void Machine_X86::writeRegVector (std::ostream &ostr,const LivenessSet &regi)
+void Machine_X86::writeRegVector (QTextStream &ostr,const LivenessSet &regi)
 {
     int j;
     for (j = rAX; j < INDEX_BX_SI; j++)

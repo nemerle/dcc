@@ -10,7 +10,7 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <QtCore/QIODevice>
 #define deltaProcLines  20
 
 using namespace std;
@@ -21,26 +21,26 @@ using namespace std;
  * tab is removed and replaced by this label */
 void strTable::addLabelBundle (int idx, int label)
 {
-    char s[16];
-    sprintf (s, "l%d: ", label);
-    if(at(idx).size()<4)
-        at(idx)=s;
+    QString &processedLine(at(idx));
+    QString s = QString("l%1: ").arg(label);
+    if(processedLine.size()<4)
+        processedLine = s;
     else
-    at(idx) = string(s)+at(idx).substr(4);
+        processedLine = s+processedLine.mid(4);
 }
 
 
 /* Writes the contents of the string table on the file fp.  */
-static void writeStrTab (std::ostream &ios, strTable &strTab)
+static void writeStrTab (QIODevice &ios, strTable &strTab)
 {
     for (size_t i = 0; i < strTab.size(); i++)
-        ios << strTab[i];
+        ios.write(strTab[i].toLatin1());
 }
 
 
 /* Writes the contents of the bundle (procedure code and declaration) to
  * a file.          */
-void writeBundle (std::ostream &ios, bundle procCode)
+void writeBundle (QIODevice &ios, bundle procCode)
 {
     writeStrTab (ios, procCode.decl);
     writeStrTab (ios, procCode.code);
@@ -70,7 +70,7 @@ void bundle::appendCode(const char *format,...)
     code.push_back(buf);
     va_end (args);
 }
-void bundle::appendCode(const std::string &s)
+void bundle::appendCode(const QString & s)
 {
     code.push_back(s);
 }
@@ -85,7 +85,7 @@ void bundle::appendDecl(const char *format,...)
     va_end (args);
 }
 
-void bundle::appendDecl(const std::string &v)
+void bundle::appendDecl(const QString &v)
 {
     decl.push_back(v);
 }

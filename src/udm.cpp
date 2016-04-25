@@ -4,13 +4,14 @@
  *   that just plays with abstract cfg's and intervals and such like.
  * (C) Cristina Cifuentes
  ****************************************************************************/
-#include <list>
-#include <cassert>
-#include <stdio.h>
 #include "dcc.h"
 #include "disassem.h"
 #include "project.h"
 
+#include <QtCore/QDebug>
+#include <list>
+#include <cassert>
+#include <stdio.h>
 extern Project g_proj;
 //static void displayCFG(Function * pProc);
 //static void displayDfs(BB * pBB);
@@ -60,7 +61,7 @@ void Function::controlFlowAnalysis()
 
     if (option.verbose)
     {
-        printf("\nDepth first traversal - Proc %s\n", name.c_str());
+        qDebug() <<"\nDepth first traversal - Proc" <<name;
         (*m_actual_cfg.begin())->displayDfs();
         //m_cfg.front()->displayDfs();
     }
@@ -101,7 +102,7 @@ void udm(void)
  ***************************************************************************/
 void Function::displayCFG()
 {
-    printf("\nBasic Block List - Proc %s", name.c_str());
+    qDebug() << "\nBasic Block List - Proc"<<name;
     for (BB *pBB : /*m_cfg*/m_actual_cfg)
     {
         pBB->display();

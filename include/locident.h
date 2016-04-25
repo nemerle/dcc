@@ -11,6 +11,7 @@
 #include "Enums.h"
 #include "machine_x86.h"
 
+#include <QtCore/QString>
 #include <stdint.h>
 #include <vector>
 #include <list>
@@ -101,7 +102,7 @@ public:
     frameType           loc;        /* Frame location                           */
     bool                hasMacro;   /* Identifier requires a macro              */
     char                macro[10];  /* Macro for this identifier                */
-    std::string         name;       /* Identifier's name                        */
+    QString             name;       /* Identifier's name                        */
     union ID_UNION {                         /* Different types of identifiers           */
         friend struct ID;
     protected:
@@ -167,7 +168,7 @@ public:
     int newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix, operDu du, LLInst &atOffset);
     void newIdent(hlType t, frameType f);
     void flagByteWordId(int off);
-    void propLongId(uint8_t regL, uint8_t regH, const char *name);
+    void propLongId(uint8_t regL, uint8_t regH, const QString & name);
     size_t csym() const {return id_arr.size();}
     void newRegArg(iICODE picode, iICODE ticode) const;
     void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong) const;
