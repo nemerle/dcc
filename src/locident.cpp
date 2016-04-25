@@ -254,12 +254,8 @@ int LOCAL_ID::newLongIdx( int16_t seg, int16_t offH, int16_t offL,uint8_t regi, 
     }
 
     /* Not in the table, create new identifier */
-    newIdent (t, GLB_FRAME);
+    id_arr.push_back(ID(t,LONGGLB_TYPE(seg,offH,offL,regi)));
     idx = id_arr.size() - 1;
-    id_arr[idx].id.longGlb.seg = seg;
-    id_arr[idx].id.longGlb.offH = offH;
-    id_arr[idx].id.longGlb.offL = offL;
-    id_arr[idx].id.longGlb.regi = regi;
     return (idx);
 }
 
