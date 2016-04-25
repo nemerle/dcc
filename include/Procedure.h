@@ -233,6 +233,8 @@ protected:
     void    genLiveKtes();
     bool    findDerivedSeq(derSeq &derivedGi);
     bool    nextOrderGraph(derSeq &derivedGi);
+    void addOutEdgesForConditionalJump(BB*        pBB, int next_ip, LLInst *ll);
+    
 private:
     bool    decodeIndirectJMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     bool    decodeIndirectJMP2(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
