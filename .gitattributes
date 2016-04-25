@@ -1,0 +1,6 @@
+* text=auto
+*.c text
+*.cpp text
+*.ui text
+*.qrc text
+*.h text
