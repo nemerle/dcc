@@ -54,8 +54,7 @@ public:
 
 IDcc* IDcc::get() {
     static IDcc *v=0;
-    if(!v)
+    if(nullptr == v)
         v = new DccImpl;
-
     return v;
 }

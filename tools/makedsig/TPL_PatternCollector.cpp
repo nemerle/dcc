@@ -1,4 +1,7 @@
 #include "TPL_PatternCollector.h"
+
+#include "msvc_fixes.h"
+
 #include <cstring>
 
 /** \note Fundamental problem: there seems to be no information linking the names
@@ -255,7 +258,7 @@ void TPL_PatternCollector::enterUnitProcs(FILE *f)
                 readString(f);
                 strcpy(name, (char *)buf);
                 cat = readByte(f);
-                if ((cat == charProc) || (cat == charFunc))
+                if ((cat == charProc) or (cat == charFunc))
                 {
                     grab(f,skipPmap);		/* Skip to the pmap */
                     pmapOff = readShort(f);	/* pmap offset */
@@ -278,7 +281,7 @@ void TPL_PatternCollector::enterUnitProcs(FILE *f)
 int TPL_PatternCollector::readSyms(FILE *f)
 {
     grab(f,4);
-    if ((strncmp((char *)buf, "TPU0", 4) != 0) && ((strncmp((char *)buf, "TPU5", 4) != 0)))
+    if ((strncmp((char *)buf, "TPU0", 4) != 0) and ((strncmp((char *)buf, "TPU5", 4) != 0)))
     {
         printf("Not a Turbo Pascal version 4 or 5 library file\n");
         fclose(f);

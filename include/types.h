@@ -5,9 +5,13 @@
  ***************************************************************************
 */
 #pragma once
+#include "Enums.h"
+#include "msvc_fixes.h"
+
 #include <cassert>
 #include <stdint.h>
-#include "Enums.h"
+#include <stdlib.h>
+
 /**** Common definitions and macros ****/
 #define MAX 0x7FFFFFFF
 
@@ -25,7 +29,7 @@
 // Macro reads a LH word from the image regardless of host convention
 // Returns a 16 bit quantity, e.g. C000 is read into an Int as C000
 //#define LH(p)  ((int16)((byte *)(p))[0] + ((int16)((byte *)(p))[1] << 8))
-#define LH(p)    ((uint16_t)((uint8_t *)(p))[0]  + ((uint16_t)((uint8_t *)(p))[1] << 8))
+#define LH(p) ((uint16_t)((uint8_t *)(p))[0]  + ((uint16_t)((uint8_t *)(p))[1] << 8))
 
 
 /* Macro reads a LH word from the image regardless of host convention */
@@ -64,12 +68,22 @@ struct eDuVal
         use = x&USE;
         val = x&VAL;
     }
-    bool isUSE_VAL() {return use&&val;}  //Use and Val
+    bool isUSE_VAL() {return use and val;}  //Use and Val
 };
 static constexpr const char * hlTypes[13] = {
-    "", "char", "unsigned char", "int", "unsigned int",
-    "long", "unsigned long", "record", "int *", "char *",
-    "", "float", "double"
+    "",
+    "char",
+    "unsigned char",
+    "int",
+    "unsigned int",
+    "long",
+    "unsigned long",
+    "record",
+    "int *",
+    "char *",
+    "",
+    "float",
+    "double"
 };
 
 struct TypeContainer

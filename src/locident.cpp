@@ -4,10 +4,13 @@
  * Date: October 1993
  * (C) Cristina Cifuentes
  */
+#include "locident.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
 
 #include <cstring>
-#include "locident.h"
-#include "dcc.h"
+
 bool LONGID_TYPE::srcDstRegMatch(iICODE a, iICODE b) const
 {
     return (a->ll()->src().getReg2()==m_l) and (b->ll()->m_dst.getReg2()==m_h);
@@ -23,7 +26,7 @@ ID::ID(hlType t, frameType f) : type(t),illegal(false),hasMacro(false)
     macro[0]=0;
     memset(&id,0,sizeof(id));
     loc=f;
-    assert(not ((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN)));
+    assert(not ((t==TYPE_LONG_SIGN) or (t==TYPE_LONG_UNSIGN)));
 }
 ID::ID(hlType t,const LONGID_TYPE &s) : type(t),illegal(false),hasMacro(false)
 {
@@ -31,7 +34,7 @@ ID::ID(hlType t,const LONGID_TYPE &s) : type(t),illegal(false),hasMacro(false)
     memset(&id,0,sizeof(id));
     loc=REG_FRAME;
     m_longId = s;
-    assert((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN));
+    assert((t==TYPE_LONG_SIGN) or (t==TYPE_LONG_UNSIGN));
 }
 ID::ID(hlType t,const LONG_STKID_TYPE &s) : type(t),illegal(false),hasMacro(false)
 {
@@ -39,7 +42,7 @@ ID::ID(hlType t,const LONG_STKID_TYPE &s) : type(t),illegal(false),hasMacro(fals
     memset(&id,0,sizeof(id));
     loc=STK_FRAME;
     id.longStkId = s;
-    assert((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN));
+    assert((t==TYPE_LONG_SIGN) or (t==TYPE_LONG_UNSIGN));
 }
 
 ID::ID(hlType t, const LONGGLB_TYPE &s) : type(t),illegal(false)
@@ -48,7 +51,7 @@ ID::ID(hlType t, const LONGGLB_TYPE &s) : type(t),illegal(false)
     memset(&id,0,sizeof(id));
     loc=GLB_FRAME;
     id.longGlb = s;
-    assert((t==TYPE_LONG_SIGN)||(t==TYPE_LONG_UNSIGN));
+    assert((t==TYPE_LONG_SIGN) or (t==TYPE_LONG_UNSIGN));
 }
 
 
@@ -75,7 +78,7 @@ int LOCAL_ID::newByteWordReg(hlType t, eReg regi)
 
     /* Check for entry in the table */
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[t,regi](ID &el)->bool {
-            return ((el.type == t) && (el.id.regi == regi));
+            return ((el.type == t) and (el.id.regi == regi));
         });
     if(found!=id_arr.end())
         return found-id_arr.begin();
@@ -96,9 +99,9 @@ int LOCAL_ID::newByteWordReg(hlType t, eReg regi)
 void LOCAL_ID::flagByteWordId (int off)
 {
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off](ID &en)->bool {
-     //if (((en.type == TYPE_WORD_SIGN) || (en.type == TYPE_BYTE_SIGN)) &&
-     if ((en.typeBitsize()<=16) &&
-         (en.id.bwId.off == off) && (en.id.bwId.regOff == 0))
+     //if (((en.type == TYPE_WORD_SIGN) or (en.type == TYPE_BYTE_SIGN)) and
+     if ((en.typeBitsize()<=16) and
+         (en.id.bwId.off == off) and (en.id.bwId.regOff == 0))
         return true;
      return false;
     });
@@ -118,7 +121,7 @@ int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
 
     /* Check for entry in the table */
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off,regOff](ID &el)->bool {
-            if ((el.id.bwId.off == off) && (el.id.bwId.regOff == regOff))
+            if ((el.id.bwId.off == off) and (el.id.bwId.regOff == regOff))
                 return true;
             return false;
         });
@@ -148,9 +151,9 @@ int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t)
     /* Check for entry in the table */
     for (size_t idx = 0; idx < id_arr.size(); idx++)
     {
-        if (/*(locSym->id[idx].type == t) &&   Not checking type */
-            (id_arr[idx].id.bwGlb.seg == seg) &&
-            (id_arr[idx].id.bwGlb.off == off) &&
+        if (/*(locSym->id[idx].type == t) and   Not checking type */
+            (id_arr[idx].id.bwGlb.seg == seg) and
+            (id_arr[idx].id.bwGlb.off == off) and
             (id_arr[idx].id.bwGlb.regi == regi))
             return (idx);
     }
@@ -178,10 +181,10 @@ int LOCAL_ID::newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_)
     for (idx = 0; idx < id_arr.size(); idx++)
     {
         ID &entry(id_arr[idx]);
-        if(!entry.isLong() || (entry.loc != REG_FRAME))
+        if(!entry.isLong() or (entry.loc != REG_FRAME))
             continue;
-        if (/*(locSym->id[idx].type == t) &&   Not checking type */
-                (entry.longId().h() == regH) &&
+        if (/*(locSym->id[idx].type == t) and   Not checking type */
+                (entry.longId().h() == regH) and
                 (entry.longId().l() == regL))
         {
             /* Check for occurrence in the list */
@@ -218,9 +221,9 @@ int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
     {
-        if (/*(locSym->id[idx].type == t) &&   Not checking type */
-            (id_arr[idx].id.longGlb.seg == seg) &&
-            (id_arr[idx].id.longGlb.offH == offH) &&
+        if (/*(locSym->id[idx].type == t) and   Not checking type */
+            (id_arr[idx].id.longGlb.seg == seg) and
+            (id_arr[idx].id.longGlb.offH == offH) and
             (id_arr[idx].id.longGlb.offL == offL))
             return (idx);
     }
@@ -242,10 +245,10 @@ int LOCAL_ID::newLongIdx( int16_t seg, int16_t offH, int16_t offL,uint8_t regi, 
     /* Check for entry in the table */
     for (idx = 0; idx < id_arr.size(); idx++)
     {
-        if (/*(locSym->id[idx].type == t) &&   Not checking type */
-            (id_arr[idx].id.longGlb.seg == seg) &&
-            (id_arr[idx].id.longGlb.offH == offH) &&
-            (id_arr[idx].id.longGlb.offL == offL) &&
+        if (/*(locSym->id[idx].type == t) and   Not checking type */
+            (id_arr[idx].id.longGlb.seg == seg) and
+            (id_arr[idx].id.longGlb.offH == offH) and
+            (id_arr[idx].id.longGlb.offL == offL) and
             (id_arr[idx].id.longGlb.regi == regi))
             return (idx);
     }
@@ -272,8 +275,8 @@ int LOCAL_ID::newLongStk(hlType t, int offH, int offL)
     {
         if(id_arr[idx].loc!=STK_FRAME)
             continue;
-        if ((id_arr[idx].type == t) &&
-            (id_arr[idx].longStkId().offH == offH) &&
+        if ((id_arr[idx].type == t) and
+            (id_arr[idx].longStkId().offH == offH) and
             (id_arr[idx].longStkId().offL == offL))
             return (idx);
     }
@@ -320,9 +323,9 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
     }
 
     else if (pmL->off) {                                /* offset */
-        if ((pmL->seg == rSS) && (pmL->regi == INDEX_BP)) /* idx on bp */
+        if ((pmL->seg == rSS) and (pmL->regi == INDEX_BP)) /* idx on bp */
             idx = newLongStk(TYPE_LONG_SIGN, pmH->off, pmL->off);
-        else if ((pmL->seg == rDS) && (pmL->regi == INDEX_BX))   /* bx */
+        else if ((pmL->seg == rDS) and (pmL->regi == INDEX_BX))   /* bx */
         {                                       /* glb var indexed on bx */
             printf("Bx indexed global, BX is an unused parameter to newLongIdx\n");
             idx = newLongIdx(pmH->segValue, pmH->off, pmL->off,rBX,TYPE_LONG_SIGN);
@@ -332,8 +335,8 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
             printf ("long not supported, idx <> bp\n");
     }
 
-    else  /* (pm->regi >= INDEXBASE && pm->off = 0) => indexed && no off */
-        printf ("long not supported, idx && no off\n");
+    else  /* (pm->regi >= INDEXBASE and pm->off = 0) => indexed and no off */
+        printf ("long not supported, idx and no off\n");
 
     return (idx);
 }
@@ -357,7 +360,7 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
     pmLdst = &atOffset.m_dst;
     pmHsrc = &pIcode->ll()->src();
     pmLsrc = &atOffset.src();
-//    if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
+//    if ((longId.offH == pmHsrc->off) and (longId.offL == pmLsrc->off))
 //    {
 //        asgn.lhs = AstIdent::LongIdx (i);
 
@@ -367,14 +370,14 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
 //        }
 //        return true;
 //    }
-//    else if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
+//    else if ((longId.offH == pmHdst->off) and (longId.offL == pmLdst->off))
 //    {
 //        asgn.lhs = AstIdent::Long (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, atOffset);
 //        asgn.rhs = AstIdent::LongIdx (i);
 //        return true;
 //    }
 
-    if ((longId.offH == pmHdst->off) && (longId.offL == pmLdst->off))
+    if ((longId.offH == pmHdst->off) and (longId.offL == pmLdst->off))
     {
         asgn.lhs = AstIdent::LongIdx (i);
 
@@ -384,7 +387,7 @@ bool checkLongEq (LONG_STKID_TYPE longId, iICODE pIcode, int i, Function * pProc
         }
         return true;
     }
-    else if ((longId.offH == pmHsrc->off) && (longId.offL == pmLsrc->off))
+    else if ((longId.offH == pmHsrc->off) and (longId.offL == pmLsrc->off))
     {
         asgn.lhs = AstIdent::Long (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode,eDEF, atOffset);
         asgn.rhs = AstIdent::LongIdx (i);
@@ -414,7 +417,7 @@ bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
     pmHsrc = &pIcode->ll()->src();
     pmLsrc = &atOffset.src();
 
-    if ((longId.h() == pmHdst->regi) && (longId.l() == pmLdst->regi))
+    if ((longId.h() == pmHdst->regi) and (longId.l() == pmLdst->regi))
     {
         asgn.lhs = AstIdent::LongIdx (i);
         if ( not pIcode->ll()->testFlags(NO_SRC) )
@@ -423,7 +426,7 @@ bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
         }
         return true;
     }
-    else if ((longId.h() == pmHsrc->regi) && (longId.l() == pmLsrc->regi))
+    else if ((longId.h() == pmHsrc->regi) and (longId.l() == pmLsrc->regi))
     {
         asgn.lhs = AstIdent::Long (&pProc->localId, DST, pIcode, HIGH_FIRST, pIcode, eDEF, atOffset);
         asgn.rhs = AstIdent::LongIdx (i);
@@ -442,7 +445,7 @@ eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
     ID *id;
 
     id = &locTbl->id_arr[idx];
-    if ((id->loc == REG_FRAME) && ((id->type == TYPE_LONG_SIGN) ||
+    if ((id->loc == REG_FRAME) and ((id->type == TYPE_LONG_SIGN) or
         (id->type == TYPE_LONG_UNSIGN)))
     {
         if (id->longId().h() == regi)

@@ -5,11 +5,13 @@
  * (C) Cristina Cifuentes
  */
 
-#include <cstring>
-#include <cassert>
 #include "dcc.h"
+#include "msvc_fixes.h"
 #include "project.h"
 #include "CallGraph.h"
+
+#include <cstring>
+#include <cassert>
 
 extern Project g_proj;
 /* Static indentation buffer */
@@ -111,7 +113,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     if(type==REGISTER)
         assert(lhs_reg);
     if(type==LONG_VAR)
-        assert(!lhs_reg);
+        assert(nullptr==lhs_reg);
     if (lhs_reg)
     {
         regL = id_arr[lhs_reg->regiIdx].id.regi;
@@ -227,7 +229,7 @@ bool CallType::newStkArg(Expr *exp, llIcode opcode, Function * pproc)
     if (expr)
     {
         regi =  pproc->localId.id_arr[expr->regiIdx].id.regi;
-        if ((regi >= rES) && (regi <= rDS))
+        if ((regi >= rES) and (regi <= rDS))
         {
             return (opcode == iCALLF) ? false : true;
         }
@@ -365,8 +367,8 @@ void STKFRAME::adjustForArgType(size_t numArg_, hlType actType_)
 
     case TYPE_LONG_UNSIGN:
     case TYPE_LONG_SIGN:
-                if ((forType == TYPE_WORD_UNSIGN) ||
-                        (forType == TYPE_WORD_SIGN) ||
+                if ((forType == TYPE_WORD_UNSIGN) or
+                        (forType == TYPE_WORD_SIGN) or
                         (forType == TYPE_UNKNOWN))
                 {
                     /* Merge low and high */

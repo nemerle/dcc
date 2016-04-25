@@ -3,6 +3,7 @@
 #include "LIB_PatternCollector.h"
 #include "TPL_PatternCollector.h"
 #include "perfhlib.h"		/* Symbol table prototypes */
+#include "msvc_fixes.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QStringList>
@@ -48,7 +49,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     QString arg2 = app.arguments()[1];
-    if (arg2.startsWith("-h") || arg2.startsWith("-?"))
+    if (arg2.startsWith("-h") or arg2.startsWith("-?"))
     {
         printUsage(true);
         return 0;

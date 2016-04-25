@@ -9,6 +9,7 @@
 #include <vector>
 #include "bundle.h"
 struct LLInst;
+struct Function;
 struct Disassembler
 {
 protected:

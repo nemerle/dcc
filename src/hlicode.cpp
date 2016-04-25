@@ -24,7 +24,7 @@ void HLTYPE::setAsgn(Expr *lhs, Expr *rhs)
 }
 void ICODE::checkHlCall()
 {
-    //assert((ll()->immed.proc.cb != 0)||ll()->immed.proc.proc!=0);
+    //assert((ll()->immed.proc.cb != 0) or ll()->immed.proc.proc!=0);
 }
 /* Places the new HLI_CALL high-level operand in the high-level icode array */
 void ICODE::newCallHl()
@@ -83,7 +83,7 @@ bool ICODE::removeDefRegi (eReg regi, int thisDefIdx, LOCAL_ID *locId)
         for ( ; numDefs > 0; numDefs--)
         {
 
-            if (du1.used(numDefs-1)||(du.lastDefRegi.testReg(regi)))
+            if (du1.used(numDefs-1) or (du.lastDefRegi.testReg(regi)))
                 break;
         }
     }
@@ -328,7 +328,7 @@ void Function::highLevelGen()
             {
                 if ( not ll->testFlags(NO_SRC) )   /* if there is src op */
                     rhs = AstIdent::id (*pIcode->ll(), SRC, this, i, *pIcode, NONE);
-                if(ll->m_dst.isSet() || (ll->getOpcode()==iMOD))
+                if(ll->m_dst.isSet() or (ll->getOpcode()==iMOD))
                     lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
             }
         if(ll->getOpcode()==iPUSH) {

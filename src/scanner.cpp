@@ -4,13 +4,16 @@
  * I-code
  * (C) Cristina Cifuentes, Jeff Ledermann
  ****************************************************************************/
+#include "scanner.h"
+
+#include "msvc_fixes.h"
+#include "dcc.h"
+#include "project.h"
 
 #include <cstring>
 #include <map>
 #include <string>
-#include "dcc.h"
-#include "scanner.h"
-#include "project.h"
+
 /*  Parser flags  */
 #define TO_REG      0x000100    /* rm is source  */
 #define S_EXT       0x000200    /* sign extend   */
@@ -380,7 +383,7 @@ static void fixFloatEmulation(x86_insn_t &insn)
         return;
     PROG &prog(Project::get()->prog);
     uint16_t wOp=insn.x86_get_imm()->data.word;
-    if ((wOp < 0x34) || (wOp > 0x3B))
+    if ((wOp < 0x34) or (wOp > 0x3B))
         return;
     uint8_t buf[16];
     /* This is a Borland/Microsoft floating point emulation instruction. Treat as if it is an ESC opcode */
@@ -403,7 +406,7 @@ int disassembleOneLibDisasm(uint32_t ip,x86_insn_t &l)
     PROG &prog(Project::get()->prog);
     X86_Disasm ds(opt_16_bit);
     int cnt=ds.x86_disasm(prog.image(),prog.cbImage,0,ip,&l);
-    if(cnt && l.is_valid())
+    if(cnt and l.is_valid())
     {
         fixFloatEmulation(l); //can change 'l'
     }
@@ -413,7 +416,7 @@ int disassembleOneLibDisasm(uint32_t ip,x86_insn_t &l)
 }
 eReg convertRegister(const x86_reg_t &reg)
 {
-    if( (reg_pc==reg.type) || (0==reg.id))
+    if( (reg_pc==reg.type) or (0==reg.id))
         return rUNDEF;
 
     eReg regmap[]={ rUNDEF,
@@ -518,7 +521,7 @@ LLOperand convertOperand(const x86_op_t &from)
         default:
             fprintf(stderr,"convertOperand does not know how to convert %d\n",from.type);
     }
-    if(res.isSet() && (res.seg == rUNDEF))
+    if(res.isSet() and (res.seg == rUNDEF))
     {
         res.seg = rDS;
     }
@@ -627,7 +630,7 @@ static int signex(uint8_t b)
 static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off)
 {
     /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
-    LLOperand *pm = (!(stateTable[i].flg & TO_REG) == fdst) ? &pIcode->ll()->m_dst : &pIcode->ll()->src();
+    LLOperand *pm = ((stateTable[i].flg & TO_REG) != fdst) ? &pIcode->ll()->m_dst : &pIcode->ll()->src();
 
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
      * provide the value of this segment in the field segValue.
@@ -638,7 +641,7 @@ static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off
     }
     else
     {	/* no override, check indexed register */
-        if ((reg >= INDEX_BX_SI) && (reg == INDEX_BP_SI || reg == INDEX_BP_DI || reg == INDEX_BP))
+        if ((reg >= INDEX_BX_SI) and (reg == INDEX_BP_SI or reg == INDEX_BP_DI or reg == INDEX_BP))
         {
             pm->seg = rSS;		/* indexed on bp */
         }
@@ -650,7 +653,7 @@ static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off
 
     pm->regi = (eReg)reg;
     pm->off = (int16_t)off;
-    if (reg && reg < INDEX_BX_SI && (stateTable[i].flg & B))
+    if (reg and (reg < INDEX_BX_SI) and (stateTable[i].flg & B))
     {
         pm->regi = Machine_X86::subRegL(pm->regi);
     }
@@ -694,7 +697,7 @@ static void rm(int i)
             break;
     }
     //pIcode->insn.get_dest()->
-    if ((stateTable[i].flg & NSP) && (pIcode->ll()->src().getReg2()==rSP ||
+    if ((stateTable[i].flg & NSP) and (pIcode->ll()->src().getReg2()==rSP or
                                       pIcode->ll()->m_dst.getReg2()==rSP))
         pIcode->ll()->setFlags(NOT_HLL);
 }
@@ -717,7 +720,7 @@ static void segrm(int i)
 {
     int	reg = REG(*pInst) + rES;
 
-    if (reg > rDS || (reg == rCS && (stateTable[i].flg & TO_REG)))
+    if (reg > rDS or (reg == rCS and (stateTable[i].flg & TO_REG)))
         pIcode->ll()->setOpcode((llIcode)0); // setCBW because it has that index
     else {
         setAddress(i, false, 0, (int16_t)reg, 0);
@@ -793,7 +796,7 @@ static void memOnly(int )
  ****************************************************************************/
 static void memReg0(int i)
 {
-    if (REG(*pInst) || (*pInst & 0xC0) == 0xC0)
+    if (REG(*pInst) or (*pInst & 0xC0) == 0xC0)
         pIcode->ll()->setOpcode((llIcode)0);
     else
         rm(i);
@@ -810,7 +813,7 @@ static void immed(int i)
     pIcode->ll()->setOpcode(immedTable[REG(*pInst)]) ;
     rm(i);
 
-    if (pIcode->ll()->getOpcode() == iADD || pIcode->ll()->getOpcode() == iSUB)
+    if (pIcode->ll()->getOpcode() == iADD or pIcode->ll()->getOpcode() == iSUB)
         pIcode->ll()->clrFlags(NOT_HLL);	/* Allow ADD/SUB SP, immed */
 }
 
@@ -845,13 +848,13 @@ static void trans(int i)
 //    if(transTable[REG(*pInst)]==iPUSH) {
 //        printf("es");
 //    }
-    if ((uint8_t)REG(*pInst) < 2 || !(stateTable[i].flg & B)) { /* INC & DEC */
+    if ((uint8_t)REG(*pInst) < 2 or not (stateTable[i].flg & B)) { /* INC & DEC */
         ll->setOpcode(transTable[REG(*pInst)]);   /* valid on bytes */
         rm(i);
         ll->replaceSrc( pIcode->ll()->m_dst );
-        if (ll->match(iJMP) || ll->match(iCALL) || ll->match(iCALLF))
+        if (ll->match(iJMP) or ll->match(iCALL) or ll->match(iCALLF))
             ll->setFlags(NO_OPS);
-        else if (ll->match(iINC) || ll->match(iPUSH) || ll->match(iDEC))
+        else if (ll->match(iINC) or ll->match(iPUSH) or ll->match(iDEC))
             ll->setFlags(NO_SRC);
     }
 }
@@ -878,15 +881,15 @@ static void arith(int i)
         else
             data2(i);
     }
-    else if (!(opcode == iNOT || opcode == iNEG))
+    else if (not (opcode == iNOT or opcode == iNEG))
     {
         pIcode->ll()->replaceSrc( pIcode->ll()->m_dst );
         setAddress(i, true, 0, rAX, 0);			/* dst = AX  */
     }
-    else if (opcode == iNEG || opcode == iNOT)
+    else if (opcode == iNEG or opcode == iNOT)
         pIcode->ll()->setFlags(NO_SRC);
 
-    if ((opcode == iDIV) || (opcode == iIDIV))
+    if ((opcode == iDIV) or (opcode == iIDIV))
     {
         if ( not pIcode->ll()->testFlags(B) )
             pIcode->ll()->setFlags(IM_TMP_DST);
@@ -981,7 +984,7 @@ static void dispF(int i)
  ****************************************************************************/
 static void prefix(int )
 {
-    if (pIcode->ll()->getOpcode() == iREPE || pIcode->ll()->getOpcode() == iREPNE)
+    if (pIcode->ll()->getOpcode() == iREPE or pIcode->ll()->getOpcode() == iREPNE)
         RepPrefix = pIcode->ll()->getOpcode();
     else
         SegPrefix = pIcode->ll()->getOpcode();
@@ -1001,7 +1004,7 @@ static void strop(int )
 {
     if (RepPrefix)
     {
-        if ( pIcode->ll()->match(iCMPS) || pIcode->ll()->match(iSCAS) )
+        if ( pIcode->ll()->match(iCMPS) or pIcode->ll()->match(iSCAS) )
         {
             if(pIcode->insn.prefix &  insn_rep_zero)
             {
@@ -1075,7 +1078,7 @@ static void none2(int )
 static void checkInt(int )
 {
     uint16_t wOp = (uint16_t) pIcode->ll()->src().getImm2();
-    if ((wOp >= 0x34) && (wOp <= 0x3B))
+    if ((wOp >= 0x34) and (wOp <= 0x3B))
     {
         /* This is a Borland/Microsoft floating point emulation instruction.
             Treat as if it is an ESC opcode */

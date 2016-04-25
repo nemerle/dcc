@@ -1,5 +1,8 @@
-#include "dcc.h"
 #include "neg_idioms.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 using namespace std;
 
 
@@ -23,7 +26,7 @@ bool Idiom11::match (iICODE picode)
     for(int i=0; i<3; ++i)
         m_icodes[i]=picode++;
     type = m_icodes[0]->ll()->idType(DST);
-    if(type==CONSTANT || type == OTHER)
+    if(type==CONSTANT or type == OTHER)
         return false;
     /* Check NEG reg/mem
      *       SBB reg/mem, 0*/
@@ -32,7 +35,7 @@ bool Idiom11::match (iICODE picode)
     switch (type)
     {
         case GLOB_VAR:
-            if ((m_icodes[2]->ll()->m_dst.segValue == m_icodes[0]->ll()->m_dst.segValue) &&
+            if ((m_icodes[2]->ll()->m_dst.segValue == m_icodes[0]->ll()->m_dst.segValue) and
                     (m_icodes[2]->ll()->m_dst.off == m_icodes[0]->ll()->m_dst.off))
                 return true;
             break;
@@ -83,11 +86,11 @@ bool Idiom16::match (iICODE picode)
         m_icodes[i]=picode++;
 
     uint8_t regi = m_icodes[0]->ll()->m_dst.regi;
-    if ((regi >= rAX) && (regi < INDEX_BX_SI))
+    if ((regi >= rAX) and (regi < INDEX_BX_SI))
     {
-        if (m_icodes[1]->ll()->match(iSBB) && m_icodes[2]->ll()->match(iINC))
-            if ((m_icodes[1]->ll()->m_dst.regi == (m_icodes[1]->ll()->src().getReg2())) &&
-                    m_icodes[1]->ll()->match((eReg)regi) &&
+        if (m_icodes[1]->ll()->match(iSBB) and m_icodes[2]->ll()->match(iINC))
+            if ((m_icodes[1]->ll()->m_dst.regi == (m_icodes[1]->ll()->src().getReg2())) and
+                    m_icodes[1]->ll()->match((eReg)regi) and
                     m_icodes[2]->ll()->match((eReg)regi))
                 return true;
     }

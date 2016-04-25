@@ -2,6 +2,10 @@
  * Description   : Performs control flow analysis on the CFG
  * (C) Cristina Cifuentes
  ********************************************************************/
+
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 #include <boost/range/algorithm.hpp>
 #include <algorithm>
 #include <list>
@@ -10,15 +14,10 @@
 #include <string.h>
 #include <malloc.h>
 
-#include "dcc.h"
 
-//typedef struct list {
-//    int         nodeIdx;
-//    struct list *next;
-//} nodeList;
 typedef std::list<int> nodeList; /* dfsLast index to the node */
 
-#define ancestor(a,b)	((a->dfsLastNum < b->dfsLastNum) && (a->dfsFirstNum < b->dfsFirstNum))
+#define ancestor(a,b)	((a->dfsLastNum < b->dfsLastNum) and (a->dfsFirstNum < b->dfsFirstNum))
 /* there is a path on the DFST from a to b if the a was first visited in a
  * dfs, and a was later visited than b when doing the last visit of each
  * node. */
@@ -48,7 +47,7 @@ static int commonDom (int currImmDom, int predImmDom, Function * pProc)
     if (predImmDom == NO_DOM)   /* predecessor is the root */
         return (currImmDom);
 
-    while ((currImmDom != NO_DOM) && (predImmDom != NO_DOM) &&
+    while ((currImmDom != NO_DOM) and (predImmDom != NO_DOM) and
            (currImmDom != predImmDom))
     {
         if (currImmDom < predImmDom)
@@ -121,7 +120,7 @@ static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
         for (TYPEADR_TYPE &typeaddr: pProc->m_dfsLast[loop_node]->edges)
         {
             int succ = typeaddr.BBptr->dfsLastNum;
-            if ((! inList(loopNodes, succ)) && (succ < head->loopFollow))
+            if ((not inList(loopNodes, succ)) and (succ < head->loopFollow))
                 head->loopFollow = succ;
         }
     }
@@ -149,7 +148,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
             continue;
 
         immedDom = pProc->m_dfsLast[i]->immedDom;
-        if (inList (loopNodes, immedDom) && inInt(pProc->m_dfsLast[i], intNodes))
+        if (inList (loopNodes, immedDom) and inInt(pProc->m_dfsLast[i], intNodes))
         {
             insertList (loopNodes, i);
             if (pProc->m_dfsLast[i]->loopHead == NO_NODE)/*not in other loop*/
@@ -163,9 +162,9 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
     /* Determine type of loop and follow node */
     intNodeType = head->nodeType;
     if (latchNode->nodeType == TWO_BRANCH)
-        if ((intNodeType == TWO_BRANCH) || (latchNode == head))
-            if ((latchNode == head) ||
-                (inList (loopNodes, head->edges[THEN].BBptr->dfsLastNum) &&
+        if ((intNodeType == TWO_BRANCH) or (latchNode == head))
+            if ((latchNode == head) or
+                (inList (loopNodes, head->edges[THEN].BBptr->dfsLastNum) and
                  inList (loopNodes, head->edges[ELSE].BBptr->dfsLastNum)))
             {
                 head->loopType = eNodeHeaderType::REPEAT_TYPE;
@@ -299,9 +298,9 @@ void Function::structLoops(derSeq *derivedG)
             for (size_t i = 0; i < intHead->inEdges.size(); i++)
             {
                 pred = intHead->inEdges[i];
-                if (inInt(pred, intNodes) && isBackEdge(pred, intHead))
+                if (inInt(pred, intNodes) and isBackEdge(pred, intHead))
                 {
-                    if (! latchNode)
+                    if (nullptr == latchNode)
                         latchNode = pred;
                     else if (pred->dfsLastNum > latchNode->dfsLastNum)
                         latchNode = pred;
@@ -314,7 +313,7 @@ void Function::structLoops(derSeq *derivedG)
                 /* Check latching node is at the same nesting level of case
                  * statements (if any) and that the node doesn't belong to
                  * another loop.                   */
-                if ((latchNode->caseHead == intHead->caseHead) &&
+                if ((latchNode->caseHead == intHead->caseHead) and
                         (latchNode->loopHead == NO_NODE))
                 {
                     intHead->latchNode = latchNode->dfsLastNum;
@@ -353,7 +352,7 @@ static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
 
     pBB->traversed = DFS_CASE;
     current = pBB->dfsLastNum;
-    if ((current != tail) && (pBB->nodeType != MULTI_BRANCH) && (inList (l, pBB->immedDom)))
+    if ((current != tail) and (pBB->nodeType != MULTI_BRANCH) and (inList (l, pBB->immedDom)))
     {
         insertList (l, current);
         pBB->caseHead = head;
@@ -385,7 +384,7 @@ void Function::structCases()
                          * the current header node, and is not a successor.    */
         for (size_t j = i + 2; j < numBBs; j++)
         {
-            if ((!successor(j, i, this)) && (m_dfsLast[j]->immedDom == i))
+            if ((not successor(j, i, this)) and (m_dfsLast[j]->immedDom == i))
             {
                 if (exitNode == NO_NODE)
                 {
@@ -446,7 +445,7 @@ void Function::structIfs ()
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
 
-        if ((currNode->nodeType == TWO_BRANCH) && (!currNode->back().ll()->testFlags(JX_LOOP)))
+        if ((currNode->nodeType == TWO_BRANCH) and (not currNode->back().ll()->testFlags(JX_LOOP)))
         {
             followInEdges = 0;
             follow = 0;
@@ -468,7 +467,7 @@ void Function::structIfs ()
 
             /* Determine follow according to number of descendants
                          * immediately dominated by this node  */
-            if ((follow != 0) && (followInEdges > 1))
+            if ((follow != 0) and (followInEdges > 1))
             {
                 currNode->ifFollow = follow;
                 if (!unresolved.empty())
@@ -617,33 +616,33 @@ void Function::compoundCond()
 
             change = true; //assume change
 
-            /* Check (X || Y) case */
-            if ((thenBB->nodeType == TWO_BRANCH) && (thenBB->numHlIcodes == 1) &&
-                (thenBB->inEdges.size() == 1) && (thenBB->edges[ELSE].BBptr == elseBB))
+            /* Check (X or Y) case */
+            if ((thenBB->nodeType == TWO_BRANCH) and (thenBB->numHlIcodes == 1) and
+                (thenBB->inEdges.size() == 1) and (thenBB->edges[ELSE].BBptr == elseBB))
             {
                 if(Case_X_or_Y(pbb, thenBB, elseBB))
                     --i;
             }
 
-            /* Check (!X && Y) case */
-            else if ((thenBB->nodeType == TWO_BRANCH) && (thenBB->numHlIcodes == 1) &&
-                     (thenBB->inEdges.size() == 1) && (thenBB->edges[THEN].BBptr == elseBB))
+            /* Check (!X and Y) case */
+            else if ((thenBB->nodeType == TWO_BRANCH) and (thenBB->numHlIcodes == 1) and
+                     (thenBB->inEdges.size() == 1) and (thenBB->edges[THEN].BBptr == elseBB))
             {
                 if(Case_notX_and_Y(pbb, thenBB, elseBB))
                     --i;
             }
 
-            /* Check (X && Y) case */
-            else if ((elseBB->nodeType == TWO_BRANCH) && (elseBB->numHlIcodes == 1) &&
-                     (elseBB->inEdges.size()==1) && (elseBB->edges[THEN].BBptr == thenBB))
+            /* Check (X and Y) case */
+            else if ((elseBB->nodeType == TWO_BRANCH) and (elseBB->numHlIcodes == 1) and
+                     (elseBB->inEdges.size()==1) and (elseBB->edges[THEN].BBptr == thenBB))
             {
                 if(Case_X_and_Y(pbb, thenBB, elseBB ))
                     --i;
             }
 
-            /* Check (!X || Y) case */
-            else if ((elseBB->nodeType == TWO_BRANCH) && (elseBB->numHlIcodes == 1) &&
-                     (elseBB->inEdges.size() == 1) && (elseBB->edges[ELSE].BBptr == thenBB))
+            /* Check (!X or Y) case */
+            else if ((elseBB->nodeType == TWO_BRANCH) and (elseBB->numHlIcodes == 1) and
+                     (elseBB->inEdges.size() == 1) and (elseBB->edges[ELSE].BBptr == thenBB))
             {
                 if(Case_notX_or_Y(pbb, thenBB, elseBB ))
                     --i;

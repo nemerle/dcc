@@ -4,10 +4,18 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
+#include "dcc.h"
+
+#include "msvc_fixes.h"
+#include "project.h"
+#include "CallGraph.h"
+#include "DccFrontend.h"
+
 #include <cstring>
 #include <iostream>
 #include <QtCore/QCoreApplication>
 #include <QCommandLineParser>
+
 #ifdef LLVM_EXPERIMENTAL
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/CommandLine.h>
@@ -26,10 +34,6 @@
 #endif
 #include <QtCore/QFile>
 
-#include "dcc.h"
-#include "project.h"
-#include "CallGraph.h"
-#include "DccFrontend.h"
 
 /* Global variables - extern to other modules */
 extern QString asm1_name, asm2_name;     /* Assembler output filenames     */
@@ -164,7 +168,7 @@ void setupOptions(QCoreApplication &app) {
     option.filename = args.first();
     if(parser.isSet(targetFileOption))
         asm1_name = asm2_name = parser.value(targetFileOption);
-    else if(option.asm1 || option.asm2) {
+    else if(option.asm1 or option.asm2) {
         asm1_name = option.filename+".a1";
         asm2_name = option.filename+".a2";
     }

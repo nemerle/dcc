@@ -6,14 +6,16 @@
  */
 
 #pragma once
+#include "msvc_fixes.h"
+#include "types.h"
+#include "Enums.h"
+#include "machine_x86.h"
+
 #include <stdint.h>
 #include <vector>
 #include <list>
 #include <set>
 #include <algorithm>
-#include "types.h"
-#include "Enums.h"
-#include "machine_x86.h"
 
 /* Type definition */
 // this array has to stay in-order of addition i.e. not std::set<iICODE,std::less<iICODE> >
@@ -105,11 +107,11 @@ public:
     protected:
         LONG_STKID_TYPE	longStkId;  /* For TYPE_LONG_(UN)SIGN on the stack */
     public:
-        eReg		regi;       /* For TYPE_BYTE(uint16_t)_(UN)SIGN registers   */
-        struct {                    /* For TYPE_BYTE(uint16_t)_(UN)SIGN on the stack */
+        eReg		regi;       /* For TYPE_BYTE(WORD)_(UN)SIGN registers   */
+        struct {                /* For TYPE_BYTE(WORD)_(UN)SIGN on the stack */
             uint8_t	regOff;     /*    register offset (if any)              */
             int		off;        /*    offset from BP            		*/
-        }               bwId;
+        } bwId;
         BWGLB_TYPE	bwGlb;	/* For TYPE_BYTE(uint16_t)_(UN)SIGN globals		 */
         LONGGLB_TYPE    longGlb;
         struct {			/* For TYPE_LONG_(UN)SIGN constants                     */
@@ -118,21 +120,22 @@ public:
         } longKte;
         ID_UNION() { /*new (&longStkId) LONG_STKID_TYPE();*/}
     } id;
-    LONGID_TYPE &           longId() {assert(isLong() && loc==REG_FRAME); return m_longId;}
-    const LONGID_TYPE &     longId() const {assert(isLong() && loc==REG_FRAME); return m_longId;}
-    LONG_STKID_TYPE &       longStkId() {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
-    const LONG_STKID_TYPE & longStkId() const {assert(isLong() && loc==STK_FRAME); return id.longStkId;}
+
+    LONGID_TYPE &           longId() {assert(isLong() and loc==REG_FRAME); return m_longId;}
+    const LONGID_TYPE &     longId() const {assert(isLong() and loc==REG_FRAME); return m_longId;}
+    LONG_STKID_TYPE &       longStkId() {assert(isLong() and loc==STK_FRAME); return id.longStkId;}
+    const LONG_STKID_TYPE & longStkId() const {assert(isLong() and loc==STK_FRAME); return id.longStkId;}
                             ID();
                             ID(hlType t, frameType f);
                             ID(hlType t, const LONGID_TYPE &s);
                             ID(hlType t, const LONG_STKID_TYPE &s);
                             ID(hlType t, const LONGGLB_TYPE &s);
-    bool                    isSigned() const { return (type==TYPE_BYTE_SIGN)||(type==TYPE_WORD_SIGN)||(type==TYPE_LONG_SIGN);}
+    bool                    isSigned() const { return (type==TYPE_BYTE_SIGN) or (type==TYPE_WORD_SIGN) or (type==TYPE_LONG_SIGN);}
     uint16_t                typeBitsize() const
                             {
                                 return TypeContainer::typeSize(type)*8;
                             }
-    bool                    isLong() const { return (type==TYPE_LONG_UNSIGN)||(type==TYPE_LONG_SIGN); }
+    bool                    isLong() const { return (type==TYPE_LONG_UNSIGN) or (type==TYPE_LONG_SIGN); }
     void                    setLocalName(int i)
                             {
                                 char buf[32];

@@ -4,6 +4,12 @@
  * Purpose:	Back-end module.  Generates C code for each procedure.
  * (C) Cristina Cifuentes
  ****************************************************************************/
+#include "dcc.h"
+#include "msvc_fixes.h"
+#include "disassem.h"
+#include "project.h"
+#include "CallGraph.h"
+
 #include <QDir>
 #include <QFile>
 #include <cassert>
@@ -17,14 +23,12 @@
 #include <sstream>
 #include <string.h>
 #include <stdio.h>
-#include "dcc.h"
-#include "disassem.h"
-#include "project.h"
-#include "CallGraph.h"
+
 using namespace boost;
 using namespace boost::adaptors;
-bundle cCode;			/* Procedure declaration and code */
 using namespace std;
+
+bundle cCode;			/* Procedure declaration and code */
 
 /* Returns a unique index to the next label */
 int getNextLabel()
@@ -252,8 +256,8 @@ void Function::codeGen (std::ostream &fs)
             if (refId.loc == REG_FRAME)
             {
                 /* Register variables are assigned to a local variable */
-                if (((flg & SI_REGVAR) && (refId.id.regi == rSI)) ||
-                        ((flg & DI_REGVAR) && (refId.id.regi == rDI)))
+                if (((flg & SI_REGVAR) and (refId.id.regi == rSI)) or
+                        ((flg & DI_REGVAR) and (refId.id.regi == rDI)))
                 {
                     refId.setLocalName(++numLoc);
                     ostr << "int "<<refId.name<<";\n";
@@ -315,7 +319,7 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, std::ostream &_ios)
     //	IFace.Yield();			/* This is a good place to yield to other apps */
 
     /* Check if this procedure has been processed already */
-    if ((pcallGraph->proc->flg & PROC_OUTPUT) ||
+    if ((pcallGraph->proc->flg & PROC_OUTPUT) or
         (pcallGraph->proc->flg & PROC_ISLIB))
         return;
     pcallGraph->proc->flg |= PROC_OUTPUT;

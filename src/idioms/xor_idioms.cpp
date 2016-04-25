@@ -1,5 +1,8 @@
-#include "dcc.h"
 #include "xor_idioms.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 using namespace std;
 
 /*****************************************************************************
@@ -28,11 +31,11 @@ bool Idiom21::match (iICODE picode)
 
     dst = &m_icodes[0]->ll()->m_dst;
     src = &m_icodes[0]->ll()->src();
-    if ((dst->regi == src->getReg2()) && (dst->getReg2() > 0) && (dst->getReg2() < INDEX_BX_SI))
+    if ((dst->regi == src->getReg2()) and (dst->getReg2() > 0) and (dst->getReg2() < INDEX_BX_SI))
     {
-        if ((dst->getReg2() == rDX) && m_icodes[1]->ll()->match(rAX))
+        if ((dst->getReg2() == rDX) and m_icodes[1]->ll()->match(rAX))
             return true;
-        if ((dst->getReg2() == rCX) && m_icodes[1]->ll()->match(rBX))
+        if ((dst->getReg2() == rCX) and m_icodes[1]->ll()->match(rBX))
             return true;
     }
     return false;
@@ -67,7 +70,7 @@ bool Idiom7::match(iICODE picode)
     src = &picode->ll()->src();
     if (dst->regi == 0)                 /* global variable */
     {
-        if ((dst->segValue == src->segValue) && (dst->off == src->off))
+        if ((dst->segValue == src->segValue) and (dst->off == src->off))
             return true;
     }
     else if (dst->regi < INDEX_BX_SI)     /* register */
@@ -75,9 +78,9 @@ bool Idiom7::match(iICODE picode)
         if (dst->regi == src->regi)
             return true;
     }
-    else if ((dst->off) && (dst->seg == rSS) && (dst->regi == INDEX_BP)) /* offset from BP */
+    else if ((dst->off) and (dst->seg == rSS) and (dst->regi == INDEX_BP)) /* offset from BP */
     {
-        if ((dst->off == src->off) && (dst->seg == src->seg) && (dst->regi == src->regi))
+        if ((dst->off == src->off) and (dst->seg == src->seg) and (dst->regi == src->regi))
             return true;
     }
     return false;
@@ -114,8 +117,8 @@ bool Idiom10::match(iICODE pIcode)
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
     /* Check OR reg, reg */
-    if (not m_icodes[0]->ll()->testFlags(I)  &&
-            m_icodes[0]->ll()->src().isReg() &&
+    if (not m_icodes[0]->ll()->testFlags(I)  and
+            m_icodes[0]->ll()->src().isReg() and
             (m_icodes[0]->ll()->src().getReg2() == m_icodes[0]->ll()->m_dst.getReg2()))
         if (m_icodes[1]->ll()->match(iJNE)) //.conditionalJump()
         {

@@ -1,6 +1,10 @@
-#include <cassert>
 #include "machine_x86.h"
+
+#include "msvc_fixes.h"
 #include "icode.h"
+
+#include <cassert>
+
 // Index registers **** temp solution
 static const std::string regNames[] = {
     "undef",
@@ -89,11 +93,11 @@ const std::string &Machine_X86::floatOpName(unsigned r)
 
 bool Machine_X86::physicalReg(eReg r)
 {
-    return (r>=rAX) && (r<rTMP);
+    return (r>=rAX) and (r<rTMP);
 }
 bool Machine_X86::isMemOff(eReg r)
 {
-    return r == 0 || r >= INDEX_BX_SI;
+    return r == 0 or r >= INDEX_BX_SI;
 }
 //TODO: Move these to Machine_X86
 eReg Machine_X86::subRegH(eReg reg)
@@ -106,18 +110,18 @@ eReg Machine_X86::subRegL(eReg reg)
 }
 bool Machine_X86::isSubRegisterOf(eReg reg,eReg parent)
 {
-    if ((parent < rAX) || (parent > rBX))
+    if ((parent < rAX) or (parent > rBX))
         return false; // only AX -> BX are coverede by subregisters
-    return ((reg==subRegH(parent)) || (reg == subRegL(parent)));
+    return ((reg==subRegH(parent)) or (reg == subRegL(parent)));
 }
 bool Machine_X86::hasSubregisters(eReg reg)
 {
-    return ((reg >= rAX) && (reg <= rBX));
+    return ((reg >= rAX) and (reg <= rBX));
 }
 
 bool Machine_X86::isPartOfComposite(eReg reg)
 {
-    return ((reg >= rAL) && (reg <= rBH));
+    return ((reg >= rAL) and (reg <= rBH));
 }
 
 eReg Machine_X86::compositeParent(eReg reg)

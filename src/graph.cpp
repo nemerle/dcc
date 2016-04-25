@@ -3,14 +3,16 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
-#include <string.h>
+#include "graph.h"
+
+#include "msvc_fixes.h"
+#include "dcc.h"
+#include "project.h"
+
 #include <boost/range/rbegin.hpp>
 #include <boost/range/rend.hpp>
 #include <boost/range/adaptors.hpp>
-
-#include "dcc.h"
-#include "graph.h"
-#include "project.h"
+#include <string.h>
 
 using namespace std;
 using namespace boost;
@@ -105,7 +107,7 @@ void Function::createCFG()
             {
                 Function * p = ll->src().proc.proc;
                 pBB = BB::Create(current_range,  CALL_NODE, this);
-                if (p && not ((p->flg) & TERMINATES) )
+                if (p and not ((p->flg) & TERMINATES) )
                     pBB->addOutEdge(nextIcode->loc_ip);
                 break;
             }
@@ -210,7 +212,7 @@ void Function::compressCFG()
          * (Un)Conditional -> Unconditional jump  */
     for (BB *pBB : m_actual_cfg) //m_cfg
     {
-        if(pBB->inEdges.empty() || (pBB->nodeType != ONE_BRANCH && pBB->nodeType != TWO_BRANCH))
+        if(pBB->inEdges.empty() or (pBB->nodeType != ONE_BRANCH and pBB->nodeType != TWO_BRANCH))
             continue;
         for (TYPEADR_TYPE &edgeRef : pBB->edges)
         {
@@ -272,7 +274,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
 {
     marker += (int)DFS_JMP;
 
-    while (pBB->nodeType == ONE_BRANCH && pBB->size() == 1)
+    while (pBB->nodeType == ONE_BRANCH and pBB->size() == 1)
     {
         if (pBB->traversed != marker)
         {
@@ -299,7 +301,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
             do {
                 pBB = pBB->edges[0].BBptr;
                 pBB->inEdges.pop_back(); // was --numInedges
-                if (! pBB->inEdges.empty())
+                if (not pBB->inEdges.empty())
                 {
                     pBB->front().ll()->setFlags(NO_CODE);
                     pBB->front().invalidate();
@@ -321,11 +323,11 @@ BB *BB::rmJMP(int marker, BB * pBB)
 void BB::mergeFallThrough( CIcodeRec &Icode)
 {
     BB *	pChild;
-    if (!this)
+    if (nullptr==this)
     {
         printf("mergeFallThrough on empty BB!\n");
     }
-    while (nodeType == FALL_NODE || nodeType == ONE_BRANCH)
+    while (nodeType == FALL_NODE or nodeType == ONE_BRANCH)
     {
         pChild = edges[0].BBptr;
         /* Jump to next instruction can always be removed */

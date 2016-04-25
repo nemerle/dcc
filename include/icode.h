@@ -3,6 +3,19 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 #pragma once
+#include "msvc_fixes.h"
+#include "BinaryImage.h"
+#include "libdis.h"
+#include "Enums.h"
+#include "state.h"			// State depends on INDEXBASE, but later need STATE
+#include "CallConvention.h"
+
+#include <llvm/ADT/ilist.h>
+#include <llvm/ADT/ilist_node.h>
+#include <llvm/MC/MCInst.h>
+#include <llvm/IR/Instruction.h>
+#include <boost/range/iterator_range.hpp>
+
 #include <memory>
 #include <vector>
 #include <list>
@@ -10,15 +23,6 @@
 #include <set>
 #include <algorithm>
 #include <initializer_list>
-#include <llvm/ADT/ilist.h>
-#include <llvm/ADT/ilist_node.h>
-#include <llvm/MC/MCInst.h>
-#include <llvm/IR/Instruction.h>
-#include <boost/range/iterator_range.hpp>
-#include "libdis.h"
-#include "Enums.h"
-#include "state.h"			// State depends on INDEXBASE, but later need STATE
-#include "CallConvention.h"
 
 //enum condId;
 
@@ -275,12 +279,12 @@ struct LLOperand
     }
     bool operator==(const LLOperand &with) const
     {
-        return (seg==with.seg) &&
-                (segOver==with.segOver) &&
-                (segValue==with.segValue) &&
-                (regi == with.regi) &&
-                (off == with.off) &&
-                (opz==with.opz) &&
+        return (seg==with.seg) and
+                (segOver==with.segOver) and
+                (segValue==with.segValue) and
+                (regi == with.regi) and
+                (off == with.off) and
+                (opz==with.opz) and
                 (proc.proc==with.proc.proc);
     }
     int64_t getImm2() const {return opz;}
@@ -330,7 +334,7 @@ public:
     int         hllLabNum;      /* label # for hll codegen      */
     bool conditionalJump()
     {
-        return (getOpcode() >= iJB) && (getOpcode() < iJCXZ);
+        return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
     }
     bool testFlags(uint32_t x) const { return (flg & x)!=0;}
     void  setFlags(uint32_t flag) {flg |= flag;}
@@ -366,11 +370,11 @@ public:
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
-        return (getOpcode()==op)&&(m_dst.regi==dest)&&(m_src.regi==src_reg);
+        return (getOpcode()==op) and (m_dst.regi==dest) and (m_src.regi==src_reg);
     }
     bool match(eReg dest,eReg src_reg)
     {
-        return (m_dst.regi==dest)&&(m_src.regi==src_reg);
+        return (m_dst.regi==dest) and (m_src.regi==src_reg);
     }
     bool match(eReg dest)
     {
@@ -460,14 +464,14 @@ public:
     template<int TYPE>
     struct TypeFilter
     {
-        bool operator()(ICODE *ic) {return ic->type==HIGH_LEVEL;}
-        bool operator()(ICODE &ic) {return ic.type==HIGH_LEVEL;}
+        bool operator()(ICODE *ic) {return ic->type==TYPE;}
+        bool operator()(ICODE &ic) {return ic.type==TYPE;}
     };
     template<int TYPE>
     struct TypeAndValidFilter
     {
-        bool operator()(ICODE *ic) {return (ic->type==HIGH_LEVEL)&&(ic->valid());}
-        bool operator()(ICODE &ic) {return (ic.type==HIGH_LEVEL)&&ic.valid();}
+        bool operator()(ICODE *ic) {return (ic->type==TYPE) and (ic->valid());}
+        bool operator()(ICODE &ic) {return (ic.type==TYPE) and ic.valid();}
     };
     static TypeFilter<HIGH_LEVEL> select_high_level;
     static TypeAndValidFilter<HIGH_LEVEL> select_valid_high_level;
@@ -506,7 +510,7 @@ public:
                 if(iter==uses.end())
                     return;
                 uses.erase(iter);
-                assert("Same user more then once!" && uses.end()==std::find(uses.begin(),uses.end(),us));
+                assert("Same user more then once!" and uses.end()==std::find(uses.begin(),uses.end(),us));
             }
 
         };

@@ -1,4 +1,7 @@
 #include "LIB_PatternCollector.h"
+
+#include "msvc_fixes.h"
+
 #include <cstring>
 #include <cstring>
 /** \note there is an untested assumption that the *first* segment definition
@@ -88,7 +91,7 @@ int LIB_PatternCollector::readSyms(FILE *fl)
             ++segnum;
 
             b = readByte(fl);		/* Class name index */
-            if ((b == codeLNAMES) && (codeSEGDEF == NONE))
+            if ((b == codeLNAMES) and (codeSEGDEF == NONE))
             {
                 /* This is the segment defining the code class */
                 codeSEGDEF = segnum;

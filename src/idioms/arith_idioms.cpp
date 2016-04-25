@@ -1,5 +1,8 @@
-#include "dcc.h"
 #include "arith_idioms.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 using namespace std;
 
 /*****************************************************************************
@@ -105,7 +108,7 @@ bool Idiom18::match(iICODE picode)
     if(not m_icodes[0]->ll()->matchWithRegDst(iMOV) )
         return false;
     regi = m_icodes[0]->ll()->m_dst.regi;
-    if( not ( m_icodes[2]->ll()->match(iCMP,regi)  &&
+    if( not ( m_icodes[2]->ll()->match(iCMP,regi)  and
               m_icodes[3]->ll()->conditionalJump() ) )
         return false;
     // Simple matching finished, select apropriate matcher based on dst type
@@ -118,9 +121,9 @@ bool Idiom18::match(iICODE picode)
     else if ( m_icodes[1]->ll()->m_dst.isReg() )	/* register */
     {
         m_idiom_type = 1;
-//        if ((m_icodes[1]->ll()->dst.regi == rSI) && (m_func->flg & SI_REGVAR))
+//        if ((m_icodes[1]->ll()->dst.regi == rSI) and (m_func->flg & SI_REGVAR))
 //            m_idiom_type = 1;
-//        else if ((m_icodes[1]->ll()->dst.regi == rDI) && (m_func->flg & DI_REGVAR))
+//        else if ((m_icodes[1]->ll()->dst.regi == rDI) and (m_func->flg & DI_REGVAR))
 //            m_idiom_type = 1;
     }
     else if (m_icodes[1]->ll()->m_dst.off)		/* local variable */
@@ -204,8 +207,8 @@ bool Idiom19::match(iICODE picode)
         /* not supported yet */ ;
     else if ( m_icodes[0]->ll()->m_dst.isReg() ) /* register */
     {
-        //        if (((picode->ll()->dst.regi == rSI) && (pproc->flg & SI_REGVAR)) ||
-        //            ((picode->ll()->dst.regi == rDI) && (pproc->flg & DI_REGVAR)))
+        //        if (((picode->ll()->dst.regi == rSI) and (pproc->flg & SI_REGVAR)) or
+        //            ((picode->ll()->dst.regi == rDI) and (pproc->flg & DI_REGVAR)))
         return true;
     }
     else if (m_icodes[0]->ll()->m_dst.off)		/* stack variable */
@@ -271,9 +274,9 @@ bool Idiom20::match(iICODE picode)
     else if ( ll_dest.isReg() )	/* register */
     {
         type = 1;
-//        if ((ll_dest.regi == rSI) && (m_func->flg & SI_REGVAR))
+//        if ((ll_dest.regi == rSI) and (m_func->flg & SI_REGVAR))
 //            type = 1;
-//        else if ((ll_dest.regi == rDI) && (m_func->flg & DI_REGVAR))
+//        else if ((ll_dest.regi == rDI) and (m_func->flg & DI_REGVAR))
 //            type = 1;
     }
     else if (ll_dest.off)		/* local variable */
@@ -286,7 +289,7 @@ bool Idiom20::match(iICODE picode)
     }
     regi = m_icodes[1]->ll()->m_dst.regi;
     const LLOperand &mov_src(m_icodes[1]->ll()->src());
-    if (m_icodes[2]->ll()->match(iCMP,(eReg)regi) && m_icodes[3]->ll()->conditionalJump())
+    if (m_icodes[2]->ll()->match(iCMP,(eReg)regi) and m_icodes[3]->ll()->conditionalJump())
     {
         switch(type)
         {

@@ -12,6 +12,7 @@
  */
 #include "perfhlib.h"
 #include "PatternCollector.h"
+#include "msvc_fixes.h"
 
 #include <stdio.h>
 #include <cassert>
@@ -38,9 +39,6 @@ static  bool    *visited;   /* Array of bools: whether visited */
 static  bool    *deleted;   /* Array of bools: whether deleted */
 
 /* Private prototypes */
-static void initGraph(void);
-static void addToGraph(int e, int v1, int v2);
-static bool isCycle(void);
 static void duplicateKeys(int v1, int v2);
 
 void PerfectHash::setHashParams(int _NumEntry, int _EntryLen, int _SetSize, char _SetMin,
@@ -157,7 +155,7 @@ void PerfectHash::map(PatternCollector *collector)
             }
             addToGraph(numEdges++, f1, f2);
         }
-        if (cycle || (cycle = isCycle()))   /* OK - is there a cycle? */
+        if (cycle or (cycle = isCycle()))   /* OK - is there a cycle? */
         {
             printf("Iteration %d\n", ++c);
         }
@@ -314,7 +312,7 @@ bool PerfectHash::isCycle(void)
     }
     for (v=1; v <= NumVert; v++)
     {
-        if (!visited[v])
+        if (not visited[v])
         {
             if (DFS(-32767, v))
             {
@@ -415,7 +413,7 @@ duplicateKeys(int v1, int v2)
             u += T1[keys[j] - SetMin];
         }
         u %= NumVert;
-        if ((u != v1) && (u != v2)) continue;
+        if ((u != v1) and (u != v2)) continue;
 
         v = 0;
         for (j=0; j < EntryLen; j++)
@@ -425,7 +423,7 @@ duplicateKeys(int v1, int v2)
         }
         v %= NumVert;
 
-        if ((v == v2) || (v == v1))
+        if ((v == v2) or (v == v1))
         {
             printf("Entry #%d key: ", i+1);
             for (j=0; j < EntryLen; j++) printf("%02X ", keys[j]);

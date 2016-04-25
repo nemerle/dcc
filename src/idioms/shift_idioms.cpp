@@ -1,5 +1,8 @@
-#include "dcc.h"
 #include "shift_idioms.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 using namespace std;
 
 
@@ -18,8 +21,8 @@ bool Idiom8::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src().getImm2() == 1))
-        if ( m_icodes[1]->ll()->match(iRCR,I) &&
+    if (m_icodes[0]->ll()->testFlags(I) and (m_icodes[0]->ll()->src().getImm2() == 1))
+        if ( m_icodes[1]->ll()->match(iRCR,I) and
             (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;
@@ -107,8 +110,8 @@ bool Idiom12::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src().getImm2() == 1))
-        if (m_icodes[1]->ll()->match(iRCL,I) && (m_icodes[1]->ll()->src().getImm2() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) and (m_icodes[0]->ll()->src().getImm2() == 1))
+        if (m_icodes[1]->ll()->match(iRCL,I) and (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;
 }
@@ -147,8 +150,8 @@ bool Idiom9::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) && (m_icodes[0]->ll()->src().getImm2() == 1))
-        if (m_icodes[1]->ll()->match(iRCR,I) && (m_icodes[1]->ll()->src().getImm2() == 1))
+    if (m_icodes[0]->ll()->testFlags(I) and (m_icodes[0]->ll()->src().getImm2() == 1))
+        if (m_icodes[1]->ll()->match(iRCR,I) and (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;
 }

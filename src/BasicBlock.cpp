@@ -1,11 +1,15 @@
+#include "BasicBlock.h"
+
+#include "msvc_fixes.h"
+#include "Procedure.h"
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 #include <cassert>
 #include <string>
 #include <boost/range/rbegin.hpp>
 #include <boost/range/rend.hpp>
 #include <boost/range/adaptors.hpp>
-#include "BasicBlock.h"
-#include "Procedure.h"
-#include "dcc.h"
 using namespace std;
 using namespace boost;
 
@@ -189,8 +193,8 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
 }
 bool BB::isEndOfPath(int latch_node_idx) const
 {
-    return nodeType == RETURN_NODE || nodeType == TERMINATE_NODE ||
-           nodeType == NOWHERE_NODE || (dfsLastNum == latch_node_idx);
+    return nodeType == RETURN_NODE or nodeType == TERMINATE_NODE or
+           nodeType == NOWHERE_NODE or dfsLastNum == latch_node_idx;
 }
 void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode, int _ifFollow)
 {
@@ -202,7 +206,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             repCond;					/* Repeat condition for while() */
 
     /* Check if this basic block should be analysed */
-    if ((_ifFollow != UN_INIT) && (this == pProc->m_dfsLast[_ifFollow]))
+    if ((_ifFollow != UN_INIT) and (this == pProc->m_dfsLast[_ifFollow]))
         return;
 
     if (wasTraversedAtLevel(DFS_ALPHA))
@@ -380,7 +384,7 @@ void BB::writeBB(std::ostream &ostr,int lev, Function * pProc, int *numLoc)
 
     for(ICODE &pHli : instructions)
     {
-        if ((pHli.type == HIGH_LEVEL) && ( pHli.valid() )) //TODO: use filtering range here.
+        if ((pHli.type == HIGH_LEVEL) and ( pHli.valid() )) //TODO: use filtering range here.
         {
             std::string line = pHli.hl()->write1HlIcode(pProc, numLoc);
             if (!line.empty())

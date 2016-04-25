@@ -4,14 +4,11 @@
  ****************************************************************************/
 
 //#include <llvm/Config/llvm-config.h>
-//#if( (LLVM_VERSION_MAJOR==3 ) && (LLVM_VERSION_MINOR>3) )
+//#if( (LLVM_VERSION_MAJOR==3 ) and (LLVM_VERSION_MINOR>3) )
 //#include <llvm/IR/PatternMatch.h>
 //#else
 //#include <llvm/Support/PatternMatch.h>
 //#endif
-#include <boost/iterator/filter_iterator.hpp>
-#include <cstring>
-#include <deque>
 #include "idiom.h"
 #include "idiom1.h"
 #include "epilogue_idioms.h"
@@ -22,6 +19,11 @@
 #include "shift_idioms.h"
 #include "arith_idioms.h"
 #include "dcc.h"
+#include "msvc_fixes.h"
+
+#include <boost/iterator/filter_iterator.hpp>
+#include <cstring>
+#include <deque>
 /*****************************************************************************
  * JmpInst - Returns true if opcode is a conditional or unconditional jump
  ****************************************************************************/
@@ -122,11 +124,11 @@ void Function::findIdioms()
             /* Check for library functions that return a long register.
                          * Propagate this result */
             if (pIcode->ll()->src().proc.proc != nullptr)
-                if ((pIcode->ll()->src().proc.proc->flg & PROC_ISLIB) &&
+                if ((pIcode->ll()->src().proc.proc->flg & PROC_ISLIB) and
                         (pIcode->ll()->src().proc.proc->flg & PROC_IS_FUNC))
                 {
                     if ((pIcode->ll()->src().proc.proc->retVal.type==TYPE_LONG_SIGN)
-                            || (pIcode->ll()->src().proc.proc->retVal.type == TYPE_LONG_UNSIGN))
+                            or (pIcode->ll()->src().proc.proc->retVal.type == TYPE_LONG_UNSIGN))
                         localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), pIcode/*ip*/);
                 }
 
@@ -209,7 +211,7 @@ void Function::findIdioms()
     }
 
     /* Check if number of parameter bytes match their calling convention */
-    if ((flg & PROC_HLL) && (!args.empty()))
+    if ((flg & PROC_HLL) and (!args.empty()))
     {
         args.m_minOff += (flg & PROC_FAR ? 4 : 2);
         delta = args.maxOff - args.m_minOff;
@@ -236,7 +238,7 @@ void Function::bindIcodeOff()
     for(ICODE &c : Icode) // TODO: use filtered here
     {
         LLInst *ll=c.ll();
-        if (ll->testFlags(I) && ll->isJmpInst())
+        if (ll->testFlags(I) and ll->isJmpInst())
         {
             iICODE loc=Icode.labelSrch(ll->src().getImm2());
             if (loc!=Icode.end())

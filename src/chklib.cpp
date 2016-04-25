@@ -6,6 +6,7 @@
 */
 
 #include "dcc.h"
+#include "msvc_fixes.h"
 #include "project.h"
 #include "perfhlib.h"
 #include "dcc_interface.h"
@@ -15,6 +16,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+
 PerfectHash g_pattern_hasher;
 #define  NIL   -1                   /* Used like NULL, but 0 is valid */
 
@@ -322,7 +324,7 @@ void SetupLibCheck(void)
     numVert = readFileShort(g_file);
     PatLen = readFileShort(g_file);
     SymLen = readFileShort(g_file);
-    if ((PatLen != PATLEN) || (SymLen != SYMLEN))
+    if ((PatLen != PATLEN) or (SymLen != SYMLEN))
     {
         printf("Sorry! Compiled for sym and pattern lengths of %d and %d\n",
                SYMLEN, PATLEN);
@@ -473,7 +475,7 @@ bool LibCheck(Function & pProc)
         }
         /* But is it a real library function? */
         i = NIL;
-        if ((numFunc == 0) || (i=searchPList(ht[h].htSym)) != NIL)
+        if ((numFunc == 0) or (i=searchPList(ht[h].htSym)) != NIL)
         {
             pProc.flg |= PROC_ISLIB; 		/* It's a lib function */
             pProc.callingConv(CConv::C);
@@ -604,7 +606,7 @@ static bool locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pa
         for (j=0; j < iPatLen; j++)
         {
             /* j is the index of the uint8_t being considered in the pattern. */
-            if ((*pSrc != pattern[j]) && (pattern[j] != WILD))
+            if ((*pSrc != pattern[j]) and (pattern[j] != WILD))
             {
                 /* A definite mismatch */
                 break;                      /* Break to outer loop */

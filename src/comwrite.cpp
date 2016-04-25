@@ -7,7 +7,9 @@
  ****************************************************************************/
 
 #include "dcc.h"
+#include "msvc_fixes.h"
 #include "machine_x86.h"
+
 #include <string.h>
 #include <sstream>
 using namespace std;
@@ -156,7 +158,7 @@ void LLInst::writeIntComment (std::ostringstream &s)
     {
         s <<int21h[m_dst.off];
     }
-    else if (src_immed > 0x1F && src_immed < 0x2F)
+    else if (src_immed > 0x1F and src_immed < 0x2F)
     {
         s <<intOthers[src_immed - 0x20];
     }

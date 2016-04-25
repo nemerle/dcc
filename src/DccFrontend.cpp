@@ -1,12 +1,13 @@
-#include "dcc.h"
 #include "DccFrontend.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
 #include "project.h"
 #include "disassem.h"
 #include "CallGraph.h"
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QDebug>
-
 #include <cstdio>
 
 
@@ -64,7 +65,7 @@ void PROG::displayLoadInfo(void)
     int	i;
 
     printf("File type is %s\n", (fCOM)?"COM":"EXE");
-    if (! fCOM) {
+    if (not fCOM) {
         printf("Signature            = %02X%02X\n", header.sigLo, header.sigHi);
         printf("File size %% 512     = %04X\n", LH(&header.lastPageSize));
         printf("File size / 512      = %04X pages\n", LH(&header.numPages));
@@ -77,7 +78,7 @@ void PROG::displayLoadInfo(void)
     printf("Initial SS:SP        = %04X:%04X\n", initSS, initSP);
     printf("Initial CS:IP        = %04X:%04X\n", initCS, initIP);
 
-    if (option.VeryVerbose && cReloc)
+    if (option.VeryVerbose and cReloc)
     {
         printf("\nRelocation Table\n");
         for (i = 0; i < cReloc; i++)
@@ -123,20 +124,20 @@ static void displayMemMap(void)
         fill(ip, b1);
         printf("%06X %s\n", ip, b1);
         ip += 16;
-        for (i = 3, c = b1[1]; i < 32 && c == b1[i]; i += 2)
+        for (i = 3, c = b1[1]; i < 32 and c == b1[i]; i += 2)
             ;		/* Check if all same */
         if (i > 32)
         {
             fill(ip, b2);	/* Skip until next two are not same */
             fill(ip+16, b3);
-            if (! (strcmp(b1, b2) || strcmp(b1, b3)))
+            if (not (strcmp(b1, b2) || strcmp(b1, b3)))
             {
                 printf("                   :\n");
                 do
                 {
                     ip += 16;
                     fill(ip+16, b1);
-                } while (! strcmp(b1, b2));
+                } while (0==strcmp(b1, b2));
             }
         }
     }
@@ -206,7 +207,7 @@ struct ComLoader : public DosLoader {
         fp.seek(0);
         char sig[2];
         if(2==fp.read(sig,2)) {
-            return not (sig[0] == 0x4D && sig[1] == 0x5A);
+            return not (sig[0] == 0x4D and sig[1] == 0x5A);
         }
         return false;
     }
@@ -244,7 +245,7 @@ struct ExeLoader : public DosLoader {
         MZHeader tmp_header;
         fp.seek(0);
         fp.read((char *)&tmp_header, sizeof(header));
-        if(not (tmp_header.sigLo == 0x4D && tmp_header.sigHi == 0x5A))
+        if(not (tmp_header.sigLo == 0x4D and tmp_header.sigHi == 0x5A))
             return false;
 
         /* This is a typical DOS kludge! */

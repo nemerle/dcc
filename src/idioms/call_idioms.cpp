@@ -1,5 +1,8 @@
-#include "dcc.h"
 #include "call_idioms.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 using namespace std;
 /*****************************************************************************
  * idiom3 - C calling convention.
@@ -22,7 +25,7 @@ bool Idiom3::match(iICODE picode)
     /* Match ADD  SP, immed */
     for(int i=0; i<2; ++i)
         m_icodes[i] = picode++;
-    if ( m_icodes[1]->ll()->testFlags(I) && m_icodes[1]->ll()->match(iADD,rSP))
+    if ( m_icodes[1]->ll()->testFlags(I) and m_icodes[1]->ll()->match(iADD,rSP))
     {
         m_param_count = m_icodes[1]->ll()->src().getImm2();
         return true;
@@ -78,10 +81,10 @@ bool Idiom17::match(iICODE picode)
     {
         int i=0;
         regi = m_icodes[1]->ll()->m_dst.regi;
-        if ((regi >= rAX) && (regi <= rBX))
+        if ((regi >= rAX) and (regi <= rBX))
             i++;
 
-        while (picode != m_end && picode->ll()->match(iPOP))
+        while (picode != m_end and picode->ll()->match(iPOP))
         {
             if (picode->ll()->m_dst.regi != regi)
                 break;

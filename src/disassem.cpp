@@ -2,6 +2,13 @@
  *          dcc project disassembler
  * (C) Cristina Cifuentes, Mike van Emmerik, Jeff Ledermann
  ****************************************************************************/
+#include "disassem.h"
+
+#include "dcc.h"
+#include "msvc_fixes.h"
+#include "symtab.h"
+#include "project.h"
+
 #include <stdint.h>
 #include <vector>
 #include <map>
@@ -9,11 +16,6 @@
 #include <iomanip>
 #include <stdio.h>
 #include <string.h>
-
-#include "dcc.h"
-#include "symtab.h"
-#include "disassem.h"
-#include "project.h"
 // Note: for the time being, there is no interactive disassembler
 // for unix
 
@@ -107,7 +109,7 @@ static vector<POSSTACK_ENTRY> posStack; /* position stack */
 
 void LLInst::findJumpTargets(CIcodeRec &_pc)
 {
-    if (testFlags(I) && ! testFlags(JMP_ICODE) && isJmpInst())
+    if (testFlags(I) and not testFlags(JMP_ICODE) and isJmpInst())
     {
         /* Replace the immediate operand with an icode index */
         iICODE labTgt=_pc.labelSrch(src().getImm2());
@@ -216,9 +218,9 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     /* Disassembly stage 1 --
          * Do not try to display NO_CODE entries or synthetic instructions,
          * other than JMPs, that have been introduced for def/use analysis. */
-    if ((option.asm1) &&
-            ( inst.testFlags(NO_CODE) ||
-              (inst.testFlags(SYNTHETIC) && (inst.getOpcode() != iJMP))))
+    if ((option.asm1) and
+            ( inst.testFlags(NO_CODE) or
+              (inst.testFlags(SYNTHETIC) and (inst.getOpcode() != iJMP))))
     {
         return;
     }
@@ -273,7 +275,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         }
         oper_stream<< lab_contents.str();
     }
-    if ((inst.getOpcode()==iSIGNEX )&& inst.testFlags(B))
+    if ((inst.getOpcode()==iSIGNEX )and inst.testFlags(B))
     {
         inst.setOpcode(iCBW);
     }
@@ -342,7 +344,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         {
             ICODE *lab=pc.GetIcode(inst.src().getImm2());
             selectTable(Label);
-            if ((inst.src().getImm2() < (uint32_t)numIcode) &&  /* Ensure in range */
+            if ((inst.src().getImm2() < (uint32_t)numIcode) and  /* Ensure in range */
                     readVal(operands_s, lab->ll()->label, nullptr))
             {
                 break;                          /* Symbolic label. Done */
@@ -416,14 +418,14 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         case iOUTS:  case iREP_OUTS:
             if (inst.src().segOver)
             {
-                bool is_dx_src=(inst.getOpcode() == iOUTS || inst.getOpcode() == iREP_OUTS);
+                bool is_dx_src=(inst.getOpcode() == iOUTS or inst.getOpcode() == iREP_OUTS);
                 if(is_dx_src)
                     operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
                 else
                     operands_s<<szPtr[inst.getFlag() & B];
-                if (inst.getOpcode() == iLODS ||
-                        inst.getOpcode() == iREP_LODS ||
-                        inst.getOpcode() == iOUTS ||
+                if (inst.getOpcode() == iLODS or
+                        inst.getOpcode() == iREP_LODS or
+                        inst.getOpcode() == iOUTS or
                         inst.getOpcode() == iREP_OUTS)
                 {
                     operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
@@ -473,7 +475,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     }
     else
     {
-        for (j = inst.label, fImpure = 0; j > 0 && j < (int)nextInst; j++)
+        for (j = inst.label, fImpure = 0; j > 0 and j < (int)nextInst; j++)
         {
             fImpure |= BITMAP(j, BM_DATA);
         }
@@ -487,7 +489,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     {
         result_stream <<"; "<<cbuf.str();
     }
-    else if (fImpure || (inst.testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
+    else if (fImpure or (inst.testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
     {
         if (inst.testFlags(CASE))
         {
@@ -657,7 +659,7 @@ void LLInst::flops(std::ostringstream &out)
         /* The mod/rm mod bits are not set to 11 (i.e. register). This is the normal floating point opcode */
         out<<Machine_X86::floatOpName(op)<<' ';
         out <<setw(10);
-        if ((op == 0x29) || (op == 0x1F))
+        if ((op == 0x29) or (op == 0x1F))
         {
             out <<  "tbyte ptr ";
         }
@@ -726,7 +728,7 @@ void LLInst::flops(std::ostringstream &out)
                 break;
             default:
                 out << Machine_X86::floatOpName(0x40+op);
-                if ((op >= 0x20) && (op <= 0x27))
+                if ((op >= 0x20) and (op <= 0x27))
                 {
                     /* This is the ST(i), ST form. */
                     out << "ST("<<destRegIdx - rAX<<"),ST";

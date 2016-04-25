@@ -1,6 +1,9 @@
 #include "Procedure.h"
+
+#include "msvc_fixes.h"
 #include "project.h"
 #include "scanner.h"
+
 //FunctionType *Function::getFunctionType() const
 //{
 //    return &m_type;
@@ -15,7 +18,7 @@ void JumpTable::pruneEntries(uint16_t cs)
     for (uint32_t i = start; i < finish; i += 2)
     {
         uint32_t target = cs + LH(&prg->image()[i]);
-        if (target < finish && target >= start)
+        if (target < finish and target >= start)
             finish = target;
         else if (target >= (uint32_t)prg->cbImage)
             finish = i;
@@ -25,7 +28,7 @@ void JumpTable::pruneEntries(uint16_t cs)
     {
         uint32_t target = cs + LH(&prg->image()[i]);
         /* Be wary of 00 00 as code - it's probably data */
-        if (! (prg->image()[target] || prg->image()[target+1]) || scan(target, _Icode))
+        if (! (prg->image()[target] or prg->image()[target+1]) or scan(target, _Icode))
             finish = i;
     }
 

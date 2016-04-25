@@ -4,18 +4,21 @@
  * Purpose: Data flow analysis module.
  * (C) Cristina Cifuentes
  ****************************************************************************/
+
+#include "dcc.h"
+#include "project.h"
+#include "msvc_fixes.h"
+
+#include <boost/range.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm.hpp>
+#include <boost/assign.hpp>
 #include <stdint.h>
 #include <cstring>
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
-#include <boost/range.hpp>
-#include <boost/range/adaptors.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/assign.hpp>
 
-#include "dcc.h"
-#include "project.h"
 using namespace boost;
 using namespace boost::adaptors;
 struct ExpStack
@@ -28,7 +31,7 @@ struct ExpStack
     void        push(Expr *);
     Expr *      pop();
     Expr *      top() const {
-        if(!expStk.empty())
+        if(not expStk.empty())
             return expStk.back();
         return nullptr;
     }
@@ -145,7 +148,7 @@ void Function::elimCondCodes ()
         {
             llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
-            if ((useAt->type != LOW_LEVEL) || ( ! useAt->valid() ) || ( 0 == use ))
+            if ((useAt->type != LOW_LEVEL) or ( not useAt->valid() ) or ( 0 == use ))
                 continue;
             /* Find definition within the same basic block */
             defAt=useAt;
@@ -158,7 +161,7 @@ void Function::elimCondCodes ()
                     continue;
                 notSup = false;
                 LLOperand *dest_ll = defIcode.ll()->get(DST);
-                if ((useAtOp >= iJB) && (useAtOp <= iJNS))
+                if ((useAtOp >= iJB) and (useAtOp <= iJNS))
                 {
                     iICODE befDefAt = (++riICODE(defAt)).base();
                     switch (defIcode.ll()->getOpcode())
@@ -194,7 +197,7 @@ void Function::elimCondCodes ()
                         reportError (JX_NOT_DEF, defIcode.ll()->getOpcode());
                         flg |= PROC_ASM;		/* generate asm */
                     }
-                    if (! notSup)
+                    if (not notSup)
                     {
                         assert(lhs);
                         assert(rhs);
@@ -226,7 +229,7 @@ void Function::elimCondCodes ()
             }
 
             /* Check for extended basic block */
-            if ((pBB->size() == 1) &&(useAtOp >= iJB) && (useAtOp <= iJNS))
+            if ((pBB->size() == 1) and(useAtOp >= iJB) and (useAtOp <= iJNS))
             {
                 ICODE & _prev(pBB->back()); /* For extended basic blocks - previous icode inst */
                 if (_prev.hl()->opcode == HLI_JCOND)
@@ -268,7 +271,7 @@ void Function::genLiveKtes ()
             continue;	// skip invalid BBs
         for(ICODE &insn : *pbb)
         {
-            if ((insn.type == HIGH_LEVEL) && ( insn.valid() ))
+            if ((insn.type == HIGH_LEVEL) and ( insn.valid() ))
             {
                 liveUse |= (insn.du.use - def);
                 def |= insn.du.def;
@@ -342,7 +345,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                     pcallee = ticode.hl()->call.proc;
 
                     /* user/runtime routine */
-                    if (! (pcallee->flg & PROC_ISLIB))
+                    if (not (pcallee->flg & PROC_ISLIB))
                     {
                         if (pcallee->liveAnal == false) /* hasn't been processed */
                             pcallee->dataFlow (pbb->liveOut);
@@ -350,7 +353,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                     }
                     else    /* library routine */
                     {
-                        if ( (pcallee->flg & PROC_IS_FUNC) && /* returns a value */
+                        if ( (pcallee->flg & PROC_IS_FUNC) and /* returns a value */
                              (pcallee->liveOut & pbb->edges[0].BBptr->liveIn).any()
                              )
                             pbb->liveOut = pcallee->liveOut;
@@ -358,7 +361,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                             pbb->liveOut.reset();
                     }
 
-                    if ((! (pcallee->flg & PROC_ISLIB)) || ( pbb->liveOut.any() ))
+                    if ((not (pcallee->flg & PROC_ISLIB)) or ( pbb->liveOut.any() ))
                     {
                         switch (pcallee->retVal.type) {
                         case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
@@ -385,7 +388,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
             pbb->liveIn = LivenessSet(pbb->liveUse + (pbb->liveOut - pbb->def));
 
             /* Check if live sets have been modified */
-            if ((prevLiveIn != pbb->liveIn) || (prevLiveOut != pbb->liveOut))
+            if ((prevLiveIn != pbb->liveIn) or (prevLiveOut != pbb->liveOut))
                 change = true;
         }
     }
@@ -412,9 +415,9 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
  * register */
 bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
 {
-    if ((regi == rDI) && (flg & DI_REGVAR))
+    if ((regi == rDI) and (flg & DI_REGVAR))
         return true;
-    if ((regi == rSI) && (flg & SI_REGVAR))
+    if ((regi == rSI) and (flg & SI_REGVAR))
         return true;
     if (distance(start_at,end())>1) /* several instructions */
     {
@@ -457,7 +460,7 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
  * on optimized code. */
 void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
 {
-    if (!((picode.hl()->opcode == HLI_CALL) && (picode.hl()->call.proc->flg & PROC_IS_FUNC)))
+    if (not ((picode.hl()->opcode == HLI_CALL) and (picode.hl()->call.proc->flg & PROC_IS_FUNC)))
         return;
 
     BB *tbb = this->edges[0].BBptr;
@@ -475,7 +478,7 @@ void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
     /* if not used in this basic block, check if the
      * register is live out, if so, make it the last
      * definition of this register */
-    if ( picode.du1.used(defRegIdx) && tbb->liveOut.testRegAndSubregs(regi))
+    if ( picode.du1.used(defRegIdx) and tbb->liveOut.testRegAndSubregs(regi))
         picode.du.lastDefRegi.addReg(regi);
 }
 
@@ -488,11 +491,11 @@ void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
 void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
 {
     if (picode->valid() and not picode->du1.used(defRegIdx) and
-            (not picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
-            (not ((picode->hl()->opcode == HLI_CALL) &&
+            (not picode->du.lastDefRegi.testRegAndSubregs(regi)) and
+            (not ((picode->hl()->opcode == HLI_CALL) and
                   (picode->hl()->call.proc->flg & PROC_ISLIB))))
     {
-        if (! (this->liveOut.testRegAndSubregs(regi)))	/* not liveOut */
+        if (not (this->liveOut.testRegAndSubregs(regi)))	/* not liveOut */
         {
             bool res = picode->removeDefRegi (regi, defRegIdx+1,&Parent->localId);
             if (res == true)
@@ -540,7 +543,7 @@ void BB::genDU1()
             defRegIdx++;
 
             /* Check if all defined registers have been processed */
-            if ((defRegIdx >= picode->du1.getNumRegsDef()) || (defRegIdx == MAX_REGS_DEF))
+            if ((defRegIdx >= picode->du1.getNumRegsDef()) or (defRegIdx == MAX_REGS_DEF))
                 break;
         }
     }
@@ -588,7 +591,7 @@ void LOCAL_ID::forwardSubs (Expr *lhs, Expr *rhs, iICODE picode, iICODE ticode, 
         {
             eReg inserted = id_arr[lhs_reg->regiIdx].id.regi;
             eReg lhsReg =   id_arr[op->regiIdx].id.regi;
-            if((lhsReg==inserted)||Machine_X86::isSubRegisterOf(lhsReg,inserted))
+            if((lhsReg==inserted) or Machine_X86::isSubRegisterOf(lhsReg,inserted))
             {
                 // Do not replace ax = XYZ; given ax = H << P;  with H << P  =
                 return;
@@ -644,7 +647,7 @@ bool BinaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCA
 {
     if(nullptr==m_rhs)
         return false;
-    if ( ! m_rhs->xClear (range_to_check, lastBBinst, locs) )
+    if ( not m_rhs->xClear (range_to_check, lastBBinst, locs) )
         return false;
     if(nullptr==m_lhs)
         return false;
@@ -690,7 +693,7 @@ int C_CallingConvention::processCArg (Function * callee, Function * pProc, ICODE
             else {
                 if(numArgs<callee->args.size()) {
                     if(prog.addressingMode=='l') {
-                        if((callee->args[numArgs].type==TYPE_STR)||(callee->args[numArgs].type==TYPE_PTR)) {
+                        if((callee->args[numArgs].type==TYPE_STR) or (callee->args[numArgs].type==TYPE_PTR)) {
                             RegisterNode *rn = dynamic_cast<RegisterNode *>(g_exp_stk.top());
                             AstIdent *idn = dynamic_cast<AstIdent *>(g_exp_stk.top());
                             if(rn) {
@@ -815,9 +818,9 @@ void C_CallingConvention::processHLI(Function *func,Expr *_exp, iICODE picode) {
             numArgs++;
         }
     }
-    else if ((cb == 0) && picode->ll()->testFlags(REST_STK))
+    else if ((cb == 0) and picode->ll()->testFlags(REST_STK))
     {
-        while (! g_exp_stk.empty())
+        while (not g_exp_stk.empty())
         {
             k+=processCArg (pp, func, &(*picode), numArgs);
             numArgs++;
@@ -907,8 +910,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                          * icode expression */
 
                     ticode = picode->du1.idx[0].uses.front();
-                    if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
-                            ((ticode->hl()->opcode != HLI_CALL) &&
+                    if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) and
+                            ((ticode->hl()->opcode != HLI_CALL) and
                              (ticode->hl()->opcode != HLI_RET)))
                         continue;
 
@@ -926,8 +929,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                     //   call F() <- somehow this is marked as user of POP ?
                     ticode = picode->du1.idx[0].uses.front();
                     ti_hl = ticode->hlU();
-                    if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
-                            ((ti_hl->opcode != HLI_CALL) &&
+                    if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) and
+                            ((ti_hl->opcode != HLI_CALL) and
                              (ti_hl->opcode != HLI_RET)))
                         continue;
 
@@ -1026,8 +1029,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                     if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                     {
                         ticode = picode->du1.idx[0].uses.front();
-                        if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
-                                ((ticode->hl()->opcode != HLI_CALL) &&
+                        if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) and
+                                ((ticode->hl()->opcode != HLI_CALL) and
                                  (ticode->hl()->opcode != HLI_RET)))
                             continue;
                         locals.processTargetIcode(picode.base(), numHlIcodes, ticode,true);
@@ -1038,8 +1041,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                     if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                     {
                         ticode = picode->du1.idx[0].uses.front();
-                        if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) &&
-                                ((ticode->hl()->opcode != HLI_CALL) &&
+                        if ((picode->du.lastDefRegi.testRegAndSubregs(regi)) and
+                                ((ticode->hl()->opcode != HLI_CALL) and
                                  (ticode->hl()->opcode != HLI_RET)))
                             continue;
 
@@ -1187,36 +1190,36 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
         isBx = _liveOut.testReg(rBX);
         isCx = _liveOut.testReg(rCX);
         isDx = _liveOut.testReg(rDX);
-        bool isAL = !isAx && _liveOut.testReg(rAL);
-        bool isAH = !isAx && _liveOut.testReg(rAH);
-        bool isBL = !isBx && _liveOut.testReg(rBL);
-        bool isBH = !isBx && _liveOut.testReg(rBH);
-        bool isCL = !isCx && _liveOut.testReg(rCL);
-        bool isCH = !isCx && _liveOut.testReg(rCH);
-        bool isDL = !isDx && _liveOut.testReg(rDL);
-        bool isDH = !isDx && _liveOut.testReg(rDH);
-        if(isAL && isAH)
+        bool isAL = not isAx and _liveOut.testReg(rAL);
+        bool isAH = not isAx and _liveOut.testReg(rAH);
+        bool isBL = not isBx and _liveOut.testReg(rBL);
+        bool isBH = not isBx and _liveOut.testReg(rBH);
+        bool isCL = not isCx and _liveOut.testReg(rCL);
+        bool isCH = not isCx and _liveOut.testReg(rCH);
+        bool isDL = not isDx and _liveOut.testReg(rDL);
+        bool isDH = not isDx and _liveOut.testReg(rDH);
+        if(isAL and isAH)
         {
             isAx = true;
             isAH=isAL=false;
         }
-        if(isDL && isDH)
+        if(isDL and isDH)
         {
             isDx = true;
             isDH=isDL=false;
         }
-        if(isBL && isBH)
+        if(isBL and isBH)
         {
             isBx = true;
             isBH=isBL=false;
         }
-        if(isCL && isCH)
+        if(isCL and isCH)
         {
             isCx = true;
             isCH=isCL=false;
         }
 
-        if (isAx && isDx)       /* long or pointer */
+        if (isAx and isDx)       /* long or pointer */
         {
             retVal.type = TYPE_LONG_SIGN;
             retVal.loc = REG_FRAME;
@@ -1224,7 +1227,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
             /*idx = */localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), Icode.begin());
             localId.propLongId (rAX, rDX, "\0");
         }
-        else if (isAx || isBx || isCx || isDx)	/* uint16_t */
+        else if (isAx or isBx or isCx or isDx)	/* uint16_t */
         {
             retVal.type = TYPE_WORD_SIGN;
             retVal.loc = REG_FRAME;
@@ -1238,7 +1241,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
                 retVal.id.regi = rDX;
             /*idx = */localId.newByteWordReg(TYPE_WORD_SIGN,retVal.id.regi);
         }
-        else if(isAL||isBL||isCL||isDL)
+        else if(isAL or isBL or isCL or isDL)
         {
             retVal.type = TYPE_BYTE_SIGN;
             retVal.loc = REG_FRAME;
@@ -1252,7 +1255,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
                 retVal.id.regi = rDL;
             /*idx = */localId.newByteWordReg(TYPE_BYTE_SIGN,retVal.id.regi);
         }
-        else if(isAH||isBH||isCH||isDH)
+        else if(isAH or isBH or isCH or isDH)
         {
             retVal.type = TYPE_BYTE_SIGN;
             retVal.loc = REG_FRAME;

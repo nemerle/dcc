@@ -1,13 +1,13 @@
 // Object oriented icode code for dcc
 // (C) 1997 Mike Van Emmerik
+#include "icode.h"
 
-#include <stdlib.h>
-
+#include "msvc_fixes.h"
 #include "dcc.h"
 #include "types.h"		// Common types like uint8_t, etc
 #include "ast.h"		// Some icode types depend on these
-#include "icode.h"
 
+#include <stdlib.h>
 
 ICODE::TypeFilter<HIGH_LEVEL> ICODE::select_high_level;
 ICODE::TypeAndValidFilter<HIGH_LEVEL> ICODE::select_valid_high_level;
@@ -87,7 +87,7 @@ void LLInst::emitGotoLabel (int indLevel)
 
 bool LLOperand::isReg() const
 {
-    return (regi>=rAX) && (regi<=rTMP);
+    return (regi>=rAX) and (regi<=rTMP);
 }
 void LLOperand::addProcInformation(int param_count, CConv::Type call_conv)
 {

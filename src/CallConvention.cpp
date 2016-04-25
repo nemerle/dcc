@@ -7,11 +7,11 @@ CConv *CConv::create(Type v)
     static C_CallingConvention *c_call      = nullptr;
     static Pascal_CallingConvention *p_call = nullptr;
     static Unknown_CallingConvention *u_call= nullptr;
-    if(!c_call)
+    if(nullptr==c_call)
         c_call = new C_CallingConvention;
-    if(!p_call)
+    if(nullptr==p_call)
         p_call = new Pascal_CallingConvention;
-    if(!u_call)
+    if(nullptr==u_call)
         u_call = new Unknown_CallingConvention;
     switch(v) {
     case UNKNOWN: return u_call;

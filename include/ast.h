@@ -5,11 +5,15 @@
  * (C) Cristina Cifuentes
  */
 #pragma once
+
+#include "Enums.h"
+#include "msvc_fixes.h"
+
+#include <boost/range/iterator_range.hpp>
 #include <stdint.h>
 #include <cstring>
 #include <list>
-#include <boost/range/iterator_range.hpp>
-#include "Enums.h"
+
 static const int operandSize=20;
 /* The following definitions and types define the Conditional Expression
  * attributed syntax tree, as defined by the following EBNF:
@@ -120,7 +124,7 @@ struct BinaryOperator : public Expr
     }
     ~BinaryOperator()
     {
-        assert(m_lhs!=m_rhs || m_lhs==nullptr);
+        assert(m_lhs!=m_rhs or m_lhs==nullptr);
         delete m_lhs;
         delete m_rhs;
         m_lhs=m_rhs=nullptr;

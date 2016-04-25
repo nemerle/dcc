@@ -3,10 +3,12 @@
  * (C) Mike van Emmerik
 */
 #pragma once
-#include <string>
-#include <stdint.h>
 #include "Enums.h"
 #include "types.h"
+#include "msvc_fixes.h"
+
+#include <string>
+#include <stdint.h>
 struct Expr;
 struct AstIdent;
 struct TypeContainer;
@@ -91,7 +93,7 @@ struct SYMTABLE
     {
         // does not yse pSymName, to ease finding by symOff/symProc combo
         // in map<SYMTABLE,X>
-        return (symOff==other.symOff) && symProc==(other.symProc);
+        return (symOff==other.symOff) and symProc==(other.symProc);
     }
 };
 

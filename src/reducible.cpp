@@ -3,12 +3,14 @@
  *  constructs an equivalent reducible graph if one is not found.
  * (C) Cristina Cifuentes
  ********************************************************************/
+#include "dcc.h"
+#include "msvc_fixes.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
 #include <stdint.h>
-#include "dcc.h"
 
 static int      numInt;     /* Number of intervals      */
 
@@ -79,7 +81,7 @@ void interval::appendNodeInt(queue &pqH, BB *node)
 
     /* Check header list for occurrence of node, if found, remove it
      * and decrement number of out-edges from this interval.    */
-    if (node->beenOnH && !pqH.empty())
+    if (node->beenOnH and !pqH.empty())
     {
         auto found_iter=std::find(pqH.begin(),pqH.end(),node);
         if(found_iter!=pqH.end())
@@ -147,7 +149,7 @@ void derSeq_Entry::findIntervals (Function *c)
                 else     /* node has been visited before */
                     if (succ->inEdgeCount == 0)
                     {
-                        if (succ->reachingInt == header || succ->inInterval == pI) /* same interval */
+                        if (succ->reachingInt == header or succ->inInterval == pI) /* same interval */
                         {
                             if (succ != header)
                                 pI->appendNodeInt (H, succ);
@@ -155,7 +157,7 @@ void derSeq_Entry::findIntervals (Function *c)
                         else            /* out edge */
                             pI->numOutEdges++;
                     }
-                    else if (succ != header && succ->beenOnH)
+                    else if (succ != header and succ->beenOnH)
                         pI->numOutEdges++;
             }
         }
@@ -230,7 +232,7 @@ void freeDerivedSeq(derSeq &derivedG)
 derSeq_Entry::~derSeq_Entry()
 {
     freeInterval (&Ii);
-    //    if(Gi && Gi->nodeType == INTERVAL_NODE)
+    //    if(Gi and Gi->nodeType == INTERVAL_NODE)
     //        freeCFG (Gi);
 }
 
@@ -259,7 +261,7 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
         const queue &listIi(Ii->nodes);
 
         /* Check for more than 1 interval */
-        if (sameGraph && (listIi.size()>1))
+        if (sameGraph and (listIi.size()>1))
             sameGraph = false;
 
         /* Find out edges */

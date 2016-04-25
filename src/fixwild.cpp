@@ -9,16 +9,13 @@
 *                                               *
 \*  *   *   *   *   *   *   *   *   *   *   *  */
 
+#include "msvc_fixes.h"
 #include <memory.h>
+#include <stdint.h>
 
 #ifndef PATLEN
 #define PATLEN          23
 #define WILD            0xF4
-#endif
-
-#ifndef bool
-#define bool  unsigned char
-#define uint8_t  unsigned char
 #endif
 
 static int pc;                              /* Indexes into pat[] */
@@ -410,7 +407,7 @@ void fixWildCards(uint8_t pat[])
 
                 case 0xCD:          /* int nn */
                     intArg = pat[pc++];
-                    if ((intArg >= 0x34) && (intArg <= 0x3B))
+                    if ((intArg >= 0x34) and (intArg <= 0x3B))
                     {
                         /* Borland/Microsoft FP emulations */
                         if (ModRM(pat)) return;

@@ -1,3 +1,10 @@
+#include "types.h"
+#include "msvc_fixes.h"
+#include "ast.h"
+#include "bundle.h"
+#include "machine_x86.h"
+#include "project.h"
+
 #include <stdint.h>
 #include <string>
 #include <sstream>
@@ -8,12 +15,6 @@
 //#include <boost/range/algorithm.hpp>
 //#include <boost/assign.hpp>
 
-#include "types.h"
-#include "ast.h"
-#include "bundle.h"
-
-#include "machine_x86.h"
-#include "project.h"
 using namespace std;
 using namespace boost::adaptors;
 RegisterNode::RegisterNode(const LLOperand &op, LOCAL_ID *locsym)
@@ -41,7 +42,7 @@ RegisterNode::RegisterNode(const LLOperand &op, LOCAL_ID *locsym)
 //    ident.type(REGISTER);
 //    hlType type_sel;
 //    regType reg_type;
-//    if ((icodeFlg & B) || (icodeFlg & SRC_B))
+//    if ((icodeFlg & B) or (icodeFlg & SRC_B))
 //    {
 //        type_sel = TYPE_BYTE_SIGN;
 //        reg_type = BYTE_REG;
@@ -80,17 +81,17 @@ string RegisterNode::walkCondExpr(Function *pProc, int *numLoc) const
 int RegisterNode::hlTypeSize(Function *) const
 {
     if (regiType == BYTE_REG)
-        return (1);
+        return 1;
     else
-        return (2);
+        return 2;
 }
 
 hlType RegisterNode::expType(Function *pproc) const
 {
     if (regiType == BYTE_REG)
-        return (TYPE_BYTE_SIGN);
+        return TYPE_BYTE_SIGN;
     else
-        return (TYPE_WORD_SIGN);
+        return TYPE_WORD_SIGN;
 }
 
 Expr *RegisterNode::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)
