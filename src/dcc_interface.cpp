@@ -44,8 +44,12 @@ public:
     }
     void SetCurFunc_by_Name(QString v)
     {
-        if(m_current_func!=Project::get()->functions().end()) {
-            m_current_func->name = v;
+        lFunction & funcs(Project::get()->functions());
+        for(auto iter=funcs.begin(),fin=funcs.end(); iter!=fin; ++iter) {
+            if(iter->name==v) {
+                m_current_func = iter;
+                return;
+            }
         }
     }
     QDir installDir() {
