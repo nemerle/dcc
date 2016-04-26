@@ -88,7 +88,7 @@ void    interactDis(Function *, int initIC);       /* disassem.c   */
 bool    JmpInst(llIcode opcode);                            /* idioms.c     */
 queue::iterator  appendQueue(queue &Q, BB *node);           /* reducible.c  */
 
-void    SetupLibCheck(void);                                /* chklib.c     */
+bool    SetupLibCheck(void);                                /* chklib.c     */
 void    CleanupLibCheck(void);                              /* chklib.c     */
 bool    LibCheck(Function &p);                              /* chklib.c     */
 

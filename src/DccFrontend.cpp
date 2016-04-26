@@ -403,7 +403,7 @@ void DccFrontend::parse(Project &proj)
 
     /* This proc needs to be called to set things up for LibCheck(), which
        checks a proc to see if it is a know C (etc) library */
-    SetupLibCheck();
+    prog.bSigs = SetupLibCheck();
     //BUG:  proj and g_proj are 'live' at this point !
 
     /* Recursively build entire procedure list */

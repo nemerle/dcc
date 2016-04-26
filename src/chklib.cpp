@@ -53,7 +53,7 @@ int numVert;            				/* Number of vertices in the graph (also size of g[]
 unsigned PatLen;        				/* Size of the keys (pattern length) */
 unsigned SymLen;        				/* Max size of the symbols, including null */
 static FILE *g_file;                				/* File being read */
-static  char sSigName[100]; 			/* Full path name of .sig file */
+static QString sSigName; 			/* Full path name of .sig file */
 
 static  uint16_t    *T1base, *T2base;       /* Pointers to start of T1, T2 */
 static  uint16_t    *g;                     /* g[] */
@@ -298,9 +298,8 @@ static uint8_t pattMsChkstk[] =
 
 
 /* This procedure is called to initialise the library check code */
-void SetupLibCheck(void)
+bool SetupLibCheck(void)
 {
-    PROG &prog(Project::get()->prog);
     uint16_t w, len;
     int i;
     IDcc *dcc = IDcc::get();
@@ -308,13 +307,12 @@ void SetupLibCheck(void)
     if ((g_file = fopen(qPrintable(fpath), "rb")) == nullptr)
     {
         printf("Warning: cannot open signature file %s\n", qPrintable(fpath));
-        return;
+        return false;
     }
 
     readProtoFile();
 
 
-    prog.bSigs = false;			/* False unless everything goes right */
     /* Read the parameters */
     grab(4, g_file);
     if (memcmp("dccs", buf, 4) != 0)
@@ -328,9 +326,8 @@ void SetupLibCheck(void)
     SymLen = readFileShort(g_file);
     if ((PatLen != PATLEN) or (SymLen != SYMLEN))
     {
-        printf("Sorry! Compiled for sym and pattern lengths of %d and %d\n",
-               SYMLEN, PATLEN);
-        exit(1);
+        printf("Sorry! Compiled for sym and pattern lengths of %d and %d\n", SYMLEN, PATLEN);
+        return false;
     }
 
     /* Initialise the perfhlib stuff. Also allocates T1, T2, g, etc */
@@ -357,7 +354,7 @@ void SetupLibCheck(void)
     if (w != len)
     {
         printf("Problem with size of T1: file %d, calc %d\n", w, len);
-        exit(4);
+        return false;
     }
     readFileSection(T1base, len, g_file);
 
@@ -365,13 +362,13 @@ void SetupLibCheck(void)
     if (memcmp("T2", buf, 2) != 0)
     {
         printf("Expected 'T2'\n");
-        exit(3);
+        return false;
     }
     w = readFileShort(g_file);
     if (w != len)
     {
         printf("Problem with size of T2: file %d, calc %d\n", w, len);
-        exit(4);
+        return false;
     }
     readFileSection(T2base, len, g_file);
 
@@ -380,14 +377,14 @@ void SetupLibCheck(void)
     if (memcmp("gg", buf, 2) != 0)
     {
         printf("Expected 'gg'\n");
-        exit(3);
+        return false;
     }
     len = (uint16_t)(numVert * sizeof(uint16_t));
     w = readFileShort(g_file);
     if (w != len)
     {
         printf("Problem with size of g[]: file %d, calc %d\n", w, len);
-        exit(4);
+        return false;
     }
     readFileSection(g, len, g_file);
 
@@ -398,19 +395,19 @@ void SetupLibCheck(void)
     if ( nullptr == ht)
     {
         printf("Could not allocate hash table\n");
-        exit(1);
+        return false;
     }
     grab(2, g_file);
     if (memcmp("ht", buf, 2) != 0)
     {
         printf("Expected 'ht'\n");
-        exit(3);
+        return false;
     }
     w = readFileShort(g_file);
     if (w != numKeys * (SymLen + PatLen + sizeof(uint16_t)))
     {
         printf("Problem with size of hash table: file %d, calc %d\n", w, len);
-        exit(6);
+        return false;
     }
 
 
@@ -419,11 +416,11 @@ void SetupLibCheck(void)
         if (fread(&ht[i], 1, SymLen + PatLen, g_file) != SymLen + PatLen)
         {
             printf("Could not read signature\n");
-            exit(11);
+            return false;
         }
     }
     fclose(g_file);
-    prog.bSigs = true;
+    return true;
 }
 
 
@@ -834,16 +831,12 @@ void STATE::checkStartup()
 
 gotVendor:
 
-    strcat(sSigName, "dcc");
-    temp[1] = '\0';
-    temp[0] = chVendor;
-    strcat(sSigName, temp);                 /* Add vendor */
-    temp[0] = chVersion;
-    strcat(sSigName, temp);                 /* Add version */
-    temp[0] = chModel;
-    strcat(sSigName, temp);                 /* Add model */
-    strcat(sSigName, ".sig");               /* Add extension */
-    printf("Signature file: %s\n", sSigName);
+    sSigName = QString("dcc%1%2%3.sig")
+            .arg(QChar(chVendor)) /* Add vendor */
+            .arg(QChar(chVersion)) /* Add version */
+            .arg(QChar(chModel)) /* Add model */
+            ;
+    printf("Signature file: %s\n", qPrintable(sSigName));
 
 }
 
