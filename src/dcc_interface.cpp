@@ -1,22 +1,24 @@
 #include "dcc_interface.h"
 #include "dcc.h"
 #include "project.h"
-struct DccImpl : public IDcc{
-
-
+struct DccImpl : public IDcc {
+    ilFunction m_current_func;
     // IDcc interface
 public:
     void BaseInit()
     {
+        m_current_func = Project::get()->functions().end();
     }
     void Init(QObject *tgt)
     {
     }
     ilFunction GetFirstFuncHandle()
     {
+        return Project::get()->functions().begin();
     }
     ilFunction GetCurFuncHandle()
     {
+        return m_current_func;
     }
     void analysis_Once()
     {
@@ -34,13 +36,17 @@ public:
     }
     size_t getFuncCount()
     {
+        return Project::get()->functions().size();
     }
     const lFunction &validFunctions() const
     {
         return Project::get()->functions();
     }
-    void SetCurFunc_by_Name(QString)
+    void SetCurFunc_by_Name(QString v)
     {
+        if(m_current_func!=Project::get()->functions().end()) {
+            m_current_func->name = v;
+        }
     }
     QDir installDir() {
         return QDir(".");

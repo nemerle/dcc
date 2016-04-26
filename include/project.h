@@ -23,52 +23,53 @@ class IProject
 };
 class Project : public IProject
 {
-    static Project *s_instance;
-    QString m_fname;
-    QString m_project_name;
-    QString m_output_path;
+    static  Project *s_instance;
+            QString     m_fname;
+            QString     m_project_name;
+            QString     m_output_path;
 public:
 
-typedef llvm::iplist<Function> FunctionListType;
-typedef FunctionListType lFunction;
+    typedef llvm::iplist<Function> FunctionListType;
+    typedef FunctionListType lFunction;
     typedef FunctionListType::iterator ilFunction;
-    SYMTAB symtab;       /* Global symbol table              */
 
-    FunctionListType pProcList;
-    CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
-    PROG prog;   		/* Loaded program image parameters  */
-    // no copies
-    Project(const Project&) = delete;
-    const Project &operator=(const Project & l) =delete;
-    // only moves
-    Project(); // default constructor,
+            SYMTAB      symtab;       /* Global symbol table              */
+            FunctionListType pProcList;
+            CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
+            PROG        prog;   		/* Loaded program image parameters  */
+                        // no copies
+                        Project(const Project&) = delete;
+    const   Project &   operator=(const Project & l) =delete;
+                        // only moves
+                        Project(); // default constructor,
 
 public:
-    void create(const QString &a);
-    bool load();
-    const QString &output_path() const {return m_output_path;}
-    const QString &project_name() const {return m_project_name;}
-    const QString &binary_path() const {return m_fname;}
-    QString output_name(const char *ext);
-    ilFunction funcIter(Function *to_find);
-    ilFunction findByEntry(uint32_t entry);
-    ilFunction createFunction(FunctionType *f, const QString & name);
-    bool valid(ilFunction iter);
+            void        create(const QString &a);
+            bool        load();
+    const   QString &   output_path() const {return m_output_path;}
+    const   QString &   project_name() const {return m_project_name;}
+    const   QString &   binary_path() const {return m_fname;}
+            QString     output_name(const char *ext);
+            ilFunction  funcIter(Function *to_find);
+            ilFunction  findByEntry(uint32_t entry);
+            ilFunction  createFunction(FunctionType *f, const QString & name);
+            bool        valid(ilFunction iter);
 
-    int     getSymIdxByAdd(uint32_t adr);
-    bool    validSymIdx(size_t idx);
-    size_t  symbolSize(size_t idx);
-    hlType  symbolType(size_t idx);
-    const QString & symbolName(size_t idx);
-    const SYM &getSymByIdx(size_t idx) const;
+            int         getSymIdxByAdd(uint32_t adr);
+            bool        validSymIdx(size_t idx);
+            size_t      symbolSize(size_t idx);
+            hlType      symbolType(size_t idx);
+    const   QString &   symbolName(size_t idx);
+    const   SYM &       getSymByIdx(size_t idx) const;
 
-    static Project *get();
-    PROG * binary() {return &prog;}
-    SourceMachine *machine();
+    static  Project *   get();
+            PROG *      binary() {return &prog;}
+            SourceMachine *machine();
 
-    const FunctionListType &functions() const { return pProcList; }
+    const   FunctionListType &functions() const { return pProcList; }
+            FunctionListType &functions()       { return pProcList; }
 protected:
-    void initialize();
-    void writeGlobSymTable();
+            void        initialize();
+            void        writeGlobSymTable();
 };
 //extern Project g_proj;
