@@ -502,6 +502,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     result_stream.setFieldAlignment(QTextStream::AlignLeft);
     oper_stream.flush();
     result_stream << oper_contents;
+    result_stream.setFieldWidth(0);
     /* Check for user supplied comment */
     selectTable(Comment);
     QString cbuf_contents;
