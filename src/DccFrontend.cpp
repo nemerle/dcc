@@ -11,11 +11,6 @@
 #include <cstdio>
 
 
-class Loader
-{
-    bool loadIntoProject(IProject *);
-};
-
 struct PSP {			/*        PSP structure					*/
     uint16_t int20h;			/* interrupt 20h						*/
     uint16_t eof;				/* segment, end of allocation block		*/
@@ -325,53 +320,21 @@ struct ExeLoader : public DosLoader {
 /*****************************************************************************
 * LoadImage
 ****************************************************************************/
-bool Project::load()
+void DccFrontend::initializeMachineState(Project &proj)
 {
-    // addTask(loaderSelection,PreCond(BinaryImage))
-    // addTask(applyLoader,PreCond(Loader))
-    const char *fname = binary_path().toLocal8Bit().data();
-    QFile finfo(binary_path());
-    /* Open the input file */
-    if(not finfo.open(QFile::ReadOnly)) {
-        fatalError(CANNOT_OPEN, fname);
-    }
-    /* Read in first 2 bytes to check EXE signature */
-    if (finfo.size()<=2)
-    {
-        fatalError(CANNOT_READ, fname);
-    }
-    ComLoader com_loader;
-    ExeLoader exe_loader;
-    if(exe_loader.canLoad(finfo)) {
-        prog.fCOM = false;
-        return exe_loader.load(prog,finfo);
-    }
-    if(com_loader.canLoad(finfo)) {
-        prog.fCOM = true;
-        return com_loader.load(prog,finfo);
-    }
-    return false;
+    const PROG &prog(proj.prog);
+    proj.m_entry_state.setState(rES, 0);   /* PSP segment */
+    proj.m_entry_state.setState(rDS, 0);
+    proj.m_entry_state.setState(rCS, prog.initCS);
+    proj.m_entry_state.setState(rSS, prog.initSS);
+    proj.m_entry_state.setState(rSP, prog.initSP);
+    proj.m_entry_state.IP = ((uint32_t)prog.initCS << 4) + prog.initIP;
+    proj.SynthLab = SYNTHESIZED_MIN;
 }
-uint32_t SynthLab;
-/* Parses the program, builds the call graph, and returns the list of
- * procedures found     */
-void DccFrontend::parse(Project &proj)
+
+void DccFrontend::createEntryProc(Project &proj)
 {
     PROG &prog(proj.prog);
-    STATE state;
-
-    /* Set initial state */
-    state.setState(rES, 0);   /* PSP segment */
-    state.setState(rDS, 0);
-    state.setState(rCS, prog.initCS);
-    state.setState(rSS, prog.initSS);
-    state.setState(rSP, prog.initSP);
-    state.IP = ((uint32_t)prog.initCS << 4) + prog.initIP;
-    SynthLab = SYNTHESIZED_MIN;
-
-    /* Check for special settings of initial state, based on idioms of the
-          startup code */
-    state.checkStartup();
     ilFunction start_proc;
     /* Make a struct for the initial procedure */
     if (prog.offMain != -1)
@@ -384,30 +347,43 @@ void DccFrontend::parse(Project &proj)
         start_proc->procEntry = prog.offMain;
         /* In medium and large models, the segment of main may (will?) not be
             the same as the initial CS segment (of the startup code) */
-        state.setState(rCS, prog.segMain);
-        state.IP = prog.offMain;
+        proj.m_entry_state.setState(rCS, prog.segMain);
+        proj.m_entry_state.IP = prog.offMain;
     }
     else
     {
         start_proc = proj.createFunction(0,"start");
         /* Create initial procedure at program start address */
-        start_proc->procEntry = (uint32_t)state.IP;
+        start_proc->procEntry = (uint32_t)proj.m_entry_state.IP;
     }
-
     /* The state info is for the first procedure */
-    start_proc->state = state;
+    start_proc->state = proj.m_entry_state;
 
     /* Set up call graph initial node */
     proj.callGraph = new CALL_GRAPH;
     proj.callGraph->proc = start_proc;
+}
+
+/* Parses the program, builds the call graph, and returns the list of
+ * procedures found     */
+void DccFrontend::parse(Project &proj)
+{
+    /* Set initial state */
+    initializeMachineState(proj);
+
+    /* Check for special settings of initial state, based on idioms of the
+          startup code */
+    proj.m_entry_state.checkStartup();
+
+    createEntryProc(proj);
 
     /* This proc needs to be called to set things up for LibCheck(), which
        checks a proc to see if it is a know C (etc) library */
-    prog.bSigs = SetupLibCheck();
+    proj.prog.bSigs = SetupLibCheck();
     //BUG:  proj and g_proj are 'live' at this point !
 
     /* Recursively build entire procedure list */
-    start_proc->FollowCtrl(proj.callGraph, &state);
+    proj.callGraph->proc->FollowCtrl(proj.callGraph, &proj.m_entry_state);
 
     /* This proc needs to be called to clean things up from SetupLibCheck() */
     CleanupLibCheck();

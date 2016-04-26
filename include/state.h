@@ -3,21 +3,22 @@
  * (C) Cristina Cifuentes, Mike van Emmerik
  ****************************************************************************/
 #pragma once
-#include <stdint.h>
-#include <cstring>
 #include "machine_x86.h"
+
+#include <stdint.h>
+#include <string.h>
 
 /* STATE TABLE */
 struct STATE
 {
-    uint32_t      IP;             /* Offset into Image                    */
-    int16_t       r[INDEX_BX_SI];   /* Value of segs and AX                 */
+    uint32_t      IP;               /* Offset into Image                    */
+    int16_t       r[INDEX_BX_SI];   /* Register values                      */
     bool          f[INDEX_BX_SI];   /* True if r[.] has a value             */
     struct
-    {                           /* For case stmt indexed reg            */
-        uint8_t    regi;           /*   Last conditional jump              */
-        int16_t   immed;          /*   Contents of the previous register  */
-    }           JCond;
+    {                               /* For case stmt indexed reg            */
+        uint8_t    regi;            /*   Last conditional jump              */
+        int16_t   immed;            /*   Contents of the previous register  */
+    } JCond;
     void setState(uint16_t reg, int16_t value);
     void checkStartup();
     bool isKnown(eReg v) {return f[v];}

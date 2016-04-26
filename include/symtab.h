@@ -10,6 +10,9 @@
 #include <QtCore/QString>
 #include <string>
 #include <stdint.h>
+
+class QTextStream;
+
 struct Expr;
 struct AstIdent;
 struct TypeContainer;

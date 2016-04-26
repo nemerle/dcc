@@ -185,18 +185,22 @@ int main(int argc, char **argv)
     QCoreApplication::setApplicationVersion("0.1");
     setupOptions(app);
 
+    Project *proj = Project::get();
     /* Front end reads in EXE or COM file, parses it into I-code while
      * building the call graph and attaching appropriate bits of code for
      * each procedure.
     */
-    Project::get()->create(option.filename);
+    proj->create(option.filename);
 
     DccFrontend fe(&app);
-    if(not Project::get()->load()) {
+    proj->addLoadCommands();
+    proj->processAllCommands();
+    if(proj->m_error_state) {
+        proj->dumpAllErrors();
         return -1;
     }
     if (option.verbose)
-        Project::get()->prog.displayLoadInfo();
+        proj->prog.displayLoadInfo();
     if(false==fe.FrontEnd ())
         return -1;
     if(option.asm1)
@@ -213,9 +217,9 @@ int main(int argc, char **argv)
      * analysis, data flow etc. and outputs it to output file ready for
      * re-compilation.
     */
-    BackEnd(Project::get()->callGraph);
+    BackEnd(proj->callGraph);
 
-    Project::get()->callGraph->write();
+    proj->callGraph->write();
 
     if (option.Stats)
         displayTotalStats();

@@ -1,11 +1,6 @@
 PROJECT(dcc_original)
 cmake_minimum_required(VERSION 2.8.9)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-find_package(Qt5Core)
 
-OPTION(dcc_build_tests "Enable unit tests." OFF)
-#SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
 IF(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE -DNOMINMAX)
@@ -18,6 +13,13 @@ ENDIF()
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+find_package(Qt5Core)
+find_package(Qt5Widgets)
+
+OPTION(dcc_build_tests "Enable unit tests." OFF)
 include(cotire)
 FIND_PACKAGE(Boost)
 IF(dcc_build_tests)
@@ -86,6 +88,11 @@ set(dcc_LIB_SOURCES
     src/udm.cpp
     src/BasicBlock.cpp
     src/dcc_interface.cpp
+
+    src/Command.cpp
+    src/Command.h
+    src/Loaders.cpp
+    src/Loaders.h
 )
 set(dcc_SOURCES
     src/dcc.cpp
@@ -133,10 +140,10 @@ ADD_LIBRARY(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
 qt5_use_modules(dcc_lib Core)
 #cotire(dcc_lib)
 
-ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
+ADD_EXECUTABLE(dcc_original ${dcc_SOURCES})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
 TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES}  LLVMSupport)
-qt5_use_modules(dcc_original Core)
+qt5_use_modules(dcc_original Core Widgets)
 #ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)

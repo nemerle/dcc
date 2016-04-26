@@ -24,8 +24,6 @@ static void     setBits(int16_t type, uint32_t start, uint32_t len);
 static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 void    interactDis(Function * initProc, int ic);
-extern uint32_t    SynthLab;
-
 
 /* Returns the size of the string pointed by sym and delimited by delim.
  * Size includes delimiter.     */
@@ -57,7 +55,7 @@ ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
     eIcode.setRegDU( rAX, eUSE);
     eIcode.setRegDU( rTMP, eDEF);
     eIcode.ll()->setFlags( SYNTHETIC );
-    /* eIcode.ll()->label = SynthLab++; */
+    /* eIcode.ll()->label = Project::get()->SynthLab++; */
     eIcode.ll()->label = _Icode.ll()->label;
     Icode.addIcode(&eIcode);
 
@@ -70,7 +68,7 @@ ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
     eIcode.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
     eIcode.ll()->replaceSrc(_Icode.ll()->src());
     eIcode.du = _Icode.du;
-    eIcode.ll()->label = SynthLab++;
+    eIcode.ll()->label = Project::get()->SynthLab++;
     return Icode.addIcode(&eIcode);
 }
 ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
@@ -108,7 +106,7 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
     }
     eIcode.ll()->replaceSrc(rTMP);
     eIcode.setRegDU( rTMP, eUSE);
-    eIcode.ll()->label = SynthLab++;
+    eIcode.ll()->label = Project::get()->SynthLab++;
     return Icode.addIcode(&eIcode);
 }
 
@@ -160,7 +158,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             _Icode.type = LOW_LEVEL;
             ll->set(iJMP,I | SYNTHETIC | NO_OPS);
             ll->replaceSrc(LLOperand::CreateImm2(labLoc->ll()->GetLlLabel()));
-            ll->label = SynthLab++;
+            ll->label = Project::get()->SynthLab++;
         }
 
         /* Copy Icode to Proc */

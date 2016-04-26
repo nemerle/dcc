@@ -1,10 +1,13 @@
-#include <QtCore/QString>
-#include <QtCore/QDir>
-#include <utility>
 #include "dcc.h"
 #include "CallGraph.h"
 #include "project.h"
 #include "Procedure.h"
+
+#include <QtCore/QString>
+#include <QtCore/QDir>
+#include <QtCore/QDebug>
+#include <utility>
+
 using namespace std;
 //Project g_proj;
 QString asm1_name, asm2_name;     /* Assembler output filenames     */
@@ -15,10 +18,13 @@ OPTION  option;             /* Command line options                 */
 Project *Project::s_instance = nullptr;
 Project::Project() : callGraph(nullptr)
 {
+    m_project_command_stream.setMaximumCommandCount(10);
+    connect(&m_project_command_stream,SIGNAL(streamCompleted(bool)),SLOT(onCommandStreamFinished(bool)));
     memset(&prog,0,sizeof(prog));
 }
 void Project::initialize()
 {
+    resetCommandsAndErrorState();
     delete callGraph;
     callGraph = nullptr;
 }
@@ -106,3 +112,38 @@ SourceMachine *Project::machine()
     return nullptr;
 }
 
+void Project::onCommandStreamFinished(bool state)
+{
+    if(false==state) {
+        m_error_state = true;
+    }
+}
+void Project::dumpAllErrors() {
+    for(QPair<Command *,QString> v : m_command_ctx.m_failures) {
+        qDebug() << QString("%1 command failed with : %2").arg(v.first->name()).arg(v.second);
+    }
+}
+bool Project::addLoadCommands()
+{
+    if(!addCommand<LoaderSelection>())
+        return false;
+    if(!addCommand<LoaderApplication>()) {
+        return false;
+    }
+    return true;
+}
+
+void Project::processAllCommands()
+{
+    m_command_ctx.proj = this;
+    m_project_command_stream.processAll(&m_command_ctx);
+
+}
+
+void Project::resetCommandsAndErrorState()
+{
+    m_error_state = false;
+    m_command_ctx.reset();
+    m_command_ctx.proj = this;
+    m_project_command_stream.clear();
+}

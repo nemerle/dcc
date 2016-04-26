@@ -1,51 +1,59 @@
 #pragma once
-#include <string>
-#include <stdint.h>
-#include <cassert>
-#include <list>
+
+#include "symtab.h"
+#include "BinaryImage.h"
+#include "Procedure.h"
+#include "state.h"
+#include "src/Command.h"
+
 #include <llvm/ADT/ilist.h>
 #include <boost/icl/interval.hpp>
 #include <boost/icl/interval_map.hpp>
 #include <boost/icl/split_interval_map.hpp>
-#include <unordered_set>
 #include <QtCore/QString>
-#include "symtab.h"
-#include "BinaryImage.h"
-#include "Procedure.h"
+#include <list>
+#include <unordered_set>
+#include <string>
+#include <stdint.h>
+#include <assert.h>
+
 class QString;
 class SourceMachine;
 struct CALL_GRAPH;
-class IProject
-{
-    virtual PROG *binary()=0;
-    virtual const QString & project_name() const =0;
-    virtual const QString & binary_path() const =0;
-};
-class Project : public IProject
-{
-    static  Project *s_instance;
-            QString     m_fname;
-            QString     m_project_name;
-            QString     m_output_path;
-public:
+struct DosLoader;
 
+class Project : public QObject
+{
+    Q_OBJECT
+public:
     typedef llvm::iplist<Function> FunctionListType;
     typedef FunctionListType lFunction;
     typedef FunctionListType::iterator ilFunction;
 
-            SYMTAB      symtab;       /* Global symbol table              */
-            FunctionListType pProcList;
-            CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */
-            PROG        prog;   		/* Loaded program image parameters  */
-                        // no copies
+public:
+            DosLoader * m_selected_loader;
+            uint32_t    SynthLab;       //!< Last snthetic lab idx
+            SYMTAB      symtab;         //!< Global symbol table
+            FunctionListType pProcList; //!< List of located functions
+            CALL_GRAPH * callGraph;     //!< Pointer to the head of the call graph
+            STATE       m_entry_state;  //!< Machine state at program load
+
+            PROG        prog;       /* Loaded program image parameters  */
+            CommandStream m_project_command_stream;
+            bool        m_error_state;
+public:
+                        // prevent Project instance copying
                         Project(const Project&) = delete;
     const   Project &   operator=(const Project & l) =delete;
                         // only moves
                         Project(); // default constructor,
 
-public:
             void        create(const QString &a);
-            bool        load();
+
+            bool        addLoadCommands();
+            void        processAllCommands();
+            void        resetCommandsAndErrorState();
+
     const   QString &   output_path() const {return m_output_path;}
     const   QString &   project_name() const {return m_project_name;}
     const   QString &   binary_path() const {return m_fname;}
@@ -68,8 +76,23 @@ public:
 
     const   FunctionListType &functions() const { return pProcList; }
             FunctionListType &functions()       { return pProcList; }
+            template<class COMMANDCLASS>
+            bool addCommand() {
+                return m_project_command_stream.add(new COMMANDCLASS);
+            }
+            void dumpAllErrors();
+public slots:
+            void onCommandStreamFinished(bool state);
 protected:
             void        initialize();
             void        writeGlobSymTable();
+
+protected:
+    static  Project *   s_instance;
+            QString     m_fname;
+            QString     m_project_name;
+            QString     m_output_path;
+            CommandContext m_command_ctx;
+
 };
 //extern Project g_proj;
