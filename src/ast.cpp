@@ -897,10 +897,10 @@ QString FuncNode::walkCondExpr(Function *pProc, int *numLoc) const
 
 int FuncNode::hlTypeSize(Function *) const
 {
-    return hlSize[call.proc->retVal.type];
+    return hlSize[call.proc->getReturnType()];
 }
 
 hlType FuncNode::expType(Function *) const
 {
-    return call.proc->retVal.type;
+    return call.proc->getReturnType();
 }

@@ -313,7 +313,7 @@ struct LLOperand
     {
         return not (*this == LLOperand());
     }
-    void addProcInformation(int param_count, CConv::Type call_conv);
+    void addProcInformation(int param_count, CConv::CC_Type call_conv);
     bool isImmediate() const { return immed;}
     void setImmediate(bool x) { immed=x;}
     bool compound() const {return is_compound;} // dx:ax pair

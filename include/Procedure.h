@@ -63,7 +63,7 @@ enum PROC_FLAGS
     GRAPH_IRRED =0x00100000, /* Proc generates an irreducible graph		*/
     SI_REGVAR   =0x00200000, /* SI is used as a stack variable 			*/
     DI_REGVAR   =0x00400000, /* DI is used as a stack variable 			*/
-    PROC_IS_FUNC=0x00800000,	/* Proc is a function 						*/
+    //PROC_IS_FUNC=0x00800000,	/* Proc is a function - determined by return type */
     REG_ARGS    =0x01000000, /* Proc has registers as arguments			*/
 //    PROC_VARARG =0x02000000,	/* Proc has variable arguments				*/
     PROC_OUTPUT =0x04000000, /* C for this proc has been output 			*/
@@ -74,10 +74,43 @@ enum PROC_FLAGS
 //#define CALL_MASK    0xFFFF9FFF /* Masks off CALL_C and CALL_PASCAL		 	*/
 };
 
-struct FunctionType
+struct Type {
+    hlType dcc_type;
+};
+struct FunctionType : public Type
 {
+    CConv *         m_call_conv;
+    std::vector<Type> ContainedTys;
+    ID          retVal;    /* Return value - identifier    		 */
     bool m_vararg=false;
+    unsigned 	getNumParams() const { return ContainedTys.size(); }
     bool isVarArg() const {return m_vararg;}
+    void setReturnType(hlType t) {
+        retVal.type = t;
+    }
+    void setReturnLocation(const LONGID_TYPE &v) {
+        retVal.loc = REG_FRAME;
+        retVal.longId() = v;
+    }
+    void setReturnLocation(eReg reg) {
+        retVal.loc = REG_FRAME;
+        retVal.id.regi = reg;
+    }
+    hlType getReturnType() const { return retVal.type; }
+    void addArgument(hlType hl) {
+        ContainedTys.push_back(Type {hl});
+    }
+    void clearArguments() { ContainedTys.clear(); }
+
+    void setCallingConvention(CConv::CC_Type cc);
+
+    static FunctionType *get(Type result,std::vector<Type> params, bool vararg_func) {
+        FunctionType * res = new FunctionType;
+        res->setReturnType(result.dcc_type);
+        std::swap(res->ContainedTys,params);
+        res->m_vararg = vararg_func;
+        return res;
+    }
 };
 struct Assignment
 {
@@ -121,16 +154,17 @@ struct Function : public llvm::ilist_node<Function>
     typedef BasicBlockListType::const_iterator const_iterator;
 protected:
     BasicBlockListType  BasicBlocks;        ///< The basic blocks
-    Function(FunctionType */*ty*/) : procEntry(0),depth(0),flg(0),cbParam(0),m_dfsLast(0),numBBs(0),
+    Function(FunctionType *ty) : procEntry(0),depth(0),flg(0),cbParam(0),m_dfsLast(0),numBBs(0),
         hasCase(false),liveAnal(0)
     {
-        type = new FunctionType;
+        type = ty;
+        if(!ty) // No type was provided, create it
+            type = new FunctionType;
         callingConv(CConv::UNKNOWN);
     }
 
 public:
     FunctionType *  type;
-    CConv *         m_call_conv;
     uint32_t        procEntry; /* label number                         	 */
     QString         name;      /* Meaningful name for this proc     	 */
     STATE           state;     /* Entry state                          	 */
@@ -139,7 +173,6 @@ public:
     int16_t      cbParam;   /* Probable no. of bytes of parameters  	 */
     STKFRAME     args;      /* Array of arguments                   	 */
     LOCAL_ID	 localId;   /* Local identifiers                         */
-    ID           retVal;    /* Return value - identifier    		 */
 
         /* Icodes and control flow graph */
     CIcodeRec	 Icode;     /* Object with ICODE records                 */
@@ -165,11 +198,14 @@ public:
         r->name = nm;
         return r;
     }
+    hlType getReturnType() const {
+        return getFunctionType()->getReturnType();
+    }
     FunctionType *getFunctionType() const {
         return type;
     }
-    CConv *callingConv() const { return m_call_conv;}
-    void callingConv(CConv::Type v);
+    CConv *callingConv() const { return type->m_call_conv;}
+    void callingConv(CConv::CC_Type v);
 
 //    bool anyFlagsSet(uint32_t t) { return (flg&t)!=0;}
     bool hasRegArgs() const { return (flg & REG_ARGS)!=0;}

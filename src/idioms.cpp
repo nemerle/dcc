@@ -124,11 +124,10 @@ void Function::findIdioms()
             /* Check for library functions that return a long register.
                          * Propagate this result */
             if (pIcode->ll()->src().proc.proc != nullptr)
-                if ((pIcode->ll()->src().proc.proc->flg & PROC_ISLIB) and
-                        (pIcode->ll()->src().proc.proc->flg & PROC_IS_FUNC))
+                if ( pIcode->ll()->src().proc.proc->flg & PROC_ISLIB )
                 {
-                    if ((pIcode->ll()->src().proc.proc->retVal.type==TYPE_LONG_SIGN)
-                            or (pIcode->ll()->src().proc.proc->retVal.type == TYPE_LONG_UNSIGN))
+                    if ((pIcode->ll()->src().proc.proc->getReturnType()==TYPE_LONG_SIGN)
+                            or (pIcode->ll()->src().proc.proc->getReturnType() == TYPE_LONG_UNSIGN))
                         localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), pIcode/*ip*/);
                 }
 

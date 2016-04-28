@@ -21,7 +21,10 @@ class QString;
 class SourceMachine;
 struct CALL_GRAPH;
 struct DosLoader;
-
+struct SegOffAddr {
+    uint16_t seg;
+    uint32_t addr;
+};
 class Project : public QObject
 {
     Q_OBJECT
@@ -30,8 +33,8 @@ public:
     typedef FunctionListType lFunction;
     typedef FunctionListType::iterator ilFunction;
 
+    DosLoader * m_selected_loader;
 public:
-            DosLoader * m_selected_loader;
             uint32_t    SynthLab;       //!< Last snthetic lab idx
             SYMTAB      symtab;         //!< Global symbol table
             FunctionListType pProcList; //!< List of located functions
@@ -50,9 +53,10 @@ public:
 
             void        create(const QString &a);
 
-            bool        addLoadCommands();
+            bool        addLoadCommands(QString fname);
             void        processAllCommands();
             void        resetCommandsAndErrorState();
+
 
     const   QString &   output_path() const {return m_output_path;}
     const   QString &   project_name() const {return m_project_name;}
@@ -76,13 +80,16 @@ public:
 
     const   FunctionListType &functions() const { return pProcList; }
             FunctionListType &functions()       { return pProcList; }
-            template<class COMMANDCLASS>
-            bool addCommand() {
-                return m_project_command_stream.add(new COMMANDCLASS);
-            }
-            void dumpAllErrors();
+
+            bool        addCommand(Command *cmd) { return m_project_command_stream.add(cmd); }
+            void        dumpAllErrors();
+            void        setLoader(DosLoader *ins);
 public slots:
-            void onCommandStreamFinished(bool state);
+            void        onCommandStreamFinished(bool state);
+            void        onNewFunctionDiscovered(SegOffAddr ip,QString name,FunctionType *ft);
+signals:
+            void        newFunctionCreated(Function &);
+            void        loaderSelected();
 protected:
             void        initialize();
             void        writeGlobSymTable();
@@ -95,4 +102,3 @@ protected:
             CommandContext m_command_ctx;
 
 };
-//extern Project g_proj;

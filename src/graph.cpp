@@ -16,7 +16,6 @@
 
 using namespace std;
 using namespace boost;
-extern Project g_proj;
 //static BB *  rmJMP(Function * pProc, int marker, BB * pBB);
 //static void mergeFallThrough(Function * pProc, BB * pBB);
 //static void dfsNumbering(BB * pBB, std::vector<BB*> &dfsLast, int *first, int *last);

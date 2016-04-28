@@ -193,7 +193,7 @@ int main(int argc, char **argv)
     proj->create(option.filename);
 
     DccFrontend fe(&app);
-    proj->addLoadCommands();
+    proj->addLoadCommands(option.filename);
     proj->processAllCommands();
     if(proj->m_error_state) {
         proj->dumpAllErrors();
@@ -201,6 +201,7 @@ int main(int argc, char **argv)
     }
     if (option.verbose)
         proj->prog.displayLoadInfo();
+
     if(false==fe.FrontEnd ())
         return -1;
     if(option.asm1)

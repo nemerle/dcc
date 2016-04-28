@@ -9,7 +9,6 @@
 #include <utility>
 
 using namespace std;
-//Project g_proj;
 QString asm1_name, asm2_name;     /* Assembler output filenames     */
 SYMTAB  symtab;             /* Global symbol table                  */
 STATS   stats;              /* cfg statistics                       */
@@ -59,11 +58,25 @@ ilFunction Project::findByEntry(uint32_t entry)
         [entry](const Function &f)  { return f.procEntry==entry; });
 return iter;
 }
+void Project::onNewFunctionDiscovered(SegOffAddr ip, QString name, FunctionType *ft) {
+    FIXME;
+    auto proc = createFunction(ft,name);
+    // FIXME: use provided segment addr !
+    proc->procEntry = ip.addr;
+    if(name=="main") {
+        /* In medium and large models, the segment of main may (will?) not be
+            the same as the initial CS segment (of the startup code) */
+        m_entry_state.setState(rCS, prog.segMain);
+        m_entry_state.IP = prog.offMain;
+    }
 
+}
 ilFunction Project::createFunction(FunctionType *f,const QString &name)
 {
     pProcList.push_back(Function::Create(f,0,name,0));
-    return (++pProcList.rbegin()).base();
+    ilFunction iter = (++pProcList.rbegin()).base();
+    emit newFunctionCreated(*iter);
+    return iter;
 }
 
 int Project::getSymIdxByAdd(uint32_t adr)
@@ -123,11 +136,17 @@ void Project::dumpAllErrors() {
         qDebug() << QString("%1 command failed with : %2").arg(v.first->name()).arg(v.second);
     }
 }
-bool Project::addLoadCommands()
+
+void Project::setLoader(DosLoader * ldr)
 {
-    if(!addCommand<LoaderSelection>())
+    m_selected_loader = ldr;
+    emit loaderSelected();
+}
+bool Project::addLoadCommands(QString fname)
+{
+    if(!addCommand(new LoaderSelection(fname)))
         return false;
-    if(!addCommand<LoaderApplication>()) {
+    if(!addCommand(new LoaderApplication(fname))) {
         return false;
     }
     return true;

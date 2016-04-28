@@ -33,7 +33,7 @@ class Command
 public:
     Command(QString n,CommandLevel level) : m_command_name(n),m_level(level) {}
     QString name() const { return m_command_name;}
-    virtual bool execute(CommandContext *,Project *) { return false; }
+    virtual bool execute(CommandContext *) { return false; }
 };
 class CompoundCommand : public Command {
     QVector<Command *> m_contained;
@@ -43,9 +43,9 @@ public:
     void addCommand(Command *c) {
         m_contained.push_back(c);
     }
-    bool execute(CommandContext * ctx,Project *v) {
+    bool execute(CommandContext * ctx) {
         for(Command * c : m_contained) {
-            if(!c->execute(ctx,v))
+            if(!c->execute(ctx))
                 return false;
         }
         return true;
@@ -65,17 +65,21 @@ public:
 signals:
     void streamCompleted(bool success);
 };
-
+// Effect: loader has been selected and set in current project
 class LoaderSelection : public Command {
+    QString m_filename;
 public:
     virtual ~LoaderSelection() {}
-    LoaderSelection() : Command("Select loader",eProject) {}
-    bool execute(CommandContext * ctx,Project *) override;
+    LoaderSelection(QString f) : Command("Select loader",eProject),m_filename(f) {}
+    bool execute(CommandContext * ctx) override;
 };
+// trigger Project->m_selected_loader has changed
+// Effect: the PROG object is loaded using the current loader
 class LoaderApplication : public Command {
+    QString m_filename;
 public:
     virtual ~LoaderApplication() {}
-    LoaderApplication() : Command("Apply loader",eProject) {}
-    bool execute(CommandContext * ctx,Project *) override;
+    LoaderApplication(QString f) : Command("Apply loader",eProject),m_filename(f) {}
+    bool execute(CommandContext * ctx) override;
 };
 #endif // COMMAND_H

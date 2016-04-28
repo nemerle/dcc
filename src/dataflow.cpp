@@ -321,12 +321,12 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                 pbb->liveOut = in_liveOut;
 
                 /* Get return expression of function */
-                if (flg & PROC_IS_FUNC)
+                if (getReturnType()!=TYPE_UNKNOWN)
                 {
                     auto picode = pbb->rbegin(); /* icode of function return */
                     if (picode->hl()->opcode == HLI_RET)
                     {
-                        picode->hlU()->expr(AstIdent::idID(&retVal, &localId, (++pbb->rbegin()).base()));
+                        picode->hlU()->expr(AstIdent::idID(&type->retVal, &localId, (++pbb->rbegin()).base()));
                         picode->du.use = in_liveOut;
                     }
                 }
@@ -353,7 +353,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
                     }
                     else    /* library routine */
                     {
-                        if ( (pcallee->flg & PROC_IS_FUNC) and /* returns a value */
+                        if ( (pcallee->getReturnType()!=TYPE_UNKNOWN) and /* returns a value */
                              (pcallee->liveOut & pbb->edges[0].BBptr->liveIn).any()
                              )
                             pbb->liveOut = pcallee->liveOut;
@@ -363,7 +363,7 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
 
                     if ((not (pcallee->flg & PROC_ISLIB)) or ( pbb->liveOut.any() ))
                     {
-                        switch (pcallee->retVal.type) {
+                        switch (pcallee->getReturnType()) {
                         case TYPE_LONG_SIGN:
                         case TYPE_LONG_UNSIGN:
                             ticode.du1.setDef(rAX).addDef(rDX);
@@ -461,7 +461,7 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
  * on optimized code. */
 void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
 {
-    if (not ((picode.hl()->opcode == HLI_CALL) and (picode.hl()->call.proc->flg & PROC_IS_FUNC)))
+    if (not ((picode.hl()->opcode == HLI_CALL) and (picode.hl()->call.proc->getReturnType()!=TYPE_UNKNOWN)))
         return;
 
     BB *tbb = this->edges[0].BBptr;
@@ -971,7 +971,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                 case HLI_CALL:
                     ticode = picode->du1.idx[0].uses.front();
                     ti_hl = ticode->hlU();
-                    _retVal = &_icHl.call.proc->retVal;
+                    _retVal = &_icHl.call.proc->type->retVal;
                     switch (ti_hl->opcode)
                     {
                     case HLI_ASSIGN:
@@ -1095,7 +1095,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
 
                     case HLI_JCOND:
                         _exp = _icHl.call.toAst();
-                        _retVal = &picode->hl()->call.proc->retVal;
+                        _retVal = &picode->hl()->call.proc->type->retVal;
                         res = Expr::insertSubTreeLongReg (_exp,
                                                           ticode->hlU()->exp.v,
                                                           locals.newLongReg ( _retVal->type, _retVal->longId(), picode.base()));
@@ -1146,7 +1146,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
             if ( not _icHl.call.proc->isLibrary() and (not picode->du1.used(0)) and (picode->du1.getNumRegsDef() > 0))
             {
                 _exp = new FuncNode(_icHl.call.proc, _icHl.call.args);
-                auto lhs = AstIdent::idID (&_icHl.call.proc->retVal, &locals, picode.base());
+                auto lhs = AstIdent::idID (&_icHl.call.proc->type->retVal, &locals, picode.base());
                 picode->setAsgn(lhs, _exp);
             }
         }
@@ -1183,7 +1183,6 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
                 if(not _liveOut.any())
                     return;
             }
-        flg |= PROC_IS_FUNC;
         isAx = _liveOut.testReg(rAX);
         isBx = _liveOut.testReg(rBX);
         isCx = _liveOut.testReg(rCX);
@@ -1219,53 +1218,55 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
 
         if (isAx and isDx)       /* long or pointer */
         {
-            retVal.type = TYPE_LONG_SIGN;
-            retVal.loc = REG_FRAME;
-            retVal.longId() = LONGID_TYPE(rDX,rAX);
+            type->setReturnType(TYPE_LONG_SIGN);
+            type->m_call_conv->calculateStackLayout(this);
             /*idx = */localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), Icode.begin());
             localId.propLongId (rAX, rDX, "");
         }
         else if (isAx or isBx or isCx or isDx)	/* uint16_t */
         {
-            retVal.type = TYPE_WORD_SIGN;
-            retVal.loc = REG_FRAME;
+            eReg selected_reg;
             if (isAx)
-                retVal.id.regi = rAX;
+                selected_reg = rAX;
             else if (isBx)
-                retVal.id.regi = rBX;
+                selected_reg = rBX;
             else if (isCx)
-                retVal.id.regi = rCX;
+                selected_reg = rCX;
             else
-                retVal.id.regi = rDX;
-            /*idx = */localId.newByteWordReg(TYPE_WORD_SIGN,retVal.id.regi);
+                selected_reg = rDX;
+            type->setReturnType(TYPE_WORD_SIGN);
+            type->m_call_conv->calculateStackLayout(this);
+            /*idx = */localId.newByteWordReg(TYPE_WORD_SIGN,selected_reg);
         }
         else if(isAL or isBL or isCL or isDL)
         {
-            retVal.type = TYPE_BYTE_SIGN;
-            retVal.loc = REG_FRAME;
+            eReg selected_reg;
             if (isAL)
-                retVal.id.regi = rAL;
+                selected_reg = rAL;
             else if (isBL)
-                retVal.id.regi = rBL;
+                selected_reg = rBL;
             else if (isCL)
-                retVal.id.regi = rCL;
+                selected_reg = rCL;
             else
-                retVal.id.regi = rDL;
-            /*idx = */localId.newByteWordReg(TYPE_BYTE_SIGN,retVal.id.regi);
+                selected_reg = rDL;
+            type->setReturnType(TYPE_BYTE_SIGN);
+            type->m_call_conv->calculateStackLayout(this);
+            /*idx = */localId.newByteWordReg(TYPE_BYTE_SIGN,selected_reg);
         }
         else if(isAH or isBH or isCH or isDH)
         {
-            retVal.type = TYPE_BYTE_SIGN;
-            retVal.loc = REG_FRAME;
+            eReg selected_reg;
             if (isAH)
-                retVal.id.regi = rAH;
+                selected_reg = rAH;
             else if (isBH)
-                retVal.id.regi = rBH;
+                selected_reg = rBH;
             else if (isCH)
-                retVal.id.regi = rCH;
+                selected_reg = rCH;
             else
-                retVal.id.regi = rDH;
-            /*idx = */localId.newByteWordReg(TYPE_BYTE_SIGN,retVal.id.regi);
+                selected_reg = rDH;
+            type->setReturnType(TYPE_BYTE_SIGN);
+            type->m_call_conv->calculateStackLayout(this);
+            /*idx = */localId.newByteWordReg(TYPE_BYTE_SIGN,selected_reg);
         }
     }
 }

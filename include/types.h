@@ -105,6 +105,8 @@ struct TypeContainer
                 return 4;
             case TYPE_FLOAT:
                 return 4;
+            case TYPE_PTR:
+                return 2;
             default:
                 return ~0;
         }

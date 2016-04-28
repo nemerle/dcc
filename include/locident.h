@@ -104,10 +104,7 @@ public:
     char                macro[10];  /* Macro for this identifier                */
     QString             name;       /* Identifier's name                        */
     union ID_UNION {                         /* Different types of identifiers           */
-        friend struct ID;
-    protected:
         LONG_STKID_TYPE	longStkId;  /* For TYPE_LONG_(UN)SIGN on the stack */
-    public:
         eReg		regi;       /* For TYPE_BYTE(WORD)_(UN)SIGN registers   */
         struct {                /* For TYPE_BYTE(WORD)_(UN)SIGN on the stack */
             uint8_t	regOff;     /*    register offset (if any)              */

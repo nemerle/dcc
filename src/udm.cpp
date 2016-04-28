@@ -13,7 +13,6 @@
 #include <cassert>
 #include <stdio.h>
 #include <CallGraph.h>
-extern Project g_proj;
 //static void displayCFG(Function * pProc);
 //static void displayDfs(BB * pBB);
 

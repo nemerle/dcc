@@ -1032,8 +1032,9 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     {
         if (pm->regi == INDEX_BP)      /* indexed on bp */
         {
-            if (pm->off >= 2)
+            if (pm->off >= 2) {
                 pProc->args.updateFrameOff ( pm->off, size, eDuVal::USE);
+            }
             else if (pm->off < 0)
                 pProc->localId.newByteWordStk (TYPE_WORD_SIGN, pm->off, 0);
         }

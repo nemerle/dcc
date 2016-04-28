@@ -89,7 +89,7 @@ bool LLOperand::isReg() const
 {
     return (regi>=rAX) and (regi<=rTMP);
 }
-void LLOperand::addProcInformation(int param_count, CConv::Type call_conv)
+void LLOperand::addProcInformation(int param_count, CConv::CC_Type call_conv)
 {
     proc.proc->cbParam = (int16_t)param_count;
     proc.cb = param_count;

@@ -263,7 +263,8 @@ enum hlType
     TYPE_STR,        	/* string               	*/
     TYPE_CONST,         /* constant (any type)		*/
     TYPE_FLOAT,         /* floating point			*/
-    TYPE_DOUBLE		/* double precision float	*/
+    TYPE_DOUBLE,		/* double precision float	*/
+    TYPE_FUNC
 };
 
 /* Operand is defined, used or both flag */

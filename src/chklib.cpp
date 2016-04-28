@@ -480,27 +480,32 @@ bool LibCheck(Function & pProc)
             pProc.callingConv(CConv::C);
             if (i != NIL)
             {
+                PH_FUNC_STRUCT &phfunc(pFunc[i]);
                 /* Allocate space for the arg struct, and copy the hlType to
                     the appropriate field */
-                arg = pFunc[i].firstArg;
-                pProc.args.numArgs = pFunc[i].numArg;
-                pProc.args.resize(pFunc[i].numArg);
-                for (j=0; j < pFunc[i].numArg; j++)
+                arg = phfunc.firstArg;
+                pProc.args.numArgs = phfunc.numArg;
+                pProc.args.resize(phfunc.numArg);
+                pProc.getFunctionType()->clearArguments();
+                for (j=0; j < phfunc.numArg; j++)
                 {
+                    pProc.getFunctionType()->addArgument(pArg[arg]);
                     pProc.args[j].type = pArg[arg++];
                 }
-                if (pFunc[i].typ != TYPE_UNKNOWN)
+                if (phfunc.typ != TYPE_UNKNOWN)
                 {
-                    pProc.retVal.type = pFunc[i].typ;
-                    pProc.flg |= PROC_IS_FUNC;
-                    switch (pProc.retVal.type) {
-                        case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
+                    pProc.type->setReturnType(phfunc.typ);
+                    switch (pProc.getReturnType()) {
+                    case TYPE_LONG_SIGN:
+                    case TYPE_LONG_UNSIGN:
                             pProc.liveOut.setReg(rDX).addReg(rAX);
                             break;
-                        case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
+                    case TYPE_WORD_SIGN:
+                    case TYPE_WORD_UNSIGN:
                             pProc.liveOut.setReg(rAX);
                             break;
-                        case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
+                    case TYPE_BYTE_SIGN:
+                    case TYPE_BYTE_UNSIGN:
                             pProc.liveOut.setReg(rAL);
                             break;
                         case TYPE_STR:
@@ -510,10 +515,11 @@ bool LibCheck(Function & pProc)
                             break;
                         default:
                             qCritical() << QString("Unknown retval type %1 for %2 in LibCheck")
-                                       .arg(pProc.retVal.type).arg(pProc.name);
+                                       .arg(pProc.getReturnType()).arg(pProc.name);
                             /*** other types are not considered yet ***/
                     }
                 }
+                pProc.getFunctionType()->m_call_conv->calculateStackLayout(&pProc);
                 pProc.getFunctionType()->m_vararg = pFunc[i].bVararg;
             }
         }

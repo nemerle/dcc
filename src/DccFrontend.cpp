@@ -5,6 +5,7 @@
 #include "project.h"
 #include "disassem.h"
 #include "CallGraph.h"
+#include "Command.h"
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QDebug>
@@ -320,6 +321,71 @@ struct ExeLoader : public DosLoader {
 /*****************************************************************************
 * LoadImage
 ****************************************************************************/
+struct MachineStateInitialization : public Command {
+
+public:
+    MachineStateInitialization() : Command("Initialize simulated machine state",eProject) {}
+
+    bool execute(CommandContext *ctx) override
+    {
+        assert(ctx && ctx->proj);
+        Project &proj(*ctx->proj);
+        const PROG &prog(proj.prog);
+        proj.m_entry_state.setState(rES, 0);   /* PSP segment */
+        proj.m_entry_state.setState(rDS, 0);
+        proj.m_entry_state.setState(rCS, prog.initCS);
+        proj.m_entry_state.setState(rSS, prog.initSS);
+        proj.m_entry_state.setState(rSP, prog.initSP);
+        proj.m_entry_state.IP = ((uint32_t)prog.initCS << 4) + prog.initIP;
+        proj.SynthLab = SYNTHESIZED_MIN;
+        return true;
+    }
+};
+struct FindMain : public Command {
+    FindMain() : Command("Locate the main entry point",eProject) {
+    }
+    bool execute(CommandContext *ctx) {
+        Project &proj(*ctx->proj);
+        const PROG &prog(proj.prog);
+
+        if(ctx->proj->m_entry_state.IP==0) {
+            ctx->recordFailure(this,"Cannot search for main func when no entry point was found");
+            return false;
+        }
+        /* Check for special settings of initial state, based on idioms of the startup code */
+        ctx->proj->m_entry_state.checkStartup();
+        if (prog.offMain != -1)
+        {
+            FunctionType *main_type = FunctionType::get(Type{TYPE_WORD_SIGN},{ Type{TYPE_WORD_SIGN},Type{TYPE_PTR} },false);
+            main_type->setCallingConvention(CConv::C);
+            proj.onNewFunctionDiscovered( SegOffAddr {prog.segMain,prog.offMain},"main",main_type);
+            //TODO: main arguments and return values should depend on detected compiler/library
+
+        }
+        else
+        {
+            FunctionType *main_type = FunctionType::get(Type{TYPE_UNKNOWN},{ Type{TYPE_UNKNOWN} },false);
+            main_type->setCallingConvention(CConv::UNKNOWN);
+            /* Create initial procedure at program start address */
+            proj.onNewFunctionDiscovered( SegOffAddr {prog.segMain,proj.m_entry_state.IP},"start",main_type);
+        }
+        return true;
+    }
+};
+struct AddFunction : public Command {
+    QString m_name;
+    uint16_t m_seg;
+    uint32_t m_addr;
+    FunctionType *m_type;
+    AddFunction(QString name,uint16_t seg,uint32_t address,FunctionType *f) : Command("Create function",eProject),
+        m_name(name),
+        m_seg(seg),
+        m_addr(address)
+    {}
+    bool execute(CommandContext *ctx) override {
+
+    }
+};
 void DccFrontend::initializeMachineState(Project &proj)
 {
     const PROG &prog(proj.prog);
@@ -339,10 +405,11 @@ void DccFrontend::createEntryProc(Project &proj)
     /* Make a struct for the initial procedure */
     if (prog.offMain != -1)
     {
-        start_proc = proj.createFunction(0,"main");
-        start_proc->retVal.loc = REG_FRAME;
-        start_proc->retVal.type = TYPE_WORD_SIGN;
-        start_proc->retVal.id.regi = rAX;
+        //TODO: main arguments and return values should depend on detected compiler/library
+        FunctionType *main_type = FunctionType::get(Type{TYPE_WORD_SIGN},{ Type{TYPE_WORD_SIGN},Type{TYPE_PTR} },false);
+
+        start_proc = proj.createFunction(main_type,"main");
+        start_proc->callingConv(CConv::C);
         /* We know where main() is. Start the flow of control from there */
         start_proc->procEntry = prog.offMain;
         /* In medium and large models, the segment of main may (will?) not be
@@ -369,18 +436,14 @@ void DccFrontend::createEntryProc(Project &proj)
 void DccFrontend::parse(Project &proj)
 {
     /* Set initial state */
-    initializeMachineState(proj);
-
-    /* Check for special settings of initial state, based on idioms of the
-          startup code */
-    proj.m_entry_state.checkStartup();
+    proj.addCommand(new MachineStateInitialization);
+    proj.addCommand(new FindMain);
 
     createEntryProc(proj);
 
     /* This proc needs to be called to set things up for LibCheck(), which
        checks a proc to see if it is a know C (etc) library */
     proj.prog.bSigs = SetupLibCheck();
-    //BUG:  proj and g_proj are 'live' at this point !
 
     /* Recursively build entire procedure list */
     proj.callGraph->proc->FollowCtrl(proj.callGraph, &proj.m_entry_state);

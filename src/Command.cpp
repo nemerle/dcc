@@ -1,58 +1,75 @@
 #include "Command.h"
 
+#include "dcc.h"
 #include "project.h"
 #include "Loaders.h"
 
 #include <QFile>
 
-bool LoaderSelection::execute(CommandContext * ctx, Project *p)
+bool LoaderSelection::execute(CommandContext * ctx)
 {
-    if(p->binary_path().isEmpty()) {
-        ctx->recordFailure(this,QString("No executable path set in project %1").arg(p->project_name()));
+    Project *proj=ctx->proj;
+    if(nullptr==proj) {
+        ctx->recordFailure(this,"No active project ");
+        return false;
+    }
+    if(m_filename.isEmpty()) {
+        ctx->recordFailure(this,"No executable path given to loader selector");
         return false;
     }
 
-    QFile finfo(p->binary_path());
+    QFile finfo(m_filename);
     /* Open the input file */
     if(not finfo.open(QFile::ReadOnly)) {
-        ctx->recordFailure(this,QString("Cannot open file %1").arg(p->binary_path()));
+        ctx->recordFailure(this,QString("Cannot open file %1").arg(m_filename));
         return false;
     }
     /* Read in first 2 bytes to check EXE signature */
     if (finfo.size()<=2)
     {
-        ctx->recordFailure(this,QString("File %1 is too small").arg(p->binary_path()));
+        ctx->recordFailure(this,QString("File %1 is too small").arg(m_filename));
     }
     ComLoader com_loader;
     ExeLoader exe_loader;
 
     if(exe_loader.canLoad(finfo)) {
-        p->m_selected_loader = new ExeLoader;
+        proj->setLoader(new ExeLoader);
         return true;
     }
     if(com_loader.canLoad(finfo)) {
-        p->m_selected_loader = new ComLoader;
+        proj->setLoader(new ExeLoader);
         return true;
     }
-    ctx->recordFailure(this,QString("None of the available loaders can load file %1").arg(p->binary_path()));
+    ctx->recordFailure(this,QString("None of the available loaders can load file %1").arg(m_filename));
 
     return true;
 }
 
-bool LoaderApplication::execute(CommandContext * ctx, Project *p)
+bool LoaderApplication::execute(CommandContext * ctx)
 {
-    if(!p)
-        return false;
-    if(!p->m_selected_loader) {
-        ctx->recordFailure(this,QString("No loader selected for project %1").arg(p->project_name()));
+    Project *proj=ctx->proj;
+
+    if(nullptr==proj) {
+        ctx->recordFailure(this,"No active project ");
         return false;
     }
-    QFile finfo(p->binary_path());
+    if(!proj->m_selected_loader) {
+        ctx->recordFailure(this,QString("No loader selected for project %1").arg(proj->project_name()));
+        return false;
+    }
+    QFile finfo(m_filename);
     if(not finfo.open(QFile::ReadOnly)) {
-        ctx->recordFailure(this,QString("Cannot open file %1").arg(p->binary_path()));
+        ctx->recordFailure(this,QString("Cannot open file %1").arg(m_filename));
         return false;
     }
-    return p->m_selected_loader->load(p->prog,finfo);
+    bool load_res = proj->m_selected_loader->load(proj->prog,finfo);
+    if(!load_res) {
+        ctx->recordFailure(this,QString("Failure during load: %1").arg(m_filename));
+        return false;
+    }
+    if (option.verbose)
+        proj->prog.displayLoadInfo();
+    return true;
 }
 
 bool CommandStream::add(Command * c) {
@@ -70,7 +87,7 @@ void CommandStream::processAll(CommandContext *ctx)
 {
     while(not m_commands.isEmpty()) {
         Command *cmd = m_commands.takeFirst();
-        if(false==cmd->execute(ctx,ctx->proj)) {
+        if(false==cmd->execute(ctx)) {
             emit streamCompleted(false);
             break;
         }

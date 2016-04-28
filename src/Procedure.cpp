@@ -35,6 +35,13 @@ void JumpTable::pruneEntries(uint16_t cs)
 }
 
 
-void Function::callingConv(CConv::Type v) {
-    m_call_conv=CConv::create(v);
+void Function::callingConv(CConv::CC_Type v) {
+    type->setCallingConvention(v);
+    getFunctionType()->m_call_conv->calculateStackLayout(this);
+}
+
+void FunctionType::setCallingConvention(CConv::CC_Type cc)
+{
+        m_call_conv=CConv::create(cc);
+        assert(m_call_conv);
 }

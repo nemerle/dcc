@@ -14,7 +14,6 @@
 #include <cstring>
 #include <cassert>
 
-extern Project g_proj;
 /* Static indentation buffer */
 static constexpr int indSize=81;          /* size of indentation buffer; max 20 */
 static char indentBuf[indSize] =

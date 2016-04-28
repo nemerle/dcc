@@ -239,21 +239,24 @@ void Function::writeProcComments(QTextStream &ostr)
     if (this->flg & PROC_ASM)
     {
         ostr << " * Untranslatable routine.  Assembler provided.\n";
-        if (this->flg & PROC_IS_FUNC)
-            switch (this->retVal.type) { // TODO: Functions return value in various regs
-            case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
-                ostr << " * Return value in register al.\n";
-                break;
-            case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
-                ostr << " * Return value in register ax.\n";
-                break;
-            case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
-                ostr << " * Return value in registers dx:ax.\n";
-                break;
-            default:
-                fprintf(stderr,"Unknown retval type %d",this->retVal.type);
-                break;
-            } /* eos */
+        switch (getReturnType()) { // TODO: Functions return value in various regs
+        case TYPE_BYTE_SIGN:
+        case TYPE_BYTE_UNSIGN:
+            ostr << " * Return value in register al.\n";
+            break;
+        case TYPE_WORD_SIGN: case TYPE_WORD_UNSIGN:
+            ostr << " * Return value in register ax.\n";
+            break;
+        case TYPE_LONG_SIGN: case TYPE_LONG_UNSIGN:
+            ostr << " * Return value in registers dx:ax.\n";
+            break;
+        case TYPE_UNKNOWN:
+            // void return type
+            break;
+        default:
+            fprintf(stderr,"Unknown retval type %d",getReturnType());
+            break;
+        } /* eos */
     }
 
     /* Calling convention */
