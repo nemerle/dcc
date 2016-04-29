@@ -164,6 +164,7 @@ protected:
     }
 
 public:
+    int             nStep;      // decompilation step number for this function
     FunctionType *  type;
     uint32_t        procEntry; /* label number                         	 */
     QString         name;      /* Meaningful name for this proc     	 */

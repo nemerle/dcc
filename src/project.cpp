@@ -15,7 +15,10 @@ STATS   stats;              /* cfg statistics                       */
 //PROG    prog;               /* programs fields                    */
 OPTION  option;             /* Command line options                 */
 Project *Project::s_instance = nullptr;
-Project::Project() : callGraph(nullptr)
+Project::Project() :
+    m_selected_loader(nullptr),
+    callGraph(nullptr),
+    m_pattern_locator(nullptr)
 {
     m_project_command_stream.setMaximumCommandCount(10);
     connect(&m_project_command_stream,SIGNAL(streamCompleted(bool)),SLOT(onCommandStreamFinished(bool)));
@@ -29,6 +32,7 @@ void Project::initialize()
 }
 void Project::create(const QString &a)
 {
+    // TODO: reset all state.
     initialize();
     QFileInfo fi(a);
     m_fname=a;
@@ -152,15 +156,23 @@ bool Project::addLoadCommands(QString fname)
 
 void Project::processAllCommands()
 {
-    m_command_ctx.proj = this;
+    m_command_ctx.m_project = this;
     m_project_command_stream.processAll(&m_command_ctx);
-
+    emit commandListChanged();
 }
-
+void Project::processCommands(int count) {
+    m_command_ctx.m_project = this;
+    while(count--) {
+        if(false==m_project_command_stream.processOne(&m_command_ctx)) {
+            break;
+        }
+    }
+    emit commandListChanged();
+}
 void Project::resetCommandsAndErrorState()
 {
     m_error_state = false;
     m_command_ctx.reset();
-    m_command_ctx.proj = this;
+    m_command_ctx.m_project = this;
     m_project_command_stream.clear();
 }

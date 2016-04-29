@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 /** Perfect hashing function library. Contains functions to generate perfect
     hashing functions */

@@ -8,7 +8,7 @@
 
 bool LoaderSelection::execute(CommandContext * ctx)
 {
-    Project *proj=ctx->proj;
+    Project *proj=ctx->m_project;
     if(nullptr==proj) {
         ctx->recordFailure(this,"No active project ");
         return false;
@@ -47,7 +47,7 @@ bool LoaderSelection::execute(CommandContext * ctx)
 
 bool LoaderApplication::execute(CommandContext * ctx)
 {
-    Project *proj=ctx->proj;
+    Project *proj=ctx->m_project;
 
     if(nullptr==proj) {
         ctx->recordFailure(this,"No active project ");
@@ -94,6 +94,20 @@ void CommandStream::processAll(CommandContext *ctx)
         m_recently_executed.push_back(cmd);
     }
     emit streamCompleted(true);
+}
+
+bool CommandStream::processOne(CommandContext *ctx)
+{
+    if(not m_commands.isEmpty()) {
+        Command *cmd = m_commands.takeFirst();
+        if(false==cmd->execute(ctx)) {
+            emit streamChanged();
+            return false;
+        }
+        m_recently_executed.push_back(cmd);
+    }
+    emit streamChanged();
+    return true;
 }
 
 void CommandStream::clear()

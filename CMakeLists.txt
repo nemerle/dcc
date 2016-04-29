@@ -96,6 +96,22 @@ set(dcc_LIB_SOURCES
     src/Loaders.cpp
     src/Loaders.h
 )
+set(dcc_UI_SOURCES
+    src/ui/DccMainWindow.ui
+    src/ui/DccMainWindow.h
+    src/ui/DccMainWindow.cpp
+    src/ui/FunctionViewWidget.ui
+    src/ui/FunctionViewWidget.h
+    src/ui/FunctionViewWidget.cpp
+    src/ui/FunctionListDockWidget.ui
+    src/ui/FunctionListDockWidget.cpp
+    src/ui/FunctionListDockWidget.h
+    src/ui/RenderTags.cpp
+    src/ui/RenderTags.h
+    src/ui/CommandQueueView.cpp
+    src/ui/CommandQueueView.h
+    src/ui/CommandQueueView.ui
+)
 set(dcc_SOURCES
     src/dcc.cpp
 )
@@ -142,7 +158,7 @@ ADD_LIBRARY(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
 qt5_use_modules(dcc_lib Core)
 #cotire(dcc_lib)
 
-ADD_EXECUTABLE(dcc_original ${dcc_SOURCES})
+ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_UI_SOURCES})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
 TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES}  LLVMSupport)
 qt5_use_modules(dcc_original Core Widgets)

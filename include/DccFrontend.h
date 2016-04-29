@@ -9,7 +9,6 @@ class DccFrontend : public QObject
 public:
     explicit DccFrontend(QObject *parent = 0);
     bool FrontEnd();            /* frontend.c   */
-    void initializeMachineState(Project & proj);
 
 signals:
 

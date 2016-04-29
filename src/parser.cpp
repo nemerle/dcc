@@ -6,6 +6,7 @@
 #include "project.h"
 #include "CallGraph.h"
 #include "msvc_fixes.h"
+#include "chklib.h"
 
 #include <inttypes.h>
 #include <string.h>
@@ -673,6 +674,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 
 bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
+    Project &project(*Project::get());
     PROG &prog(Project::get()->prog);
     ICODE &last_insn(Icode.back());
     STATE localState;     /* Local copy of the machine state */
@@ -742,7 +744,8 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
         {
             iter = Project::get()->createFunction(0,"",{0,pIcode.ll()->src().getImm2()});
             Function &x(*iter);
-            LibCheck(x);
+            if(project.m_pattern_locator)
+                project.m_pattern_locator->LibCheck(x);
 
             if (x.flg & PROC_ISLIB)
             {

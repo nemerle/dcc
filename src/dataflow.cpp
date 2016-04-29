@@ -671,9 +671,7 @@ int C_CallingConvention::processCArg (Function * callee, Function * pProc, ICODE
     Expr *_exp;
     bool res;
     int size_of_arg=0;
-    PROG &prog(Project::get()->prog);
-
-
+    Project &proj(*Project::get());
     /* if (numArgs == 0)
                 return; */
     assert(pProc==g_exp_stk.func);
@@ -693,7 +691,7 @@ int C_CallingConvention::processCArg (Function * callee, Function * pProc, ICODE
             }
             else {
                 if(numArgs<callee->args.size()) {
-                    if(prog.addressingMode=='l') {
+                    if(proj.getLoaderMetadata().compiler_memory_model==eLarge) {
                         if((callee->args[numArgs].type==TYPE_STR) or (callee->args[numArgs].type==TYPE_PTR)) {
                             RegisterNode *rn = dynamic_cast<RegisterNode *>(g_exp_stk.top());
                             AstIdent *idn = dynamic_cast<AstIdent *>(g_exp_stk.top());

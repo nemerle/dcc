@@ -21,7 +21,7 @@ public:
         m_failures.push_back({cmd,error_message});
     }
 
-    Project *proj;
+    Project *m_project;
     QVector<QPair<Command *,QString>> m_failures;
     void reset();
 };
@@ -60,10 +60,12 @@ public:
     QVector<Command *> m_commands;
     bool add(Command *c);
     void setMaximumCommandCount(int maximum_command_count);
+    bool processOne(CommandContext *ctx);
     void processAll(CommandContext *ctx);
     void clear();
 signals:
     void streamCompleted(bool success);
+    void streamChanged();
 };
 // Effect: loader has been selected and set in current project
 class LoaderSelection : public Command {

@@ -16,23 +16,43 @@ public:
     {
         return Project::get()->functions().begin();
     }
+    ilFunction GetNextFuncHandle(ilFunction iter)
+    {
+        if(iter!=Project::get()->functions().end())
+            ++iter;
+        return iter;
+    }
     ilFunction GetCurFuncHandle()
     {
         return m_current_func;
     }
     void analysis_Once()
     {
+        if(m_current_func==Project::get()->functions().end())
+            return;
+        if(m_current_func->nStep==0) { // unscanned function
+        }
     }
-    void load(QString name)
+    bool load(QString name)
     {
         option.filename = name;
         Project::get()->create(name);
+        return Project::get()->addLoadCommands(name);
     }
-    void prtout_asm(IXmlTarget *, int level)
+    void prtout_asm(IStructuredTextTarget *, int level)
+    {
+//        if (m_Cur_Func->m_nStep == 0)
+//            return;
+
+//        XmlOutPro out(iOut);
+//        FuncLL the(m_Cur_Func->ll.m_asmlist);
+//        the.prtout_asm(m_Cur_Func, &m_Cur_Func->m_varll, &out);
+    }
+    void prtout_cpp(IStructuredTextTarget *, int level)
     {
     }
-    void prtout_cpp(IXmlTarget *, int level)
-    {
+    bool isValidFuncHandle(ilFunction f) {
+        return f != Project::get()->functions().end();
     }
     size_t getFuncCount()
     {

@@ -226,7 +226,7 @@ void Function::codeGen (QIODevice &fs)
 
     /* Write procedure/function header */
     cCode.init();
-    if (getReturnType() != TYPE_UNKNOWN)      /* Function  flg & PROC_IS_FUNC*/
+    if (getReturnType() != TYPE_UNKNOWN)      /* Function */
         ostr << QString("\n%1 %2 (").arg(TypeContainer::typeName(getReturnType())).arg(name);
     else                                /* Procedure */
         ostr << "\nvoid "+name+" (";

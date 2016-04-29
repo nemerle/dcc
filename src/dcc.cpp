@@ -14,26 +14,10 @@
 #include <cstring>
 #include <iostream>
 #include <QtCore/QCoreApplication>
+#include <QtWidgets/QApplication>
 #include <QCommandLineParser>
-
-#ifdef LLVM_EXPERIMENTAL
-#include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Support/CommandLine.h>
-#include <llvm/Support/TargetSelect.h>
-#include <llvm/Support/TargetRegistry.h>
-#include <llvm/Support/PrettyStackTrace.h>
-#include <llvm/Support/Signals.h>
-#include <llvm/Support/Host.h>
-#include <llvm/Target/TargetMachine.h>
-#include <llvm/Target/TargetInstrInfo.h>
-#include <llvm/MC/MCAsmInfo.h>
-#include <llvm/CodeGen/MachineInstrBuilder.h>
-#include <llvm/TableGen/Main.h>
-#include <llvm/TableGen/TableGenBackend.h>
-#include <llvm/TableGen/Record.h>
-#endif
 #include <QtCore/QFile>
-
+#include "ui/DccMainWindow.h"
 
 /* Global variables - extern to other modules */
 extern QString asm1_name, asm2_name;     /* Assembler output filenames     */
@@ -46,79 +30,6 @@ static void displayTotalStats(void);
 /****************************************************************************
  * main
  ***************************************************************************/
-#ifdef LLVM_EXPERIMENTAL
-using namespace llvm;
-bool TVisitor(raw_ostream &OS, RecordKeeper &Records)
-{
-    Record *rec = Records.getDef("ADD8i8");
-    if(rec)
-    {
-        if(not rec->getTemplateArgs().empty())
-            std::cout << "Has template args\n";
-        auto classes(rec->getSuperClasses());
-        for(auto val : rec->getSuperClasses())
-            std::cout << "Super "<<val->getName()<<"\n";
-
-        //          DagInit * in = rec->getValueAsDag(val.getName());
-        //          in->dump();
-        for(const RecordVal &val : rec->getValues())
-        {
-            //                val.dump();
-        }
-        rec->dump();
-
-    }
-    //        rec = Records.getDef("CCR");
-    //        if(rec)
-    //            rec->dump();
-//    for(auto val : Records.getDefs())
-//    {
-//        //std::cout<< "Def "<<val.first<<"\n";
-//    }
-    return false;
-}
-int testTblGen(int argc, char **argv)
-{
-//    using namespace llvm;
-//    sys::PrintStackTraceOnErrorSignal();
-//    PrettyStackTraceProgram(argc,argv);
-//    cl::ParseCommandLineOptions(argc,argv);
-//    return llvm::TableGenMain(argv[0],TVisitor);
-//    InitializeNativeTarget();
-//    Triple TheTriple;
-//    std::string  def = sys::getDefaultTargetTriple();
-//    std::string MCPU="i386";
-//    std::string MARCH="x86";
-//    InitializeAllTargetInfos();
-//    InitializeAllTargetMCs();
-//    InitializeAllAsmPrinters();
-//    InitializeAllAsmParsers();
-//    InitializeAllDisassemblers();
-//    std::string TargetTriple("i386-pc-linux-gnu");
-//    TheTriple = Triple(Triple::normalize(TargetTriple));
-//    MCOperand op=llvm::MCOperand::CreateImm(11);
-//    MCAsmInfo info;
-//    raw_os_ostream wrap(std::cerr);
-//    op.print(wrap,&info);
-//    wrap.flush();
-//    std::cerr<<"\n";
-//    std::string lookuperr;
-//    TargetRegistry::printRegisteredTargetsForVersion();
-//    const Target *t = TargetRegistry::lookupTarget(MARCH,TheTriple,lookuperr);
-//    TargetOptions opts;
-//    std::string Features;
-//    opts.PrintMachineCode=1;
-//    TargetMachine *tm = t->createTargetMachine(TheTriple.getTriple(),MCPU,Features,opts);
-//    std::cerr<<tm->getInstrInfo()->getName(97)<<"\n";
-//    const MCInstrDesc &ds(tm->getInstrInfo()->get(97));
-//    const MCOperandInfo *op1=ds.OpInfo;
-//    uint16_t impl_def = ds.getImplicitDefs()[0];
-//    std::cerr<<lookuperr<<"\n";
-
-//    exit(0);
-
-}
-#endif
 void setupOptions(QCoreApplication &app) {
     //[-a1a2cmsi]
     QCommandLineParser parser;
@@ -180,9 +91,17 @@ void setupOptions(QCoreApplication &app) {
 }
 int main(int argc, char **argv)
 {
+    QCoreApplication::setApplicationName("dcc");
+    QCoreApplication::setApplicationVersion("0.1");
+    if(argc==1) {
+        QApplication app(argc,argv);
+        DccMainWindow win;
+        win.show();
+        return app.exec();
+
+    }
     QCoreApplication app(argc,argv);
 
-    QCoreApplication::setApplicationVersion("0.1");
     setupOptions(app);
 
     Project *proj = Project::get();
