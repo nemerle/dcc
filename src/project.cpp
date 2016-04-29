@@ -58,23 +58,21 @@ ilFunction Project::findByEntry(uint32_t entry)
         [entry](const Function &f)  { return f.procEntry==entry; });
 return iter;
 }
-void Project::onNewFunctionDiscovered(SegOffAddr ip, QString name, FunctionType *ft) {
-    FIXME;
-    auto proc = createFunction(ft,name);
-    // FIXME: use provided segment addr !
-    proc->procEntry = ip.addr;
-    if(name=="main") {
-        /* In medium and large models, the segment of main may (will?) not be
-            the same as the initial CS segment (of the startup code) */
-        m_entry_state.setState(rCS, prog.segMain);
-        m_entry_state.IP = prog.offMain;
-    }
-
-}
-ilFunction Project::createFunction(FunctionType *f,const QString &name)
+ilFunction Project::createFunction(FunctionType *f,const QString &name,SegOffAddr addr)
 {
     pProcList.push_back(Function::Create(f,0,name,0));
     ilFunction iter = (++pProcList.rbegin()).base();
+    // FIXME: use provided segment addr !
+    iter->procEntry = addr.addr;
+    if(!callGraph) {
+        /* Set up call graph initial node */
+        callGraph = new CALL_GRAPH;
+        callGraph->proc = iter;
+        /* The entry state info is for the first procedure */
+        iter->state = m_entry_state;
+
+    }
+
     emit newFunctionCreated(*iter);
     return iter;
 }

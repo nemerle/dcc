@@ -64,7 +64,7 @@ public:
             QString     output_name(const char *ext);
             ilFunction  funcIter(Function *to_find);
             ilFunction  findByEntry(uint32_t entry);
-            ilFunction  createFunction(FunctionType *f, const QString & name);
+            ilFunction  createFunction(FunctionType *f, const QString & name, SegOffAddr addr);
             bool        valid(ilFunction iter);
 
             int         getSymIdxByAdd(uint32_t adr);
@@ -86,7 +86,6 @@ public:
             void        setLoader(DosLoader *ins);
 public slots:
             void        onCommandStreamFinished(bool state);
-            void        onNewFunctionDiscovered(SegOffAddr ip,QString name,FunctionType *ft);
 signals:
             void        newFunctionCreated(Function &);
             void        loaderSelected();
