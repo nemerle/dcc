@@ -740,9 +740,8 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
         /* Create a new procedure node and save copy of the state */
         if ( not Project::get()->valid(iter) )
         {
-            iter = Project::get()->createFunction(0,"");
+            iter = Project::get()->createFunction(0,"",{0,pIcode.ll()->src().getImm2()});
             Function &x(*iter);
-            x.procEntry = pIcode.ll()->src().getImm2();
             LibCheck(x);
 
             if (x.flg & PROC_ISLIB)

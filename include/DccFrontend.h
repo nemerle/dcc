@@ -11,8 +11,6 @@ public:
     bool FrontEnd();            /* frontend.c   */
     void initializeMachineState(Project & proj);
 
-    void createEntryProc(Project &proj);
-
 signals:
 
 public slots:

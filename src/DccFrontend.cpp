@@ -1,5 +1,6 @@
 #include "DccFrontend.h"
 
+#include "Loaders.h"
 #include "dcc.h"
 #include "msvc_fixes.h"
 #include "project.h"
@@ -12,45 +13,6 @@
 #include <cstdio>
 
 
-struct PSP {			/*        PSP structure					*/
-    uint16_t int20h;			/* interrupt 20h						*/
-    uint16_t eof;				/* segment, end of allocation block		*/
-    uint8_t res1;				/* reserved                         	*/
-    uint8_t dosDisp[5];		/* far call to DOS function dispatcher	*/
-    uint8_t int22h[4];			/* vector for terminate routine			*/
-    uint8_t int23h[4];			/* vector for ctrl+break routine		*/
-    uint8_t int24h[4];			/* vector for error routine				*/
-    uint8_t res2[22];			/* reserved								*/
-    uint16_t segEnv;			/* segment address of environment block	*/
-    uint8_t res3[34];			/* reserved								*/
-    uint8_t int21h[6];			/* opcode for int21h and far return		*/
-    uint8_t res4[6];			/* reserved								*/
-    uint8_t fcb1[16];			/* default file control block 1			*/
-    uint8_t fcb2[16];      	/* default file control block 2			*/
-    uint8_t res5[4];			/* reserved								*/
-    uint8_t cmdTail[0x80];		/* command tail and disk transfer area	*/
-};
-
-static struct MZHeader {				/*      EXE file header		 	 */
-    uint8_t     sigLo;			/* .EXE signature: 0x4D 0x5A	 */
-    uint8_t     sigHi;
-    uint16_t	lastPageSize;	/* Size of the last page		 */
-    uint16_t	numPages;		/* Number of pages in the file	 */
-    uint16_t	numReloc;		/* Number of relocation items	 */
-    uint16_t	numParaHeader;	/* # of paragraphs in the header */
-    uint16_t	minAlloc;		/* Minimum number of paragraphs	 */
-    uint16_t	maxAlloc;		/* Maximum number of paragraphs	 */
-    uint16_t	initSS;			/* Segment displacement of stack */
-    uint16_t	initSP;			/* Contents of SP at entry       */
-    uint16_t	checkSum;		/* Complemented checksum         */
-    uint16_t	initIP;			/* Contents of IP at entry       */
-    uint16_t	initCS;			/* Segment displacement of code  */
-    uint16_t	relocTabOffset;	/* Relocation table offset       */
-    uint16_t	overlayNum;		/* Overlay number                */
-} header;
-
-#define EXE_RELOCATION  0x10		/* EXE images rellocated to above PSP */
-
 //static void LoadImage(char *filename);
 static void displayMemMap(void);
 /****************************************************************************
@@ -61,16 +23,16 @@ void PROG::displayLoadInfo(void)
     int	i;
 
     printf("File type is %s\n", (fCOM)?"COM":"EXE");
-    if (not fCOM) {
-        printf("Signature            = %02X%02X\n", header.sigLo, header.sigHi);
-        printf("File size %% 512     = %04X\n", LH(&header.lastPageSize));
-        printf("File size / 512      = %04X pages\n", LH(&header.numPages));
-        printf("# relocation items   = %04X\n", LH(&header.numReloc));
-        printf("Offset to load image = %04X paras\n", LH(&header.numParaHeader));
-        printf("Minimum allocation   = %04X paras\n", LH(&header.minAlloc));
-        printf("Maximum allocation   = %04X paras\n", LH(&header.maxAlloc));
-    }
-    printf("Load image size      = %04" PRIiPTR "\n", cbImage - sizeof(PSP));
+//    if (not fCOM) {
+//        printf("Signature            = %02X%02X\n", header.sigLo, header.sigHi);
+//        printf("File size %% 512     = %04X\n", LH(&header.lastPageSize));
+//        printf("File size / 512      = %04X pages\n", LH(&header.numPages));
+//        printf("# relocation items   = %04X\n", LH(&header.numReloc));
+//        printf("Offset to load image = %04X paras\n", LH(&header.numParaHeader));
+//        printf("Minimum allocation   = %04X paras\n", LH(&header.minAlloc));
+//        printf("Maximum allocation   = %04X paras\n", LH(&header.maxAlloc));
+//    }
+    printf("Load image size      = %04" PRIiPTR "\n", cbImage);
     printf("Initial SS:SP        = %04X:%04X\n", initSS, initSP);
     printf("Initial CS:IP        = %04X:%04X\n", initCS, initIP);
 
@@ -185,139 +147,6 @@ bool DccFrontend::FrontEnd ()
         displayMemMap();
     return(true); // we no longer own proj !
 }
-struct DosLoader {
-protected:
-    void prepareImage(PROG &prog,size_t sz,QFile &fp) {
-        /* Allocate a block of memory for the program. */
-        prog.cbImage  = sz + sizeof(PSP);
-        prog.Imagez    = new uint8_t [prog.cbImage];
-        prog.Imagez[0] = 0xCD;		/* Fill in PSP int 20h location */
-        prog.Imagez[1] = 0x20;		/* for termination checking     */
-        /* Read in the image past where a PSP would go */
-        if (sz != fp.read((char *)prog.Imagez + sizeof(PSP),sz))
-            fatalError(CANNOT_READ, fp.fileName().toLocal8Bit().data());
-    }
-};
-struct ComLoader : public DosLoader {
-    bool canLoad(QFile &fp) {
-        fp.seek(0);
-        char sig[2];
-        if(2==fp.read(sig,2)) {
-            return not (sig[0] == 0x4D and sig[1] == 0x5A);
-        }
-        return false;
-    }
-    bool load(PROG &prog,QFile &fp) {
-        fp.seek(0);
-        /* COM file
-         * In this case the load module size is just the file length
-         */
-        auto cb = fp.size();
-
-        /* COM programs start off with an ORG 100H (to leave room for a PSP)
-         * This is also the implied start address so if we load the image
-         * at offset 100H addresses should all line up properly again.
-         */
-        prog.initCS = 0;
-        prog.initIP = 0x100;
-        prog.initSS = 0;
-        prog.initSP = 0xFFFE;
-        prog.cReloc = 0;
-
-        prepareImage(prog,cb,fp);
-
-
-        /* Set up memory map */
-        cb = (prog.cbImage + 3) / 4;
-        prog.map = (uint8_t *)malloc(cb);
-        memset(prog.map, BM_UNKNOWN, (size_t)cb);
-        return true;
-    }
-};
-struct ExeLoader : public DosLoader {
-    bool canLoad(QFile &fp) {
-        if(fp.size()<sizeof(header))
-            return false;
-        MZHeader tmp_header;
-        fp.seek(0);
-        fp.read((char *)&tmp_header, sizeof(header));
-        if(not (tmp_header.sigLo == 0x4D and tmp_header.sigHi == 0x5A))
-            return false;
-
-        /* This is a typical DOS kludge! */
-        if (LH(&header.relocTabOffset) == 0x40)
-        {
-            qDebug() << "Don't understand new EXE format";
-            return false;
-        }
-        return true;
-    }
-    bool load(PROG &prog,QFile &fp) {
-        /* Read rest of header */
-        fp.seek(0);
-        if (fp.read((char *)&header, sizeof(header)) != sizeof(header))
-            return false;
-
-        /* Calculate the load module size.
-        * This is the number of pages in the file
-        * less the length of the header and reloc table
-        * less the number of bytes unused on last page
-        */
-        uint32_t cb = (uint32_t)LH(&header.numPages) * 512 - (uint32_t)LH(&header.numParaHeader) * 16;
-        if (header.lastPageSize)
-        {
-            cb -= 512 - LH(&header.lastPageSize);
-        }
-
-        /* We quietly ignore minAlloc and maxAlloc since for our
-        * purposes it doesn't really matter where in real memory
-        * the program would end up.  EXE programs can't really rely on
-        * their load location so setting the PSP segment to 0 is fine.
-        * Certainly programs that prod around in DOS or BIOS are going
-        * to have to load DS from a constant so it'll be pretty
-        * obvious.
-        */
-        prog.initCS = (int16_t)LH(&header.initCS) + EXE_RELOCATION;
-        prog.initIP = (int16_t)LH(&header.initIP);
-        prog.initSS = (int16_t)LH(&header.initSS) + EXE_RELOCATION;
-        prog.initSP = (int16_t)LH(&header.initSP);
-        prog.cReloc = (int16_t)LH(&header.numReloc);
-
-        /* Allocate the relocation table */
-        if (prog.cReloc)
-        {
-            prog.relocTable.resize(prog.cReloc);
-            fp.seek(LH(&header.relocTabOffset));
-
-            /* Read in seg:offset pairs and convert to Image ptrs */
-            uint8_t	buf[4];
-            for (int i = 0; i < prog.cReloc; i++)
-            {
-                fp.read((char *)buf,4);
-                prog.relocTable[i] = LH(buf) + (((int)LH(buf+2) + EXE_RELOCATION)<<4);
-            }
-        }
-        /* Seek to start of image */
-        uint32_t start_of_image= LH(&header.numParaHeader) * 16;
-        fp.seek(start_of_image);
-        /* Allocate a block of memory for the program. */
-        prepareImage(prog,cb,fp);
-
-        /* Set up memory map */
-        cb = (prog.cbImage + 3) / 4;
-        prog.map = (uint8_t *)malloc(cb);
-        memset(prog.map, BM_UNKNOWN, (size_t)cb);
-
-        /* Relocate segment constants */
-        for(uint32_t v : prog.relocTable) {
-            uint8_t *p = &prog.Imagez[v];
-            uint16_t  w = (uint16_t)LH(p) + EXE_RELOCATION;
-            *p++    = (uint8_t)(w & 0x00FF);
-            *p      = (uint8_t)((w & 0xFF00) >> 8);
-        }
-        return true;
-    }
-};
 /*****************************************************************************
 * LoadImage
 ****************************************************************************/
@@ -341,6 +170,33 @@ public:
         return true;
     }
 };
+struct CreateFunction : public Command {
+    QString m_name;
+    SegOffAddr m_addr;
+    FunctionType *m_type;
+    CreateFunction(QString name,SegOffAddr address,FunctionType *f) : Command("Create function",eProject),
+        m_name(name),
+        m_addr(address),
+        m_type(f)
+    {}
+    bool execute(CommandContext *ctx) override {
+        Project &proj(*ctx->proj);
+        const PROG &prog(proj.prog);
+
+        proj.createFunction(m_type,m_name,m_addr);
+        if(m_name=="main") {
+            /* In medium and large models, the segment of main may (will?) not be
+                the same as the initial CS segment (of the startup code) */
+            proj.m_entry_state.setState(rCS, prog.segMain);
+            proj.m_entry_state.IP = prog.offMain;
+        }
+        assert(false);
+        //proj.addCommand(new FollowControl());
+        /* Recursively build entire procedure list */
+        //proj.callGraph->proc->FollowCtrl(proj.callGraph, &proj.m_entry_state);
+
+    }
+};
 struct FindMain : public Command {
     FindMain() : Command("Locate the main entry point",eProject) {
     }
@@ -354,12 +210,13 @@ struct FindMain : public Command {
         }
         /* Check for special settings of initial state, based on idioms of the startup code */
         ctx->proj->m_entry_state.checkStartup();
+        Command *cmd;
         if (prog.offMain != -1)
         {
+            //TODO: main arguments and return values should depend on detected compiler/library
             FunctionType *main_type = FunctionType::get(Type{TYPE_WORD_SIGN},{ Type{TYPE_WORD_SIGN},Type{TYPE_PTR} },false);
             main_type->setCallingConvention(CConv::C);
-            proj.onNewFunctionDiscovered( SegOffAddr {prog.segMain,prog.offMain},"main",main_type);
-            //TODO: main arguments and return values should depend on detected compiler/library
+            cmd = new CreateFunction("main",SegOffAddr {prog.segMain,prog.offMain},main_type);
 
         }
         else
@@ -367,23 +224,10 @@ struct FindMain : public Command {
             FunctionType *main_type = FunctionType::get(Type{TYPE_UNKNOWN},{ Type{TYPE_UNKNOWN} },false);
             main_type->setCallingConvention(CConv::UNKNOWN);
             /* Create initial procedure at program start address */
-            proj.onNewFunctionDiscovered( SegOffAddr {prog.segMain,proj.m_entry_state.IP},"start",main_type);
+            cmd = new CreateFunction("start",SegOffAddr {prog.segMain,proj.m_entry_state.IP},main_type);
         }
+        proj.addCommand(cmd);
         return true;
-    }
-};
-struct AddFunction : public Command {
-    QString m_name;
-    uint16_t m_seg;
-    uint32_t m_addr;
-    FunctionType *m_type;
-    AddFunction(QString name,uint16_t seg,uint32_t address,FunctionType *f) : Command("Create function",eProject),
-        m_name(name),
-        m_seg(seg),
-        m_addr(address)
-    {}
-    bool execute(CommandContext *ctx) override {
-
     }
 };
 void DccFrontend::initializeMachineState(Project &proj)
@@ -398,56 +242,15 @@ void DccFrontend::initializeMachineState(Project &proj)
     proj.SynthLab = SYNTHESIZED_MIN;
 }
 
-void DccFrontend::createEntryProc(Project &proj)
-{
-    PROG &prog(proj.prog);
-    ilFunction start_proc;
-    /* Make a struct for the initial procedure */
-    if (prog.offMain != -1)
-    {
-        //TODO: main arguments and return values should depend on detected compiler/library
-        FunctionType *main_type = FunctionType::get(Type{TYPE_WORD_SIGN},{ Type{TYPE_WORD_SIGN},Type{TYPE_PTR} },false);
-
-        start_proc = proj.createFunction(main_type,"main");
-        start_proc->callingConv(CConv::C);
-        /* We know where main() is. Start the flow of control from there */
-        start_proc->procEntry = prog.offMain;
-        /* In medium and large models, the segment of main may (will?) not be
-            the same as the initial CS segment (of the startup code) */
-        proj.m_entry_state.setState(rCS, prog.segMain);
-        proj.m_entry_state.IP = prog.offMain;
-    }
-    else
-    {
-        start_proc = proj.createFunction(0,"start");
-        /* Create initial procedure at program start address */
-        start_proc->procEntry = (uint32_t)proj.m_entry_state.IP;
-    }
-    /* The state info is for the first procedure */
-    start_proc->state = proj.m_entry_state;
-
-    /* Set up call graph initial node */
-    proj.callGraph = new CALL_GRAPH;
-    proj.callGraph->proc = start_proc;
-}
-
 /* Parses the program, builds the call graph, and returns the list of
  * procedures found     */
 void DccFrontend::parse(Project &proj)
 {
-    /* Set initial state */
-    proj.addCommand(new MachineStateInitialization);
-    proj.addCommand(new FindMain);
-
-    createEntryProc(proj);
-
     /* This proc needs to be called to set things up for LibCheck(), which
        checks a proc to see if it is a know C (etc) library */
     proj.prog.bSigs = SetupLibCheck();
 
-    /* Recursively build entire procedure list */
-    proj.callGraph->proc->FollowCtrl(proj.callGraph, &proj.m_entry_state);
-
-    /* This proc needs to be called to clean things up from SetupLibCheck() */
-    CleanupLibCheck();
+    /* Set initial state */
+    proj.addCommand(new MachineStateInitialization);
+    proj.addCommand(new FindMain);
 }
