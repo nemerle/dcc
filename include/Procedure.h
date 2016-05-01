@@ -210,6 +210,7 @@ public:
 
 //    bool anyFlagsSet(uint32_t t) { return (flg&t)!=0;}
     bool hasRegArgs() const { return (flg & REG_ARGS)!=0;}
+    void markDoNotDecompile() { flg |= PROC_ISLIB; }
     bool isLibrary() const { return (flg & PROC_ISLIB)!=0;}
     void compoundCond();
     void writeProcComments();
@@ -277,7 +278,7 @@ protected:
     bool    findDerivedSeq(derSeq &derivedGi);
     bool    nextOrderGraph(derSeq &derivedGi);
     void addOutEdgesForConditionalJump(BB*        pBB, int next_ip, LLInst *ll);
-    
+
 private:
     bool    decodeIndirectJMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     bool    decodeIndirectJMP2(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
