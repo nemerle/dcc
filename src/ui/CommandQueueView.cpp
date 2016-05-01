@@ -34,6 +34,12 @@ void CommandQueueView::onCommandListChanged() {
     ui->lstQueuedCommands->clear();
     const CommandStream& cs(project.m_project_command_stream);
     for(const Command * cmd : cs.m_commands) {
-        ui->lstQueuedCommands->addItem(cmd->name());
+        ui->lstQueuedCommands->addItem(cmd->instanceDescription());
     }
+}
+
+void CommandQueueView::on_btnStep_clicked()
+{
+    Project &project(*Project::get());
+    project.processCommands(1);
 }

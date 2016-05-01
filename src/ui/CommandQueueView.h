@@ -21,6 +21,9 @@ public slots:
 protected:
     void changeEvent(QEvent *e);
 
+private slots:
+    void on_btnStep_clicked();
+
 private:
     Ui::CommandQueueView *ui;
 };

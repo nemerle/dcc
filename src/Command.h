@@ -33,6 +33,7 @@ class Command
 public:
     Command(QString n,CommandLevel level) : m_command_name(n),m_level(level) {}
     QString name() const { return m_command_name;}
+    virtual QString instanceDescription() const { return m_command_name; }
     virtual bool execute(CommandContext *) { return false; }
 };
 class CompoundCommand : public Command {

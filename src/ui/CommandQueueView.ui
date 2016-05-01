@@ -19,7 +19,7 @@
      <widget class="QListWidget" name="lstQueuedCommands"/>
     </item>
     <item>
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="btnStep">
       <property name="text">
        <string>Step</string>
       </property>
