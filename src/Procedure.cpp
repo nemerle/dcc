@@ -55,7 +55,7 @@ static QString sizeToPtrName(int size)
     }
     return "UNKOWN ptr";
 }
-void toStructuredText(STKFRAME &stk,IStructuredTextTarget *out, int level) {
+static void toStructuredText(STKFRAME &stk,IStructuredTextTarget *out, int level) {
     int curlevel = 0;
     int maxlevel = stk.m_maxOff - stk.m_minOff;
 
@@ -98,6 +98,18 @@ void toStructuredText(STKFRAME &stk,IStructuredTextTarget *out, int level) {
         out->prtt(QString("    gap len = %1h").arg(maxlevel - curlevel,0,16));
     }
 }
+static void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
+    out->prtt("LLINST");
+    out->addEOL();
+
+}
+
+static void toStructuredText(ICODE &stk,IStructuredTextTarget *out, int level) {
+    if(level==0) {
+        toStructuredText(stk.ll(),out,level);
+    }
+}
+
 void Function::toStructuredText(IStructuredTextTarget *out, int level)
 {
 
@@ -107,8 +119,9 @@ void Function::toStructuredText(IStructuredTextTarget *out, int level)
     out->addEOL();
     ::toStructuredText(args,out,level);
     out->addEOL();
-
-    //        this->prtout_asm_1(pvarll, out);
+    for(ICODE &ic : Icode) {
+        ::toStructuredText(ic,out,level);
+    }
 
     out->addTaggedString(XT_FuncName,name);
     out->addSpace();
