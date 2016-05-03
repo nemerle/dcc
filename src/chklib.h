@@ -20,11 +20,11 @@ struct LoadPatternLibrary : public Command {
 class PatternLocator {
     std::vector<hlType> pArg;                /* Points to the array of param types */
     QString pattern_id;
-    int     numFunc;                /* Number of func names actually stored */
-    int     numArg;                 /* Number of param names actually stored */
+    int     numFunc=0;                /* Number of func names actually stored */
+    int     numArg=0;                 /* Number of param names actually stored */
 public:
-    struct HT      *ht;  //!< The hash table
-    struct PH_FUNC_STRUCT *pFunc; //!< Points to the array of func names
+    struct HT      *ht=nullptr;  //!< The hash table
+    struct PH_FUNC_STRUCT *pFunc=nullptr; //!< Points to the array of func names
 
 
     PatternLocator(QString name) : pattern_id(name) {}
@@ -41,9 +41,11 @@ private:
     int numVert;                        /* Number of vertices in the graph (also size of g[]) */
     unsigned PatLen;                    /* Size of the keys (pattern length) */
     unsigned SymLen;                    /* Max size of the symbols, including null */
-    uint16_t *  T1base, *T2base;        /* Pointers to start of T1, T2 */
-    uint16_t *  g;                      /* g[] */
+    /* Pointers to start of T1, T2 */
+    uint16_t *  T1base = nullptr;
+    uint16_t *  T2base = nullptr;
+    uint16_t *  g = nullptr;            /* g[] */
 
 };
-extern void checkStartup(struct STATE &state);
+extern bool checkStartup(struct STATE &state);
 #endif // CHKLIB_H

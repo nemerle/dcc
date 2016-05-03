@@ -49,6 +49,7 @@ struct STKSYM : public SymbolCommon
     bool        hasMacro=false;	/* This type needs a macro					*/
     QString     macro;          /* Macro name								*/
     bool        invalid=false;	/* Boolean: invalid entry in formal arg list*/
+    int         arrayMembers=1; // for local variables if >1 marks this stack symbol as an array
     void setArgName(int i)
     {
         char buf[32];

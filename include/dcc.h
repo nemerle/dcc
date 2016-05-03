@@ -84,7 +84,7 @@ void    parse (CALL_GRAPH * *);                             /* parser.c     */
 
 extern int     strSize (const uint8_t *, char);             /* parser.c     */
 //void    disassem(int pass, Function * pProc);             /* disassem.c   */
-void    interactDis(Function *, int initIC);       /* disassem.c   */
+void    interactDis(const PtrFunction &, int initIC);       /* disassem.c   */
 bool    JmpInst(llIcode opcode);                            /* idioms.c     */
 queue::iterator  appendQueue(queue &Q, BB *node);           /* reducible.c  */
 

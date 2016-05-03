@@ -10,7 +10,7 @@
 
 #include <inttypes.h>
 #include <string.h>
-#include <stdlib.h>		/* For exit() */
+#include <stdlib.h>     /* For exit() */
 #include <sstream>
 #include <stdio.h>
 #include <algorithm>
@@ -24,7 +24,7 @@ using namespace std;
 static void     setBits(int16_t type, uint32_t start, uint32_t len);
 static void     process_MOV(LLInst &ll, STATE * pstate);
 static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
-void    interactDis(Function * initProc, int ic);
+//void    interactDis(Function * initProc, int ic);
 
 /* Returns the size of the string pointed by sym and delimited by delim.
  * Size includes delimiter.     */
@@ -127,7 +127,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     {
         // Danger! Dcc will likely fall over in this code.
         // So we act as though we have done with this proc
-        //		pProc->flg &= ~TERMINATES;			// Not sure about this
+        // pProc->flg &= ~TERMINATES; // Not sure about this
         done = true;
         // And mark it as a library function, so structure() won't choke on it
         flg |= PROC_ISLIB;
@@ -180,8 +180,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iJCXZ:
             {
                 STATE   StCopy;
-                int     ip      = Icode.size()-1;	/* Index of this jump */
-                ICODE  &prev(*(++Icode.rbegin())); /* Previous icode */
+                int     ip      = Icode.size()-1;   /* Index of this jump */
+                ICODE  &prev(*(++Icode.rbegin()));  /* Previous icode */
                 bool   fBranch = false;
 
                 pstate->JCond.regi = 0;
@@ -658,7 +658,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 
     flg |= PROC_IJMP;
     flg &= ~TERMINATES;
-    interactDis(this, this->Icode.size()-1);
+    interactDis(shared_from_this(), Icode.size()-1);
     return true;
 }
 
@@ -737,10 +737,10 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
     if (pIcode.ll()->testFlags(I))
     {
         /* Search procedure list for one with appropriate entry point */
-        ilFunction iter = Project::get()->findByEntry(pIcode.ll()->src().getImm2());
+        PtrFunction iter = Project::get()->findByEntry(pIcode.ll()->src().getImm2());
 
         /* Create a new procedure node and save copy of the state */
-        if ( not Project::get()->valid(iter) )
+        if ( iter == nullptr )
         {
             iter = Project::get()->createFunction(0,"",{0,pIcode.ll()->src().getImm2()});
             Function &x(*iter);
@@ -750,7 +750,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
             if (x.flg & PROC_ISLIB)
             {
                 /* A library function. No need to do any more to it */
-                pcallGraph->insertCallGraph (this, iter);
+                pcallGraph->insertCallGraph (this->shared_from_this(), iter);
                 //iter = (++pProcList.rbegin()).base();
                 last_insn.ll()->src().proc.proc = &x;
                 return false;
@@ -774,7 +774,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
             x.state = *pstate;
 
             /* Insert new procedure in call graph */
-            pcallGraph->insertCallGraph (this, iter);
+            pcallGraph->insertCallGraph (this->shared_from_this(), iter);
 
             /* Process new procedure */
             x.FollowCtrl (pcallGraph, pstate);
@@ -788,7 +788,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
 
         }
         else
-            Project::get()->callGraph->insertCallGraph (this, iter);
+            Project::get()->callGraph->insertCallGraph (this->shared_from_this(), iter);
 
         last_insn.ll()->src().proc.proc = &(*iter); // ^ target proc
 
@@ -912,8 +912,8 @@ void STKFRAME::updateFrameOff ( int16_t off, int _size, uint16_t duFlag)
     }
 
     /* Save maximum argument offset */
-    if ((uint32_t)this->maxOff < (off + (uint32_t)_size))
-        this->maxOff = off + (int16_t)_size;
+    if ((uint32_t)this->m_maxOff < (off + (uint32_t)_size))
+        this->m_maxOff = off + (int16_t)_size;
 }
 
 

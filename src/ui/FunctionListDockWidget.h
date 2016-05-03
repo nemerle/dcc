@@ -4,7 +4,7 @@
 #include <QAbstractTableModel>
 #include <QDockWidget>
 //#include "exe2c.h"
-
+enum DecompilationStep : uint32_t;
 class FunctionListModel : public QAbstractTableModel
 {
     Q_OBJECT
@@ -12,7 +12,7 @@ class FunctionListModel : public QAbstractTableModel
     struct function_info
     {
         QString m_name;
-        int m_decoding_step;
+        DecompilationStep m_decoding_step;
         int m_start_off, m_end_off, m_stack_purge;
     };
     std::vector<function_info> m_list;
@@ -31,7 +31,7 @@ public slots:
     void updateFunctionList();
 
 protected:
-    void add_function(const QString &name,int step,int start_off,int end_off,int stack_purge)
+    void add_function(const QString &name,DecompilationStep step,int start_off,int end_off,int stack_purge)
     {
 
         function_info info;

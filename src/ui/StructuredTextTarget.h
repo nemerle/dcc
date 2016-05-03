@@ -1,4 +1,28 @@
 #pragma once
-class IStructuredTextTarget {
+#include "src/ui/RenderTags.h"
 
+class IStructuredTextTarget {
+public:
+    virtual void TAGbegin(TAG_TYPE t,void *data)=0;
+    virtual void TAGend(TAG_TYPE t)=0;
+    virtual void prtt(const QString &v)=0;
+
+    virtual void addEOL() // some targets might want to disable newlines
+    {
+        prtt("\n");
+    }
+    void addSpace(int n=1) {
+        while(n--)
+            prtt(" ");
+    }
+    void addTaggedString(TAG_TYPE t, QString v) {
+        this->TAGbegin(t,nullptr);
+        this->prtt(v);
+        this->TAGend(t);
+    }
+    void addTaggedString(TAG_TYPE t, QString str, void *value) {
+        this->TAGbegin(t,value);
+        this->prtt(str);
+        this->TAGend(t);
+    }
 };

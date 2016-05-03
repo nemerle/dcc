@@ -13,6 +13,7 @@
 #include <QtCore/QString>
 #include <list>
 #include <unordered_set>
+#include <unordered_map>
 #include <string>
 #include <stdint.h>
 #include <assert.h>
@@ -60,6 +61,8 @@ struct LoaderMetadata {
                     return QString("b%1%2").arg(compiler_version).arg(codeModelChar());
                 case ePascal:
                     return QString("tp%1").arg(compiler_version);
+                default:
+                    return "xxx";
                 }
         case eMicrosoft:
             assert(compiler_language==eAnsiCorCPP);
@@ -67,6 +70,8 @@ struct LoaderMetadata {
         case eLogitech:
             assert(compiler_language==eModula2);
             return QString("l%1%2").arg(compiler_version).arg(codeModelChar());
+        case eUnknownVendor:
+            return "xxx";
         }
         return "xxx";
     }
@@ -85,11 +90,6 @@ class Project : public QObject
 {
     Q_OBJECT
 public:
-    typedef llvm::iplist<Function> FunctionListType;
-    typedef FunctionListType lFunction;
-    typedef FunctionListType::iterator ilFunction;
-
-public:    
             DosLoader * m_selected_loader;
             bool m_metadata_available=false;
             LoaderMetadata m_loader_data;
@@ -101,6 +101,8 @@ public:
 
             PROG        prog;       /* Loaded program image parameters  */
             CommandStream m_project_command_stream;
+            std::unordered_map<PtrFunction,CommandStream> m_function_streams;
+
             bool        m_error_state;
             struct PatternLocator *m_pattern_locator;
 public:
@@ -121,9 +123,10 @@ public:
     const   QString &   project_name() const {return m_project_name;}
     const   QString &   binary_path() const {return m_fname;}
             QString     output_name(const char *ext);
-            ilFunction  funcIter(Function *to_find);
-            ilFunction  findByEntry(uint32_t entry);
-            ilFunction  createFunction(FunctionType *f, const QString & name, SegOffAddr addr);
+            ilFunction funcIter(Function *to_find);
+            PtrFunction  findByEntry(uint32_t entry);
+            PtrFunction findByName(const QString &name);
+            PtrFunction createFunction(FunctionType *f, const QString & name, SegOffAddr addr);
             bool        valid(ilFunction iter);
 
             int         getSymIdxByAdd(uint32_t adr);
@@ -142,14 +145,15 @@ public:
     const   FunctionListType &functions() const { return pProcList; }
             FunctionListType &functions()       { return pProcList; }
 
-            bool        addCommand(Command *cmd) { return m_project_command_stream.add(cmd); emit commandListChanged(); }
+            bool        addCommand(Command *cmd);
+            bool        addCommand(PtrFunction f, Command *cmd); // Add function level command
             void        dumpAllErrors();
             void        setLoader(DosLoader *ins);
             void        processCommands(int count=1);
 public slots:
             void        onCommandStreamFinished(bool state);
 signals:
-            void        newFunctionCreated(Function &);
+            void        newFunctionCreated(PtrFunction);
             void        loaderSelected();
             void        commandListChanged();
 protected:

@@ -3,6 +3,9 @@
 #include "msvc_fixes.h"
 #include "project.h"
 #include "scanner.h"
+#include "ui/StructuredTextTarget.h"
+
+#include <QtCore/QDebug>
 
 //FunctionType *Function::getFunctionType() const
 //{
@@ -39,9 +42,83 @@ void Function::callingConv(CConv::CC_Type v) {
     type->setCallingConvention(v);
     getFunctionType()->m_call_conv->calculateStackLayout(this);
 }
+static QString sizeToPtrName(int size)
+{
+    switch(size)
+    {
+        case 1:
+            return "BYTE ptr" ;
+        case 2:
+            return "WORD ptr";
+        case 4:
+            return "DWORD ptr";
+    }
+    return "UNKOWN ptr";
+}
+void toStructuredText(STKFRAME &stk,IStructuredTextTarget *out, int level) {
+    int curlevel = 0;
+    int maxlevel = stk.m_maxOff - stk.m_minOff;
+
+    for(STKSYM & p : stk)
+    {
+        if (curlevel > p.label)
+        {
+            qWarning() << "error, var collapse!!!";
+            curlevel = p.label;
+        }
+        else if (curlevel < p.label)
+        {
+            out->addSpace(4);
+            out->prtt(QString("gap len = %1").arg(p.label - curlevel,0,16));
+            curlevel = p.label;
+            out->addEOL();
+        }
+        out->addSpace(4);
+        out->addTaggedString(XT_Symbol,p.name,&p);
+        out->prtt("equ");
+        out->addSpace();
+        out->prtt(sizeToPtrName(p.size));
+        out->addSpace();
+        if (p.arrayMembers>1)
+        {
+            out->addTaggedString(XT_Number,QString::number(p.arrayMembers,16));
+            out->prtt("dup (?)");
+            out->addSpace();
+        }
+        out->TAGbegin(XT_Number, NULL);
+        out->prtt(QString("%1h").arg(p.label,0,16));
+        out->TAGend(XT_Number);
+        out->addEOL();
+
+        curlevel += p.size * p.arrayMembers;
+    }
+
+    if (curlevel < maxlevel)
+    {
+        out->prtt(QString("    gap len = %1h").arg(maxlevel - curlevel,0,16));
+    }
+}
+void Function::toStructuredText(IStructuredTextTarget *out, int level)
+{
+
+    out->TAGbegin(XT_Function, this);
+    out->addTaggedString(XT_FuncName,name);
+    out->prtt(" proc");
+    out->addEOL();
+    ::toStructuredText(args,out,level);
+    out->addEOL();
+
+    //        this->prtout_asm_1(pvarll, out);
+
+    out->addTaggedString(XT_FuncName,name);
+    out->addSpace();
+    out->prtt("endp");
+    out->addEOL();
+    out->TAGend(XT_Function);
+}
 
 void FunctionType::setCallingConvention(CConv::CC_Type cc)
 {
-        m_call_conv=CConv::create(cc);
-        assert(m_call_conv);
+    m_call_conv=CConv::create(cc);
+    assert(m_call_conv);
 }

@@ -16,7 +16,7 @@ public:
     explicit FunctionViewWidget(QWidget *parent = 0);
     ~FunctionViewWidget();
     void  prtt(const char * s);
-    void  prtt(const std::string &s);
+    void  prtt(const QString &s);
     void  TAGbegin(enum TAG_TYPE tag_type, void * p);
     void  TAGend(enum TAG_TYPE tag_type);
 private:

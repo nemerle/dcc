@@ -95,6 +95,8 @@ set(dcc_LIB_SOURCES
     src/Command.h
     src/Loaders.cpp
     src/Loaders.h
+    src/FollowControlFlow.cpp
+    src/FollowControlFlow.h
 )
 set(dcc_UI_SOURCES
     src/ui/DccMainWindow.ui

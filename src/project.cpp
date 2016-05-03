@@ -50,35 +50,49 @@ bool Project::valid(ilFunction iter)
 ilFunction Project::funcIter(Function *to_find)
 {
     auto iter=std::find_if(pProcList.begin(),pProcList.end(),
-                             [to_find](const Function &f)->bool {return to_find==&f;});
+                             [to_find](const PtrFunction &f)->bool {return to_find->shared_from_this()==f;});
     assert(iter!=pProcList.end());
     return iter;
 }
 
-ilFunction Project::findByEntry(uint32_t entry)
+PtrFunction Project::findByEntry(uint32_t entry)
 {
     /* Search procedure list for one with appropriate entry point */
     ilFunction iter= std::find_if(pProcList.begin(),pProcList.end(),
-        [entry](const Function &f)  { return f.procEntry==entry; });
-return iter;
+        [entry](const PtrFunction &f)  { return f->procEntry==entry; });
+    if(iter==pProcList.end())
+        return nullptr;
+    return *iter;
 }
-ilFunction Project::createFunction(FunctionType *f,const QString &name,SegOffAddr addr)
+
+/**
+ * \brief Search procedure list for one with given name
+ */
+PtrFunction Project::findByName(const QString &name)
 {
-    pProcList.push_back(Function::Create(f,0,name,0));
-    ilFunction iter = (++pProcList.rbegin()).base();
+    ilFunction iter= std::find_if(pProcList.begin(),pProcList.end(),
+        [name](const PtrFunction &f)  { return f->name==name; });
+    if(iter==pProcList.end())
+        return nullptr;
+    return *iter;
+}
+PtrFunction Project::createFunction(FunctionType *f,const QString &name,SegOffAddr addr)
+{
+    PtrFunction func(Function::Create(f,0,name,0));
+    pProcList.push_back(func);
     // FIXME: use provided segment addr !
-    iter->procEntry = addr.addr;
+    func->procEntry = addr.addr;
     if(!callGraph) {
         /* Set up call graph initial node */
         callGraph = new CALL_GRAPH;
-        callGraph->proc = iter;
+        callGraph->proc = func;
         /* The entry state info is for the first procedure */
-        iter->state = m_entry_state;
+        func->state = m_entry_state;
 
     }
 
-    emit newFunctionCreated(*iter);
-    return iter;
+    emit newFunctionCreated(func);
+    return func;
 }
 
 int Project::getSymIdxByAdd(uint32_t adr)
@@ -125,6 +139,19 @@ Project *Project::get()
 SourceMachine *Project::machine()
 {
     return nullptr;
+}
+
+bool Project::addCommand(Command *cmd) {
+    bool res = m_project_command_stream.add(cmd);
+    emit commandListChanged();
+    return res;
+}
+
+bool Project::addCommand(PtrFunction f, Command *cmd)
+{
+    bool res = m_function_streams[f].add(cmd);
+    emit commandListChanged();
+    return res;
 }
 
 void Project::onCommandStreamFinished(bool state)

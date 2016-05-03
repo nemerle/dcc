@@ -463,7 +463,7 @@ static bool locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pa
  * pushing and popping of registers is implemented.
  * Also sets prog.offMain and prog.segMain if possible
  */
-void checkStartup(STATE &state)
+bool checkStartup(STATE &state)
 {
     Project &   proj(*Project::get());
     PROG &      prog(Project::get()->prog);
@@ -491,7 +491,7 @@ void checkStartup(STATE &state)
             proj.setLoaderMetadata({eBorland,ePascal,eUnknownMemoryModel,4});
             prog.offMain = startOff;            /* Code starts immediately */
             prog.segMain = prog.initCS;			/* At the 5 uint8_t jump */
-            return;                     /* Already have vendor */
+            return true;                     /* Already have vendor */
         }
         else if (locatePattern(prog.image(), init, init+26, pattBorl5Init, sizeof(pattBorl5Init), &i))
         {
@@ -501,10 +501,9 @@ void checkStartup(STATE &state)
             proj.setLoaderMetadata({eBorland,ePascal,eUnknownMemoryModel,5});
             prog.offMain = startOff;            /* Code starts immediately */
             prog.segMain = prog.initCS;
-            return;                     /* Already have vendor */
+            return true;                     /* Already have vendor */
         }
-        else if (locatePattern(prog.image(), init, init+26, pattBorl7Init,
-                               sizeof(pattBorl7Init), &i))
+        else if (locatePattern(prog.image(), init, init+26, pattBorl7Init, sizeof(pattBorl7Init), &i))
         {
 
             state.setState( rDS, LH(&prog.image()[i+1]));
@@ -512,7 +511,7 @@ void checkStartup(STATE &state)
             proj.setLoaderMetadata({eBorland,ePascal,eUnknownMemoryModel,7});
             prog.offMain = startOff;            /* Code starts immediately */
             prog.segMain = prog.initCS;
-            return;                     /* Already have vendor */
+            return true;                     /* Already have vendor */
         }
     }
 
@@ -533,16 +532,14 @@ void checkStartup(STATE &state)
             prog.segMain = (uint16_t)para;
             metadata.compiler_memory_model = eLarge;
         }
-        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainCompact,
-                               sizeof(pattMainCompact), &i))
+        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainCompact, sizeof(pattMainCompact), &i))
         {
             rel = LH_SIGNED(&prog.image()[i+OFFMAINCOMPACT]);/* This is the rel addr of main */
             prog.offMain = i+OFFMAINCOMPACT+2+rel;  /* Save absolute image offset */
             prog.segMain = prog.initCS;
             metadata.compiler_memory_model = eCompact;
         }
-        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainMedium,
-                               sizeof(pattMainMedium), &i))
+        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainMedium, sizeof(pattMainMedium), &i))
         {
             rel = LH(&prog.image()[i+OFFMAINMEDIUM]);  /* This is abs off of main */
             para= LH(&prog.image()[i+OFFMAINMEDIUM+2]);/* This is abs seg of main */
@@ -550,8 +547,7 @@ void checkStartup(STATE &state)
             prog.segMain = (uint16_t)para;
             metadata.compiler_memory_model = eMedium;
         }
-        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainSmall,
-                               sizeof(pattMainSmall), &i))
+        else if (locatePattern(prog.image(), startOff, startOff+0x180, pattMainSmall, sizeof(pattMainSmall), &i))
         {
             rel = LH_SIGNED(&prog.image()[i+OFFMAINSMALL]); /* This is rel addr of main */
             prog.offMain = i+OFFMAINSMALL+2+rel;    /* Save absolute image offset */
@@ -567,7 +563,7 @@ void checkStartup(STATE &state)
             proj.setLoaderMetadata({eBorland,ePascal,eUnknownMemoryModel,3});
             printf("Turbo Pascal 3.0 detected\n");
             printf("Main at %04X\n", prog.offMain);
-            return;                         /* Already have vendor */
+            return true;                         /* Already have vendor */
         }
         else
         {
@@ -646,6 +642,7 @@ void checkStartup(STATE &state)
         printf("Warning - compiler not recognised\n");
     }
     proj.setLoaderMetadata(metadata);
+    return prog.offMain != -1;
 }
 
 /* DCCLIBS.DAT is a data file sorted on function name containing names and

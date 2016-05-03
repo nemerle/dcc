@@ -125,23 +125,23 @@ bool DccFrontend::FrontEnd ()
 
     /* Search through code looking for impure references and flag them */
     Disassembler ds(1);
-    for(Function &f : Project::get()->pProcList)
+    for(PtrFunction &f : Project::get()->pProcList)
     {
-        f.markImpure();
+        f->markImpure();
         if (option.asm1)
         {
-            ds.disassem(&f);
+            ds.disassem(f);
         }
     }
     if (option.Interact)
     {
-        interactDis(&Project::get()->pProcList.front(), 0);     /* Interactive disassembler */
+        interactDis(Project::get()->pProcList.front(), 0);     /* Interactive disassembler */
     }
 
     /* Converts jump target addresses to icode offsets */
-    for(Function &f : Project::get()->pProcList)
+    for(PtrFunction &f : Project::get()->pProcList)
     {
-        f.bindIcodeOff();
+        f->bindIcodeOff();
     }
     /* Print memory bitmap */
     if (option.Map)
@@ -151,87 +151,6 @@ bool DccFrontend::FrontEnd ()
 /*****************************************************************************
 * LoadImage
 ****************************************************************************/
-struct MachineStateInitialization : public Command {
-
-public:
-    MachineStateInitialization() : Command("Initialize simulated machine state",eProject) {}
-
-    bool execute(CommandContext *ctx) override
-    {
-        assert(ctx && ctx->m_project);
-        Project &proj(*ctx->m_project);
-        const PROG &prog(proj.prog);
-        proj.m_entry_state.setState(rES, 0);   /* PSP segment */
-        proj.m_entry_state.setState(rDS, 0);
-        proj.m_entry_state.setState(rCS, prog.initCS);
-        proj.m_entry_state.setState(rSS, prog.initSS);
-        proj.m_entry_state.setState(rSP, prog.initSP);
-        proj.m_entry_state.IP = ((uint32_t)prog.initCS << 4) + prog.initIP;
-        proj.SynthLab = SYNTHESIZED_MIN;
-        return true;
-    }
-};
-struct CreateFunction : public Command {
-    QString m_name;
-    SegOffAddr m_addr;
-    FunctionType *m_type;
-    CreateFunction(QString name,SegOffAddr address,FunctionType *f) : Command("Create function",eProject),
-        m_name(name),
-        m_addr(address),
-        m_type(f)
-    {}
-    bool execute(CommandContext *ctx) override {
-        Project &proj(*ctx->m_project);
-        const PROG &prog(proj.prog);
-
-        proj.createFunction(m_type,m_name,m_addr);
-        if(m_name=="main") {
-            /* In medium and large models, the segment of main may (will?) not be
-                the same as the initial CS segment (of the startup code) */
-            proj.m_entry_state.setState(rCS, prog.segMain);
-            proj.m_entry_state.IP = prog.offMain;
-        }
-        assert(false);
-        //proj.addCommand(new FollowControl());
-        /* Recursively build entire procedure list */
-        //proj.callGraph->proc->FollowCtrl(proj.callGraph, &proj.m_entry_state);
-
-    }
-};
-struct FindMain : public Command {
-    FindMain() : Command("Locate the main entry point",eProject) {
-    }
-    bool execute(CommandContext *ctx) {
-        Project &proj(*ctx->m_project);
-        const PROG &prog(proj.prog);
-
-        if(ctx->m_project->m_entry_state.IP==0) {
-            ctx->recordFailure(this,"Cannot search for main func when no entry point was found");
-            return false;
-        }
-        /* Check for special settings of initial state, based on idioms of the startup code */
-        checkStartup(ctx->m_project->m_entry_state);
-        Command *cmd;
-        if (prog.offMain != -1)
-        {
-            //TODO: main arguments and return values should depend on detected compiler/library
-            FunctionType *main_type = FunctionType::get(Type{TYPE_WORD_SIGN},{ Type{TYPE_WORD_SIGN},Type{TYPE_PTR} },false);
-            main_type->setCallingConvention(CConv::C);
-            cmd = new CreateFunction("main",SegOffAddr {prog.segMain,prog.offMain},main_type);
-
-        }
-        else
-        {
-            FunctionType *main_type = FunctionType::get(Type{TYPE_UNKNOWN},{ Type{TYPE_UNKNOWN} },false);
-            main_type->setCallingConvention(CConv::UNKNOWN);
-            /* Create initial procedure at program start address */
-            cmd = new CreateFunction("start",SegOffAddr {prog.segMain,proj.m_entry_state.IP},main_type);
-        }
-        proj.addCommand(cmd);
-        proj.addCommand(new LoadPatternLibrary());
-        return true;
-    }
-};
 
 /* Parses the program, builds the call graph, and returns the list of
  * procedures found     */
@@ -240,4 +159,68 @@ void DccFrontend::parse(Project &proj)
     /* Set initial state */
     proj.addCommand(new MachineStateInitialization);
     proj.addCommand(new FindMain);
+}
+
+bool MachineStateInitialization::execute(CommandContext *ctx)
+{
+    assert(ctx && ctx->m_project);
+    Project &proj(*ctx->m_project);
+    const PROG &prog(proj.prog);
+    proj.m_entry_state.setState(rES, 0);   /* PSP segment */
+    proj.m_entry_state.setState(rDS, 0);
+    proj.m_entry_state.setState(rCS, prog.initCS);
+    proj.m_entry_state.setState(rSS, prog.initSS);
+    proj.m_entry_state.setState(rSP, prog.initSP);
+    proj.m_entry_state.IP = ((uint32_t)prog.initCS << 4) + prog.initIP;
+    proj.SynthLab = SYNTHESIZED_MIN;
+    return true;
+}
+
+bool FindMain::execute(CommandContext *ctx) {
+    Project &proj(*ctx->m_project);
+    const PROG &prog(proj.prog);
+
+    PtrFunction start_func = proj.findByName("start");
+    if(ctx->m_project->m_entry_state.IP==0) {
+        ctx->recordFailure(this,"Cannot search for main func when no entry point was found");
+        return false;
+    }
+    /* Check for special settings of initial state, based on idioms of the startup code */
+    if(checkStartup(ctx->m_project->m_entry_state)) {
+        proj.findByName("start")->markDoNotDecompile(); // we have main, do not decompile the start proc
+        //TODO: main arguments and return values should depend on detected compiler/library
+        FunctionType *main_type = FunctionType::get(Type{TYPE_WORD_SIGN},{ Type{TYPE_WORD_SIGN},Type{TYPE_PTR} },false);
+        main_type->setCallingConvention(CConv::C);
+        proj.addCommand(new CreateFunction("main",SegOffAddr {prog.segMain,prog.offMain},main_type));
+
+        proj.addCommand(new LoadPatternLibrary());
+    }
+    return true;
+}
+
+QString CreateFunction::instanceDescription() const {
+    return QString("%1 \"%2\" @ 0x%3").arg(name()).arg(m_name).arg(m_addr.addr,0,16,QChar('0'));
+}
+
+bool CreateFunction::execute(CommandContext *ctx) {
+    Project &proj(*ctx->m_project);
+    const PROG &prog(proj.prog);
+
+    PtrFunction func = proj.createFunction(m_type,m_name,m_addr);
+    if(m_name=="main") {
+        /* In medium and large models, the segment of main may (will?) not be
+                the same as the initial CS segment (of the startup code) */
+        proj.m_entry_state.setState(rCS, prog.segMain);
+        proj.m_entry_state.IP = prog.offMain;
+    }
+    if(m_name=="start") {
+        proj.addCommand(new MachineStateInitialization);
+        proj.addCommand(new FindMain);
+    }
+
+//    proj.addCommand(new ProcessFunction);
+    //proj.addCommand(new FollowControl());
+    /* Recursively build entire procedure list */
+    //proj.callGraph->proc->FollowCtrl(proj.callGraph, &proj.m_entry_state);
+
 }

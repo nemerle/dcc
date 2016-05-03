@@ -11,10 +11,7 @@ struct IDcc {
     static IDcc *get();
     virtual void BaseInit()=0;
     virtual void Init(QObject *tgt)=0;
-    virtual ilFunction GetFirstFuncHandle()=0;
-    virtual ilFunction GetNextFuncHandle(ilFunction iter)=0;
-    virtual ilFunction GetCurFuncHandle()=0;
-    virtual bool isValidFuncHandle(ilFunction) = 0;
+    virtual PtrFunction GetCurFuncHandle()=0;
     virtual void analysis_Once()=0;
     virtual bool load(QString name)=0; // load and preprocess -> find entry point
     virtual void prtout_asm(IStructuredTextTarget *,int level=0)=0;

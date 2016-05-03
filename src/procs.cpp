@@ -27,7 +27,7 @@ const char *indentStr(int indLevel) // Indentation according to the depth of the
 
 /* Inserts an outEdge at the current callGraph pointer if the newProc does
  * not exist.  */
-void CALL_GRAPH::insertArc (ilFunction newProc)
+void CALL_GRAPH::insertArc (PtrFunction newProc)
 {
 
 
@@ -43,23 +43,23 @@ void CALL_GRAPH::insertArc (ilFunction newProc)
 
 
 /* Inserts a (caller, callee) arc in the call graph tree. */
-bool CALL_GRAPH::insertCallGraph(ilFunction caller, ilFunction callee)
+bool CALL_GRAPH::insertCallGraph(PtrFunction caller, PtrFunction callee)
 {
     if (proc == caller)
     {
         insertArc (callee);
         return true;
     }
-        for (CALL_GRAPH *edg : outEdges)
-            if (edg->insertCallGraph (caller, callee))
-                return true;
+    for (CALL_GRAPH *edg : outEdges)
+        if (edg->insertCallGraph (caller, callee))
+            return true;
     return false;
 }
 
-bool CALL_GRAPH::insertCallGraph(Function *caller, ilFunction callee)
-{
-    return insertCallGraph(Project::get()->funcIter(caller),callee);
-}
+    //bool CALL_GRAPH::insertCallGraph(PtrFunction &caller, PtrFunction &callee)
+    //{
+    //    return insertCallGraph(caller,callee);
+    //}
 
 
 /* Displays the current node of the call graph, and invokes recursively on

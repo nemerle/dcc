@@ -1,8 +1,10 @@
 #include "FunctionListDockWidget.h"
 #include "ui_FunctionListDockWidget.h"
+
 #include "dcc.h"
 #include "dcc_interface.h"
 #include "Procedure.h"
+#include "project.h"
 
 #include <QtCore>
 //#include "exe2c.h"
@@ -21,9 +23,10 @@ FunctionListDockWidget::~FunctionListDockWidget()
 }
 void FunctionListDockWidget::functionSelected(const QModelIndex &idx)
 {
-    QVariant v=m_list_model.data(idx,Qt::DisplayRole);
-    qDebug()<<"neb changed function to "<<v;
-    g_EXE2C->SetCurFunc_by_Name(v.toString().toStdString().c_str());
+
+    QVariant v=m_list_model.data(m_list_model.index(idx.row(),0),Qt::DisplayRole);
+    qDebug()<<"changed function to "<<v;
+    g_EXE2C->SetCurFunc_by_Name(v.toString());
 }
 // signalled by m_func_list_view accepted signal
 void FunctionListDockWidget::displayRequest(const QModelIndex &)
@@ -37,20 +40,17 @@ void FunctionListModel::updateFunctionList()
 }
 void FunctionListModel::rebuildFunctionList()
 {
-    ilFunction iter = g_EXE2C->GetFirstFuncHandle();
+    Project &project(*Project::get());
+    const lFunction &funcs(project.functions());
     clear();
-    beginInsertRows(QModelIndex(),0,g_EXE2C->getFuncCount());
-
-    while (g_EXE2C->isValidFuncHandle(iter))
+    beginInsertRows(QModelIndex(),0,funcs.size());
+    for(const PtrFunction &info : funcs)
     {
-        const Function &info(*iter);
         //g_EXE2C->GetFuncInfo(iter, &info);
-        iter = g_EXE2C->GetNextFuncHandle(iter);
-
-        if (info.name.isEmpty())
+        if (info->name.isEmpty())
             continue;
         // fixme
-        add_function(info.name,info.nStep,info.procEntry,info.procEntry+10,info.cbParam);
+        add_function(info->name,info->nStep,info->procEntry,info->procEntry+10,info->cbParam);
     }
     endInsertRows();
 }
@@ -63,19 +63,29 @@ QVariant FunctionListModel::data(const QModelIndex &idx,int role) const
     {
         switch(column)
         {
-            case 0: // name
-            {
-                return QVariant(inf.m_name);
-            }
-            case 1: // step
-                return QVariant(inf.m_decoding_step);
-            case 2: // start offset
-            {
-                QString in_base_16=QString("%1").arg(inf.m_start_off,0,16);
-                return QVariant(in_base_16);
-            }
+        case 0: // name
+        {
+            return QVariant(inf.m_name);
+        }
+        case 1: { // step
+            switch(inf.m_decoding_step) {
+            case eNotDecoded:
+                return "Undecoded";
+            case eDisassemblyInProgress:
+                return "Disassembly in progress";
+            case eDissassembled:
+                return "Disassembled";
             default:
-                return QVariant();
+                return "UNKNOWN STATE";
+            }
+        }
+        case 2: // start offset
+        {
+            QString in_base_16=QString("%1").arg(inf.m_start_off,0,16);
+            return QVariant(in_base_16);
+        }
+        default:
+            return QVariant();
 
         }
     }
@@ -87,14 +97,14 @@ QVariant FunctionListModel::headerData(int section, Qt::Orientation orientation,
     {
         switch(section)
         {
-            case 0: // name
-                return QObject::tr("Function name");
-            case 1: // step
-                return QObject::tr("Decoding step");
-            case 2: // start offset
-                return QObject::tr("Start offset");
-            default:
-                return QVariant();
+        case 0: // name
+            return QObject::tr("Function name");
+        case 1: // step
+            return QObject::tr("Decoding step");
+        case 2: // start offset
+            return QObject::tr("Start offset");
+        default:
+            return QVariant();
 
         }
     }

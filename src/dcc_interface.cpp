@@ -2,33 +2,22 @@
 #include "dcc.h"
 #include "project.h"
 struct DccImpl : public IDcc {
-    ilFunction m_current_func;
+    PtrFunction m_current_func;
     // IDcc interface
 public:
     void BaseInit()
     {
-        m_current_func = Project::get()->functions().end();
+        m_current_func = nullptr;
     }
     void Init(QObject *tgt)
     {
     }
-    ilFunction GetFirstFuncHandle()
-    {
-        return Project::get()->functions().begin();
-    }
-    ilFunction GetNextFuncHandle(ilFunction iter)
-    {
-        if(iter!=Project::get()->functions().end())
-            ++iter;
-        return iter;
-    }
-    ilFunction GetCurFuncHandle()
-    {
+    PtrFunction GetCurFuncHandle() {
         return m_current_func;
     }
     void analysis_Once()
     {
-        if(m_current_func==Project::get()->functions().end())
+        if(m_current_func==nullptr)
             return;
         if(m_current_func->nStep==0) { // unscanned function
         }
@@ -39,14 +28,15 @@ public:
         Project::get()->create(name);
         return Project::get()->addLoadCommands(name);
     }
-    void prtout_asm(IStructuredTextTarget *, int level)
+    void prtout_asm(IStructuredTextTarget *tgt, int level)
     {
-//        if (m_Cur_Func->m_nStep == 0)
+//        if (m_current_func->nStep == 0)
 //            return;
 
 //        XmlOutPro out(iOut);
 //        FuncLL the(m_Cur_Func->ll.m_asmlist);
 //        the.prtout_asm(m_Cur_Func, &m_Cur_Func->m_varll, &out);
+        m_current_func->toStructuredText(tgt,level);
     }
     void prtout_cpp(IStructuredTextTarget *, int level)
     {
@@ -64,13 +54,9 @@ public:
     }
     void SetCurFunc_by_Name(QString v)
     {
-        lFunction & funcs(Project::get()->functions());
-        for(auto iter=funcs.begin(),fin=funcs.end(); iter!=fin; ++iter) {
-            if(iter->name==v) {
-                m_current_func = iter;
-                return;
-            }
-        }
+        PtrFunction p(Project::get()->findByName(v));
+        if(p!=nullptr)
+            m_current_func = p;
     }
     QDir installDir() {
         return QDir(".");

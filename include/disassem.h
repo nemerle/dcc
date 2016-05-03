@@ -7,12 +7,16 @@
 #pragma once
 #include "bundle.h"
 
+#include <memory>
 #include <fstream>
 #include <vector>
 #include <QString>
 #include <QTextStream>
+
 struct LLInst;
 struct Function;
+typedef std::shared_ptr<Function> PtrFunction;
+
 struct Disassembler
 {
 protected:
@@ -30,8 +34,8 @@ public:
         g_lab=0;
     }
 public:
-    void disassem(Function *ppProc);
-    void disassem(Function *ppProc, int i);
+    void disassem(PtrFunction ppProc);
+    void disassem(PtrFunction ppProc, int i);
     void dis1Line(LLInst &inst, int loc_ip, int pass);
 };
 /* Definitions for extended keys (first key is zero) */

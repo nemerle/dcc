@@ -1,5 +1,6 @@
 #include "Command.h"
 
+#include "DccFrontend.h"
 #include "dcc.h"
 #include "project.h"
 #include "Loaders.h"
@@ -69,6 +70,15 @@ bool LoaderApplication::execute(CommandContext * ctx)
     }
     if (option.verbose)
         proj->prog.displayLoadInfo();
+    FunctionType *main_type = FunctionType::get(Type{TYPE_UNKNOWN},{ },false);
+    main_type->setCallingConvention(CConv::UNKNOWN);
+    /* Create initial procedure at program start address */
+    PROG &prog(proj->prog);
+    CreateFunction *cmd = new CreateFunction("start",
+                                             SegOffAddr {prog.segMain,((uint32_t)prog.initCS << 4) + prog.initIP},
+                                             main_type);
+    proj->addCommand(cmd);
+
     return true;
 }
 

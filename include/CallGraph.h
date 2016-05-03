@@ -3,7 +3,7 @@
 /* CALL GRAPH NODE */
 struct CALL_GRAPH
 {
-        ilFunction proc;               /* Pointer to procedure in pProcList	*/
+        PtrFunction proc;               /* Pointer to procedure in pProcList	*/
         std::vector<CALL_GRAPH *> outEdges; /* array of out edges                   */
 public:
         void write();
@@ -12,8 +12,8 @@ public:
         }
 public:
         void writeNodeCallGraph(int indIdx);
-        bool insertCallGraph(ilFunction caller, ilFunction callee);
-        bool insertCallGraph(Function *caller, ilFunction callee);
-        void insertArc(ilFunction newProc);
+        bool insertCallGraph(PtrFunction caller, PtrFunction callee);
+        //bool insertCallGraph(PtrFunction caller, PtrFunction callee);
+        void insertArc(PtrFunction newProc);
 };
 //extern CALL_GRAPH * callGraph;	/* Pointer to the head of the call graph     */

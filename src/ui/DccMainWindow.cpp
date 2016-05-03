@@ -26,13 +26,15 @@ DccMainWindow::DccMainWindow(QWidget *parent) :
     g_EXE2C->BaseInit();
     g_EXE2C->Init(this);
 
-    m_last_display        = g_EXE2C->GetFirstFuncHandle();
+    m_last_display  = nullptr;
     m_command_queue = new CommandQueueView(this);
     m_functionlist_widget = new FunctionListDockWidget(this);
     m_functionlist_widget->setWindowTitle(QApplication::tr("Function list"));
     connect(m_functionlist_widget,SIGNAL(displayRequested()), SLOT(displayCurrentFunction()));
     // we are beeing signalled when display is requested
     connect(this,SIGNAL(functionListChanged()), m_functionlist_widget->model(),SLOT(updateFunctionList()));
+    connect(Project::get(),SIGNAL(newFunctionCreated(PtrFunction)),SLOT(onNewFunction(PtrFunction)));
+
     this->addDockWidget(Qt::RightDockWidgetArea,m_functionlist_widget);
     this->addDockWidget(Qt::LeftDockWidgetArea,m_command_queue);
     m_asm_view = new FunctionViewWidget(this);
@@ -61,6 +63,9 @@ void DccMainWindow::changeEvent(QEvent *e)
         default:
             break;
     }
+}
+void DccMainWindow::onNewFunction(PtrFunction f) {
+    emit functionListChanged();
 }
 void DccMainWindow::onOptim()
 {

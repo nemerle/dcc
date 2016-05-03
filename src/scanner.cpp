@@ -1,5 +1,5 @@
-/*****************************************************************************
- *			dcc project scanner module
+/**
+ * dcc project scanner module
  * Implements a simple state driven scanner to convert 8086 machine code into
  * I-code
  * (C) Cristina Cifuentes, Jeff Ledermann
@@ -51,8 +51,8 @@ static void none1(int i);
 static void none2(int i);
 static void checkInt(int i);
 
-#define iZERO (llIcode)0    // For neatness
-#define IC	  llIcode
+#define iZERO   (llIcode)0    // For neatness
+#define IC      llIcode
 
 static struct {
     void (*state1)(int);
@@ -60,26 +60,26 @@ static struct {
     uint32_t flg;
     llIcode opcode;
 } stateTable[] = {
-    {  modrm,   none2, B                        , iADD	},  /* 00 */
-    {  modrm,   none2, 0                        , iADD	},  /* 01 */
-    {  modrm,   none2, TO_REG | B               , iADD	},  /* 02 */
-    {  modrm,   none2, TO_REG 			, iADD	},  /* 03 */
-    {  data1,   axImp, B                        , iADD	},  /* 04 */
-    {  data2,   axImp, 0                        , iADD	},  /* 05 */
-    {  segop,   none2, NO_SRC                   , iPUSH	},  /* 06 */
-    {  segop,   none2, NO_SRC                   , iPOP	},  /* 07 */
-    {  modrm,   none2, B                        , iOR	},  /* 08 */
-    {  modrm,   none2, NSP                      , iOR	},  /* 09 */
-    {  modrm,   none2, TO_REG | B               , iOR	},  /* 0A */
-    {  modrm,   none2, TO_REG | NSP		, iOR	},  /* 0B */
-    {  data1,   axImp, B                        , iOR	},  /* 0C */
-    {  data2,   axImp, 0                        , iOR	},	/* 0D */
-    {  segop,   none2, NO_SRC                   , iPUSH	},	/* 0E */
-    {  none1,   none2, OP386                    , iZERO },	/* 0F */
-    {  modrm,   none2, B                        , iADC	},	/* 10 */
-    {  modrm,   none2, NSP                      , iADC	},	/* 11 */
-    {  modrm,   none2, TO_REG | B               , iADC	},	/* 12 */
-    {  modrm,   none2, TO_REG | NSP		, iADC	},	/* 13 */
+    {  modrm,   none2, B                        , iADD  },  /* 00 */
+    {  modrm,   none2, 0                        , iADD  },  /* 01 */
+    {  modrm,   none2, TO_REG | B               , iADD  },  /* 02 */
+    {  modrm,   none2, TO_REG                   , iADD  },  /* 03 */
+    {  data1,   axImp, B                        , iADD  },  /* 04 */
+    {  data2,   axImp, 0                        , iADD  },  /* 05 */
+    {  segop,   none2, NO_SRC                   , iPUSH },  /* 06 */
+    {  segop,   none2, NO_SRC                   , iPOP  },  /* 07 */
+    {  modrm,   none2, B                        , iOR   },  /* 08 */
+    {  modrm,   none2, NSP                      , iOR   },  /* 09 */
+    {  modrm,   none2, TO_REG | B               , iOR   },  /* 0A */
+    {  modrm,   none2, TO_REG | NSP             , iOR   },  /* 0B */
+    {  data1,   axImp, B                        , iOR   },  /* 0C */
+    {  data2,   axImp, 0                        , iOR   },  /* 0D */
+    {  segop,   none2, NO_SRC                   , iPUSH },  /* 0E */
+    {  none1,   none2, OP386                    , iZERO },  /* 0F */
+    {  modrm,   none2, B                        , iADC  },  /* 10 */
+    {  modrm,   none2, NSP                      , iADC  },  /* 11 */
+    {  modrm,   none2, TO_REG | B               , iADC  },  /* 12 */
+    {  modrm,   none2, TO_REG | NSP             , iADC  },  /* 13 */
     {  data1,   axImp, B                        , iADC	},	/* 14 */
     {  data2,   axImp, 0			, iADC	},	/* 15 */
     {  segop,   none2, NOT_HLL | NO_SRC         , iPUSH	},	/* 16 */
@@ -87,59 +87,59 @@ static struct {
     {  modrm,   none2, B			, iSBB	},	/* 18 */
     {  modrm,   none2, NSP                      , iSBB	},	/* 19 */
     {  modrm,   none2, TO_REG | B               , iSBB	},	/* 1A */
-    {  modrm,   none2, TO_REG | NSP		, iSBB	},	/* 1B */
-    {  data1,   axImp, B            		, iSBB	},	/* 1C */
-    {  data2,   axImp, 0                        , iSBB  },	/* 1D */
-    {  segop,   none2, NO_SRC                   , iPUSH	},	/* 1E */
-    {  segop,   none2, NO_SRC                   , iPOP	},	/* 1F */
-    {  modrm,   none2, B                        , iAND	},	/* 20 */
-    {  modrm,   none2, NSP                      , iAND	},	/* 21 */
-    {  modrm,   none2, TO_REG | B               , iAND	},	/* 22 */
-    {  modrm,   none2, TO_REG | NSP             , iAND	},	/* 23 */
-    {  data1,   axImp, B                        , iAND	},	/* 24 */
-    {  data2,   axImp, 0                        , iAND	},	/* 25 */
-    { prefix,   none2, 0                        , (IC)rES},	/* 26 */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iDAA	},	/* 27 */
-    {  modrm,   none2, B                        , iSUB	},	/* 28 */
-    {  modrm,   none2, 0                        , iSUB	},	/* 29 */
-    {  modrm,   none2, TO_REG | B               , iSUB	},	/* 2A */
-    {  modrm,   none2, TO_REG                   , iSUB	},	/* 2B */
-    {  data1,   axImp, B                        , iSUB	},	/* 2C */
-    {  data2,   axImp, 0                        , iSUB	},	/* 2D */
-    { prefix,   none2, 0                        , (IC)rCS},	/* 2E */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iDAS  },	/* 2F */
-    {  modrm,   none2, B                        , iXOR  },	/* 30 */
-    {  modrm,   none2, NSP                      , iXOR  },	/* 31 */
-    {  modrm,   none2, TO_REG | B               , iXOR  },	/* 32 */
-    {  modrm,   none2, TO_REG | NSP             , iXOR  },	/* 33 */
-    {  data1,   axImp, B                        , iXOR	},	/* 34 */
-    {  data2,   axImp, 0                        , iXOR	},	/* 35 */
-    { prefix,   none2, 0                        , (IC)rSS},	/* 36 */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iAAA  },	/* 37 */
-    {  modrm,   none2, B                        , iCMP	},	/* 38 */
-    {  modrm,   none2, NSP                      , iCMP	},	/* 39 */
-    {  modrm,   none2, TO_REG | B               , iCMP	},	/* 3A */
-    {  modrm,   none2, TO_REG | NSP             , iCMP	},	/* 3B */
-    {  data1,   axImp, B                        , iCMP	},	/* 3C */
-    {  data2,   axImp, 0                        , iCMP	},	/* 3D */
-    { prefix,   none2, 0                        , (IC)rDS},	/* 3E */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iAAS  },	/* 3F */
-    {  regop,   none2, 0                        , iINC	},	/* 40 */
-    {  regop,   none2, 0                        , iINC	},	/* 41 */
-    {  regop,   none2, 0                        , iINC	},	/* 42 */
-    {  regop,   none2, 0                        , iINC	},	/* 43 */
-    {  regop,   none2, NOT_HLL			, iINC	},	/* 44 */
-    {  regop,   none2, 0                        , iINC	},	/* 45 */
-    {  regop,   none2, 0                        , iINC	},	/* 46 */
-    {  regop,   none2, 0                        , iINC	},	/* 47 */
-    {  regop,   none2, 0                        , iDEC	},	/* 48 */
-    {  regop,   none2, 0                        , iDEC	},	/* 49 */
-    {  regop,   none2, 0                        , iDEC	},	/* 4A */
-    {  regop,   none2, 0                        , iDEC	},	/* 4B */
-    {  regop,   none2, NOT_HLL                  , iDEC	},	/* 4C */
-    {  regop,   none2, 0                        , iDEC	},	/* 4D */
-    {  regop,   none2, 0                        , iDEC	},	/* 4E */
-    {  regop,   none2, 0                        , iDEC	},	/* 4F */
+    {  modrm,   none2, TO_REG | NSP             , iSBB  },  /* 1B */
+    {  data1,   axImp, B                        , iSBB  },  /* 1C */
+    {  data2,   axImp, 0                        , iSBB  },  /* 1D */
+    {  segop,   none2, NO_SRC                   , iPUSH },  /* 1E */
+    {  segop,   none2, NO_SRC                   , iPOP  },  /* 1F */
+    {  modrm,   none2, B                        , iAND  },  /* 20 */
+    {  modrm,   none2, NSP                      , iAND  },  /* 21 */
+    {  modrm,   none2, TO_REG | B               , iAND  },  /* 22 */
+    {  modrm,   none2, TO_REG | NSP             , iAND  },  /* 23 */
+    {  data1,   axImp, B                        , iAND  },  /* 24 */
+    {  data2,   axImp, 0                        , iAND  },  /* 25 */
+    { prefix,   none2, 0                        , (IC)rES}, /* 26 */
+    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iDAA  },  /* 27 */
+    {  modrm,   none2, B                        , iSUB  },  /* 28 */
+    {  modrm,   none2, 0                        , iSUB  },  /* 29 */
+    {  modrm,   none2, TO_REG | B               , iSUB  },  /* 2A */
+    {  modrm,   none2, TO_REG                   , iSUB  },  /* 2B */
+    {  data1,   axImp, B                        , iSUB  },  /* 2C */
+    {  data2,   axImp, 0                        , iSUB  },  /* 2D */
+    { prefix,   none2, 0                        , (IC)rCS}, /* 2E */
+    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iDAS  },  /* 2F */
+    {  modrm,   none2, B                        , iXOR  },  /* 30 */
+    {  modrm,   none2, NSP                      , iXOR  },  /* 31 */
+    {  modrm,   none2, TO_REG | B               , iXOR  },  /* 32 */
+    {  modrm,   none2, TO_REG | NSP             , iXOR  },  /* 33 */
+    {  data1,   axImp, B                        , iXOR  },  /* 34 */
+    {  data2,   axImp, 0                        , iXOR  },  /* 35 */
+    { prefix,   none2, 0                        , (IC)rSS}, /* 36 */
+    {  none1,   axImp, NOT_HLL | NO_SRC         , iAAA  },  /* 37 */
+    {  modrm,   none2, B                        , iCMP  },  /* 38 */
+    {  modrm,   none2, NSP                      , iCMP  },  /* 39 */
+    {  modrm,   none2, TO_REG | B               , iCMP  },  /* 3A */
+    {  modrm,   none2, TO_REG | NSP             , iCMP  },  /* 3B */
+    {  data1,   axImp, B                        , iCMP  },  /* 3C */
+    {  data2,   axImp, 0                        , iCMP  },  /* 3D */
+    { prefix,   none2, 0                        , (IC)rDS}, /* 3E */
+    {  none1,   axImp, NOT_HLL | NO_SRC         , iAAS  },  /* 3F */
+    {  regop,   none2, 0                        , iINC  },  /* 40 */
+    {  regop,   none2, 0                        , iINC  },  /* 41 */
+    {  regop,   none2, 0                        , iINC  },  /* 42 */
+    {  regop,   none2, 0                        , iINC  },	/* 43 */
+    {  regop,   none2, NOT_HLL                  , iINC  },	/* 44 */
+    {  regop,   none2, 0                        , iINC  },	/* 45 */
+    {  regop,   none2, 0                        , iINC  },	/* 46 */
+    {  regop,   none2, 0                        , iINC  },	/* 47 */
+    {  regop,   none2, 0                        , iDEC  },	/* 48 */
+    {  regop,   none2, 0                        , iDEC  },	/* 49 */
+    {  regop,   none2, 0                        , iDEC  },	/* 4A */
+    {  regop,   none2, 0                        , iDEC  },	/* 4B */
+    {  regop,   none2, NOT_HLL                  , iDEC  },	/* 4C */
+    {  regop,   none2, 0                        , iDEC  },	/* 4D */
+    {  regop,   none2, 0                        , iDEC  },	/* 4E */
+    {  regop,   none2, 0                        , iDEC  },	/* 4F */
     {  regop,   none2, NO_SRC                   , iPUSH },	/* 50 */
     {  regop,   none2, NO_SRC                   , iPUSH },	/* 51 */
     {  regop,   none2, NO_SRC                   , iPUSH },	/* 52 */

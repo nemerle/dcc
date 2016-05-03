@@ -31,7 +31,7 @@ void Function::buildCFG(Disassembler &ds)
 
     if (option.asm2)
     {
-        ds.disassem(this); // Print 2nd pass assembler listing
+        ds.disassem(this->shared_from_this()); // Print 2nd pass assembler listing
         return;
     }
 
@@ -79,13 +79,13 @@ void udm(void)
     Disassembler ds(2);
     for (auto iter = proj->pProcList.rbegin(); iter!=proj->pProcList.rend(); ++iter)
     {
-        Function &f(*iter);
+        Function &f(**iter);
         if(option.CustomEntryPoint) {
             if(f.procEntry!=option.CustomEntryPoint) {
                 continue;
             }
         }
-        iter->buildCFG(ds);
+        f.buildCFG(ds);
     }
     if (option.asm2)
         return;
@@ -96,8 +96,8 @@ void udm(void)
      * substitution algorithm */
     LivenessSet live_regs;
     if(option.CustomEntryPoint) {
-        ilFunction iter = proj->findByEntry(option.CustomEntryPoint);
-        if(iter==proj->pProcList.end()) {
+        PtrFunction iter = proj->findByEntry(option.CustomEntryPoint);
+        if(iter==nullptr) {
             qCritical()<< "No function found at entry point" << QString::number(option.CustomEntryPoint,16);
             return;
         }
@@ -108,12 +108,12 @@ void udm(void)
         proj->callGraph->proc = iter;
         return;
     }
-    proj->pProcList.front().dataFlow (live_regs);
+    proj->pProcList.front()->dataFlow (live_regs);
 
     /* Control flow analysis - structuring algorithm */
     for (auto iter = proj->pProcList.rbegin(); iter!=proj->pProcList.rend(); ++iter)
     {
-        iter->controlFlowAnalysis();
+        (*iter)->controlFlowAnalysis();
     }
 }
 

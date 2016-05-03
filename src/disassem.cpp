@@ -91,7 +91,7 @@ static  map<int,int> pl;
 static  uint32_t   nextInst;
 static  bool    fImpure;
 //static  int     g_lab;
-static  Function *   pProc;          /* Points to current proc struct */
+static  PtrFunction pProc;          /* Points to current proc struct */
 
 struct POSSTACK_ENTRY
 {
@@ -138,7 +138,7 @@ void LLInst::findJumpTargets(CIcodeRec &_pc)
  *			  pass == 3 generates output on file .b
  ****************************************************************************/
 
-void Disassembler::disassem(Function * ppProc)
+void Disassembler::disassem(PtrFunction ppProc)
 {
 
 
@@ -660,7 +660,7 @@ static char *strHex(uint32_t d)
 /****************************************************************************
  *          interactDis - interactive disassembler                          *
  ****************************************************************************/
-void interactDis(Function * initProc, int initIC)
+void interactDis(const PtrFunction & initProc, int initIC)
 {
     QString procname = "UNKNOWN";
     if(initProc)

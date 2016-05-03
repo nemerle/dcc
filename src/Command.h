@@ -1,11 +1,14 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+#include <memory>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 #include <QtCore/QPair>
 
 class Project;
+struct Function;
+typedef std::shared_ptr<Function> PtrFunction;
 enum CommandLevel {
     eProject,
     eBinary,
@@ -22,6 +25,7 @@ public:
     }
 
     Project *m_project;
+    PtrFunction *m_func;
     QVector<QPair<Command *,QString>> m_failures;
     void reset();
 };
@@ -32,6 +36,8 @@ class Command
     CommandLevel m_level;
 public:
     Command(QString n,CommandLevel level) : m_command_name(n),m_level(level) {}
+    virtual ~Command() {}
+
     QString name() const { return m_command_name;}
     virtual QString instanceDescription() const { return m_command_name; }
     virtual bool execute(CommandContext *) { return false; }

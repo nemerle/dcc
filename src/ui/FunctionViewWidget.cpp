@@ -22,9 +22,9 @@ void FunctionViewWidget::prtt(const char *s)
     collected_text+=s;
     //collected_text+="<br>";
 }
-void FunctionViewWidget::prtt(const std::string &s)
+void FunctionViewWidget::prtt(const QString &s)
 {
-    collected_text+=s.c_str();
+    collected_text+=s;
     //collected_text+="<br>";
 }
 void FunctionViewWidget::TAGbegin(TAG_TYPE tag_type, void *p)

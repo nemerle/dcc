@@ -213,7 +213,7 @@ void Function::findIdioms()
     if ((flg & PROC_HLL) and (not args.empty()))
     {
         args.m_minOff += (flg & PROC_FAR ? 4 : 2);
-        delta = args.maxOff - args.m_minOff;
+        delta = args.m_maxOff - args.m_minOff;
         if (cbParam != delta)
         {
             cbParam = delta;

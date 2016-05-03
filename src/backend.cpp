@@ -282,7 +282,7 @@ void Function::codeGen (QIODevice &fs)
     if (flg & PROC_ASM)		/* generate assembler */
     {
         Disassembler ds(3);
-        ds.disassem(this);
+        ds.disassem(this->shared_from_this());
     }
     else							/* generate C */
     {

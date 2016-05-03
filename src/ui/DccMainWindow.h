@@ -34,7 +34,7 @@ protected:
     void changeEvent(QEvent *e);
 private slots:
     void on_actionExit_triggered();
-
+    void onNewFunction(PtrFunction f);
 private:
 
     FunctionViewWidget *m_asm_view;
@@ -43,7 +43,7 @@ private:
     CommandQueueView *m_command_queue;
     FunctionListDockWidget *m_functionlist_widget;
     Ui::DccMainWindow *ui;
-    ilFunction m_last_display;
+    PtrFunction m_last_display;
 };
 
 #endif // EXE2C_MAINWINDOW_H

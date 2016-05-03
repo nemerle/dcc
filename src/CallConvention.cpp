@@ -35,7 +35,7 @@ static void calculateArgLocations_allOnStack(Function *func) {
         arg.type = argtype.dcc_type;
         arg.setArgName(func->args.numArgs);
         stack_offset+=arg.size;
-        func->args.maxOff=stack_offset;
+        func->args.m_maxOff=stack_offset;
         func->args.numArgs++;
     }
     func->cbParam = stack_offset;
