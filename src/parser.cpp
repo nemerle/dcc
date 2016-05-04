@@ -7,6 +7,7 @@
 #include "CallGraph.h"
 #include "msvc_fixes.h"
 #include "chklib.h"
+#include "FollowControlFlow.h"
 
 #include <inttypes.h>
 #include <string.h>
@@ -116,6 +117,7 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
  * using a depth first search.     */
 void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 {
+    Project *project(Project::get());
     PROG &prog(Project::get()->prog);
     ICODE   _Icode, *pIcode;     /* This gets copied to pProc->Icode[] later */
     SYM *    psym;
@@ -187,8 +189,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 pstate->JCond.regi = 0;
 
                 /* This sets up range check for indexed JMPs hopefully
-             * Handles JA/JAE for fall through and JB/JBE on branch
-            */
+                 * Handles JA/JAE for fall through and JB/JBE on branch
+                 */
                 if (ip > 0 and prev.ll()->getOpcode() == iCMP and (prev.ll()->testFlags(I)))
                 {
                     pstate->JCond.immed = (int16_t)prev.ll()->src().getImm2();
@@ -201,7 +203,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 StCopy = *pstate;
 
                 /* Straight line code */
-                this->FollowCtrl (pcallGraph, &StCopy); // recurrent ?
+                project->addCommand(shared_from_this(),new FollowControlFlow(StCopy)); // recurrent ?
 
                 if (fBranch)                /* Do branching code */
                 {
@@ -359,7 +361,7 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
         StCopy.IP = cs + LH(&prog.image()[i]);
         iICODE last_current_insn = (++Icode.rbegin()).base();
 
-        FollowCtrl (pcallGraph, &StCopy);
+        Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
 
         ++last_current_insn; // incremented here because FollowCtrl might have adde more instructions after the Jmp
         last_current_insn->ll()->caseEntry = k++;
@@ -446,7 +448,7 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
         uint32_t jump_target_location = table_addr + num_cases*2 + i*2;
         StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
         iICODE last_current_insn = (++Icode.rbegin()).base();
-        FollowCtrl (pcallGraph, &StCopy);
+        Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
         ++last_current_insn;
         last_current_insn->ll()->caseEntry = i;
         last_current_insn->ll()->setFlags(CASE);
@@ -532,7 +534,7 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
         uint32_t jump_target_location = table_addr + num_cases*4 + i*2;
         StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
         iICODE last_current_insn = (++Icode.rbegin()).base();
-        FollowCtrl (pcallGraph, &StCopy);
+        Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
         ++last_current_insn;
         last_current_insn->ll()->caseEntry = i;
         last_current_insn->ll()->setFlags(CASE);
@@ -637,7 +639,8 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
                 iICODE last_current_insn = (++Icode.rbegin()).base();
                 //ip = Icode.size();
 
-                FollowCtrl (pcallGraph, &StCopy);
+                Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
+
                 ++last_current_insn;
                 last_current_insn->ll()->caseEntry = k++;
                 last_current_insn->ll()->setFlags(CASE);
@@ -658,6 +661,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 
     flg |= PROC_IJMP;
     flg &= ~TERMINATES;
+    // TODO: consider adding a new user-interactive command ResolveControlFlowFailure ?
     interactDis(shared_from_this(), Icode.size()-1);
     return true;
 }
@@ -777,7 +781,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
             pcallGraph->insertCallGraph (this->shared_from_this(), iter);
 
             /* Process new procedure */
-            x.FollowCtrl (pcallGraph, pstate);
+            Project::get()->addCommand(iter,new FollowControlFlow(*pstate));
 
             /* Restore segment registers & IP from localState */
             pstate->IP = localState.IP;

@@ -3,11 +3,13 @@
 
 #include "Command.h"
 
+#include "state.h"
+
 class FollowControlFlow : public Command
 {
-    uint32_t m_address;
+    STATE m_start_state;
 public:
-    FollowControlFlow(uint32_t addr) : Command("Follow control flow",eFunction),m_address(addr) {}
+    FollowControlFlow(STATE addr) : Command("Follow control flow",eFunction),m_start_state(addr) {}
 
     // Command interface
 public:

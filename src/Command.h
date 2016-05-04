@@ -25,7 +25,7 @@ public:
     }
 
     Project *m_project;
-    PtrFunction *m_func;
+    PtrFunction m_func;
     QVector<QPair<Command *,QString>> m_failures;
     void reset();
 };

@@ -24,6 +24,8 @@ protected:
 private slots:
     void on_btnStep_clicked();
 
+    void on_btnPlan_clicked();
+
 private:
     Ui::CommandQueueView *ui;
 };

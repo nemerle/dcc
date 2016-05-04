@@ -1,6 +1,7 @@
 #include "CommandQueueView.h"
 
 #include "project.h"
+#include "../AutomatedPlanner.h"
 
 #include "ui_CommandQueueView.h"
 
@@ -42,4 +43,11 @@ void CommandQueueView::on_btnStep_clicked()
 {
     Project &project(*Project::get());
     project.processCommands(1);
+}
+
+void CommandQueueView::on_btnPlan_clicked()
+{
+    AutomatedPlanner planner;
+    // TODO: Use some kind of UI context to retrieve currently selected function
+    //planner.planFor(func);
 }

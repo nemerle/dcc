@@ -97,6 +97,8 @@ set(dcc_LIB_SOURCES
     src/Loaders.h
     src/FollowControlFlow.cpp
     src/FollowControlFlow.h
+
+    src/AutomatedPlanner
 )
 set(dcc_UI_SOURCES
     src/ui/DccMainWindow.ui

@@ -16,14 +16,38 @@
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Planned actions:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QListWidget" name="lstQueuedCommands"/>
+    </item>
+    <item>
+     <widget class="QPushButton" name="btnPlan">
+      <property name="text">
+       <string>Plan</string>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QPushButton" name="btnStep">
       <property name="text">
-       <string>Step</string>
+       <string>Execute</string>
       </property>
      </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Completed actions:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QListWidget" name="lstCompletedCommands"/>
     </item>
    </layout>
   </widget>

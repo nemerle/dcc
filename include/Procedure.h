@@ -151,7 +151,7 @@ enum DecompilationStep : uint32_t {
     //eStackTracing, // tracing stack depth across function calls
 
 };
-struct Function : public std::enable_shared_from_this<Function>
+class Function : public std::enable_shared_from_this<Function>
 {
     typedef llvm::iplist<BB> BasicBlockListType;
     // BasicBlock iterators...
@@ -216,6 +216,7 @@ public:
 //    bool anyFlagsSet(uint32_t t) { return (flg&t)!=0;}
     bool hasRegArgs() const { return (flg & REG_ARGS)!=0;}
     void markDoNotDecompile() { flg |= PROC_ISLIB; }
+    bool doNotDecompile() const { return isLibrary(); }
     bool isLibrary() const { return (flg & PROC_ISLIB)!=0;}
     void compoundCond();
     void writeProcComments();
