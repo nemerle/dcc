@@ -84,6 +84,7 @@ struct LoaderMetadata {
         case eMedium: return 'm';
         case eLarge: return 'l';
         }
+        return 'x';
     }
 };
 class Project : public QObject

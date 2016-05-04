@@ -222,5 +222,5 @@ bool CreateFunction::execute(CommandContext *ctx) {
     //proj.addCommand(new FollowControl());
     /* Recursively build entire procedure list */
     //proj.callGraph->proc->FollowCtrl(proj.callGraph, &proj.m_entry_state);
-
+    return true;
 }

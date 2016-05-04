@@ -718,6 +718,7 @@ bool PatternLocator::readProtoFile(void)
         //      fread(&pArg[i], 1, SYMLEN, fProto);     /* No names to read as yet */
         pArg.push_back((hlType) readFileShort(fProto));
     }
+    return true;
 }
 
 int PatternLocator::searchPList(const char *name)
