@@ -20,10 +20,9 @@ typedef std::shared_ptr<Function> PtrFunction;
 struct Disassembler
 {
 protected:
-    int pass;
-    int g_lab;
-    //bundle &cCode;
-    QIODevice *m_disassembly_target;
+    int pass=0;
+    int g_lab=0;
+    QIODevice *m_disassembly_target=nullptr;
     QTextStream m_fp;
     std::vector<std::string> m_decls;
     std::vector<std::string> m_code;
@@ -31,9 +30,8 @@ protected:
 public:
     Disassembler(int _p) : pass(_p)
     {
-        g_lab=0;
     }
-public:
+
     void disassem(PtrFunction ppProc);
     void disassem(PtrFunction ppProc, int i);
     void dis1Line(LLInst &inst, int loc_ip, int pass);

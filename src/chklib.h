@@ -23,8 +23,8 @@ class PatternLocator {
     int     numFunc=0;                /* Number of func names actually stored */
     int     numArg=0;                 /* Number of param names actually stored */
 public:
-    struct HT      *ht=nullptr;  //!< The hash table
-    struct PH_FUNC_STRUCT *pFunc=nullptr; //!< Points to the array of func names
+    struct HT *             ht  =nullptr;  //!< The hash table
+    struct PH_FUNC_STRUCT * pFunc=nullptr; //!< Points to the array of func names
 
 
     PatternLocator(QString name) : pattern_id(name) {}
@@ -37,10 +37,10 @@ public:
 private:
     bool readProtoFile();
     PerfectHash g_pattern_hasher;
-    int numKeys;                        /* Number of hash table entries (keys) */
-    int numVert;                        /* Number of vertices in the graph (also size of g[]) */
-    unsigned PatLen;                    /* Size of the keys (pattern length) */
-    unsigned SymLen;                    /* Max size of the symbols, including null */
+    int numKeys=0;                        /* Number of hash table entries (keys) */
+    int numVert=0;                        /* Number of vertices in the graph (also size of g[]) */
+    unsigned PatLen=0;                    /* Size of the keys (pattern length) */
+    unsigned SymLen=0;                    /* Max size of the symbols, including null */
     /* Pointers to start of T1, T2 */
     uint16_t *  T1base = nullptr;
     uint16_t *  T2base = nullptr;
