@@ -92,7 +92,7 @@ void setupOptions(QCoreApplication &app) {
 int main(int argc, char **argv)
 {
     QCoreApplication::setApplicationName("dcc");
-    QCoreApplication::setApplicationVersion("0.1");
+    QCoreApplication::setApplicationVersion("0.2");
     if(argc==1) {
         QApplication app(argc,argv);
         DccMainWindow win;

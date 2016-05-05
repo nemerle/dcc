@@ -32,10 +32,43 @@
   </widget>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>m_func_list_view</sender>
+   <signal>activated(QModelIndex)</signal>
+   <receiver>FunctionListDockWidget</receiver>
+   <slot>onDisplayRequested(QModelIndex)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>267</x>
+     <y>97</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>573</x>
+     <y>154</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_func_list_view</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>FunctionListDockWidget</receiver>
+   <slot>onFunctionSelected(QModelIndex)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>283</x>
+     <y>211</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>508</x>
+     <y>253</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
  <slots>
   <signal>displayRequested()</signal>
-  <slot>displayRequest(QModelIndex)</slot>
-  <slot>functionSelected(QModelIndex)</slot>
+  <slot>onDisplayRequested(QModelIndex)</slot>
+  <slot>onFunctionSelected(QModelIndex)</slot>
  </slots>
 </ui>

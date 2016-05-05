@@ -21,15 +21,16 @@ FunctionListDockWidget::~FunctionListDockWidget()
 {
     delete ui;
 }
-void FunctionListDockWidget::functionSelected(const QModelIndex &idx)
+void FunctionListDockWidget::onFunctionSelected(const QModelIndex &idx)
 {
 
     QVariant v=m_list_model.data(m_list_model.index(idx.row(),0),Qt::DisplayRole);
     qDebug()<<"changed function to "<<v;
-    g_EXE2C->SetCurFunc_by_Name(v.toString());
+    PtrFunction p(Project::get()->findByName(v.toString()));
+    emit selectFunction(p);
 }
 // signalled by m_func_list_view accepted signal
-void FunctionListDockWidget::displayRequest(const QModelIndex &)
+void FunctionListDockWidget::onDisplayRequested(const QModelIndex &)
 {
     // argument ignored since functionSelected must've been called before us
     emit displayRequested();
@@ -37,6 +38,17 @@ void FunctionListDockWidget::displayRequest(const QModelIndex &)
 void FunctionListModel::updateFunctionList()
 {
     rebuildFunctionList();
+}
+
+void FunctionListModel::add_function(const QString & name, DecompilationStep step, int start_off, int end_off, int stack_purge)
+{
+    function_info info;
+    info.m_name=name;
+    info.m_decoding_step=step;
+    info.m_start_off=start_off;
+    info.m_end_off=end_off;
+    info.m_stack_purge=stack_purge;
+    m_list.push_back(info);
 }
 void FunctionListModel::rebuildFunctionList()
 {

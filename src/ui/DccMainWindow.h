@@ -35,6 +35,7 @@ protected:
 private slots:
     void on_actionExit_triggered();
     void onNewFunction(PtrFunction f);
+    void onFunctionSelected(PtrFunction func);
 private:
 
     FunctionViewWidget *m_asm_view;
@@ -44,6 +45,7 @@ private:
     FunctionListDockWidget *m_functionlist_widget;
     Ui::DccMainWindow *ui;
     PtrFunction m_last_display;
+    PtrFunction m_selected_func;
 };
 
 #endif // EXE2C_MAINWINDOW_H

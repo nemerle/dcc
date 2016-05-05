@@ -61,7 +61,7 @@ public:
 class CommandStream : public QObject
 {
     Q_OBJECT
-    int m_maximum_command_count;
+    int m_maximum_command_count=5;
 public:
     QVector<Command *> m_recently_executed;
     QVector<Command *> m_commands;
@@ -70,6 +70,7 @@ public:
     bool processOne(CommandContext *ctx);
     void processAll(CommandContext *ctx);
     void clear();
+    bool isEmpty() const { return m_commands.isEmpty(); }
 signals:
     void streamCompleted(bool success);
     void streamChanged();

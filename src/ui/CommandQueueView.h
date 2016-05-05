@@ -2,6 +2,8 @@
 #define COMMANDQUEUEVIEW_H
 
 #include <QtWidgets/QDockWidget>
+#include "Procedure.h"
+
 
 namespace Ui {
 class CommandQueueView;
@@ -17,6 +19,7 @@ public:
 
 public slots:
     void onCommandListChanged();
+    void onCurrentFunctionChanged(PtrFunction func);
 
 protected:
     void changeEvent(QEvent *e);
@@ -28,6 +31,7 @@ private slots:
 
 private:
     Ui::CommandQueueView *ui;
+    PtrFunction m_current_function;
 };
 
 #endif // COMMANDQUEUEVIEW_H

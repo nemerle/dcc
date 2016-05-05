@@ -3,6 +3,7 @@
 #include "project.h"
 #include "FollowControlFlow.h"
 
+#include <QtCore/QDebug>
 /**
  * @class AutomatedPlanner
  * @brief Class responsible for building command lists
@@ -28,6 +29,11 @@ void AutomatedPlanner::planFor(Project &project) {
 void AutomatedPlanner::planFor(Function & func) {
     if(func.doNotDecompile())
         return; // for functions marked as non-decompileable we don't add any commands
+    //TODO: Consider cases where commands are queued, but we can still plan some additional steps
+    bool function_has_commands = Project::get()->hasCommands(func.shared_from_this());
+    if(function_has_commands) {
+        qDebug() << "Function "<<func.name<<"still has some commands queued, planning skipped";
+    }
     switch(func.nStep) {
     case eNotDecoded:
         addAction(func,new FollowControlFlow(func.state));

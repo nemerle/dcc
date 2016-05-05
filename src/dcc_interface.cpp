@@ -28,7 +28,7 @@ public:
         Project::get()->create(name);
         return Project::get()->addLoadCommands(name);
     }
-    void prtout_asm(IStructuredTextTarget *tgt, int level)
+    void prtout_asm(PtrFunction f,IStructuredTextTarget *tgt, int level) override
     {
 //        if (m_current_func->nStep == 0)
 //            return;
@@ -36,9 +36,9 @@ public:
 //        XmlOutPro out(iOut);
 //        FuncLL the(m_Cur_Func->ll.m_asmlist);
 //        the.prtout_asm(m_Cur_Func, &m_Cur_Func->m_varll, &out);
-        m_current_func->toStructuredText(tgt,level);
+        f->toStructuredText(tgt,level);
     }
-    void prtout_cpp(IStructuredTextTarget *, int level)
+    void prtout_cpp(PtrFunction f,IStructuredTextTarget *, int level) override
     {
     }
     bool isValidFuncHandle(ilFunction f) {

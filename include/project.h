@@ -148,9 +148,12 @@ public:
 
             bool        addCommand(Command *cmd);
             bool        addCommand(PtrFunction f, Command *cmd); // Add function level command
+            bool        hasCommands(const PtrFunction &f);
+            CommandStream *functionCommands(const PtrFunction &f);
             void        dumpAllErrors();
             void        setLoader(DosLoader *ins);
             void        processCommands(int count=1);
+            void        processFunctionCommands(const PtrFunction & func, int count);
 public slots:
             void        onCommandStreamFinished(bool state);
 signals:

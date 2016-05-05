@@ -30,13 +30,17 @@ DccMainWindow::DccMainWindow(QWidget *parent) :
     m_command_queue = new CommandQueueView(this);
     m_functionlist_widget = new FunctionListDockWidget(this);
     m_functionlist_widget->setWindowTitle(QApplication::tr("Function list"));
+    connect(m_functionlist_widget,SIGNAL(selectFunction(PtrFunction)),SLOT(onFunctionSelected(PtrFunction)));
     connect(m_functionlist_widget,SIGNAL(displayRequested()), SLOT(displayCurrentFunction()));
+
     // we are beeing signalled when display is requested
     connect(this,SIGNAL(functionListChanged()), m_functionlist_widget->model(),SLOT(updateFunctionList()));
     connect(Project::get(),SIGNAL(newFunctionCreated(PtrFunction)),SLOT(onNewFunction(PtrFunction)));
 
     this->addDockWidget(Qt::RightDockWidgetArea,m_functionlist_widget);
     this->addDockWidget(Qt::LeftDockWidgetArea,m_command_queue);
+    connect(m_functionlist_widget,&FunctionListDockWidget::selectFunction,
+            m_command_queue, &CommandQueueView::onCurrentFunctionChanged);
     m_asm_view = new FunctionViewWidget(this);
     m_asm_view->setWindowTitle(tr("Assembly listing"));
     ui->mdiArea->addSubWindow(m_asm_view);
@@ -64,6 +68,9 @@ void DccMainWindow::changeEvent(QEvent *e)
             break;
     }
 }
+void DccMainWindow::onFunctionSelected(PtrFunction func) {
+    m_selected_func = func;
+}
 void DccMainWindow::onNewFunction(PtrFunction f) {
     emit functionListChanged();
 }
@@ -72,7 +79,7 @@ void DccMainWindow::onOptim()
     Project::get()->processCommands();
     g_EXE2C->analysis_Once();
     emit functionListChanged();
-    if(m_last_display==g_EXE2C->GetCurFuncHandle())
+    if(m_last_display==m_selected_func)
     {
         displayCurrentFunction();
     }
@@ -82,7 +89,7 @@ void DccMainWindow::onOptim10()
     for(int i=0; i<10; i++)
         g_EXE2C->analysis_Once();
     emit functionListChanged();
-    if(m_last_display==g_EXE2C->GetCurFuncHandle())
+    if(m_last_display==m_selected_func)
     {
         displayCurrentFunction();
     }
@@ -103,11 +110,11 @@ void DccMainWindow::onOpenFile_Action()
 
 void DccMainWindow::displayCurrentFunction()
 {
-    if(m_last_display!=g_EXE2C->GetCurFuncHandle())
-        m_last_display=g_EXE2C->GetCurFuncHandle();
-    g_EXE2C->prtout_asm(m_asm_view);
+    if(m_last_display!=m_selected_func)
+        m_last_display=m_selected_func;
+    g_EXE2C->prtout_asm(m_last_display, m_asm_view);
     //g_EXE2C->prtout_itn(m_internal_view);
-    g_EXE2C->prtout_cpp(m_c_view);
+    g_EXE2C->prtout_cpp(m_last_display,m_c_view);
 }
 void DccMainWindow::prt_log(const char *v)
 {

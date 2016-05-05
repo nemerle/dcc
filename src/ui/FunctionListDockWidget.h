@@ -3,7 +3,9 @@
 
 #include <QAbstractTableModel>
 #include <QDockWidget>
-//#include "exe2c.h"
+
+#include "Procedure.h"
+
 enum DecompilationStep : uint32_t;
 class FunctionListModel : public QAbstractTableModel
 {
@@ -31,17 +33,7 @@ public slots:
     void updateFunctionList();
 
 protected:
-    void add_function(const QString &name,DecompilationStep step,int start_off,int end_off,int stack_purge)
-    {
-
-        function_info info;
-        info.m_name=name;
-        info.m_decoding_step=step;
-        info.m_start_off=start_off;
-        info.m_end_off=end_off;
-        info.m_stack_purge=stack_purge;
-        m_list.push_back(info);
-    }
+    void add_function(const QString &name,DecompilationStep step,int start_off,int end_off,int stack_purge);
     void rebuildFunctionList();
 
 };
@@ -59,11 +51,12 @@ public:
     ~FunctionListDockWidget();
     FunctionListModel *model() {return &m_list_model;}
 public slots:
-    void displayRequest(const QModelIndex &idx);
-    void functionSelected(const QModelIndex &idx);
+    void onDisplayRequested(const QModelIndex &idx);
+    void onFunctionSelected(const QModelIndex &idx);
 
 signals:
     void displayRequested();
+    void selectFunction(PtrFunction p);
 private:
     Ui::FunctionListDockWidget *ui;
     FunctionListModel m_list_model;

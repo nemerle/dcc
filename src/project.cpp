@@ -154,6 +154,26 @@ bool Project::addCommand(PtrFunction f, Command *cmd)
     return res;
 }
 
+bool Project::hasCommands(const PtrFunction & f)
+{
+    auto iter = m_function_streams.find(f);
+    if(iter!=m_function_streams.end()) {
+        return not iter->second.isEmpty();
+    }
+    return false;
+}
+
+CommandStream *Project::functionCommands(const PtrFunction & f)
+{
+    if(f==nullptr)
+        return nullptr;
+    auto iter = m_function_streams.find(f);
+    if(iter!=m_function_streams.end()) {
+        return &iter->second;
+    }
+    return nullptr;
+}
+
 void Project::onCommandStreamFinished(bool state)
 {
     if(false==state) {
@@ -191,6 +211,19 @@ void Project::processCommands(int count) {
     m_command_ctx.m_project = this;
     while(count--) {
         if(false==m_project_command_stream.processOne(&m_command_ctx)) {
+            break;
+        }
+    }
+    emit commandListChanged();
+}
+void Project::processFunctionCommands(const PtrFunction &func,int count) {
+    m_command_ctx.m_project = this;
+    m_command_ctx.m_func    = func;
+    CommandStream *cs = functionCommands(func);
+    if(nullptr==cs)
+        return;
+    while(count--) {
+        if(false==cs->processOne(&m_command_ctx)) {
             break;
         }
     }

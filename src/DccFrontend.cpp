@@ -212,10 +212,12 @@ bool CreateFunction::execute(CommandContext *ctx) {
                 the same as the initial CS segment (of the startup code) */
         proj.m_entry_state.setState(rCS, prog.segMain);
         proj.m_entry_state.IP = prog.offMain;
+        func->state = proj.m_entry_state;
     }
     if(m_name=="start") {
         proj.addCommand(new MachineStateInitialization);
         proj.addCommand(new FindMain);
+        func->state = proj.m_entry_state; // just in case we fail to find main, initialize 'state'
     }
 
 //    proj.addCommand(new ProcessFunction);
