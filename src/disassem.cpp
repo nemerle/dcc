@@ -898,6 +898,34 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
 //            break;                          /* Symbolic label. Done */
 //        }
     }
+        if (inst.testFlags(NO_LABEL))
+        {
+            //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
+            out->addTaggedString(XT_AsmLabel,strHex(inst.src().getImm2()));
+        }
+        else if (inst.testFlags(I) )
+        {
+            out->addTaggedString(XT_AsmLabel,strHex(inst.src().getImm2()));
+//            j = inst.src().getImm2();
+//            if (pl.count(j)==0)       /* Forward jump */
+//            {
+//                pl[j] = ++g_lab;
+//            }
+//            if (inst.getOpcode() == iJMPF)
+//            {
+//                operands_s<<" far ptr ";
+//            }
+//            operands_s<<"L"<<pl[j];
+        }
+        else if (inst.getOpcode() == iJMPF)
+        {
+            out->addTaggedString(XT_Keyword,"dword ptr");
+            strSrc(out,insn,true);
+        }
+        else
+        {
+            strDst(out,I,inst.src());
+        }
 
         break;
     }
