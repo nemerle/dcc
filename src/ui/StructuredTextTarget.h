@@ -7,10 +7,7 @@ public:
     virtual void TAGend(TAG_TYPE t)=0;
     virtual void prtt(const QString &v)=0;
 
-    virtual void addEOL() // some targets might want to disable newlines
-    {
-        prtt("\n");
-    }
+    virtual void addEOL() = 0; // some targets might want to disable newlines
     void addSpace(int n=1) {
         while(n--)
             prtt(" ");

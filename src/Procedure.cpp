@@ -98,11 +98,7 @@ static void toStructuredText(STKFRAME &stk,IStructuredTextTarget *out, int level
         out->prtt(QString("    gap len = %1h").arg(maxlevel - curlevel,0,16));
     }
 }
-static void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
-    out->prtt("LLINST");
-    out->addEOL();
-
-}
+extern void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level);
 
 static void toStructuredText(ICODE &stk,IStructuredTextTarget *out, int level) {
     if(level==0) {

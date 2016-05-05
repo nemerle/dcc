@@ -18,6 +18,7 @@
 #include <iomanip>
 #include <stdio.h>
 #include <string.h>
+#include "src/ui/StructuredTextTarget.h"
 
 // Note: for the time being, there is no interactive disassembler
 // for unix
@@ -298,190 +299,190 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 
     switch ( inst.getOpcode() )
     {
-        case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
-        case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-            strDst(operands_s,inst.getFlag(), inst.m_dst);
+    case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
+    case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
+        strDst(operands_s,inst.getFlag(), inst.m_dst);
+        inst.strSrc(operands_s);
+        break;
+
+    case iESC:
+        inst.flops(operands_s);
+        break;
+
+    case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
+    case iROR:
+        strDst(operands_s,inst.getFlag() | I, inst.m_dst);
+        if(inst.testFlags(I))
             inst.strSrc(operands_s);
-            break;
+        else
+            operands_s<<", cl";
+        break;
 
-        case iESC:
-            inst.flops(operands_s);
-            break;
+    case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
+        strDst(operands_s,inst.getFlag() | I, inst.m_dst);
+        break;
 
-        case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
-        case iROR:
+    case iPUSH:
+        if (inst.testFlags(I))
+        {
+            operands_s<<strHex(inst.src().getImm2());
+        }
+        else
+        {
             strDst(operands_s,inst.getFlag() | I, inst.m_dst);
-            if(inst.testFlags(I))
-                inst.strSrc(operands_s);
-            else
-                operands_s<<", cl";
-            break;
+        }
+        break;
 
-        case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-            strDst(operands_s,inst.getFlag() | I, inst.m_dst);
-            break;
+    case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
+        if (inst.testFlags(I))
+        {
+            strDst(operands_s,inst.getFlag(), inst.m_dst) <<", ";
+            formatRM(operands_s, inst.src());
+            inst.strSrc(operands_s);
+        }
+        else
+            strDst(operands_s,inst.getFlag() | I, inst.src());
+        break;
 
-        case iPUSH:
-            if (inst.testFlags(I))
+    case iLDS:  case iLES:  case iBOUND:
+        strDst(operands_s,inst.getFlag(), inst.m_dst)<<", dword ptr";
+        inst.strSrc(operands_s,true);
+        break;
+
+    case iJB:  case iJBE:  case iJAE:  case iJA:
+    case iJL:  case iJLE:  case iJGE:  case iJG:
+    case iJE:  case iJNE:  case iJS:   case iJNS:
+    case iJO:  case iJNO:  case iJP:   case iJNP:
+    case iJCXZ:case iLOOP: case iLOOPE:case iLOOPNE:
+    case iJMP: case iJMPF:
+
+        /* Check if there is a symbol here */
+    {
+        ICODE *lab=pc.GetIcode(inst.src().getImm2());
+        selectTable(Label);
+        if ((inst.src().getImm2() < (uint32_t)numIcode) and  /* Ensure in range */
+                readVal(operands_s, lab->ll()->label, nullptr))
+        {
+            break;                          /* Symbolic label. Done */
+        }
+    }
+
+        if (inst.testFlags(NO_LABEL))
+        {
+            //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
+            operands_s<<strHex(inst.src().getImm2());
+        }
+        else if (inst.testFlags(I) )
+        {
+            j = inst.src().getImm2();
+            if (pl.count(j)==0)       /* Forward jump */
             {
-                operands_s<<strHex(inst.src().getImm2());
+                pl[j] = ++g_lab;
             }
-            else
+            if (inst.getOpcode() == iJMPF)
             {
-                strDst(operands_s,inst.getFlag() | I, inst.m_dst);
+                operands_s<<" far ptr ";
             }
-            break;
-
-        case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
-            if (inst.testFlags(I))
-            {
-                strDst(operands_s,inst.getFlag(), inst.m_dst) <<", ";
-                formatRM(operands_s, inst.src());
-                inst.strSrc(operands_s);
-            }
-            else
-                strDst(operands_s,inst.getFlag() | I, inst.src());
-            break;
-
-        case iLDS:  case iLES:  case iBOUND:
-            strDst(operands_s,inst.getFlag(), inst.m_dst)<<", dword ptr";
+            operands_s<<"L"<<pl[j];
+        }
+        else if (inst.getOpcode() == iJMPF)
+        {
+            operands_s<<"dword ptr";
             inst.strSrc(operands_s,true);
-            break;
-
-        case iJB:  case iJBE:  case iJAE:  case iJA:
-        case iJL:  case iJLE:  case iJGE:  case iJG:
-        case iJE:  case iJNE:  case iJS:   case iJNS:
-        case iJO:  case iJNO:  case iJP:   case iJNP:
-        case iJCXZ:case iLOOP: case iLOOPE:case iLOOPNE:
-        case iJMP: case iJMPF:
-
-            /* Check if there is a symbol here */
-        {
-            ICODE *lab=pc.GetIcode(inst.src().getImm2());
-            selectTable(Label);
-            if ((inst.src().getImm2() < (uint32_t)numIcode) and  /* Ensure in range */
-                    readVal(operands_s, lab->ll()->label, nullptr))
-            {
-                break;                          /* Symbolic label. Done */
-            }
         }
-
-            if (inst.testFlags(NO_LABEL))
-            {
-                //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
-                operands_s<<strHex(inst.src().getImm2());
-            }
-            else if (inst.testFlags(I) )
-            {
-                j = inst.src().getImm2();
-                if (pl.count(j)==0)       /* Forward jump */
-                {
-                    pl[j] = ++g_lab;
-                }
-                if (inst.getOpcode() == iJMPF)
-                {
-                    operands_s<<" far ptr ";
-                }
-                operands_s<<"L"<<pl[j];
-            }
-            else if (inst.getOpcode() == iJMPF)
-            {
-                operands_s<<"dword ptr";
-                inst.strSrc(operands_s,true);
-            }
-            else
-            {
-                strDst(operands_s,I, inst.src());
-            }
-            break;
-
-        case iCALL: case iCALLF:
-            if (inst.testFlags(I))
-            {
-                QString oper = QString("%1 ptr %2")
-                        .arg((inst.getOpcode() == iCALL) ? "near" : "far")
-                        .arg((inst.src().proc.proc)->name);
-                operands_s<< qPrintable(oper);
-            }
-            else if (inst.getOpcode() == iCALLF)
-            {
-                operands_s<<"dword ptr ";
-                inst.strSrc(operands_s,true);
-            }
-            else
-                strDst(operands_s,I, inst.src());
-            break;
-
-        case iENTER:
-            operands_s<<strHex(inst.m_dst.off) << ", " << strHex(inst.src().getImm2());
-            break;
-
-        case iRET:  case iRETF:  case iINT:
-            if (inst.testFlags(I))
-            {
-                operands_s<<strHex(inst.src().getImm2());
-            }
-            break;
-
-        case iCMPS:  case iREPNE_CMPS:  case iREPE_CMPS:
-        case iSCAS:  case iREPNE_SCAS:  case iREPE_SCAS:
-        case iSTOS:  case iREP_STOS:
-        case iLODS:  case iREP_LODS:
-        case iMOVS:  case iREP_MOVS:
-        case iINS:   case iREP_INS:
-        case iOUTS:  case iREP_OUTS:
-            if (inst.src().segOver)
-            {
-                bool is_dx_src=(inst.getOpcode() == iOUTS or inst.getOpcode() == iREP_OUTS);
-                if(is_dx_src)
-                    operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
-                else
-                    operands_s<<szPtr[inst.getFlag() & B];
-                if (inst.getOpcode() == iLODS or
-                        inst.getOpcode() == iREP_LODS or
-                        inst.getOpcode() == iOUTS or
-                        inst.getOpcode() == iREP_OUTS)
-                {
-                    operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
-                }
-                else
-                {
-                    operands_s<<"es:[di], "<<Machine_X86::regName(inst.src().segOver);
-                }
-                operands_s<<":[si]";
-            }
-            else
-            {
-                if(inst.getFlag() & B)
-                    opcode_with_mods+='B';
-                else
-                    opcode_with_mods+='W';
-            }
-            break;
-
-        case iXLAT:
-            if (inst.src().segOver)
-            {
-                operands_s<<" "<<szPtr[1];
-                operands_s<<Machine_X86::regName(inst.src().segOver)<<":[bx]";
-            }
-            break;
-
-        case iIN:
-            (inst.getFlag() & B)? operands_s<<"al, " : operands_s<< "ax, ";
-            (inst.testFlags(I))? operands_s << strHex(inst.src().getImm2()) : operands_s<< "dx";
-            break;
-
-        case iOUT:
+        else
         {
-            QString d1=((inst.testFlags(I))? strHex(inst.src().getImm2()): "dx");
-            QString d2=((inst.getFlag() & B) ? ", al": ", ax");
-            operands_s<<d1 << d2;
+            strDst(operands_s,I, inst.src());
         }
-            break;
+        break;
 
-        default:
-            break;
+    case iCALL: case iCALLF:
+        if (inst.testFlags(I))
+        {
+            QString oper = QString("%1 ptr %2")
+                    .arg((inst.getOpcode() == iCALL) ? "near" : "far")
+                    .arg((inst.src().proc.proc)->name);
+            operands_s<< qPrintable(oper);
+        }
+        else if (inst.getOpcode() == iCALLF)
+        {
+            operands_s<<"dword ptr ";
+            inst.strSrc(operands_s,true);
+        }
+        else
+            strDst(operands_s,I, inst.src());
+        break;
+
+    case iENTER:
+        operands_s<<strHex(inst.m_dst.off) << ", " << strHex(inst.src().getImm2());
+        break;
+
+    case iRET:  case iRETF:  case iINT:
+        if (inst.testFlags(I))
+        {
+            operands_s<<strHex(inst.src().getImm2());
+        }
+        break;
+
+    case iCMPS:  case iREPNE_CMPS:  case iREPE_CMPS:
+    case iSCAS:  case iREPNE_SCAS:  case iREPE_SCAS:
+    case iSTOS:  case iREP_STOS:
+    case iLODS:  case iREP_LODS:
+    case iMOVS:  case iREP_MOVS:
+    case iINS:   case iREP_INS:
+    case iOUTS:  case iREP_OUTS:
+        if (inst.src().segOver)
+        {
+            bool is_dx_src=(inst.getOpcode() == iOUTS or inst.getOpcode() == iREP_OUTS);
+            if(is_dx_src)
+                operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
+            else
+                operands_s<<szPtr[inst.getFlag() & B];
+            if (inst.getOpcode() == iLODS or
+                    inst.getOpcode() == iREP_LODS or
+                    inst.getOpcode() == iOUTS or
+                    inst.getOpcode() == iREP_OUTS)
+            {
+                operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
+            }
+            else
+            {
+                operands_s<<"es:[di], "<<Machine_X86::regName(inst.src().segOver);
+            }
+            operands_s<<":[si]";
+        }
+        else
+        {
+            if(inst.getFlag() & B)
+                opcode_with_mods+='B';
+            else
+                opcode_with_mods+='W';
+        }
+        break;
+
+    case iXLAT:
+        if (inst.src().segOver)
+        {
+            operands_s<<" "<<szPtr[1];
+            operands_s<<Machine_X86::regName(inst.src().segOver)<<":[bx]";
+        }
+        break;
+
+    case iIN:
+        (inst.getFlag() & B)? operands_s<<"al, " : operands_s<< "ax, ";
+        (inst.testFlags(I))? operands_s << strHex(inst.src().getImm2()) : operands_s<< "dx";
+        break;
+
+    case iOUT:
+    {
+        QString d1=((inst.testFlags(I))? strHex(inst.src().getImm2()): "dx");
+        QString d2=((inst.getFlag() & B) ? ", al": ", ax");
+        operands_s<<d1 << d2;
+    }
+        break;
+
+    default:
+        break;
     }
     oper_stream.setFieldWidth(15);
     operands_s.flush();
@@ -690,29 +691,29 @@ void LLInst::flops(QTextStream &out)
         }
         else switch (op & 0x30)
         {
-            case 0x00:
-            case 0x10:
-                out << "dword ptr ";
+        case 0x00:
+        case 0x10:
+            out << "dword ptr ";
+            break;
+        case 0x20:
+            out << "qword ptr ";
+            break;
+        case 0x30:
+            switch (op)
+            {
+            case 0x3C:       /* FBLD */
+            case 0x3E:       /* FBSTP */
+                out << "tbyte ptr ";
                 break;
-            case 0x20:
+            case 0x3D:       /* FILD 64 bit */
+            case 0x3F:       /* FISTP 64 bit */
                 out << "qword ptr ";
                 break;
-            case 0x30:
-                switch (op)
-                {
-                    case 0x3C:       /* FBLD */
-                    case 0x3E:       /* FBSTP */
-                        out << "tbyte ptr ";
-                        break;
-                    case 0x3D:       /* FILD 64 bit */
-                    case 0x3F:       /* FISTP 64 bit */
-                        out << "qword ptr ";
-                        break;
 
-                    default:
-                        out << "uint16_t  ptr ";
-                        break;
-                }
+            default:
+                out << "uint16_t  ptr ";
+                break;
+            }
         }
         out.setFieldWidth(0);
         formatRM(out, m_dst);
@@ -727,46 +728,178 @@ void LLInst::flops(QTextStream &out)
         int destRegIdx=m_dst.regi - rAX;
         switch (op)
         {
-            case 0x0C:
-                out << szFlops0C[destRegIdx];
-                break;
-            case 0x0D:
-                out << szFlops0D[destRegIdx];
-                break;
-            case 0x0E:
-                out << szFlops0E[destRegIdx];
-                break;
-            case 0x0F:
-                out << szFlops0F[destRegIdx];
-                break;
-            case 0x15:
-                out << szFlops15[destRegIdx];
-                break;
-            case 0x1C:
-                out << szFlops1C[destRegIdx];
-                break;
-            case 0x33:
-                out << szFlops33[destRegIdx];
-                break;
-            case 0x3C:
-                out << szFlops3C[destRegIdx];
-                break;
-            default:
-                out << Machine_X86::floatOpName(0x40+op);
-                if ((op >= 0x20) and (op <= 0x27))
-                {
-                    /* This is the ST(i), ST form. */
-                    out << "ST("<<destRegIdx - rAX<<"),ST";
-                }
-                else
-                {
-                    /* ST, ST(i) */
-                    out << "ST,ST("<<destRegIdx;
-                }
+        case 0x0C:
+            out << szFlops0C[destRegIdx];
+            break;
+        case 0x0D:
+            out << szFlops0D[destRegIdx];
+            break;
+        case 0x0E:
+            out << szFlops0E[destRegIdx];
+            break;
+        case 0x0F:
+            out << szFlops0F[destRegIdx];
+            break;
+        case 0x15:
+            out << szFlops15[destRegIdx];
+            break;
+        case 0x1C:
+            out << szFlops1C[destRegIdx];
+            break;
+        case 0x33:
+            out << szFlops33[destRegIdx];
+            break;
+        case 0x3C:
+            out << szFlops3C[destRegIdx];
+            break;
+        default:
+            out << Machine_X86::floatOpName(0x40+op);
+            if ((op >= 0x20) and (op <= 0x27))
+            {
+                /* This is the ST(i), ST form. */
+                out << "ST("<<destRegIdx - rAX<<"),ST";
+            }
+            else
+            {
+                /* ST, ST(i) */
+                out << "ST,ST("<<destRegIdx;
+            }
 
-                break;
+            break;
         }
     }
 }
+/****************************************************************************
+ * formatRM
+ ***************************************************************************/
+static void formatRM(IStructuredTextTarget *out,const LLOperand &pm)
+{
+    if (pm.segOver)
+    {
+        out->prtt(Machine_X86::regName(pm.segOver)+':');
+    }
 
+    if (pm.regi == rUNDEF)
+    {
+        out->prtt(QString("[")+strHex((uint32_t)pm.off)+"]");
+    }
+    else if (pm.isReg())
+    {
+        out->prtt(Machine_X86::regName(pm.regi));
+    }
 
+    else if (pm.off)
+    {
+        if (pm.off < 0)
+        {
+            out->prtt("["+Machine_X86::regName(pm.regi)+"-"+strHex((uint32_t)(- pm.off))+"]");
+        }
+        else
+        {
+            out->prtt("["+Machine_X86::regName(pm.regi)+"+"+strHex((uint32_t)(pm.off))+"]");
+        }
+    }
+    else
+        out->prtt("["+Machine_X86::regName(pm.regi)+"]");
+}
+static void strDst(IStructuredTextTarget *out,uint32_t flg, const LLOperand &pm)
+{
+    /* Immediates to memory require size descriptor */
+    //os << setw(WID_PTR);
+    if ((flg & I) and not pm.isReg()) {
+        out->addTaggedString(XT_Keyword,szPtr[flg&B]);
+    }
+    formatRM(out,pm);
+}
+static void strSrc(IStructuredTextTarget *out,LLInst *insn,bool skip_comma=false)
+{
+    if(false==skip_comma)
+        out->prtt(", ");
+    if (insn->testFlags(I))
+        out->addTaggedString(XT_Number,strHex(insn->src().getImm2()));
+    else if (insn->testFlags(IM_SRC))		/* level 2 */
+        out->addTaggedString(XT_Symbol,"dx:ax");
+    else
+        formatRM(out,insn->src());
+}
+
+void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
+
+    const LLInst &inst(*insn);
+    QString opcode = Machine_X86::opcodeName(insn->getOpcode());
+    out->addSpace(4);
+    out->addTaggedString(XT_Number,strHex(insn->label));
+    out->addSpace(4);
+    out->addTaggedString(XT_Keyword,Machine_X86::opcodeName(insn->getOpcode()),insn);
+    out->addSpace(2);
+
+    switch(insn->getOpcode()) {
+    case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
+    case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
+        strDst(out,insn->getFlag(), insn->m_dst);
+        strSrc(out,insn);
+        break;
+    case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
+    case iROR:
+        strDst(out,insn->getFlag() | I, insn->m_dst);
+        if(insn->testFlags(I))
+            strSrc(out,insn);
+        else {
+            out->prtt(", ");
+            out->addTaggedString(XT_Symbol,"cl");
+        }
+        break;
+
+    case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
+        strDst(out,insn->getFlag() | I, insn->m_dst);
+        break;
+    case iPUSH:
+        if (inst.testFlags(I))
+        {
+            out->addTaggedString(XT_Number,strHex(inst.src().getImm2()));
+        }
+        else
+        {
+            strDst(out,insn->getFlag() | I, insn->m_dst);
+        }
+        break;
+
+    case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
+        if (inst.testFlags(I))
+        {
+            strDst(out,insn->getFlag(), insn->m_dst);
+            out->prtt(", ");
+            formatRM(out, inst.src());
+            strSrc(out,insn);
+        }
+        else
+            strDst(out,insn->getFlag() | I, insn->m_dst);
+        break;
+    case iLDS:  case iLES:  case iBOUND:
+        strDst(out,inst.getFlag(), inst.m_dst);
+        out->prtt(", ");
+        out->addTaggedString(XT_Keyword,"dword ptr");
+        strSrc(out,insn,true);
+        break;
+    case iJB:  case iJBE:  case iJAE:  case iJA:
+    case iJL:  case iJLE:  case iJGE:  case iJG:
+    case iJE:  case iJNE:  case iJS:   case iJNS:
+    case iJO:  case iJNO:  case iJP:   case iJNP:
+    case iJCXZ:case iLOOP: case iLOOPE:case iLOOPNE:
+    case iJMP: case iJMPF:
+
+        /* Check if there is a symbol here */
+    {
+//        ICODE *lab=pc.GetIcode(inst.src().getImm2());
+//        selectTable(Label);
+//        if ((inst.src().getImm2() < (uint32_t)numIcode) and  /* Ensure in range */
+//                readVal(operands_s, lab->ll()->label, nullptr))
+//        {
+//            break;                          /* Symbolic label. Done */
+//        }
+    }
+
+        break;
+    }
+    out->addEOL();
+}

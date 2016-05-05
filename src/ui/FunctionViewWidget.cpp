@@ -9,6 +9,14 @@ FunctionViewWidget::FunctionViewWidget(QWidget *parent) :
     ui(new Ui::FunctionViewWidget)
 {
     ui->setupUi(this);
+    m_current_rendering = new QTextDocument(ui->textEdit);
+    m_doc_cursor = new QTextCursor(m_current_rendering);
+    ui->textEdit->setTextBackgroundColor(Qt::black);
+    m_current_format =  m_doc_cursor->blockFormat();
+    m_current_format.setNonBreakableLines(true); // each block is single line
+    m_current_format.setBackground(Qt::black);
+    m_chars_format.setBackground(Qt::black);
+    m_chars_format.setForeground(Qt::white);
     //ui->label->setTextFormat(Qt::RichText);
 }
 
@@ -19,21 +27,33 @@ FunctionViewWidget::~FunctionViewWidget()
 
 void FunctionViewWidget::prtt(const char *s)
 {
+    m_doc_cursor->insertText(s);
     collected_text+=s;
     //collected_text+="<br>";
 }
 void FunctionViewWidget::prtt(const QString &s)
 {
+    m_doc_cursor->insertText(s);
     collected_text+=s;
     //collected_text+="<br>";
+}
+
+void FunctionViewWidget::addEOL()
+{
+    m_doc_cursor->insertBlock(m_current_format);
+    m_doc_cursor->setBlockFormat(m_current_format);
 }
 void FunctionViewWidget::TAGbegin(TAG_TYPE tag_type, void *p)
 {
     QColor col= RenderTag_2_Color(tag_type);
+
     switch(tag_type)
     {
         case XT_Function:
-            collected_text+="<body style='color: #FFFFFF; background-color: #000000'>";
+            m_current_rendering->clear();
+            m_chars_format.setForeground(Qt::white);
+            m_doc_cursor->setBlockFormat(m_current_format);
+            m_doc_cursor->setCharFormat(m_chars_format);
             break;
         case XT_FuncName:
         case XT_Symbol:
@@ -42,7 +62,8 @@ void FunctionViewWidget::TAGbegin(TAG_TYPE tag_type, void *p)
         case XT_Number:
         case XT_AsmOffset:
         case XT_AsmLabel:
-            collected_text+="<font color='"+col.name()+"'>";
+            m_chars_format.setForeground(col);
+            m_doc_cursor->setCharFormat(m_chars_format);
             break;
         default:
             qDebug()<<"Tag type:"<<tag_type;
@@ -56,13 +77,11 @@ void FunctionViewWidget::TAGend(TAG_TYPE tag_type)
         {
             collected_text+="</body>";
             // TODO: What about attributes with spaces?
-            collected_text.replace("  ", "&nbsp;&nbsp;");
             QFile res("result.html");
             res.open(QFile::WriteOnly);
-            res.write(collected_text.toUtf8());
+            res.write(m_current_rendering->toHtml().toUtf8());
             res.close();
-            collected_text.replace(QChar('\n'),"<br>");
-            ui->textEdit->setHtml(collected_text);
+            ui->textEdit->setDocument(m_current_rendering);
             collected_text.clear();
             break;
         }
@@ -73,7 +92,9 @@ void FunctionViewWidget::TAGend(TAG_TYPE tag_type)
         case XT_Number:
         case XT_AsmOffset:
         case XT_AsmLabel:
-            collected_text+="</font>";
+            m_chars_format.setForeground(Qt::white);
+            m_doc_cursor->setCharFormat(m_chars_format);
+            m_doc_cursor->setBlockFormat(m_current_format);
             break;
         default:
             qDebug()<<"Tag end:"<<tag_type;
