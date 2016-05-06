@@ -53,8 +53,8 @@ int Idiom1::checkStkVars (iICODE pIcode)
  ****************************************************************************/
 bool Idiom1::match(iICODE picode)
 {
-    //uint8_t type = 0;	/* type of variable: 1 = reg-var, 2 = local */
-    //uint8_t regi;		/* register of the MOV */
+    //uint8_t type = 0; /* type of variable: 1 = reg-var, 2 = local */
+    //uint8_t regi;     /* register of the MOV */
     if(m_func->flg & PROC_HLL)
         return false;
     if(picode==m_end)
@@ -109,10 +109,10 @@ bool Idiom1::match(iICODE picode)
                     m_min_off = 2 + (n * 2);
                 }
                 else
-                    return false;	// Cristina: check this please!
+                    return false;   // Cristina: check this please!
             }
             else
-                return false;	// Cristina: check this please!
+                return false;   // Cristina: check this please!
         }
     }
     else // push di [push si] / push si [push di]

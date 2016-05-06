@@ -47,7 +47,7 @@ static const QString szOps[] =
     "RCL",  "RCR",      "ROL",      "ROR",      "RET",      "RETF", "SAHF", "SAR",
     "SHL",  "SHR",      "SBB",      "SCAS",     "REPNE SCAS","REPE SCAS",   "CWD",  "STC",
     "STD",  "STI",      "STOS",     "REP STOS", "SUB",      "TEST", "WAIT", "XCHG",
-    "XLAT", "XOR",      "INTO",     "NOP",      "REPNE",    "REPE",	"MOD"
+    "XLAT", "XOR",      "INTO",     "NOP",      "REPNE",    "REPE", "MOD"
 };
 /* The following opcodes are for mod != 3 */
 static const QString szFlops1[] =

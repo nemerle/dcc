@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 			dcc project CFG related functions
+ * dcc project CFG related functions
  * (C) Cristina Cifuentes
  ****************************************************************************/
 
@@ -47,7 +47,7 @@ void Function::createCFG()
 
     BB *        psBB;
     BB *        pBB;
-    iICODE 	pIcode = Icode.begin();
+    iICODE  pIcode = Icode.begin();
 
     stats.numBBbef = stats.numBBaft = 0;
     rICODE  current_range=make_iterator_range(pIcode,++iICODE(pIcode));
@@ -205,7 +205,7 @@ void Function::freeCFG()
 void Function::compressCFG()
 {
     BB *pNxt;
-    int	ip, first=0, last;
+    int ip, first=0, last;
 
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
@@ -241,7 +241,7 @@ void Function::compressCFG()
     {
         if (pBB->inEdges.empty())
         {
-            if (entry_node)	/* Init it misses out on */
+            if (entry_node)     /* Init it misses out on */
                 pBB->index = UN_INIT;
             else
             {
@@ -321,7 +321,7 @@ BB *BB::rmJMP(int marker, BB * pBB)
  ****************************************************************************/
 void BB::mergeFallThrough( CIcodeRec &Icode)
 {
-    BB *	pChild;
+    BB *    pChild;
     if (nullptr==this)
     {
         printf("mergeFallThrough on empty BB!\n");
@@ -374,7 +374,7 @@ void BB::mergeFallThrough( CIcodeRec &Icode)
  ****************************************************************************/
 void BB::dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last)
 {
-    BB *		pChild;
+    BB * pChild;
     traversed = DFS_NUM;
     dfsFirstNum = (*first)++;
 

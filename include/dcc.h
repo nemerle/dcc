@@ -23,11 +23,11 @@
 #include "BasicBlock.h"
 class Project;
 /* CALL GRAPH NODE */
-extern bundle cCode;			/* Output C procedure's declaration and code */
+extern bundle cCode;            /* Output C procedure's declaration and code */
 
 /**** Global variables ****/
 
-extern QString asm1_name, asm2_name; /* Assembler output filenames 		*/
+extern QString asm1_name, asm2_name; /* Assembler output filenames      */
 
 typedef struct {            /* Command line option flags */
     unsigned verbose        : 1;
@@ -38,7 +38,7 @@ typedef struct {            /* Command line option flags */
     unsigned Stats          : 1;
     unsigned Interact       : 1;    /* Interactive mode */
     unsigned Calls          : 1;    /* Follow register indirect calls */
-    QString	filename;			/* The input filename */
+    QString filename;       /* The input filename */
     uint32_t CustomEntryPoint;
 } OPTION;
 
@@ -60,13 +60,13 @@ enum eAreaType
 /* Intermediate instructions statistics */
 struct STATS
 {
-        int		numBBbef;       /* number of basic blocks initially 	       */
-        int		numBBaft;       /* number of basic blocks at the end 	       */
-        int		nOrder;         /* n-th order								   */
-        int		numLLIcode;     /* number of low-level Icode instructions      */
-        int		numHLIcode; 	/* number of high-level Icode instructions     */
-        int		totalLL;        /* total number of low-level Icode insts       */
-        int		totalHL;        /* total number of high-level Icod insts       */
+        int     numBBbef;       /* number of basic blocks initially         */
+        int     numBBaft;       /* number of basic blocks at the end        */
+        int     nOrder;         /* n-th order                               */
+        int     numLLIcode;     /* number of low-level Icode instructions   */
+        int     numHLIcode;     /* number of high-level Icode instructions  */
+        int     totalLL;        /* total number of low-level Icode insts    */
+        int     totalHL;        /* total number of high-level Icod insts    */
 };
 
 extern STATS stats; /* Icode statistics */

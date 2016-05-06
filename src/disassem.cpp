@@ -29,7 +29,7 @@ using namespace std;
 #define POS_LAB     15              /* Position of label */
 #define POS_OPC     20              /* Position of opcode */
 #define POS_OPR     25              /* Position of operand */
-#define	WID_PTR     10              /* Width of the "xword ptr" lingo */
+#define WID_PTR     10              /* Width of the "xword ptr" lingo */
 #define POS_OPR2    POS_OPR+WID_PTR /* Position of operand after "xword ptr" */
 #define POS_CMT     54              /* Position of comment */
 
@@ -108,7 +108,7 @@ static vector<POSSTACK_ENTRY> posStack; /* position stack */
 
 #define printfd(x) printf(x)
 #define dis_newline() printf("\n")
-#define dis_show()					// Nothing to do unless using Curses
+#define dis_show()              // Nothing to do unless using Curses
 
 
 void LLInst::findJumpTargets(CIcodeRec &_pc)
@@ -134,9 +134,9 @@ void LLInst::findJumpTargets(CIcodeRec &_pc)
 }
 /*****************************************************************************
  * disassem - Prints a disassembled listing of a procedure.
- *			  pass == 1 generates output on file .a1
- *			  pass == 2 generates output on file .a2
- *			  pass == 3 generates output on file .b
+ *          pass == 1 generates output on file .a1
+ *          pass == 2 generates output on file .a2
+ *          pass == 3 generates output on file .b
  ****************************************************************************/
 
 void Disassembler::disassem(PtrFunction ppProc)
@@ -551,7 +551,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         /* output to .b code buffer */
         if (inst.testFlags(SYNTHETIC))
             result_stream<<";Synthetic inst";
-        if (pass == 3) {		/* output to .b code buffer */
+        if (pass == 3) {    /* output to .b code buffer */
             cCode.appendCode("%s\n", qPrintable(result_contents));
         }
 
@@ -564,7 +564,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         {
             sprintf(buf,"%03d %06X",loc_ip, inst.label);
         }
-        else		/* SYNTHETIC instruction */
+        else    /* SYNTHETIC instruction */
         {
             sprintf(buf,"%03d       ",loc_ip);
             result_stream<<";Synthetic inst";
@@ -636,7 +636,7 @@ QTextStream &LLInst::strSrc(QTextStream &os,bool skip_comma)
         os<<", ";
     if (testFlags(I))
         os<<strHex(src().getImm2());
-    else if (testFlags(IM_SRC))		/* level 2 */
+    else if (testFlags(IM_SRC)) /* level 2 */
         os<<"dx:ax";
     else
         formatRM(os, src());

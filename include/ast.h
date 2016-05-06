@@ -241,7 +241,7 @@ struct GlobalVariable : public AstIdent
 struct GlobalVariableIdx : public AstIdent
 {
     bool valid;
-    int idxGlbIdx;	/* idx into localId, GLOB_VAR_IDX   */
+    int idxGlbIdx;  /* idx into localId, GLOB_VAR_IDX   */
 
     virtual Expr *clone() const
     {
@@ -255,9 +255,9 @@ struct GlobalVariableIdx : public AstIdent
 struct Constant : public AstIdent
 {
     struct _kte
-    {			/* for CONSTANT only					*/
-        uint32_t   kte;   	/*   value of the constant			*/
-        uint8_t    size;       /*   #bytes size constant	 		*/
+    {                       /* for CONSTANT only                */
+        uint32_t   kte;     /*   value of the constant          */
+        uint8_t    size;    /*   #bytes size constant           */
     } kte;
 
     Constant(uint32_t _kte, uint8_t size)
@@ -276,7 +276,7 @@ struct Constant : public AstIdent
 };
 struct FuncNode : public AstIdent
 {
-    struct _call {			/* for FUNCTION only				*/
+    struct _call {  /* for FUNCTION only    */
         Function     *proc;
         STKFRAME *args;
     } call;
@@ -297,8 +297,8 @@ struct FuncNode : public AstIdent
 struct RegisterNode : public AstIdent
 {
     const LOCAL_ID *m_syms;
-    regType     regiType;  /* for REGISTER only                */
-    int         regiIdx;   /* index into localId, REGISTER		*/
+    regType     regiType;  /* for REGISTER only                 */
+    int         regiIdx;   /* index into localId, REGISTER      */
 
     virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
 

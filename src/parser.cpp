@@ -802,7 +802,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
 
         /* return ((p->flg & TERMINATES) != 0); */
     }
-    return false;				// Cristina, please check!!
+    return false;           // Cristina, please check!!
 }
 
 
@@ -1020,7 +1020,7 @@ static void setBits(int16_t type, uint32_t start, uint32_t len)
         for (i = start + len - 1; i >= start; i--)
         {
             prog.map[i >> 2] |= type << ((i & 3) << 1);
-            if (i == 0) break;		// Fixes inf loop!
+            if (i == 0) break;  // Fixes inf loop!
         }
     }
 }
@@ -1181,8 +1181,8 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
 
         case iXCHG:
             /* This instruction is replaced by 3 instructions, only need
-                         * to define the src operand and use the destination operand
-                         * in the mean time.	*/
+             * to define the src operand and use the destination operand
+             * in the mean time.*/
             use(SRC, pIcode, this, pstate, cb);
             def(DST, pIcode, this, pstate, cb);
             break;

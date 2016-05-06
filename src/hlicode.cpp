@@ -520,7 +520,7 @@ QString writeJcond (const HLTYPE &h, Function * pProc, int *numLoc)
 
 /* Displays the inverse output of a HLI_JCOND icode.  This is used in the case
  * when the THEN clause of an if..then..else is empty.  The clause is
- * negated and the ELSE clause is used instead.	*/
+ * negated and the ELSE clause is used instead. */
 QString writeJcondInv(HLTYPE h, Function * pProc, int *numLoc)
 {
     QString _form;
@@ -559,10 +559,11 @@ void HLTYPE::set(Expr *l, Expr *r)
     asgn.m_lhs=l;
     asgn.m_rhs=r;
 }
-/* Returns a string with the contents of the current high-level icode.
- * Note: this routine does not output the contens of HLI_JCOND icodes.  This is
- * 		 done in a separate routine to be able to support the removal of
- *		 empty THEN clauses on an if..then..else.	*/
+/** Returns a string with the contents of the current high-level icode.
+ * \note    this routine does not output the contens of HLI_JCOND icodes.  This is
+ *          done in a separate routine to be able to support the removal of
+ *          empty THEN clauses on an if..then..else.
+ */
 QString HLTYPE::write1HlIcode (Function * pProc, int *numLoc) const
 {
     const HlTypeSupport *p = get();

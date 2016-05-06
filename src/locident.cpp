@@ -204,8 +204,8 @@ int LOCAL_ID::newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_)
     id_arr.back().idx.push_back(ix_);
     return (id_arr.size() - 1);
 }
-/* Returns an identifier conditional expression node of type TYPE_LONG or
- * TYPE_WORD_SIGN	*/
+/** Returns an identifier conditional expression node of type TYPE_LONG or
+ * TYPE_WORD_SIGN */
 AstIdent * LOCAL_ID::createId(const ID *retVal, iICODE ix_)
 {
     return AstIdent::idID(retVal,this,ix_);

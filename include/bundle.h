@@ -36,7 +36,7 @@ public:
 };
 
 extern bundle cCode;
-#define lineSize	360		/* 3 lines in the mean time */
+#define lineSize    360     /* 3 lines in the mean time */
 
 //void    newBundle (bundle *procCode);
 void    writeBundle (QIODevice & ios, bundle procCode);

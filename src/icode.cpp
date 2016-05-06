@@ -4,8 +4,8 @@
 
 #include "msvc_fixes.h"
 #include "dcc.h"
-#include "types.h"		// Common types like uint8_t, etc
-#include "ast.h"		// Some icode types depend on these
+#include "types.h"      // Common types like uint8_t, etc
+#include "ast.h"        // Some icode types depend on these
 
 #include <stdlib.h>
 

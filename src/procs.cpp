@@ -97,7 +97,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     condId type;
     Function * tproc;
     eReg regL = rUNDEF;
-    eReg regH;		/* Registers involved in arguments */
+    eReg regH;          /* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
     tproc = ticode->hl()->call.proc;
@@ -245,7 +245,7 @@ bool CallType::newStkArg(Expr *exp, llIcode opcode, Function * pproc)
 
 
 /* Places the actual argument exp in the position given by pos in the
- * argument list of picode.	*/
+ * argument list of picode. */
 void CallType::placeStkArg (Expr *exp, int pos)
 {
     (*args)[pos].actual = exp;
@@ -289,7 +289,7 @@ Expr *Function::adjustActArgType (Expr *_exp, hlType forType)
         case TYPE_STR:
             switch (actType) {
                 case TYPE_CONST:
-                    /* It's an offset into image where a string is found.  Point to the string.	*/
+                    /* It's an offset into image where a string is found.  Point to the string. */
                 {
                     Constant *c=dynamic_cast<Constant *>(expr);
                     assert(c);

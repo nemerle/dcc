@@ -190,7 +190,7 @@ void fixWildCards(uint8_t pat[])
         op = pat[pc++];
         if (pc >= PATLEN) return;
 
-        quad = (uint8_t) (op & 0xC0);			/* Quadrant of the opcode map */
+        quad = (uint8_t) (op & 0xC0);   /* Quadrant of the opcode map */
         if (quad == 0)
         {
             /* Arithmetic group 00-3F */
