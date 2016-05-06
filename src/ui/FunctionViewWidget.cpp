@@ -1,16 +1,21 @@
-#include <QDebug>
-#include <QtCore>
 #include "FunctionViewWidget.h"
 #include "ui_FunctionViewWidget.h"
 #include "RenderTags.h"
+#include "Procedure.h"
+
+#include <QDebug>
+#include <QtCore>
+#include "dcc_interface.h"
+extern IDcc* g_IDCC;
 //#include "XMLTYPE.h"
-FunctionViewWidget::FunctionViewWidget(QWidget *parent) :
+FunctionViewWidget::FunctionViewWidget(PtrFunction func, QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::FunctionViewWidget)
+    ui(new Ui::FunctionViewWidget),
+    m_viewed_function(func)
 {
     ui->setupUi(this);
-    m_current_rendering = new QTextDocument(ui->textEdit);
-    m_doc_cursor = new QTextCursor(m_current_rendering);
+    m_assembly_rendering = new QTextDocument(ui->textEdit);
+    m_doc_cursor = new QTextCursor(m_assembly_rendering);
     ui->textEdit->setTextBackgroundColor(Qt::black);
     m_current_format =  m_doc_cursor->blockFormat();
     m_current_format.setNonBreakableLines(true); // each block is single line
@@ -23,6 +28,11 @@ FunctionViewWidget::FunctionViewWidget(QWidget *parent) :
 FunctionViewWidget::~FunctionViewWidget()
 {
     delete ui;
+}
+
+void FunctionViewWidget::renderCurrent()
+{
+    m_viewed_function->toStructuredText(this,0);
 }
 
 void FunctionViewWidget::prtt(const char *s)
@@ -50,7 +60,7 @@ void FunctionViewWidget::TAGbegin(TAG_TYPE tag_type, void *p)
     switch(tag_type)
     {
         case XT_Function:
-            m_current_rendering->clear();
+            m_assembly_rendering->clear();
             m_chars_format.setForeground(Qt::white);
             m_doc_cursor->setBlockFormat(m_current_format);
             m_doc_cursor->setCharFormat(m_chars_format);
@@ -79,9 +89,9 @@ void FunctionViewWidget::TAGend(TAG_TYPE tag_type)
             // TODO: What about attributes with spaces?
             QFile res("result.html");
             res.open(QFile::WriteOnly);
-            res.write(m_current_rendering->toHtml().toUtf8());
+            res.write(m_assembly_rendering->toHtml().toUtf8());
             res.close();
-            ui->textEdit->setDocument(m_current_rendering);
+            ui->textEdit->setDocument(m_assembly_rendering);
             collected_text.clear();
             break;
         }
@@ -99,4 +109,8 @@ void FunctionViewWidget::TAGend(TAG_TYPE tag_type)
         default:
             qDebug()<<"Tag end:"<<tag_type;
     }
+}
+void FunctionViewWidget::on_tabWidget_currentChanged(int index)
+{
+    renderCurrent();
 }

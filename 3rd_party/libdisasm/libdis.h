@@ -626,7 +626,7 @@ public:
     /* the instruction proper */
     enum x86_insn_prefix prefix;	/* prefixes ORed together */
     char prefix_string[MAX_PREFIX_STR]; /* prefixes [might be truncated] */
-    char mnemonic[MAX_MNEM_STR];
+    char mnemonic[MAX_MNEM_STR+1];
     x86_oplist_t *operands;		/* list of explicit/implicit operands */
     size_t operand_count;		/* total number of operands */
     size_t explicit_count;		/* number of explicit operands */

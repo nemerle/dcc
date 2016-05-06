@@ -8,6 +8,7 @@
 #include <QAbstractTableModel>
 #include <QVariant>
 #include <vector>
+#include <unordered_map>
 
 class FunctionViewWidget;
 class FunctionListDockWidget;
@@ -36,11 +37,12 @@ private slots:
     void on_actionExit_triggered();
     void onNewFunction(PtrFunction f);
     void onFunctionSelected(PtrFunction func);
+    void functionViewClosed();
+    void onFunctionUpdated(const PtrFunction & f);
 private:
-
-    FunctionViewWidget *m_asm_view;
+    std::vector<FunctionViewWidget *> m_mdi_function_views;
+    std::unordered_map<PtrFunction,FunctionViewWidget *> m_map_function_to_view;
     //  FunctionViewWidget *m_internal_view;
-    FunctionViewWidget *m_c_view;
     CommandQueueView *m_command_queue;
     FunctionListDockWidget *m_functionlist_widget;
     Ui::DccMainWindow *ui;

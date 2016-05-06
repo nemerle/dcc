@@ -578,7 +578,7 @@ void LOCAL_ID::forwardSubs (Expr *lhs, Expr *rhs, iICODE picode, iICODE ticode, 
         return;
 
     /* Insert on rhs of ticode, if possible */
-    res = Expr::insertSubTreeReg (ticode->hlU()->asgn.rhs,rhs, id_arr[lhs_reg->regiIdx].id.regi, this);
+    res = Expr::insertSubTreeReg (ticode->hlU()->asgn.m_rhs,rhs, id_arr[lhs_reg->regiIdx].id.regi, this);
     if (res)
     {
         picode->invalidate();
@@ -617,7 +617,7 @@ static void forwardSubsLong (int longIdx, Expr *_exp, iICODE picode, iICODE tico
         return;
 
     /* Insert on rhs of ticode, if possible */
-    res = Expr::insertSubTreeLongReg (_exp, ticode->hlU()->asgn.rhs, longIdx);
+    res = Expr::insertSubTreeLongReg (_exp, ticode->hlU()->asgn.m_rhs, longIdx);
     if (res)
     {
         picode->invalidate();
@@ -758,11 +758,11 @@ void LOCAL_ID::processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode
         if(isLong)
         {
             forwardSubsLong (lhs_ident->ident.idNode.longIdx,
-                             p_hl.asgn.rhs, picode,ticode,
+                             p_hl.asgn.m_rhs, picode,ticode,
                              &numHlIcodes);
         }
         else
-            this->forwardSubs (lhs_ident, p_hl.asgn.rhs, picode, ticode, numHlIcodes);
+            this->forwardSubs (lhs_ident, p_hl.asgn.m_rhs, picode, ticode, numHlIcodes);
         break;
 
     case HLI_JCOND:  case HLI_PUSH:  case HLI_RET:
@@ -770,7 +770,7 @@ void LOCAL_ID::processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode
         {
             assert(lhs_ident);
             res = Expr::insertSubTreeLongReg (
-                        p_hl.asgn.rhs,
+                        p_hl.asgn.m_rhs,
                         t_hl.exp.v,
                         lhs_ident->ident.idNode.longIdx);
         }
@@ -780,7 +780,7 @@ void LOCAL_ID::processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode
             assert(lhs_reg);
             res = Expr::insertSubTreeReg (
                         t_hl.exp.v,
-                        p_hl.asgn.rhs,
+                        p_hl.asgn.m_rhs,
                         id_arr[lhs_reg->regiIdx].id.regi,
                     this);
         }
@@ -914,7 +914,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                              (ticode->hl()->opcode != HLI_RET)))
                         continue;
 
-                    if (_icHl.asgn.rhs->xClear (make_iterator_range(picode.base(),picode->du1.idx[0].uses[0]),
+                    if (_icHl.asgn.m_rhs->xClear (make_iterator_range(picode.base(),picode->du1.idx[0].uses[0]),
                                                 end(), locals))
                     {
                         locals.processTargetIcode(picode.base(), numHlIcodes, ticode,false);
@@ -973,9 +973,9 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                     switch (ti_hl->opcode)
                     {
                     case HLI_ASSIGN:
-                        assert(ti_hl->asgn.rhs);
+                        assert(ti_hl->asgn.m_rhs);
                         _exp = _icHl.call.toAst();
-                        res = Expr::insertSubTreeReg (ti_hl->asgn.rhs,_exp, _retVal->id.regi, &locals);
+                        res = Expr::insertSubTreeReg (ti_hl->asgn.m_rhs,_exp, _retVal->id.regi, &locals);
                         if (not res)
                             Expr::insertSubTreeReg (ti_hl->asgn.m_lhs, _exp,_retVal->id.regi, &locals);
                         //TODO: HERE missing: 2 regs
@@ -1023,8 +1023,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                 switch (_icHl.opcode)
                 {
                 case HLI_ASSIGN:
-                    /* Replace rhs of current icode into target
-                         * icode expression */
+                    /* Replace rhs of current icode into target icode expression */
                     if (picode->du1.idx[0].uses[0] == picode->du1.idx[1].uses[0])
                     {
                         ticode = picode->du1.idx[0].uses.front();
@@ -1048,10 +1047,11 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         _exp = g_exp_stk.pop(); /* pop last exp pushed */
                         switch (ticode->hl()->opcode) {
                         case HLI_ASSIGN:
-                            forwardSubsLong (dynamic_cast<AstIdent *>(_icHl.expr())->ident.idNode.longIdx,
+                            forwardSubsLong (static_cast<AstIdent *>(_icHl.expr())->ident.idNode.longIdx,
                                              _exp, picode.base(), ticode, &numHlIcodes);
                             break;
-                        case HLI_JCOND: case HLI_PUSH:
+                        case HLI_JCOND:
+                        case HLI_PUSH:
                             res = Expr::insertSubTreeLongReg (_exp,
                                                               ticode->hlU()->exp.v,
                                                               dynamic_cast<AstIdent *>(_icHl.asgn.lhs())->ident.idNode.longIdx);
@@ -1079,7 +1079,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                     AstIdent::Long(&locals, DST,
                                                    ticode,HIGH_FIRST, picode.base(),
                                                    eDEF, *(++iICODE(ticode))->ll()));
-                        ticode->hlU()->asgn.rhs = _exp;
+                        ticode->hlU()->asgn.m_rhs = _exp;
                         picode->invalidate();
                         numHlIcodes--;
                         break;

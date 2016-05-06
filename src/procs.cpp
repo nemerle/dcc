@@ -187,7 +187,7 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     /* Do ps (actual arguments) */
     STKSYM newsym;
     newsym.setArgName(call_args_stackframe->size());
-    newsym.actual = picode->hl()->asgn.rhs;
+    newsym.actual = picode->hl()->asgn.m_rhs;
     newsym.regs = lhs;
     /* Mask off high and low register(s) in picode */
     switch (type) {

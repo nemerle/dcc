@@ -67,6 +67,15 @@ extern bundle cCode;
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be backpatched
  *       onto code in cCode.code */
+void LLInst::clrFlags(uint32_t flag)
+{
+    if(getOpcode()==iMOD)
+    {
+        assert(false);
+    }
+    flg &= ~flag;
+}
+
 void LLInst::emitGotoLabel (int indLevel)
 {
     if ( not testFlags(HLL_LABEL) ) /* node hasn't got a lab */

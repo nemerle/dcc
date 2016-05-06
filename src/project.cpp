@@ -228,6 +228,7 @@ void Project::processFunctionCommands(const PtrFunction &func,int count) {
         }
     }
     emit commandListChanged();
+    emit functionUpdate(func);
 }
 void Project::resetCommandsAndErrorState()
 {

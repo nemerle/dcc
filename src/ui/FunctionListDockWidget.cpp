@@ -8,7 +8,7 @@
 
 #include <QtCore>
 //#include "exe2c.h"
-extern IDcc *g_EXE2C;
+extern IDcc *g_IDCC;
 FunctionListDockWidget::FunctionListDockWidget(QWidget *parent) :
     QDockWidget(parent),
     ui(new Ui::FunctionListDockWidget)

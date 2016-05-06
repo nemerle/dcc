@@ -175,7 +175,7 @@ struct AssignType : public HlTypeSupport
 protected:
 public:
     Expr    *m_lhs;
-    Expr    *rhs;
+    Expr    *m_rhs;
     AssignType() {}
     Expr *lhs() const {return m_lhs;}
     void lhs(Expr *l);
@@ -252,17 +252,17 @@ public:
 /* LOW_LEVEL icode operand record */
 struct LLOperand
 {
-    eReg     seg;               /* CS, DS, ES, SS                       */
-    eReg     segOver;           /* CS, DS, ES, SS if segment override   */
-    int16_t    segValue;          /* Value of segment seg during analysis */
-    eReg       regi;              /* 0 < regs < INDEXBASE <= index modes  */
-    int16_t    off;               /* memory address offset                */
-    uint32_t   opz;             /*   idx of immed src op        */
-    bool immed;
-    bool is_offset; // set by jumps
-    bool is_compound;
-    size_t width;
-    //union {/* Source operand if (flg & I)  */
+    eReg        seg;               /* CS, DS, ES, SS                       */
+    eReg        segOver;           /* CS, DS, ES, SS if segment override   */
+    int16_t     segValue;          /* Value of segment seg during analysis */
+    eReg        regi;              /* 0 < regs < INDEXBASE <= index modes  */
+    int16_t     off;               /* memory address offset                */
+    uint32_t    opz;             /*   idx of immed src op        */
+    bool        immed;
+    bool        is_offset; // set by jumps
+    bool        is_compound;
+    size_t      width;
+    /* Source operand if (flg & I)  */
     struct {				/* Call & # actual arg bytes	*/
         Function *proc;     /*   pointer to target proc (for CALL(F))*/
         int     cb;		/*   # actual arg bytes			*/
@@ -323,35 +323,27 @@ struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
 protected:
     uint32_t        flg;            /* icode flags                  */
-    LLOperand       m_src;            /* source operand               */
+    LLOperand       m_src;          /* source operand               */
 public:
-    int             codeIdx;    	/* Index into cCode.code            */
+    int             codeIdx;    	/* Index into cCode.code        */
     uint8_t         numBytes;       /* Number of bytes this instr   */
     uint32_t        label;          /* offset in image (20-bit adr) */
-    LLOperand       m_dst;            /* destination operand          */
+    LLOperand       m_dst;          /* destination operand          */
     DU              flagDU;         /* def/use of flags				*/
     int             caseEntry;
     std::vector<uint32_t> caseTbl2;
-    int         hllLabNum;      /* label # for hll codegen      */
+    int             hllLabNum;      /* label # for hll codegen      */
     bool conditionalJump()
     {
         return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
     }
     bool testFlags(uint32_t x) const { return (flg & x)!=0;}
     void  setFlags(uint32_t flag) {flg |= flag;}
-    void  clrFlags(uint32_t flag)
-    {
-        if(getOpcode()==iMOD)
-        {
-            assert(false);
-        }
-        flg &= ~flag;
-    }
+    void  clrFlags(uint32_t flag);
     uint32_t getFlag() const {return flg;}
     uint32_t GetLlLabel() const { return label;}
 
     void SetImmediateOp(uint32_t dw) {m_src.SetImmediateOp(dw);}
-
 
     bool match(llIcode op)
     {
@@ -363,19 +355,19 @@ public:
     }
     bool match(llIcode op,eReg dest)
     {
-        return (getOpcode()==op)&&m_dst.regi==dest;
+        return (getOpcode()==op) and match(dest);
     }
     bool match(llIcode op,eReg dest,uint32_t flgs)
     {
-        return (getOpcode()==op) and (m_dst.regi==dest) and testFlags(flgs);
+        return match(op) and match(dest) and testFlags(flgs);
     }
     bool match(llIcode op,eReg dest,eReg src_reg)
     {
-        return (getOpcode()==op) and (m_dst.regi==dest) and (m_src.regi==src_reg);
+        return match(op) and match(dest) and (m_src.regi==src_reg);
     }
     bool match(eReg dest,eReg src_reg)
     {
-        return (m_dst.regi==dest) and (m_src.regi==src_reg);
+        return match(dest) and (m_src.regi==src_reg);
     }
     bool match(eReg dest)
     {
@@ -383,7 +375,7 @@ public:
     }
     bool match(llIcode op,uint32_t flgs)
     {
-        return (getOpcode()==op) and testFlags(flgs);
+        return match(op) and testFlags(flgs);
     }
     void set(llIcode op,uint32_t flags)
     {
@@ -403,45 +395,30 @@ public:
         m_src = src_op;
         flg =flags;
     }
-    void emitGotoLabel(int indLevel);
-    void findJumpTargets(CIcodeRec &_pc);
-    void writeIntComment(QTextStream & s);
-    void dis1Line(int loc_ip, int pass);
-    QTextStream & strSrc(QTextStream & os, bool skip_comma=false);
+    void                emitGotoLabel(int indLevel);
+    void                findJumpTargets(CIcodeRec &_pc);
+    void                writeIntComment(QTextStream & s);
+    void                dis1Line(int loc_ip, int pass);
+    QTextStream &       strSrc(QTextStream & os, bool skip_comma=false);
 
-    void flops(QTextStream & out);
-    bool isJmpInst();
-    HLTYPE createCall();
-    LLInst(ICODE *container) : flg(0),codeIdx(0),numBytes(0),m_link(container)
-    {
-        setOpcode(0);
-    }
-    const LLOperand &src() const {return m_src;}
-    LLOperand &src() {return m_src;}
-    void replaceSrc(const LLOperand &with)
-    {
-        m_src = with;
-    }
-    void replaceSrc(eReg r)
-    {
-        m_src = LLOperand::CreateReg2(r);
-    }
-    void replaceSrc(int64_t r)
-    {
-        m_src = LLOperand::CreateImm2(r);
-    }
-    void replaceDst(const LLOperand &with)
-    {
-        m_dst = with;
-    }
-//    void replaceDst(eReg r)
-//    {
-//        dst = LLOperand::CreateReg2(r);
-//    }
-    ICODE *m_link;
-    condId idType(opLoc sd) const;
+    void                flops(QTextStream & out);
+    bool                isJmpInst();
+    HLTYPE              createCall();
+                        LLInst(ICODE *container) : flg(0),codeIdx(0),numBytes(0),m_link(container)
+                        {
+                            setOpcode(0);
+                        }
+    const LLOperand &   src() const { return m_src; }
+    LLOperand &         src()       { return m_src; }
+    void                replaceSrc(const LLOperand &with) { m_src = with; }
+    void                replaceSrc(eReg r) { m_src = LLOperand::CreateReg2(r); }
+    void                replaceSrc(int64_t r) { m_src = LLOperand::CreateImm2(r); }
+    void                replaceDst(const LLOperand &with) { m_dst = with; }
+    condId              idType(opLoc sd) const;
     const LLOperand *   get(opLoc sd) const { return (sd == SRC) ? &src() : &m_dst; }
     LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &m_dst; }
+
+    ICODE *             m_link;
 };
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */

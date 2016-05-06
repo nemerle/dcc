@@ -198,7 +198,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                         pstate->JCond.immed++;
                     if (ll->getOpcode() == iJAE or ll->getOpcode() == iJA)
                         pstate->JCond.regi = prev.ll()->m_dst.regi;
-                    fBranch = (bool) (ll->getOpcode() == iJB or ll->getOpcode() == iJBE);
+                    fBranch = (ll->getOpcode() == iJB or ll->getOpcode() == iJBE);
                 }
                 StCopy = *pstate;
 
@@ -212,8 +212,10 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 /* Next icode. Note: not the same as GetLastIcode() because of the call
                                 to FollowCtrl() */
                 pIcode = Icode.GetIcode(ip);
-            }		/* Fall through to do the jump path */
-
+                /* do the jump path */
+                done = process_JMP (*pIcode, pstate, pcallGraph);
+                break;
+            }
                 /*** Jumps ***/
             case iJMP:
             case iJMPF: /* Returns true if we've run into a loop */
@@ -232,7 +234,9 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iRET:
             case iRETF:
                 this->flg |= (ll->getOpcode() == iRET)? PROC_NEAR:PROC_FAR;
-                /* Fall through */
+                this->flg &= ~TERMINATES;
+                done = true;
+                break;
             case iIRET:
                 this->flg &= ~TERMINATES;
                 done = true;
@@ -868,7 +872,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
                 pstate->setMemoryByte(psym->label,(uint8_t)pstate->r[srcReg]);
                 if(psym->size>1)
                 {
-                    pstate->setMemoryByte(psym->label,(uint8_t)pstate->r[srcReg]>>8);
+                    pstate->setMemoryByte(psym->label,uint8_t(pstate->r[srcReg]>>8));
                     //prog.image()[psym->label+1] = (uint8_t)(pstate->r[srcReg] >> 8);
                 }
                 psym->duVal.setFlags(eDuVal::DEF);
@@ -1276,7 +1280,9 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
                 use(SRC, pIcode, this, pstate, cb);
             break;
 
-        case iLOOP:  case iLOOPE:  case iLOOPNE:
+        case iLOOP:
+        case iLOOPE:
+        case iLOOPNE:
             pIcode.du.def.addReg(rCX);
             pIcode.du1.addDef(rCX);
         case iJCXZ:
@@ -1331,7 +1337,8 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
             pIcode.du.use.addReg(rDX).addReg(sseg);
             break;
 
-        case iIN:  case iOUT:
+        case iIN:
+        case iOUT:
             def(DST, pIcode, this, pstate, cb);
             if (not Imm)
             {

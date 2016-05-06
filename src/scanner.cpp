@@ -630,7 +630,7 @@ static int signex(uint8_t b)
 static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off)
 {
     /* If not to register (i.e. to r/m), and talking about r/m, then this is dest */
-    LLOperand *pm = (! (stateTable[i].flg & TO_REG) == fdst) ? &pIcode->ll()->m_dst : &pIcode->ll()->src();
+    LLOperand *pm = (! bool(stateTable[i].flg & TO_REG) == fdst) ? &pIcode->ll()->m_dst : &pIcode->ll()->src();
 
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
      * provide the value of this segment in the field segValue.

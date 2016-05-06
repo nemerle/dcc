@@ -828,7 +828,7 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
     const LLInst &inst(*insn);
     QString opcode = Machine_X86::opcodeName(insn->getOpcode());
     out->addSpace(4);
-    out->addTaggedString(XT_Number,strHex(insn->label));
+    out->addTaggedString(XT_Number,QString("%1").arg(insn->label,8,16,QChar('0').toUpper()));
     out->addSpace(4);
     out->addTaggedString(XT_Keyword,Machine_X86::opcodeName(insn->getOpcode()),insn);
     out->addSpace(2);
@@ -905,17 +905,12 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
         }
         else if (inst.testFlags(I) )
         {
-            out->addTaggedString(XT_AsmLabel,strHex(inst.src().getImm2()));
-//            j = inst.src().getImm2();
-//            if (pl.count(j)==0)       /* Forward jump */
-//            {
-//                pl[j] = ++g_lab;
-//            }
-//            if (inst.getOpcode() == iJMPF)
-//            {
-//                operands_s<<" far ptr ";
-//            }
-//            operands_s<<"L"<<pl[j];
+            int64_t tgt_addr = inst.src().getImm2();
+            if (inst.getOpcode() == iJMPF)
+            {
+                out->addTaggedString(XT_Keyword," far ptr ");
+            }
+            out->addTaggedString(XT_AsmLabel,QString("L_%1").arg(strHex(tgt_addr)));
         }
         else if (inst.getOpcode() == iJMPF)
         {
@@ -928,6 +923,36 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
         }
 
         break;
+    case iCALL: case iCALLF:
+        if (inst.testFlags(I))
+        {
+            out->addTaggedString(XT_Keyword,QString("%1 ptr ").arg((inst.getOpcode() == iCALL) ? "near" : "far"));
+            out->addTaggedString(XT_AsmLabel,(inst.src().proc.proc)->name);
+        }
+        else if (inst.getOpcode() == iCALLF)
+        {
+            out->addTaggedString(XT_Keyword,"dword ptr ");
+            strSrc(out,insn,true);
+        }
+        else
+            strDst(out,I,inst.src());
+        break;
+
+    case iENTER:
+        out->addTaggedString(XT_AsmOffset,strHex(inst.m_dst.off));
+        out->prtt(", ");
+        out->addTaggedString(XT_AsmOffset,strHex(inst.src().getImm2()));
+        break;
+
+    case iRET:
+    case iRETF:
+    case iINT:
+        if (inst.testFlags(I))
+        {
+            out->addTaggedString(XT_Number,strHex(inst.src().getImm2()));
+        }
+        break;
+
     }
     out->addEOL();
 }

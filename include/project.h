@@ -158,6 +158,7 @@ public slots:
             void        onCommandStreamFinished(bool state);
 signals:
             void        newFunctionCreated(PtrFunction);
+            void        functionUpdate(const PtrFunction &);
             void        loaderSelected();
             void        commandListChanged();
 protected:
