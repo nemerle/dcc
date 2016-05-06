@@ -14,7 +14,7 @@
 #include <sstream>
 #include <QTextStream>
 using namespace std;
-#define intSize		40
+#define intSize	    40
 
 static const char *int21h[] =
 {
@@ -131,21 +131,21 @@ static const char *int21h[] =
 
 
 static const char *intOthers[] = {
-    "Exit",					/* 0x20 */
-    "",					/* other table */
-    "Terminate handler address",		/* 0x22 */
-    "Ctrl-C handler address",		/* 0x23 */
+    "Exit",	    	    	/* 0x20 */
+    "",	    	    	/* other table */
+    "Terminate handler address",	    /* 0x22 */
+    "Ctrl-C handler address",	    /* 0x23 */
     "Critical-error handler address",	/* 0x24 */
-    "Absolute disk read",			/* 0x25 */
-    "Absolute disk write",			/* 0x26 */
-    "Terminate and stay resident",		/* 0x27 */
-    "Reserved",				/* 0x28 */
-    "Reserved",				/* 0x29 */
-    "Reserved",				/* 0x2A */
-    "Reserved",				/* 0x2B */
-    "Reserved",				/* 0x2C */
-    "Reserved",				/* 0x2D */
-    "Reserved"				/* 0x2E */
+    "Absolute disk read",	    	/* 0x25 */
+    "Absolute disk write",	    	/* 0x26 */
+    "Terminate and stay resident",	    /* 0x27 */
+    "Reserved",	    	    /* 0x28 */
+    "Reserved",	    	    /* 0x29 */
+    "Reserved",	    	    /* 0x2A */
+    "Reserved",	    	    /* 0x2B */
+    "Reserved",	    	    /* 0x2C */
+    "Reserved",	    	    /* 0x2D */
+    "Reserved"	    	    /* 0x2E */
 };
 
 
@@ -200,8 +200,8 @@ void Function::writeProcComments()
 void Function::writeProcComments(QTextStream &ostr)
 {
     int i;
-    ID *id;			/* Pointer to register argument identifier */
-    STKSYM * psym;		/* Pointer to register argument symbol */
+    ID *id;	    	/* Pointer to register argument identifier */
+    STKSYM * psym;	    /* Pointer to register argument symbol */
 
     /* About the parameters */
     if (this->cbParam)
@@ -218,7 +218,7 @@ void Function::writeProcComments(QTextStream &ostr)
                 id = &this->localId.id_arr[((RegisterNode *)psym->regs)->regiIdx];
                 ostr << Machine_X86::regName(id->id.regi);
             }
-            else		/* long register */
+            else	    /* long register */
             {
                 id = &this->localId.id_arr[psym->regs->ident.idNode.longIdx];
                 ostr << Machine_X86::regName(id->longId().h()) << ":";

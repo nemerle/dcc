@@ -80,13 +80,13 @@ static struct {
     {  modrm,   none2, NSP                      , iADC  },  /* 11 */
     {  modrm,   none2, TO_REG | B               , iADC  },  /* 12 */
     {  modrm,   none2, TO_REG | NSP             , iADC  },  /* 13 */
-    {  data1,   axImp, B                        , iADC	},	/* 14 */
-    {  data2,   axImp, 0			, iADC	},	/* 15 */
-    {  segop,   none2, NOT_HLL | NO_SRC         , iPUSH	},	/* 16 */
-    {  segop,   none2, NOT_HLL | NO_SRC         , iPOP	},	/* 17 */
-    {  modrm,   none2, B			, iSBB	},	/* 18 */
-    {  modrm,   none2, NSP                      , iSBB	},	/* 19 */
-    {  modrm,   none2, TO_REG | B               , iSBB	},	/* 1A */
+    {  data1,   axImp, B                        , iADC  },  /* 14 */
+    {  data2,   axImp, 0                        , iADC  },  /* 15 */
+    {  segop,   none2, NOT_HLL | NO_SRC         , iPUSH },  /* 16 */
+    {  segop,   none2, NOT_HLL | NO_SRC         , iPOP  },  /* 17 */
+    {  modrm,   none2, B                        , iSBB  },  /* 18 */
+    {  modrm,   none2, NSP                      , iSBB  },  /* 19 */
+    {  modrm,   none2, TO_REG | B               , iSBB  },  /* 1A */
     {  modrm,   none2, TO_REG | NSP             , iSBB  },  /* 1B */
     {  data1,   axImp, B                        , iSBB  },  /* 1C */
     {  data2,   axImp, 0                        , iSBB  },  /* 1D */
@@ -127,200 +127,200 @@ static struct {
     {  regop,   none2, 0                        , iINC  },  /* 40 */
     {  regop,   none2, 0                        , iINC  },  /* 41 */
     {  regop,   none2, 0                        , iINC  },  /* 42 */
-    {  regop,   none2, 0                        , iINC  },	/* 43 */
-    {  regop,   none2, NOT_HLL                  , iINC  },	/* 44 */
-    {  regop,   none2, 0                        , iINC  },	/* 45 */
-    {  regop,   none2, 0                        , iINC  },	/* 46 */
-    {  regop,   none2, 0                        , iINC  },	/* 47 */
-    {  regop,   none2, 0                        , iDEC  },	/* 48 */
-    {  regop,   none2, 0                        , iDEC  },	/* 49 */
-    {  regop,   none2, 0                        , iDEC  },	/* 4A */
-    {  regop,   none2, 0                        , iDEC  },	/* 4B */
-    {  regop,   none2, NOT_HLL                  , iDEC  },	/* 4C */
-    {  regop,   none2, 0                        , iDEC  },	/* 4D */
-    {  regop,   none2, 0                        , iDEC  },	/* 4E */
-    {  regop,   none2, 0                        , iDEC  },	/* 4F */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 50 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 51 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 52 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 53 */
-    {  regop,   none2, NOT_HLL | NO_SRC         , iPUSH },	/* 54 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 55 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 56 */
-    {  regop,   none2, NO_SRC                   , iPUSH },	/* 57 */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 58 */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 59 */
-    {  regop,   none2, NO_SRC 			, iPOP  },	/* 5A */
-    {  regop,   none2, NO_SRC                   , iPOP	},	/* 5B */
-    {  regop,   none2, NOT_HLL | NO_SRC         , iPOP  },	/* 5C */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 5D */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 5E */
-    {  regop,   none2, NO_SRC                   , iPOP  },	/* 5F */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHA},	/* 60 */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPOPA },	/* 61 */
-    { memOnly,  modrm, TO_REG | NSP		, iBOUND},	/* 62 */
-    {  none1,   none2, OP386                    , iZERO },	/* 63 */
-    {  none1,   none2, OP386                    , iZERO },	/* 64 */
-    {  none1,   none2, OP386                    , iZERO },	/* 65 */
-    {  none1,   none2, OP386                    , iZERO },	/* 66 */
-    {  none1,   none2, OP386                    , iZERO },	/* 67 */
-    {  data2,   none2, NO_SRC                   , iPUSH },	/* 68 */
-    {  modrm,   data2, TO_REG | NSP             , iIMUL },	/* 69 */
-    {  data1,   none2, S_EXT | NO_SRC           , iPUSH },	/* 6A */
-    {  modrm,   data1, TO_REG | NSP | S_EXT	, iIMUL },	/* 6B */
-    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iINS  },	/* 6C */
-    {  strop,  memImp, NOT_HLL | IM_OPS         , iINS  },	/* 6D */
-    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iOUTS },	/* 6E */
-    {  strop,  memImp, NOT_HLL | IM_OPS         , iOUTS },	/* 6F */
-    {  dispS,   none2, NOT_HLL			, iJO	},	/* 70 */
-    {  dispS,   none2, NOT_HLL			, iJNO	},	/* 71 */
-    {  dispS,   none2, 0                        , iJB	},	/* 72 */
-    {  dispS,   none2, 0                        , iJAE	},	/* 73 */
-    {  dispS,   none2, 0                        , iJE	},	/* 74 */
-    {  dispS,   none2, 0                        , iJNE	},	/* 75 */
-    {  dispS,   none2, 0                        , iJBE	},	/* 76 */
-    {  dispS,   none2, 0                        , iJA	},	/* 77 */
-    {  dispS,   none2, 0                        , iJS	},	/* 78 */
-    {  dispS,   none2, 0                        , iJNS	},	/* 79 */
-    {  dispS,   none2, NOT_HLL			, iJP	},	/* 7A */
-    {  dispS,   none2, NOT_HLL			, iJNP	},	/* 7B */
-    {  dispS,   none2, 0                        , iJL	},	/* 7C */
-    {  dispS,   none2, 0                        , iJGE	},	/* 7D */
-    {  dispS,   none2, 0                        , iJLE	},	/* 7E */
-    {  dispS,   none2, 0                        , iJG	},	/* 7F */
-    {  immed,   data1, B                        , iZERO	},	/* 80 */
-    {  immed,   data2, NSP                      , iZERO	},	/* 81 */
-    {  immed,   data1, B                        , iZERO	},	/* 82 */ /* ?? */
-    {  immed,   data1, NSP | S_EXT		, iZERO	},	/* 83 */
-    {  modrm,   none2, TO_REG | B		, iTEST	},	/* 84 */
-    {  modrm,   none2, TO_REG | NSP		, iTEST	},	/* 85 */
-    {  modrm,   none2, TO_REG | B               , iXCHG	},	/* 86 */
-    {  modrm,   none2, TO_REG | NSP		, iXCHG	},	/* 87 */
-    {  modrm,   none2, B                        , iMOV	},	/* 88 */
-    {  modrm,   none2, 0            		, iMOV	},	/* 89 */
-    {  modrm,   none2, TO_REG | B               , iMOV	},	/* 8A */
-    {  modrm,   none2, TO_REG 			, iMOV	},	/* 8B */
-    {  segrm,   none2, NSP                      , iMOV	},	/* 8C */
-    { memOnly,  modrm, TO_REG | NSP		, iLEA	},	/* 8D */
-    {  segrm,   none2, TO_REG | NSP		, iMOV	},	/* 8E */
-    { memReg0,  none2, NO_SRC                   , iPOP	},	/* 8F */
-    {   none1,  none2, NO_OPS                   , iNOP	},	/* 90 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 91 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 92 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 93 */
-    {  regop,   axImp, NOT_HLL			, iXCHG	},	/* 94 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 95 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 96 */
-    {  regop,   axImp, 0                        , iXCHG	},	/* 97 */
-    {  alImp,   axImp, SRC_B | S_EXT            , iSIGNEX},	/* 98 */
-    {axSrcIm,   axImp, IM_DST | S_EXT           , iSIGNEX},	/* 99 */
-    {  dispF,   none2, TO_REG                   , iCALLF },	/* 9A */ // TO_REG set to use SRC when processing setAddress
-    {  none1,   none2, FLOAT_OP| NO_OPS         , iWAIT	},	/* 9B */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHF},	/* 9C */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iPOPF	},	/* 9D */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iSAHF	},	/* 9E */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iLAHF	},	/* 9F */
-    {  dispM,   axImp, B                        , iMOV	},	/* A0 */
-    {  dispM,   axImp, 0                        , iMOV	},	/* A1 */
-    {  dispM,   axImp, TO_REG | B               , iMOV	},	/* A2 */
-    {  dispM,   axImp, TO_REG 			, iMOV	},	/* A3 */
-    {  strop,  memImp, B | IM_OPS               , iMOVS	},	/* A4 */
-    {  strop,  memImp, IM_OPS                   , iMOVS	},	/* A5 */
-    {  strop,  memImp, B | IM_OPS               , iCMPS	},	/* A6 */
-    {  strop,  memImp, IM_OPS                   , iCMPS	},	/* A7 */
-    {  data1,   axImp, B                        , iTEST	},	/* A8 */
-    {  data2,   axImp, 0                        , iTEST	},	/* A9 */
-    {  strop,  memImp, B | IM_OPS               , iSTOS	},	/* AA */
-    {  strop,  memImp, IM_OPS                   , iSTOS	},	/* AB */
-    {  strop,  memImp, B | IM_OPS               , iLODS	},	/* AC */
-    {  strop,  memImp, IM_OPS                   , iLODS	},	/* AD */
-    {  strop,  memImp, B | IM_OPS               , iSCAS	},	/* AE */
-    {  strop,  memImp, IM_OPS                   , iSCAS	},	/* AF */
-    {  regop,   data1, B                        , iMOV	},	/* B0 */
-    {  regop,   data1, B                        , iMOV	},	/* B1 */
-    {  regop,   data1, B                        , iMOV	},	/* B2 */
-    {  regop,   data1, B                        , iMOV	},	/* B3 */
-    {  regop,   data1, B                        , iMOV	},	/* B4 */
-    {  regop,   data1, B                        , iMOV	},	/* B5 */
-    {  regop,   data1, B                        , iMOV	},	/* B6 */
-    {  regop,   data1, B                        , iMOV	},	/* B7 */
-    {  regop,   data2, 0                        , iMOV	},	/* B8 */
-    {  regop,   data2, 0                        , iMOV	},	/* B9 */
-    {  regop,   data2, 0                        , iMOV	},	/* BA */
-    {  regop,   data2, 0                        , iMOV	},	/* BB */
-    {  regop,   data2, NOT_HLL			, iMOV	},	/* BC */
-    {  regop,   data2, 0                        , iMOV	},	/* BD */
-    {  regop,   data2, 0                        , iMOV	},	/* BE */
-    {  regop,   data2, 0                        , iMOV	},	/* BF */
-    {  shift,   data1, B                        , iZERO	},	/* C0 */
-    {  shift,   data1, NSP | SRC_B		, iZERO	},	/* C1 */
-    {  data2,   none2, 0                        , iRET	},	/* C2 */
-    {  none1,   none2, NO_OPS                   , iRET	},	/* C3 */
-    { memOnly,  modrm, TO_REG | NSP		, iLES	},	/* C4 */
-    { memOnly,  modrm, TO_REG | NSP		, iLDS	},	/* C5 */
-    { memReg0,  data1, B                        , iMOV	},	/* C6 */
-    { memReg0,  data2, 0			, iMOV	},	/* C7 */
-    {  data2,   data1, 0                        , iENTER},	/* C8 */
-    {  none1,   none2, NO_OPS                   , iLEAVE},	/* C9 */
-    {  data2,   none2, 0                        , iRETF	},	/* CA */
-    {  none1,   none2, NO_OPS                   , iRETF	},	/* CB */
-    { const3,   none2, NOT_HLL			, iINT	},	/* CC */
-    {  data1,checkInt, NOT_HLL			, iINT	},	/* CD */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iINTO	},	/* CE */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iIRET	},	/* Cf */
-    {  shift,  const1, B                        , iZERO	},	/* D0 */
-    {  shift,  const1, SRC_B                    , iZERO	},	/* D1 */
-    {  shift,   none1, B                        , iZERO	},	/* D2 */
-    {  shift,   none1, SRC_B                    , iZERO	},	/* D3 */
-    {  data1,   axImp, NOT_HLL			, iAAM	},	/* D4 */
-    {  data1,   axImp, NOT_HLL			, iAAD	},	/* D5 */
-    {  none1,   none2, 0                        , iZERO	},	/* D6 */
-    { memImp,   axImp, NOT_HLL | B| IM_OPS      , iXLAT	},	/* D7 */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* D8 */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* D9 */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DA */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DB */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DC */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DD */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* DE */
-    {  escop,   none2, FLOAT_OP			, iESC	},	/* Df */
-    {  dispS,   none2, 0                        , iLOOPNE},	/* E0 */
-    {  dispS,   none2, 0                        , iLOOPE},	/* E1 */
-    {  dispS,   none2, 0                        , iLOOP	},	/* E2 */
-    {  dispS,   none2, 0                        , iJCXZ	},	/* E3 */
-    {  data1,   axImp, NOT_HLL | B|NO_SRC       , iIN	},	/* E4 */
-    {  data1,   axImp, NOT_HLL | NO_SRC         , iIN	},	/* E5 */
-    {  data1,   axImp, NOT_HLL | B|NO_SRC       , iOUT	},	/* E6 */
-    {  data1,   axImp, NOT_HLL | NO_SRC         , iOUT	},	/* E7 */
-    {  dispN,   none2, 0                        , iCALL	},	/* E8 */
-    {  dispN,   none2, 0                        , iJMP	},	/* E9 */
-    {  dispF,   none2, 0                        , iJMPF	},	/* EA */
-    {  dispS,   none2, 0                        , iJMP	},	/* EB */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iIN	},	/* EC */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iIN	},	/* ED */
-    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iOUT	},	/* EE */
-    {  none1,   axImp, NOT_HLL | NO_SRC         , iOUT	},	/* EF */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iLOCK	},	/* F0 */
-    {  none1,   none2, 0                        , iZERO	},	/* F1 */
-    { prefix,   none2, 0                        , iREPNE},	/* F2 */
-    { prefix,   none2, 0                        , iREPE	},	/* F3 */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iHLT	},	/* F4 */
-    {  none1,   none2, NO_OPS                   , iCMC	},	/* F5 */
-    {  arith,   none1, B                        , iZERO	},	/* F6 */
-    {  arith,   none1, NSP			, iZERO	},	/* F7 */
-    {  none1,   none2, NO_OPS                   , iCLC	},	/* F8 */
-    {  none1,   none2, NO_OPS                   , iSTC	},	/* F9 */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iCLI	},	/* FA */
-    {  none1,   none2, NOT_HLL | NO_OPS         , iSTI	},	/* FB */
-    {  none1,   none2, NO_OPS                   , iCLD	},	/* FC */
-    {  none1,   none2, NO_OPS                   , iSTD	},	/* FD */
-    {  trans,   none1, B                        , iZERO	},	/* FE */
-    {  trans,   none1, NSP                      , iZERO	}	/* FF */
+    {  regop,   none2, 0                        , iINC  },  /* 43 */
+    {  regop,   none2, NOT_HLL                  , iINC  },  /* 44 */
+    {  regop,   none2, 0                        , iINC  },  /* 45 */
+    {  regop,   none2, 0                        , iINC  },  /* 46 */
+    {  regop,   none2, 0                        , iINC  },  /* 47 */
+    {  regop,   none2, 0                        , iDEC  },  /* 48 */
+    {  regop,   none2, 0                        , iDEC  },  /* 49 */
+    {  regop,   none2, 0                        , iDEC  },  /* 4A */
+    {  regop,   none2, 0                        , iDEC  },  /* 4B */
+    {  regop,   none2, NOT_HLL                  , iDEC  },  /* 4C */
+    {  regop,   none2, 0                        , iDEC  },  /* 4D */
+    {  regop,   none2, 0                        , iDEC  },  /* 4E */
+    {  regop,   none2, 0                        , iDEC  },  /* 4F */
+    {  regop,   none2, NO_SRC                   , iPUSH },  /* 50 */
+    {  regop,   none2, NO_SRC                   , iPUSH },  /* 51 */
+    {  regop,   none2, NO_SRC                   , iPUSH },  /* 52 */
+    {  regop,   none2, NO_SRC                   , iPUSH },  /* 53 */
+    {  regop,   none2, NOT_HLL | NO_SRC         , iPUSH },  /* 54 */
+    {  regop,   none2, NO_SRC                   , iPUSH },  /* 55 */
+    {  regop,   none2, NO_SRC                   , iPUSH },  /* 56 */
+    {  regop,   none2, NO_SRC                   , iPUSH },  /* 57 */
+    {  regop,   none2, NO_SRC                   , iPOP  },  /* 58 */
+    {  regop,   none2, NO_SRC                   , iPOP  },  /* 59 */
+    {  regop,   none2, NO_SRC                   , iPOP  },  /* 5A */
+    {  regop,   none2, NO_SRC                   , iPOP  },  /* 5B */
+    {  regop,   none2, NOT_HLL | NO_SRC         , iPOP  },  /* 5C */
+    {  regop,   none2, NO_SRC                   , iPOP  },  /* 5D */
+    {  regop,   none2, NO_SRC                   , iPOP  },  /* 5E */
+    {  regop,   none2, NO_SRC                   , iPOP  },  /* 5F */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHA},  /* 60 */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iPOPA },  /* 61 */
+    { memOnly,  modrm, TO_REG | NSP             , iBOUND},  /* 62 */
+    {  none1,   none2, OP386                    , iZERO },  /* 63 */
+    {  none1,   none2, OP386                    , iZERO },  /* 64 */
+    {  none1,   none2, OP386                    , iZERO },  /* 65 */
+    {  none1,   none2, OP386                    , iZERO },  /* 66 */
+    {  none1,   none2, OP386                    , iZERO },  /* 67 */
+    {  data2,   none2, NO_SRC                   , iPUSH },  /* 68 */
+    {  modrm,   data2, TO_REG | NSP             , iIMUL },  /* 69 */
+    {  data1,   none2, S_EXT | NO_SRC           , iPUSH },  /* 6A */
+    {  modrm,   data1, TO_REG | NSP | S_EXT     , iIMUL },  /* 6B */
+    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iINS  },  /* 6C */
+    {  strop,  memImp, NOT_HLL | IM_OPS         , iINS  },  /* 6D */
+    {  strop,  memImp, NOT_HLL | B|IM_OPS       , iOUTS },  /* 6E */
+    {  strop,  memImp, NOT_HLL | IM_OPS         , iOUTS },  /* 6F */
+    {  dispS,   none2, NOT_HLL                  , iJO   },  /* 70 */
+    {  dispS,   none2, NOT_HLL                  , iJNO  },  /* 71 */
+    {  dispS,   none2, 0                        , iJB   },  /* 72 */
+    {  dispS,   none2, 0                        , iJAE  },  /* 73 */
+    {  dispS,   none2, 0                        , iJE   },  /* 74 */
+    {  dispS,   none2, 0                        , iJNE  },  /* 75 */
+    {  dispS,   none2, 0                        , iJBE  },  /* 76 */
+    {  dispS,   none2, 0                        , iJA   },  /* 77 */
+    {  dispS,   none2, 0                        , iJS   },  /* 78 */
+    {  dispS,   none2, 0                        , iJNS  },  /* 79 */
+    {  dispS,   none2, NOT_HLL                  , iJP   },  /* 7A */
+    {  dispS,   none2, NOT_HLL                  , iJNP  },  /* 7B */
+    {  dispS,   none2, 0                        , iJL   },  /* 7C */
+    {  dispS,   none2, 0                        , iJGE  },  /* 7D */
+    {  dispS,   none2, 0                        , iJLE  },  /* 7E */
+    {  dispS,   none2, 0                        , iJG   },  /* 7F */
+    {  immed,   data1, B                        , iZERO },  /* 80 */
+    {  immed,   data2, NSP                      , iZERO },  /* 81 */
+    {  immed,   data1, B                        , iZERO },  /* 82 */ /* ?? */
+    {  immed,   data1, NSP | S_EXT              , iZERO },  /* 83 */
+    {  modrm,   none2, TO_REG | B               , iTEST },  /* 84 */
+    {  modrm,   none2, TO_REG | NSP             , iTEST },  /* 85 */
+    {  modrm,   none2, TO_REG | B               , iXCHG },  /* 86 */
+    {  modrm,   none2, TO_REG | NSP             , iXCHG },  /* 87 */
+    {  modrm,   none2, B                        , iMOV  },  /* 88 */
+    {  modrm,   none2, 0                        , iMOV  },  /* 89 */
+    {  modrm,   none2, TO_REG | B               , iMOV  },  /* 8A */
+    {  modrm,   none2, TO_REG                   , iMOV  },  /* 8B */
+    {  segrm,   none2, NSP                      , iMOV  },  /* 8C */
+    { memOnly,  modrm, TO_REG | NSP             , iLEA  },  /* 8D */
+    {  segrm,   none2, TO_REG | NSP             , iMOV  },  /* 8E */
+    { memReg0,  none2, NO_SRC                   , iPOP  },  /* 8F */
+    {   none1,  none2, NO_OPS                   , iNOP  },  /* 90 */
+    {  regop,   axImp, 0                        , iXCHG },  /* 91 */
+    {  regop,   axImp, 0                        , iXCHG },  /* 92 */
+    {  regop,   axImp, 0                        , iXCHG },  /* 93 */
+    {  regop,   axImp, NOT_HLL                  , iXCHG },  /* 94 */
+    {  regop,   axImp, 0                        , iXCHG },  /* 95 */
+    {  regop,   axImp, 0                        , iXCHG },  /* 96 */
+    {  regop,   axImp, 0                        , iXCHG },  /* 97 */
+    {  alImp,   axImp, SRC_B | S_EXT            , iSIGNEX}, /* 98 */
+    {axSrcIm,   axImp, IM_DST | S_EXT           , iSIGNEX}, /* 99 */
+    {  dispF,   none2, TO_REG                   , iCALLF }, /* 9A */ // TO_REG set to use SRC when processing setAddress
+    {  none1,   none2, FLOAT_OP| NO_OPS         , iWAIT },  /* 9B */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iPUSHF},  /* 9C */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iPOPF },  /* 9D */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iSAHF },  /* 9E */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iLAHF },  /* 9F */
+    {  dispM,   axImp, B                        , iMOV  },  /* A0 */
+    {  dispM,   axImp, 0                        , iMOV  },  /* A1 */
+    {  dispM,   axImp, TO_REG | B               , iMOV  },  /* A2 */
+    {  dispM,   axImp, TO_REG                   , iMOV  },  /* A3 */
+    {  strop,  memImp, B | IM_OPS               , iMOVS },  /* A4 */
+    {  strop,  memImp, IM_OPS                   , iMOVS },  /* A5 */
+    {  strop,  memImp, B | IM_OPS               , iCMPS },  /* A6 */
+    {  strop,  memImp, IM_OPS                   , iCMPS },  /* A7 */
+    {  data1,   axImp, B                        , iTEST },  /* A8 */
+    {  data2,   axImp, 0                        , iTEST },  /* A9 */
+    {  strop,  memImp, B | IM_OPS               , iSTOS },  /* AA */
+    {  strop,  memImp, IM_OPS                   , iSTOS },  /* AB */
+    {  strop,  memImp, B | IM_OPS               , iLODS },  /* AC */
+    {  strop,  memImp, IM_OPS                   , iLODS },  /* AD */
+    {  strop,  memImp, B | IM_OPS               , iSCAS },  /* AE */
+    {  strop,  memImp, IM_OPS                   , iSCAS },  /* AF */
+    {  regop,   data1, B                        , iMOV  },  /* B0 */
+    {  regop,   data1, B                        , iMOV  },  /* B1 */
+    {  regop,   data1, B                        , iMOV  },  /* B2 */
+    {  regop,   data1, B                        , iMOV  },  /* B3 */
+    {  regop,   data1, B                        , iMOV  },  /* B4 */
+    {  regop,   data1, B                        , iMOV  },  /* B5 */
+    {  regop,   data1, B                        , iMOV  },  /* B6 */
+    {  regop,   data1, B                        , iMOV  },  /* B7 */
+    {  regop,   data2, 0                        , iMOV  },  /* B8 */
+    {  regop,   data2, 0                        , iMOV  },  /* B9 */
+    {  regop,   data2, 0                        , iMOV  },  /* BA */
+    {  regop,   data2, 0                        , iMOV  },  /* BB */
+    {  regop,   data2, NOT_HLL                  , iMOV  },  /* BC */
+    {  regop,   data2, 0                        , iMOV  },  /* BD */
+    {  regop,   data2, 0                        , iMOV  },  /* BE */
+    {  regop,   data2, 0                        , iMOV  },  /* BF */
+    {  shift,   data1, B                        , iZERO },  /* C0 */
+    {  shift,   data1, NSP | SRC_B              , iZERO },  /* C1 */
+    {  data2,   none2, 0                        , iRET  },  /* C2 */
+    {  none1,   none2, NO_OPS                   , iRET  },  /* C3 */
+    { memOnly,  modrm, TO_REG | NSP             , iLES  },  /* C4 */
+    { memOnly,  modrm, TO_REG | NSP             , iLDS  },  /* C5 */
+    { memReg0,  data1, B                        , iMOV  },  /* C6 */
+    { memReg0,  data2, 0                        , iMOV  },  /* C7 */
+    {  data2,   data1, 0                        , iENTER},  /* C8 */
+    {  none1,   none2, NO_OPS                   , iLEAVE},  /* C9 */
+    {  data2,   none2, 0                        , iRETF },  /* CA */
+    {  none1,   none2, NO_OPS                   , iRETF },  /* CB */
+    { const3,   none2, NOT_HLL                  , iINT  },  /* CC */
+    {  data1,checkInt, NOT_HLL                  , iINT  },  /* CD */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iINTO },  /* CE */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iIRET },  /* Cf */
+    {  shift,  const1, B                        , iZERO },  /* D0 */
+    {  shift,  const1, SRC_B                    , iZERO },  /* D1 */
+    {  shift,   none1, B                        , iZERO },  /* D2 */
+    {  shift,   none1, SRC_B                    , iZERO },  /* D3 */
+    {  data1,   axImp, NOT_HLL                  , iAAM  },  /* D4 */
+    {  data1,   axImp, NOT_HLL                  , iAAD  },  /* D5 */
+    {  none1,   none2, 0                        , iZERO },  /* D6 */
+    { memImp,   axImp, NOT_HLL | B| IM_OPS      , iXLAT },  /* D7 */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* D8 */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* D9 */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* DA */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* DB */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* DC */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* DD */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* DE */
+    {  escop,   none2, FLOAT_OP                 , iESC  },  /* Df */
+    {  dispS,   none2, 0                        , iLOOPNE}, /* E0 */
+    {  dispS,   none2, 0                        , iLOOPE},  /* E1 */
+    {  dispS,   none2, 0                        , iLOOP },  /* E2 */
+    {  dispS,   none2, 0                        , iJCXZ },  /* E3 */
+    {  data1,   axImp, NOT_HLL | B|NO_SRC       , iIN   },  /* E4 */
+    {  data1,   axImp, NOT_HLL | NO_SRC         , iIN   },  /* E5 */
+    {  data1,   axImp, NOT_HLL | B|NO_SRC       , iOUT  },  /* E6 */
+    {  data1,   axImp, NOT_HLL | NO_SRC         , iOUT  },  /* E7 */
+    {  dispN,   none2, 0                        , iCALL },  /* E8 */
+    {  dispN,   none2, 0                        , iJMP  },  /* E9 */
+    {  dispF,   none2, 0                        , iJMPF },  /* EA */
+    {  dispS,   none2, 0                        , iJMP  },  /* EB */
+    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iIN   },  /* EC */
+    {  none1,   axImp, NOT_HLL | NO_SRC         , iIN   },  /* ED */
+    {  none1,   axImp, NOT_HLL | B|NO_SRC       , iOUT  },  /* EE */
+    {  none1,   axImp, NOT_HLL | NO_SRC         , iOUT  },  /* EF */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iLOCK },  /* F0 */
+    {  none1,   none2, 0                        , iZERO },  /* F1 */
+    { prefix,   none2, 0                        , iREPNE},  /* F2 */
+    { prefix,   none2, 0                        , iREPE },  /* F3 */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iHLT  },  /* F4 */
+    {  none1,   none2, NO_OPS                   , iCMC  },  /* F5 */
+    {  arith,   none1, B                        , iZERO },  /* F6 */
+    {  arith,   none1, NSP                      , iZERO },  /* F7 */
+    {  none1,   none2, NO_OPS                   , iCLC  },  /* F8 */
+    {  none1,   none2, NO_OPS                   , iSTC  },  /* F9 */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iCLI  },  /* FA */
+    {  none1,   none2, NOT_HLL | NO_OPS         , iSTI  },  /* FB */
+    {  none1,   none2, NO_OPS                   , iCLD  },  /* FC */
+    {  none1,   none2, NO_OPS                   , iSTD  },  /* FD */
+    {  trans,   none1, B                        , iZERO },  /* FE */
+    {  trans,   none1, NSP                      , iZERO }   /* FF */
 } ;
 
 static uint16_t    SegPrefix, RepPrefix;
-static const uint8_t  *pInst;		/* Ptr. to current uint8_t of instruction */
-static ICODE * pIcode;		/* Ptr to Icode record filled in by scan() */
+static const uint8_t  *pInst;   /* Ptr. to current uint8_t of instruction */
+static ICODE * pIcode;          /* Ptr to Icode record filled in by scan() */
 
 
 static void decodeBranchTgt(x86_insn_t &insn)
@@ -338,7 +338,7 @@ static void decodeBranchTgt(x86_insn_t &insn)
     pIcode->ll()->replaceSrc((uint32_t)addr);
     pIcode->ll()->setFlags(I);
     //    PROG &prog(Project::get()->prog);
-    //    long off = (short)getWord();	/* Signed displacement */
+    //    long off = (short)getWord();  /* Signed displacement */
     //    assert(addr==(uint32_t)(off + (unsigned)(pInst - prog.image())));
 
 }
@@ -538,7 +538,7 @@ eErrorId scan(uint32_t ip, ICODE &p)
     int  op;
     p = ICODE();
     p.type = LOW_LEVEL;
-    p.ll()->label = ip;			/* ip is absolute offset into image*/
+    p.ll()->label = ip;         /* ip is absolute offset into image*/
     if (ip >= (uint32_t)prog.cbImage)
     {
         return (IP_OUT_OF_RANGE);
@@ -557,13 +557,13 @@ eErrorId scan(uint32_t ip, ICODE &p)
 
     do
     {
-        op = *pInst++;						/* First state - trivial   */
+        op = *pInst++;          /* First state - trivial   */
         /* Convert to Icode.opcode */
         p.ll()->set(stateTable[op].opcode,stateTable[op].flg & ICODEMASK);
-        (*stateTable[op].state1)(op);		/* Second state */
-        (*stateTable[op].state2)(op);		/* Third state  */
+        (*stateTable[op].state1)(op);       /* Second state */
+        (*stateTable[op].state2)(op);       /* Third state  */
 
-    } while (stateTable[op].state1 == prefix);	/* Loop if prefix */
+    } while (stateTable[op].state1 == prefix);  /* Loop if prefix */
     if(p.insn.group == x86_insn_t::insn_controlflow)
     {
         if(p.insn.x86_get_branch_target())
@@ -591,10 +591,9 @@ eErrorId scan(uint32_t ip, ICODE &p)
 static bool relocItem(const uint8_t *p)
 {
     PROG &prog(Project::get()->prog);
-    int		i;
-    uint32_t	off = p - prog.image();
+    uint32_t off = p - prog.image();
 
-    for (i = 0; i < prog.cReloc; i++)
+    for (int i = 0; i < prog.cReloc; i++)
         if (prog.relocTable[i] == off)
             return true;
     return false;
@@ -621,11 +620,11 @@ static int signex(uint8_t b)
     return ((b & 0x80)? (int)(0xFFFFFF00 | s): (int)s);
 }
 
-/****************************************************************************
- * setAddress - Updates the source or destination field for the current
- *	icode, based on fdst and the TO_REG flag.
- * 	Note: fdst == true is for the r/m part of the field (dest, unless TO_REG)
- *	      fdst == false is for reg part of the field
+/**
+ * \brief Updates the source or destination field for the current
+ *  icode, based on fdst and the TO_REG flag.
+ *  \note fdst == true is for the r/m part of the field (dest, unless TO_REG)
+ *        fdst == false is for reg part of the field
  ***************************************************************************/
 static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off)
 {
@@ -635,19 +634,19 @@ static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off
     /* Set segment.  A later procedure (lookupAddr in proclist.c) will
      * provide the value of this segment in the field segValue.
     */
-    if (seg)  		/* segment override */
+    if (seg)    /* segment override */
     {
         pm->seg = pm->segOver = (eReg)seg;
     }
     else
-    {	/* no override, check indexed register */
+    {   /* no override, check indexed register */
         if ((reg >= INDEX_BX_SI) and (reg == INDEX_BP_SI or reg == INDEX_BP_DI or reg == INDEX_BP))
         {
-            pm->seg = rSS;		/* indexed on bp */
+            pm->seg = rSS;  /* indexed on bp */
         }
         else
         {
-            pm->seg = rDS;		/* any other indexed reg */
+            pm->seg = rDS;  /* any other indexed reg */
         }
     }
 
@@ -658,7 +657,7 @@ static void setAddress(int i, bool fdst, uint16_t seg, int16_t reg, uint16_t off
         pm->regi = Machine_X86::subRegL(pm->regi);
     }
 
-    if (seg)	/* So we can catch invalid use of segment overrides */
+    if (seg)    /* So we can catch invalid use of segment overrides */
     {
         SegPrefix = 0;
     }
@@ -674,7 +673,7 @@ static void rm(int i)
     uint8_t rm  = *pInst++ & 7;
 
     switch (mod) {
-        case 0:		/* No disp unless rm == 6 */
+        case 0:     /* No disp unless rm == 6 */
             if (rm == 6) {
                 setAddress(i, true, SegPrefix, 0, getWord());
                 pIcode->ll()->setFlags(WORD_OFF);
@@ -683,16 +682,16 @@ static void rm(int i)
                 setAddress(i, true, SegPrefix, rm + INDEX_BX_SI, 0);
             break;
 
-        case 1:		/* 1 uint8_t disp */
+        case 1:     /* 1 uint8_t disp */
             setAddress(i, true, SegPrefix, rm+INDEX_BX_SI, (uint16_t)signex(*pInst++));
             break;
 
-        case 2:		/* 2 uint8_t disp */
+        case 2:     /* 2 uint8_t disp */
             setAddress(i, true, SegPrefix, rm + INDEX_BX_SI, getWord());
             pIcode->ll()->setFlags(WORD_OFF);
             break;
 
-        case 3:		/* reg */
+        case 3:     /* reg */
             setAddress(i, true, 0, rm + rAX, 0);
             break;
     }
@@ -718,7 +717,7 @@ static void modrm(int i)
  ****************************************************************************/
 static void segrm(int i)
 {
-    int	reg = REG(*pInst) + rES;
+    int reg = REG(*pInst) + rES;
 
     if (reg > rDS or (reg == rCS and (stateTable[i].flg & TO_REG)))
         pIcode->ll()->setOpcode((llIcode)0); // setCBW because it has that index
@@ -814,7 +813,7 @@ static void immed(int i)
     rm(i);
 
     if (pIcode->ll()->getOpcode() == iADD or pIcode->ll()->getOpcode() == iSUB)
-        pIcode->ll()->clrFlags(NOT_HLL);	/* Allow ADD/SUB SP, immed */
+        pIcode->ll()->clrFlags(NOT_HLL);    /* Allow ADD/SUB SP, immed */
 }
 
 
@@ -826,7 +825,7 @@ static void shift(int i)
     static llIcode shiftTable[8] =
     {
         (llIcode)iROL, (llIcode)iROR, (llIcode)iRCL, (llIcode)iRCR,
-        (llIcode)iSHL, (llIcode)iSHR, (llIcode)0,	 (llIcode)iSAR};
+        (llIcode)iSHL, (llIcode)iSHR, (llIcode)0,    (llIcode)iSAR};
 
     pIcode->ll()->setOpcode(shiftTable[REG(*pInst)]);
     rm(i);
@@ -884,7 +883,7 @@ static void arith(int i)
     else if (not (opcode == iNOT or opcode == iNEG))
     {
         pIcode->ll()->replaceSrc( pIcode->ll()->m_dst );
-        setAddress(i, true, 0, rAX, 0);			/* dst = AX  */
+        setAddress(i, true, 0, rAX, 0);     /* dst = AX  */
     }
     else if (opcode == iNEG or opcode == iNOT)
         pIcode->ll()->setFlags(NO_SRC);
@@ -919,7 +918,7 @@ static void data2(int )
          * but this field is being used as the number of bytes to allocate
          * on the stack.  The procedure level is stored in the immediate
          * field.  There is no source operand; therefore, the flag flg is
-         * set to NO_OPS.	*/
+         * set to NO_OPS.   */
     if (pIcode->ll()->getOpcode() == iENTER)
     {
         pIcode->ll()->m_dst.off = getWord();
@@ -946,7 +945,7 @@ static void dispN(int )
 {
 
     //PROG &prog(Project::get()->prog);
-    /*long off = (short)*/getWord();	/* Signed displacement */
+    /*long off = (short)*/getWord();    /* Signed displacement */
 
     /* Note: the result of the subtraction could be between 32k and 64k, and
         still be positive; it is an offset from prog.Image. So this must be
@@ -960,7 +959,7 @@ static void dispN(int )
  ***************************************************************************/
 static void dispS(int )
 {
-    /*long off =*/ signex(*pInst++); 	/* Signed displacement */
+    /*long off =*/ signex(*pInst++);    /* Signed displacement */
 
     //    decodeBranchTgt();
 }
@@ -994,7 +993,7 @@ static void prefix(int )
 inline void BumpOpcode(LLInst &ll)
 {
     llIcode ic((llIcode)ll.getOpcode());
-    ic = (llIcode)(((int)ic)+1);		// Bump this icode via the int type
+    ic = (llIcode)(((int)ic)+1);        // Bump this icode via the int type
     ll.setOpcode(ic);
 }
 

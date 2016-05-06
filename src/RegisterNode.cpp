@@ -63,7 +63,7 @@ QString RegisterNode::walkCondExpr(Function *pProc, int *numLoc) const
     QString o;
     assert(&pProc->localId==m_syms);
     ID *id = &pProc->localId.id_arr[regiIdx];
-    if (id->name[0] == '\0')	/* no name */
+    if (id->name[0] == '\0')    /* no name */
     {
         id->setLocalName(++(*numLoc));
         codeOut += QString("%1 %2; ").arg(TypeContainer::typeName(id->type)).arg(id->name);

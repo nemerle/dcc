@@ -37,12 +37,12 @@ int LIB_PatternCollector::readSyms(FILE *fl)
 {
     int i;
     int count = 0;
-    int	firstSym = 0;			/* First symbol this module */
+    int	firstSym = 0;	    	/* First symbol this module */
     uint8_t b, c, type;
     uint16_t w, len;
 
-    codeLNAMES = NONE;			/* Invalidate indexes for code segment */
-    codeSEGDEF = NONE;			/* Else won't be assigned */
+    codeLNAMES = NONE;	    	/* Invalidate indexes for code segment */
+    codeSEGDEF = NONE;	    	/* Else won't be assigned */
 
     offset = 0;                 /* For diagnostics, really */
 
@@ -61,7 +61,7 @@ int LIB_PatternCollector::readSyms(FILE *fl)
         switch (type)
         {
 
-        case 0x96:				/* LNAMES */
+        case 0x96:	    	    /* LNAMES */
             while (len > 1)
             {
                 readString(fl);
@@ -73,11 +73,11 @@ int LIB_PatternCollector::readSyms(FILE *fl)
                 }
                 len -= strlen((char *)buf)+1;
             }
-            b = readByte(fl);		/* Checksum */
+            b = readByte(fl);	    /* Checksum */
             break;
 
-        case 0x98:				/* Segment definition */
-            b = readByte(fl);		/* Segment attributes */
+        case 0x98:	    	    /* Segment definition */
+            b = readByte(fl);	    /* Segment attributes */
             if ((b & 0xE0) == 0)
             {
                 /* Alignment field is zero. Frame and offset follow */
@@ -85,25 +85,25 @@ int LIB_PatternCollector::readSyms(FILE *fl)
                 readByte(fl);
             }
 
-            w = readWord(fl);		/* Segment length */
+            w = readWord(fl);	    /* Segment length */
 
-            b = readByte(fl);		/* Segment name index */
+            b = readByte(fl);	    /* Segment name index */
             ++segnum;
 
-            b = readByte(fl);		/* Class name index */
+            b = readByte(fl);	    /* Class name index */
             if ((b == codeLNAMES) and (codeSEGDEF == NONE))
             {
                 /* This is the segment defining the code class */
                 codeSEGDEF = segnum;
             }
 
-            b = readByte(fl);		/* Overlay index */
-            b = readByte(fl);		/* Checksum */
+            b = readByte(fl);	    /* Overlay index */
+            b = readByte(fl);	    /* Checksum */
             break;
 
-        case 0x90:				/* PUBDEF: public symbols */
-            b = readByte(fl);		/* Base group */
-            c = readByte(fl);		/* Base segment */
+        case 0x90:	    	    /* PUBDEF: public symbols */
+            b = readByte(fl);	    /* Base group */
+            c = readByte(fl);	    /* Base segment */
             len -= 2;
             if (c == 0)
             {
@@ -113,8 +113,8 @@ int LIB_PatternCollector::readSyms(FILE *fl)
             while (len > 1)
             {
                 readString(fl);
-                w = readWord(fl);		/* Offset */
-                b = readByte(fl);		/* Type index */
+                w = readWord(fl);	    /* Offset */
+                b = readByte(fl);	    /* Type index */
                 if (c == codeSEGDEF)
                 {
                     char *p;
@@ -122,7 +122,7 @@ int LIB_PatternCollector::readSyms(FILE *fl)
                     p = (char *)buf;
                     if (buf[0] == '_')	/* Leading underscore? */
                     {
-                        p++; 			/* Yes, remove it*/
+                        p++; 	    	/* Yes, remove it*/
                     }
                     i = std::min(size_t(SYMLEN-1), strlen(p));
                     memcpy(entry.name, p, i);
@@ -134,21 +134,21 @@ int LIB_PatternCollector::readSyms(FILE *fl)
                 }
                 len -= strlen((char *)buf) + 1 + 2 + 1;
             }
-            b = readByte(fl);		/* Checksum */
+            b = readByte(fl);	    /* Checksum */
             break;
 
 
-        case 0xA0:				/* LEDATA */
+        case 0xA0:	    	    /* LEDATA */
         {
-            b = readByte(fl);		/* Segment index */
-            w = readWord(fl);		/* Offset */
+            b = readByte(fl);	    /* Segment index */
+            w = readWord(fl);	    /* Offset */
             len -= 3;
             /*printf("LEDATA seg %d off %02X len %Xh, looking for %d\n", b, w, len-1, codeSEGDEF);//*/
 
             if (b != codeSEGDEF)
             {
                 readNN(len,fl);	/* Skip the data */
-                break;			/* Next record */
+                break;	    	/* Next record */
             }
 
 
@@ -160,12 +160,12 @@ int LIB_PatternCollector::readSyms(FILE *fl)
             offset += len-1;
             maxLeData = std::max<uint16_t>(maxLeData, w+len-1);
 
-            readByte(fl);				/* Checksum */
+            readByte(fl);	    	    /* Checksum */
             break;
         }
 
         default:
-            readNN(len,fl);			/* Just skip the lot */
+            readNN(len,fl);	    	/* Just skip the lot */
 
             if (type == 0x8A)	/* Mod end */
             {
@@ -176,7 +176,7 @@ int LIB_PatternCollector::readSyms(FILE *fl)
                     uint16_t off = keys[i].offset;
                     if (off == (uint16_t)-1)
                     {
-                        continue;			/* Ignore if already done */
+                        continue;	    	/* Ignore if already done */
                     }
                     if (keys[i].offset > maxLeData)
                     {
@@ -213,14 +213,14 @@ int LIB_PatternCollector::readSyms(FILE *fl)
 
 
                 while (readByte(fl) == 0);
-                readNN(-1,fl);			/* Unget the last byte (= type) */
-                lnum = 0;			/* Reset index into lnames */
-                segnum = 0;			/* Reset index into snames */
+                readNN(-1,fl);	    	/* Unget the last byte (= type) */
+                lnum = 0;	    	/* Reset index into lnames */
+                segnum = 0;	    	/* Reset index into snames */
                 firstSym = count;	/* Remember index of first sym this mod */
                 codeLNAMES = NONE;	/* Invalidate indexes for code segment */
                 codeSEGDEF = NONE;
                 memset(leData, 0, maxLeData);	/* Clear out old junk */
-                maxLeData = 0;		/* No data read this module */
+                maxLeData = 0;	    /* No data read this module */
             }
 
             else if (type == 0xF1)

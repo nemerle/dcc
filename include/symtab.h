@@ -21,10 +21,10 @@ struct TypeContainer;
 /* * * * * * * * * * * * * * * * * */
 struct SymbolCommon
 {
-    QString     name;   /* New name for this variable/symbol/argument */
-    int         size;   /* Size/maximum size                */
+    QString     name;       /* New name for this variable/symbol/argument */
+    int         size;       /* Size/maximum size            */
     hlType      type;       /* probable type                */
-    eDuVal      duVal;      /* DEF, USE, VAL    						*/
+    eDuVal      duVal;      /* DEF, USE, VAL                */
     SymbolCommon() : size(0),type(TYPE_UNKNOWN)
     {}
 };
@@ -42,13 +42,13 @@ struct SYM : public SymbolCommon
 struct STKSYM : public SymbolCommon
 {
     typedef int16_t tLabel;
-    Expr	*   actual=0;       /* Expression tree of actual parameter 		*/
-    AstIdent *  regs=0;         /* For register arguments only				*/
+    Expr *      actual=0;       /* Expression tree of actual parameter      */
+    AstIdent *  regs=0;         /* For register arguments only              */
     tLabel      label=0;        /* Immediate off from BP (+:args, -:params) */
     uint8_t     regOff=0;       /* Offset is a register (e.g. SI, DI)       */
-    bool        hasMacro=false;	/* This type needs a macro					*/
-    QString     macro;          /* Macro name								*/
-    bool        invalid=false;	/* Boolean: invalid entry in formal arg list*/
+    bool        hasMacro=false; /* This type needs a macro                  */
+    QString     macro;          /* Macro name                               */
+    bool        invalid=false;  /* Boolean: invalid entry in formal arg list*/
     int         arrayMembers=1; // for local variables if >1 marks this stack symbol as an array
     void setArgName(int i)
     {
@@ -105,9 +105,9 @@ struct SYMTABLE
 enum tableType                     /* The table types */
 {
     Label=0,                        /* The label table */
-    Comment                        /* The comment table */
+    Comment,                        /* The comment table */
+    NUM_TABLE_TYPES /* Number of entries: must be last */
 };
-constexpr int NUM_TABLE_TYPES = int(Comment)+1; /* Number of entries: must be last */
 
 void    createSymTables(void);
 void    destroySymTables(void);

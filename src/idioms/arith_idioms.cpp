@@ -80,17 +80,17 @@ int Idiom6::action()
 /*****************************************************************************
  * idiom 18: Post-increment or post-decrement in a conditional jump
  * Used
- *	0	MOV  reg, var (including register variables)
- *	1	INC var	or DEC var <------------------------- input point
- *	2	CMP  var, Y
- *	3	JX   label
- *		=> HLI_JCOND (var++ X Y)
- *		Eg:		MOV  ax, si
- *				INC  si
- *				CMP  ax, 8
- *				JL   labX
- *			=>  HLI_JCOND (si++ < 8)
- * 		Found in Borland Turbo C.  Intrinsic to C languages.
+ *  0   MOV  reg, var (including register variables)
+ *  1   INC var or DEC var <------------------------- input point
+ *  2   CMP  var, Y
+ *  3   JX   label
+ *      => HLI_JCOND (var++ X Y)
+ *      Eg:     MOV  ax, si
+ *              INC  si
+ *              CMP  ax, 8
+ *              JL   labX
+ *          =>  HLI_JCOND (si++ < 8)
+ *      Found in Borland Turbo C.  Intrinsic to C languages.
  ****************************************************************************/
 bool Idiom18::match(iICODE picode)
 {
@@ -106,7 +106,7 @@ bool Idiom18::match(iICODE picode)
     m_idiom_type=-1;
     m_is_dec = m_icodes[1]->ll()->match(iDEC);
 
-    uint8_t regi;		/* register of the MOV */
+    uint8_t regi;       /* register of the MOV */
     if(not m_icodes[0]->ll()->matchWithRegDst(iMOV) )
         return false;
     regi = m_icodes[0]->ll()->m_dst.regi;
@@ -115,12 +115,12 @@ bool Idiom18::match(iICODE picode)
         return false;
     // Simple matching finished, select apropriate matcher based on dst type
     /* Get variable */
-    if (m_icodes[1]->ll()->m_dst.regi == 0)	/* global variable */
+    if (m_icodes[1]->ll()->m_dst.regi == 0) /* global variable */
     {
         /* not supported yet */
         m_idiom_type = 0;
     }
-    else if ( m_icodes[1]->ll()->m_dst.isReg() )	/* register */
+    else if ( m_icodes[1]->ll()->m_dst.isReg() )    /* register */
     {
         m_idiom_type = 1;
 //        if ((m_icodes[1]->ll()->dst.regi == rSI) and (m_func->flg & SI_REGVAR))
@@ -128,9 +128,9 @@ bool Idiom18::match(iICODE picode)
 //        else if ((m_icodes[1]->ll()->dst.regi == rDI) and (m_func->flg & DI_REGVAR))
 //            m_idiom_type = 1;
     }
-    else if (m_icodes[1]->ll()->m_dst.off)		/* local variable */
+    else if (m_icodes[1]->ll()->m_dst.off)      /* local variable */
         m_idiom_type = 2;
-    else		/* indexed */
+    else        /* indexed */
     {
         m_idiom_type=3;
         /* not supported yet */
@@ -187,13 +187,13 @@ int Idiom18::action() // action length
 
 /*****************************************************************************
  * idiom 19: pre-increment or pre-decrement in conditional jump, comparing against 0.
- *		[INC | DEC] var (including register vars)
- *		JX	lab	JX  lab
- *		=>  HLI_JCOND (++var X 0) or HLI_JCOND (--var X 0)
- *		Eg: INC [bp+4]
+ *      [INC | DEC] var (including register vars)
+ *      JX  lab JX  lab
+ *      =>  HLI_JCOND (++var X 0) or HLI_JCOND (--var X 0)
+ *      Eg: INC [bp+4]
  *                  JG  lab2
- *			=> HLI_JCOND (++[bp+4] > 0)
- *		Found in Borland Turbo C.  Intrinsic to C language.
+ *          => HLI_JCOND (++[bp+4] > 0)
+ *      Found in Borland Turbo C.  Intrinsic to C language.
  ****************************************************************************/
 bool Idiom19::match(iICODE picode)
 {
@@ -206,7 +206,7 @@ bool Idiom19::match(iICODE picode)
     m_is_dec = m_icodes[0]->ll()->match(iDEC);
     if ( not m_icodes[1]->ll()->conditionalJump() )
         return false;
-    if (m_icodes[0]->ll()->m_dst.regi == 0)	/* global variable */
+    if (m_icodes[0]->ll()->m_dst.regi == 0) /* global variable */
         /* not supported yet */ ;
     else if ( m_icodes[0]->ll()->m_dst.isReg() ) /* register */
     {
@@ -214,11 +214,11 @@ bool Idiom19::match(iICODE picode)
         //            ((picode->ll()->dst.regi == rDI) and (pproc->flg & DI_REGVAR)))
         return true;
     }
-    else if (m_icodes[0]->ll()->m_dst.off)		/* stack variable */
+    else if (m_icodes[0]->ll()->m_dst.off)      /* stack variable */
     {
         return true;
     }
-    else	/* indexed */
+    else    /* indexed */
     {
         fprintf(stderr,"idiom19 : Untested type [indexed]\n");
         return true;
@@ -241,23 +241,23 @@ int Idiom19::action()
 
 /*****************************************************************************
  * idiom20: Pre increment/decrement in conditional expression (compares
- *			against a register, variable or constant different than 0).
- *		INC var			or DEC var (including register vars)
- *		MOV reg, var	   MOV reg, var
- *		CMP reg, Y		   CMP reg, Y
- *		JX  lab			   JX  lab
- *		=> HLI_JCOND (++var X Y) or HLI_JCOND (--var X Y)
- *		Eg: INC si	(si is a register variable)
- *			MOV ax, si
- *			CMP ax, 2
- *			JL	lab4
- *			=> HLI_JCOND (++si < 2)
- *		Found in Turbo C.  Intrinsic to C language.
+ *          against a register, variable or constant different than 0).
+ *      INC var         or DEC var (including register vars)
+ *      MOV reg, var       MOV reg, var
+ *      CMP reg, Y         CMP reg, Y
+ *      JX  lab            JX  lab
+ *      => HLI_JCOND (++var X Y) or HLI_JCOND (--var X Y)
+ *      Eg: INC si  (si is a register variable)
+ *          MOV ax, si
+ *          CMP ax, 2
+ *          JL  lab4
+ *          => HLI_JCOND (++si < 2)
+ *      Found in Turbo C.  Intrinsic to C language.
  ****************************************************************************/
 bool Idiom20::match(iICODE picode)
 {
-    uint8_t type = 0;	/* type of variable: 1 = reg-var, 2 = local */
-    uint8_t regi;		/* register of the MOV */
+    uint8_t type = 0;   /* type of variable: 1 = reg-var, 2 = local */
+    uint8_t regi;       /* register of the MOV */
     if(std::distance(picode,m_end)<4)
         return false;
     for(int i=0; i<4; ++i)
@@ -270,11 +270,11 @@ bool Idiom20::match(iICODE picode)
 
     const LLOperand &ll_dest(m_icodes[0]->ll()->m_dst);
     /* Get variable */
-    if (ll_dest.regi == 0)	/* global variable */
+    if (ll_dest.regi == 0)  /* global variable */
     {
         /* not supported yet */ ;
     }
-    else if ( ll_dest.isReg() )	/* register */
+    else if ( ll_dest.isReg() ) /* register */
     {
         type = 1;
 //        if ((ll_dest.regi == rSI) and (m_func->flg & SI_REGVAR))
@@ -282,9 +282,9 @@ bool Idiom20::match(iICODE picode)
 //        else if ((ll_dest.regi == rDI) and (m_func->flg & DI_REGVAR))
 //            type = 1;
     }
-    else if (ll_dest.off)		/* local variable */
+    else if (ll_dest.off)       /* local variable */
         type = 2;
-    else		/* indexed */
+    else        /* indexed */
     {
         printf("idiom20 : Untested type [indexed]\n");
         type = 3;

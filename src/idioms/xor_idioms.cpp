@@ -7,16 +7,16 @@ using namespace std;
 
 /*****************************************************************************
  * idiom21 - Assign long kte with high part zero
- *		XOR regH, regH
- *		MOV regL, kte
- *		=> regH:regL = kte
- *		Eg: XOR dx, dx
- *			MOV ax, 3
- *			=> dx:ax = 3
- *		Note: only the following valid combinations are available:
- *				dx:ax
- *				cx:bx
- *		Found in Borland Turbo C code.
+ *	    XOR regH, regH
+ *	    MOV regL, kte
+ *	    => regH:regL = kte
+ *	    Eg: XOR dx, dx
+ *	    	MOV ax, 3
+ *	    	=> dx:ax = 3
+ *	    Note: only the following valid combinations are available:
+ *	    	    dx:ax
+ *	    	    cx:bx
+ *	    Found in Borland Turbo C code.
  ****************************************************************************/
 bool Idiom21::match (iICODE picode)
 {
@@ -48,7 +48,7 @@ int Idiom21::action()
     lhs = AstIdent::Long (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, *m_icodes[1]->ll());
     rhs = new Constant(m_icodes[1]->ll()->src().getImm2(), 4);
     m_icodes[0]->setAsgn(lhs, rhs);
-    m_icodes[0]->du.use.reset();		/* clear register used in iXOR */
+    m_icodes[0]->du.use.reset();	    /* clear register used in iXOR */
     m_icodes[1]->invalidate();
     return 2;
 }
@@ -103,11 +103,11 @@ int Idiom7::action()
  *      Eg:     OR  ax, ax
  *              JNE labX
  *      => CMP reg 0
- *		   JNE labX
- *		This instruction is NOT converted into the equivalent high-level
- *		instruction "HLI_JCOND (reg != 0) labX" because we do not know yet if
- *		it forms part of a long register conditional test.  It is therefore
- *		modified to simplify the analysis.
+ *	       JNE labX
+ *	    This instruction is NOT converted into the equivalent high-level
+ *	    instruction "HLI_JCOND (reg != 0) labX" because we do not know yet if
+ *	    it forms part of a long register conditional test.  It is therefore
+ *	    modified to simplify the analysis.
  *      Found in Borland Turbo C.
  ****************************************************************************/
 bool Idiom10::match(iICODE pIcode)

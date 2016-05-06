@@ -36,32 +36,32 @@ struct IDX_ARRAY : public std::vector<iICODE>
 
 enum frameType
 {
-    STK_FRAME,			/* For stack vars			*/
-    REG_FRAME,			/* For register variables 	*/
-    GLB_FRAME			/* For globals				*/
+    STK_FRAME,          /* For stack vars           */
+    REG_FRAME,          /* For register variables   */
+    GLB_FRAME           /* For globals              */
 };
 
 struct BWGLB_TYPE
 {
-    int16_t	seg;			/*   segment value							 */
-    int16_t	off;			/*   offset									 */
-    eReg 	regi;			/*   optional indexed register				 */
+    int16_t	seg;	    	/*   segment value	    	    	    	 */
+    int16_t	off;	    	/*   offset	    	    	    	    	 */
+    eReg 	regi;	    	/*   optional indexed register	    	     */
 } ;
 
 
 /* For TYPE_LONG_(UN)SIGN on the stack	     */
 struct LONG_STKID_TYPE
 {
-    int		offH;	/*   high offset from BP					 */
-    int		offL;	/*   low offset from BP						 */
+    int	    offH;	/*   high offset from BP	    	    	 */
+    int	    offL;	/*   low offset from BP	    	    	     */
     LONG_STKID_TYPE(int h,int l) : offH(h),offL(l) {}
 };
-/* For TYPE_LONG_(UN)SIGN registers			 */
+/* For TYPE_LONG_(UN)SIGN registers	    	 */
 struct LONGID_TYPE
 {
 protected:
-    eReg	m_h;		/*   high register							 */
-    eReg	m_l;		/*   low register							 */
+    eReg	m_h;	    /*   high register	    	    	    	 */
+    eReg	m_l;	    /*   low register	    	    	    	 */
 public:
     void set(eReg highpart,eReg lowpart)
     {
@@ -75,7 +75,7 @@ public:
     LONGID_TYPE(eReg h,eReg l) : m_h(h),m_l(l) {}
 };
 
-struct LONGGLB_TYPE /* For TYPE_LONG_(UN)SIGN globals			 */
+struct LONGGLB_TYPE /* For TYPE_LONG_(UN)SIGN globals	    	 */
 {
     int16_t	seg;	/*   segment value                                              */
     int16_t	offH;	/*   offset high                                                */
@@ -93,7 +93,7 @@ struct LONGGLB_TYPE /* For TYPE_LONG_(UN)SIGN globals			 */
 struct ID
 {
 protected:
-    LONGID_TYPE     m_longId; /* For TYPE_LONG_(UN)SIGN registers			 */
+    LONGID_TYPE     m_longId; /* For TYPE_LONG_(UN)SIGN registers	    	 */
 public:
     hlType              type;       /* Probable type                            */
     bool                illegal;    /* Boolean: not a valid field any more      */
@@ -105,16 +105,16 @@ public:
     QString             name;       /* Identifier's name                        */
     union ID_UNION {                         /* Different types of identifiers           */
         LONG_STKID_TYPE	longStkId;  /* For TYPE_LONG_(UN)SIGN on the stack */
-        eReg		regi;       /* For TYPE_BYTE(WORD)_(UN)SIGN registers   */
+        eReg	    regi;       /* For TYPE_BYTE(WORD)_(UN)SIGN registers   */
         struct {                /* For TYPE_BYTE(WORD)_(UN)SIGN on the stack */
             uint8_t	regOff;     /*    register offset (if any)              */
-            int		off;        /*    offset from BP            		*/
+            int	    off;        /*    offset from BP            	    */
         } bwId;
-        BWGLB_TYPE	bwGlb;	/* For TYPE_BYTE(uint16_t)_(UN)SIGN globals		 */
+        BWGLB_TYPE	bwGlb;	/* For TYPE_BYTE(uint16_t)_(UN)SIGN globals	     */
         LONGGLB_TYPE    longGlb;
-        struct {			/* For TYPE_LONG_(UN)SIGN constants                     */
-            uint32_t	h;		/*	 high uint16_t								 */
-            uint32_t 	l;		/*	 low uint16_t								 */
+        struct {	    	/* For TYPE_LONG_(UN)SIGN constants                     */
+            uint32_t	h;	    /*	 high uint16_t	    	    	    	     */
+            uint32_t 	l;	    /*	 low uint16_t	    	    	    	     */
         } longKte;
         ID_UNION() { /*new (&longStkId) LONG_STKID_TYPE();*/}
     } id;

@@ -77,18 +77,17 @@ extern STATS stats; /* Icode statistics */
 void    udm(void);                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
 BB *    newBB(BB *, int, int, uint8_t, int, Function *);    /* graph.c      */
-void    BackEnd(CALL_GRAPH *);              /* backend.c    */
+void    BackEnd(CALL_GRAPH *);                              /* backend.c    */
 extern char   *cChar(uint8_t c);                            /* backend.c    */
 eErrorId scan(uint32_t ip, ICODE &p);                       /* scanner.c    */
 void    parse (CALL_GRAPH * *);                             /* parser.c     */
 
 extern int     strSize (const uint8_t *, char);             /* parser.c     */
-//void    disassem(int pass, Function * pProc);             /* disassem.c   */
 void    interactDis(const PtrFunction &, int initIC);       /* disassem.c   */
 bool    JmpInst(llIcode opcode);                            /* idioms.c     */
 queue::iterator  appendQueue(queue &Q, BB *node);           /* reducible.c  */
 
-bool    SetupLibCheck(QString pattern_file_id);                                /* chklib.c     */
+bool    SetupLibCheck(QString pattern_file_id);             /* chklib.c     */
 void    CleanupLibCheck(void);                              /* chklib.c     */
 bool    LibCheck(Function &p);                              /* chklib.c     */
 

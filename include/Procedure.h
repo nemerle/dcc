@@ -52,23 +52,23 @@ private:
 /* Procedure FLAGS */
 enum PROC_FLAGS
 {
-    PROC_BADINST=0x00000100,/* Proc contains invalid or 386 instruction */
-    PROC_IJMP   =0x00000200,/* Proc incomplete due to indirect jmp	 	*/
-    PROC_ICALL  =0x00000400, /* Proc incomplete due to indirect call		*/
-    PROC_HLL    =0x00001000, /* Proc is likely to be from a HLL			*/
-    PROC_NEAR   =0x00010000, /* Proc exits with near return				*/
-    PROC_FAR    =0x00020000, /* Proc exits with far return				*/
-    GRAPH_IRRED =0x00100000, /* Proc generates an irreducible graph		*/
-    SI_REGVAR   =0x00200000, /* SI is used as a stack variable 			*/
-    DI_REGVAR   =0x00400000, /* DI is used as a stack variable 			*/
-    REG_ARGS    =0x01000000, /* Proc has registers as arguments			*/
-//    PROC_VARARG =0x02000000,	/* Proc has variable arguments				*/
-    PROC_OUTPUT =0x04000000, /* C for this proc has been output 			*/
-    PROC_RUNTIME=0x08000000, /* Proc is part of the runtime support		*/
-    PROC_ISLIB  =0x10000000, /* Proc is a library function				*/
-    PROC_ASM    =0x20000000, /* Proc is an intrinsic assembler routine   */
-    PROC_IS_HLL =0x40000000 /* Proc has HLL prolog code					*/
-//#define CALL_MASK    0xFFFF9FFF /* Masks off CALL_C and CALL_PASCAL		 	*/
+    PROC_BADINST=0x00000100,    /* Proc contains invalid or 386 instruction */
+    PROC_IJMP   =0x00000200,    /* Proc incomplete due to indirect jmp	 	*/
+    PROC_ICALL  =0x00000400,    /* Proc incomplete due to indirect call	    */
+    PROC_HLL    =0x00001000,    /* Proc is likely to be from a HLL	    	*/
+    PROC_NEAR   =0x00010000,    /* Proc exits with near return	    	    */
+    PROC_FAR    =0x00020000,    /* Proc exits with far return	    	    */
+    GRAPH_IRRED =0x00100000,    /* Proc generates an irreducible graph	    */
+    SI_REGVAR   =0x00200000,    /* SI is used as a stack variable 	    	*/
+    DI_REGVAR   =0x00400000,    /* DI is used as a stack variable 	    	*/
+    REG_ARGS    =0x01000000,    /* Proc has registers as arguments	    	*/
+//    PROC_VARARG =0x02000000,	/* Proc has variable arguments	    	    */
+    PROC_OUTPUT =0x04000000,    /* C for this proc has been output 	    	*/
+    PROC_RUNTIME=0x08000000,    /* Proc is part of the runtime support	    */
+    PROC_ISLIB  =0x10000000,    /* Proc is a library function	    	    */
+    PROC_ASM    =0x20000000,    /* Proc is an intrinsic assembler routine   */
+    PROC_IS_HLL =0x40000000     /* Proc has HLL prolog code	    	    	*/
+//#define CALL_MASK    0xFFFF9FFF /* Masks off CALL_C and CALL_PASCAL	     	*/
 };
 
 struct Type {
@@ -78,7 +78,7 @@ struct FunctionType : public Type
 {
     CConv *         m_call_conv;
     std::vector<Type> ContainedTys;
-    ID          retVal;    /* Return value - identifier    		 */
+    ID          retVal;    /* Return value - identifier    	     */
     bool m_vararg=false;
     unsigned 	getNumParams() const { return ContainedTys.size(); }
     bool isVarArg() const {return m_vararg;}
@@ -192,7 +192,7 @@ public:
     /* For interprocedural live analysis */
     LivenessSet     liveIn;	/* Registers used before defined                 */
     LivenessSet     liveOut;	/* Registers that may be used in successors	 */
-    bool            liveAnal;	/* Procedure has been analysed already		 */
+    bool            liveAnal;	/* Procedure has been analysed already	     */
 
     virtual ~Function() {
         delete type;

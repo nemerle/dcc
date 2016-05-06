@@ -2,7 +2,7 @@
 
 #include "LIB_PatternCollector.h"
 #include "TPL_PatternCollector.h"
-#include "perfhlib.h"		/* Symbol table prototypes */
+#include "perfhlib.h"	    /* Symbol table prototypes */
 #include "msvc_fixes.h"
 
 #include <QtCore/QCoreApplication>
@@ -20,9 +20,9 @@
 
 /* prototypes */
 
-void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll);		/* Save the info */
+void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll);	    /* Save the info */
 
-int	 numKeys;				/* Number of useful codeview symbols */
+int	 numKeys;	    	    /* Number of useful codeview symbols */
 
 
 static void printUsage(bool longusage) {
@@ -77,20 +77,20 @@ int main(int argc, char *argv[])
     srand(s);
 
     PerfectHash p_hash;
-    numKeys = collector->readSyms(srcfile);			/* Read the keys (symbols) */
+    numKeys = collector->readSyms(srcfile);	    	/* Read the keys (symbols) */
 
     printf("Num keys: %d; vertices: %d\n", numKeys, (int)(numKeys*C));
     /* Set the parameters for the hash table */
-    p_hash.setHashParams(   numKeys,					/* The number of symbols */
-                PATLEN,						/* The length of the pattern to be hashed */
-                256,						/* The character set of the pattern (0-FF) */
-                0,							/* Minimum pattern character value */
-                            numKeys*C);			/* C is the sparseness of the graph. See Czech,
+    p_hash.setHashParams(   numKeys,	    	    	/* The number of symbols */
+                PATLEN,	    	    	    /* The length of the pattern to be hashed */
+                256,	    	    	    /* The character set of the pattern (0-FF) */
+                0,	    	    	    	/* Minimum pattern character value */
+                            numKeys*C);	    	/* C is the sparseness of the graph. See Czech,
                                         Havas and Majewski for details */
 
     /* The following two functions are in perfhlib.c */
     p_hash.map(collector);     /* Perform the mapping. This will call getKey() repeatedly */
-    p_hash.assign();						/* Generate the function g */
+    p_hash.assign();	    	    	    /* Generate the function g */
 
     saveFile(f2,p_hash,collector);     /* Save the resultant information */
 
@@ -100,9 +100,9 @@ int main(int argc, char *argv[])
 }
 
 /*	*	*	*	*	*	*	*	*	*	*	*  *\
-*												*
-*		S a v e   t h e   s i g   f i l e		*
-*												*
+*	    	    	    	    	    	    *
+*	    S a v e   t h e   s i g   f i l e	    *
+*	    	    	    	    	    	    *
 \*	*	*	*	*	*	*	*	*	*	*	*  */
 
 
@@ -120,7 +120,7 @@ void writeFileShort(FILE *fl,uint16_t w)
     uint8_t b;
 
     b = (uint8_t)(w & 0xFF);
-    writeFile(fl,(char *)&b, 1);		/* Write a short little endian */
+    writeFile(fl,(char *)&b, 1);	    /* Write a short little endian */
     b = (uint8_t)(w>>8);
     writeFile(fl,(char *)&b, 1);
 }
@@ -130,14 +130,14 @@ void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll)
     int i, len;
     const uint16_t *pTable;
 
-    writeFile(fl,"dccs", 4);					/* Signature */
-    writeFileShort(fl,numKeys);				/* Number of keys */
+    writeFile(fl,"dccs", 4);	    	    	/* Signature */
+    writeFileShort(fl,numKeys);	    	    /* Number of keys */
     writeFileShort(fl,(short)(numKeys * C));	/* Number of vertices */
-    writeFileShort(fl,PATLEN);					/* Length of key part of entries */
-    writeFileShort(fl,SYMLEN);					/* Length of symbol part of entries */
+    writeFileShort(fl,PATLEN);	    	    	/* Length of key part of entries */
+    writeFileShort(fl,SYMLEN);	    	    	/* Length of symbol part of entries */
 
     /* Write out the tables T1 and T2, with their sig and byte lengths in front */
-    writeFile(fl,"T1", 2);						/* "Signature" */
+    writeFile(fl,"T1", 2);	    	    	    /* "Signature" */
     pTable = p_hash.readT1();
     len = PATLEN * 256;
     writeFileShort(fl,len * sizeof(uint16_t));
@@ -154,7 +154,7 @@ void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll)
     }
 
     /* Write out g[] */
-    writeFile(fl,"gg", 2);			  			/* "Signature" */
+    writeFile(fl,"gg", 2);	    	  	    	/* "Signature" */
     pTable = p_hash.readG();
     len = (short)(numKeys * C);
     writeFileShort(fl,len * sizeof(uint16_t));
@@ -164,7 +164,7 @@ void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll)
     }
 
     /* Now the hash table itself */
-    writeFile(fl,"ht ", 2);			  			/* "Signature" */
+    writeFile(fl,"ht ", 2);	    	  	    	/* "Signature" */
     writeFileShort(fl,numKeys * (SYMLEN + PATLEN + sizeof(uint16_t)));	/* byte len */
     for (i=0; i < numKeys; i++)
     {

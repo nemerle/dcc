@@ -20,10 +20,10 @@
 #include "ui/DccMainWindow.h"
 
 /* Global variables - extern to other modules */
-extern QString asm1_name, asm2_name;     /* Assembler output filenames     */
-extern SYMTAB  symtab;             /* Global symbol table      			  */
-extern STATS   stats;              /* cfg statistics       				  */
-extern OPTION  option;             /* Command line options     			  */
+extern QString asm1_name, asm2_name;    /* Assembler output filenames   */
+extern SYMTAB  symtab;                  /* Global symbol table          */
+extern STATS   stats;                   /* cfg statistics               */
+extern OPTION  option;                  /* Command line options         */
 
 static char *initargs(int argc, char *argv[]);
 static void displayTotalStats(void);

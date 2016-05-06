@@ -17,7 +17,7 @@
 
 typedef std::list<int> nodeList; /* dfsLast index to the node */
 
-#define ancestor(a,b)	((a->dfsLastNum < b->dfsLastNum) and (a->dfsFirstNum < b->dfsFirstNum))
+#define ancestor(a,b)   ((a->dfsLastNum < b->dfsLastNum) and (a->dfsFirstNum < b->dfsFirstNum))
 /* there is a path on the DFST from a to b if the a was first visited in a
  * dfs, and a was later visited than b when doing the last visit of each
  * node. */
@@ -69,7 +69,7 @@ void Function::findImmedDom ()
     for (size_t currIdx = 0; currIdx < numBBs; currIdx++)
     {
         currNode = m_dfsLast[currIdx];
-        if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
+        if (currNode->flg & INVALID_BB)    /* Do not process invalid BBs */
             continue;
         for (BB * inedge : currNode->inEdges)
         {
@@ -134,7 +134,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
 {
     int i, headDfsNum, intNodeType;
     nodeList loopNodes;
-    int immedDom,     		/* dfsLast index to immediate dominator */
+    int immedDom,               /* dfsLast index to immediate dominator */
         thenDfs, elseDfs;       /* dsfLast index for THEN and ELSE nodes */
     BB * pbb;
 
@@ -144,7 +144,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
     insertList (loopNodes, headDfsNum);
     for (i = headDfsNum + 1; i < latchNode->dfsLastNum; i++)
     {
-        if (pProc->m_dfsLast[i]->flg & INVALID_BB)	/* skip invalid BBs */
+        if (pProc->m_dfsLast[i]->flg & INVALID_BB)  /* skip invalid BBs */
             continue;
 
         immedDom = pProc->m_dfsLast[i]->immedDom;
@@ -192,7 +192,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                 head->loopFollow = latchNode->edges[THEN].BBptr->dfsLastNum;
             latchNode->back().ll()->setFlags(JX_LOOP);
         }
-    else	/* latch = 1-way */
+    else    /* latch = 1-way */
         if (latchNode->nodeType == LOOP_NODE)
         {
             head->loopType = eNodeHeaderType::REPEAT_TYPE;
@@ -228,7 +228,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                 pbb = pProc->m_dfsLast[pbb->immedDom];
             }
             if (pbb->dfsLastNum > head->dfsLastNum)
-                pProc->m_dfsLast[head->loopFollow]->loopHead = NO_NODE;	/*****/
+                pProc->m_dfsLast[head->loopFollow]->loopHead = NO_NODE; /*****/
             head->back().ll()->setFlags(JX_LOOP);
         }
         else
@@ -266,12 +266,12 @@ static void findNodesInInt (queue &intNodes, int level, interval *Ii)
 void Function::structLoops(derSeq *derivedG)
 {
     interval *Ii;
-    BB * intHead,      	/* interval header node         	*/
-            * pred,     /* predecessor node         		*/
+    BB * intHead,       /* interval header node             */
+            * pred,     /* predecessor node                 */
             * latchNode;/* latching node (in case of loops) */
-    size_t  level = 0;  /* derived sequence level       	*/
-    interval *initInt;  /* initial interval         		*/
-    queue intNodes;  	/* list of interval nodes       	*/
+    size_t  level = 0;  /* derived sequence level           */
+    interval *initInt;  /* initial interval                 */
+    queue intNodes;     /* list of interval nodes           */
 
     /* Structure loops */
     /* for all derived sequences Gi */
@@ -369,7 +369,7 @@ static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
  * has a case node.                         */
 void Function::structCases()
 {
-    int exitNode = NO_NODE;   	/* case exit node           */
+    int exitNode = NO_NODE; /* case exit node           */
     nodeList caseNodes;   /* temporary: list of nodes in case */
 
     /* Linear scan of the nodes in reverse dfsLast order, searching for
@@ -428,21 +428,21 @@ static void flagNodes (nodeList &l, int f, Function * pProc)
 /* Structures if statements */
 void Function::structIfs ()
 {
-    size_t followInEdges;			/* Largest # in-edges so far 			*/
-    int curr,    				/* Index for linear scan of nodes   	*/
-            /*desc,*/ 				/* Index for descendant         		*/
-            follow;  				/* Possible follow node 				*/
-    nodeList domDesc,    /* List of nodes dominated by curr  	*/
-            unresolved 	/* List of unresolved if nodes  		*/
+    size_t followInEdges;       /* Largest # in-edges so far            */
+    int curr,                   /* Index for linear scan of nodes       */
+            /*desc,*/           /* Index for descendant                 */
+            follow;             /* Possible follow node                 */
+    nodeList domDesc,           /* List of nodes dominated by curr      */
+            unresolved          /* List of unresolved if nodes          */
             ;
-    BB * currNode,    			/* Pointer to current node  			*/
+    BB * currNode,              /* Pointer to current node              */
             * pbb;
 
     /* Linear scan of nodes in reverse dfsLast order */
     for (curr = numBBs - 1; curr >= 0; curr--)
     {
         currNode = m_dfsLast[curr];
-        if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
+        if (currNode->flg & INVALID_BB)    /* Do not process invalid BBs */
             continue;
 
         if ((currNode->nodeType == TWO_BRANCH) and (not currNode->back().ll()->testFlags(JX_LOOP)))

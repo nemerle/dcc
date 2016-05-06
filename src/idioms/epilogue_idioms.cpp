@@ -95,15 +95,15 @@ int Idiom2::action()
  *          RET(F) immed
  *          ==> pProc->cbParam = immed
  *              sets CALL_PASCAL flag
- *        - Second version: check for optional pop of stack vars
+ *      - Second version: check for optional pop of stack vars
  *          [POP DI]
  *          [POP SI]
  *          POP BP
  *          RET(F) [immed]
- *		  - Third version: pop stack vars
- *			[POP DI]
- *			[POP SI]
- *			RET(F) [immed]
+ *      - Third version: pop stack vars
+ *          [POP DI]
+ *          [POP SI]
+ *          RET(F) [immed]
  ****************************************************************************/
 bool Idiom4::match(iICODE pIcode)
 {

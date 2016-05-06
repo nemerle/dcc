@@ -67,15 +67,15 @@ int Idiom11::action()
 
 /*****************************************************************************
  * idiom 16: Bitwise negation
- *		NEG reg
- *		SBB reg, reg
- *		INC reg
- *		=> ASGN reg, !reg
- *		Eg:		NEG ax
- *				SBB ax, ax
- *				INC ax
- *			=> ax = !ax
- *		Found in Borland Turbo C when negating bitwise.
+ *	    NEG reg
+ *	    SBB reg, reg
+ *	    INC reg
+ *	    => ASGN reg, !reg
+ *	    Eg:	    NEG ax
+ *	    	    SBB ax, ax
+ *	    	    INC ax
+ *	    	=> ax = !ax
+ *	    Found in Borland Turbo C when negating bitwise.
  ****************************************************************************/
 bool Idiom16::match (iICODE picode)
 {

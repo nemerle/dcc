@@ -187,7 +187,7 @@ void Function::findIdioms()
             (pIcode++)->invalidate();
             break;
 
-        case iENTER:		/* ENTER is equivalent to init PUSH bp */
+        case iENTER:    /* ENTER is equivalent to init PUSH bp */
             if (pIcode == Icode.begin()) //ip == 0
             {
                 flg |= (PROC_HLL | PROC_IS_HLL);

@@ -21,7 +21,7 @@ static void displayMemMap(void);
 ***************************************************************************/
 void PROG::displayLoadInfo(void)
 {
-    int	i;
+    int i;
 
     printf("File type is %s\n", (fCOM)?"COM":"EXE");
 //    if (not fCOM) {
@@ -55,7 +55,7 @@ static void fill(int ip, char *bf)
 {
     PROG &prog(Project::get()->prog);
     static uint8_t type[4] = {'.', 'd', 'c', 'x'};
-    uint8_t	i;
+    uint8_t i;
 
     for (i = 0; i < 16; i++, ip++)
     {
@@ -73,7 +73,7 @@ static void displayMemMap(void)
 {
     PROG &prog(Project::get()->prog);
 
-    char	c, b1[33], b2[33], b3[33];
+    char    c, b1[33], b2[33], b3[33];
     uint8_t i;
     int ip = 0;
 
@@ -84,10 +84,10 @@ static void displayMemMap(void)
         printf("%06X %s\n", ip, b1);
         ip += 16;
         for (i = 3, c = b1[1]; i < 32 and c == b1[i]; i += 2)
-            ;		/* Check if all same */
+            ;   /* Check if all same */
         if (i > 32)
         {
-            fill(ip, b2);	/* Skip until next two are not same */
+            fill(ip, b2);   /* Skip until next two are not same */
             fill(ip+16, b3);
             if (not (strcmp(b1, b2) || strcmp(b1, b3)))
             {

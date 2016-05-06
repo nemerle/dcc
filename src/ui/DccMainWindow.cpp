@@ -23,8 +23,6 @@ DccMainWindow::DccMainWindow(QWidget *parent) :
     ui->statusbar->addPermanentWidget(new QLabel("Test"));
 
     g_IDCC = IDcc::get();
-    g_IDCC->BaseInit();
-    g_IDCC->Init(this);
 
     m_last_display  = nullptr;
     m_command_queue = new CommandQueueView(this);
@@ -78,7 +76,6 @@ void DccMainWindow::onNewFunction(PtrFunction f) {
 void DccMainWindow::onOptim()
 {
     Project::get()->processCommands();
-    g_IDCC->analysis_Once();
     emit functionListChanged();
     if(m_last_display==m_selected_func)
     {
@@ -87,8 +84,7 @@ void DccMainWindow::onOptim()
 }
 void DccMainWindow::onOptim10()
 {
-    for(int i=0; i<10; i++)
-        g_IDCC->analysis_Once();
+    Project::get()->processCommands(10);
     emit functionListChanged();
     if(m_last_display==m_selected_func)
     {

@@ -51,16 +51,16 @@ enum eNodeHeaderType
 
 /* Uninitialized values for certain fields */
 #define NO_NODE         MAX /* node has no associated node  */
-#define NO_DOM          MAX /* node has no dominator    	*/
-#define UN_INIT         MAX /* uninitialized variable   	*/
+#define NO_DOM          MAX /* node has no dominator        */
+#define UN_INIT         MAX /* uninitialized variable       */
 
 #define THEN            0   /* then edge            */
 #define ELSE            1   /* else edge            */
 
 /* Basic Block (BB) flags */
 
-#define INVALID_BB      0x0001		/* BB is not valid any more 		 */
-#define IS_LATCH_NODE	0x0002		/* BB is the latching node of a loop */
+#define INVALID_BB      0x0001      /* BB is not valid any more             */
+#define IS_LATCH_NODE   0x0002      /* BB is the latching node of a loop    */
 
 struct BB;
 /* Interval structure */

@@ -12,14 +12,14 @@ using namespace std;
  *      Eg:     MOV ax, di
  *              XOR dx, dx
  *      => MOV dx:ax, di
- *		Note: only the following combinations are allowed:
- *				dx:ax
- *				cx:bx
- *		this is to remove the possibility of making errors in situations
- *		like this:
- *			MOV dx, offH
- *			MOV ax, offL
- *			XOR	cx, cx
+ *	    Note: only the following combinations are allowed:
+ *	    	    dx:ax
+ *	    	    cx:bx
+ *	    this is to remove the possibility of making errors in situations
+ *	    like this:
+ *	    	MOV dx, offH
+ *	    	MOV ax, offL
+ *	    	XOR	cx, cx
  *      Found in Borland Turbo C, used for division of unsigned integer
  *      operands.
  ****************************************************************************/

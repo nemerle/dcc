@@ -11,9 +11,9 @@ using namespace std;
  *      Eg: CALL proc_X
  *          ADD  SP, 6
  *          =>  pProc->cbParam = immed
- *		Special case: when the call is at the end of the procedure,
- *					  sometimes the stack gets restored by a MOV sp, bp.
- *					  Need to flag the procedure in these cases.
+ *      Special case: when the call is at the end of the procedure,
+ *                    sometimes the stack gets restored by a MOV sp, bp.
+ *                    Need to flag the procedure in these cases.
  *  Used by compilers to restore the stack when invoking a procedure using
  *  the C calling convention.
  ****************************************************************************/

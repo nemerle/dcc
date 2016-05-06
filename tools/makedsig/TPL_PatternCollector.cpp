@@ -21,17 +21,17 @@ void TPL_PatternCollector::enterSym(FILE *f, const char *name, uint16_t pmapOffs
     /* Enter a symbol with given name */
     allocSym(count);
     strcpy(keys[count].name, name);
-    pm = pmap + pmapOffset;			/* Pointer to the 4 byte pmap structure */
+    pm = pmap + pmapOffset;	    	/* Pointer to the 4 byte pmap structure */
     fseek(f, unitBase+pm, SEEK_SET);/* Go there */
-    cm = readShort(f);				/* CSeg map offset */
-    codeOffset = readShort(f);		/* How far into the code segment is our rtn */
-    j = cm / 8;						/* Index into the cmap array */
+    cm = readShort(f);	    	    /* CSeg map offset */
+    codeOffset = readShort(f);	    /* How far into the code segment is our rtn */
+    j = cm / 8;	    	    	    /* Index into the cmap array */
     pcode = csegBase+csegoffs[j]+codeOffset;
-    fseek(f, unitBase+pcode, SEEK_SET);		/* Go there */
-    grab(f,PATLEN);					/* Grab the pattern to buf[] */
-    fixWildCards(buf);				/* Fix the wild cards */
+    fseek(f, unitBase+pcode, SEEK_SET);	    /* Go there */
+    grab(f,PATLEN);	    	    	/* Grab the pattern to buf[] */
+    fixWildCards(buf);	    	    /* Fix the wild cards */
     memcpy(keys[count].pat, buf, PATLEN);	/* Copy to the key array */
-    count++;						/* Done one more */
+    count++;	    	    	    /* Done one more */
 }
 
 void TPL_PatternCollector::allocSym(int count)
@@ -50,7 +50,7 @@ void TPL_PatternCollector::readCmapOffsets(FILE *f)
     csegIdx = 0;
     for (i=cmap; i < pmap; i+=8)
     {
-        readShort(f);					/* Always 0 */
+        readShort(f);	    	    	/* Always 0 */
         csize = readShort(f);
         if (csize == 0xFFFF) continue;	/* Ignore the first one... unit init */
         csegoffs[csegIdx++] = cumsize;
@@ -70,7 +70,7 @@ void TPL_PatternCollector::enterSystemUnit(FILE *f)
     cmap = readShort(f);
     pmap = readShort(f);
     fseek(f, offStCseg, SEEK_SET);
-    csegBase = roundUp(readShort(f));		/* Round up to next 16 bdry */
+    csegBase = roundUp(readShort(f));	    /* Round up to next 16 bdry */
     printf("CMAP table at %04X\n", cmap);
     printf("PMAP table at %04X\n", pmap);
     printf("Code seg base %04X\n", csegBase);
@@ -79,10 +79,10 @@ void TPL_PatternCollector::enterSystemUnit(FILE *f)
 
     enterSym(f,"INITIALISE",	0x04);
     enterSym(f,"UNKNOWN008",	0x08);
-    enterSym(f,"EXIT",		0x0C);
+    enterSym(f,"EXIT",	    0x0C);
     enterSym(f,"BlockMove",	0x10);
     unknown(f,0x14, 0xC8);
-    enterSym(f,"PostIO",		0xC8);
+    enterSym(f,"PostIO",	    0xC8);
     enterSym(f,"UNKNOWN0CC",	0xCC);
     enterSym(f,"STACKCHK",	0xD0);
     enterSym(f,"UNKNOWN0D4",	0xD4);
@@ -90,24 +90,24 @@ void TPL_PatternCollector::enterSystemUnit(FILE *f)
     enterSym(f,"WriteInt",	0xDC);
     enterSym(f,"UNKNOWN0E0",	0xE0);
     enterSym(f,"UNKNOWN0E4",	0xE4);
-    enterSym(f,"CRLF",		0xE8);
+    enterSym(f,"CRLF",	    0xE8);
     enterSym(f,"UNKNOWN0EC",	0xEC);
     enterSym(f,"UNKNOWN0F0",	0xF0);
     enterSym(f,"UNKNOWN0F4",	0xF4);
     enterSym(f,"ReadEOL", 	0xF8);
-    enterSym(f,"Read",		0xFC);
+    enterSym(f,"Read",	    0xFC);
     enterSym(f,"UNKNOWN100",	0x100);
     enterSym(f,"UNKNOWN104",	0x104);
     enterSym(f,"PostWrite",	0x108);
     enterSym(f,"UNKNOWN10C",	0x10C);
     enterSym(f,"Randomize",	0x110);
     unknown(f,0x114, 0x174);
-    enterSym(f,"Random",		0x174);
+    enterSym(f,"Random",	    0x174);
     unknown(f,0x178, 0x1B8);
-    enterSym(f,"FloatAdd",	0x1B8);		/* A guess! */
-    enterSym(f,"FloatSub",	0x1BC);		/* disicx - dxbxax -> dxbxax*/
-    enterSym(f,"FloatMult",	0x1C0);		/* disicx * dxbxax -> dxbxax*/
-    enterSym(f,"FloatDivide",	0x1C4);		/* disicx / dxbxax -> dxbxax*/
+    enterSym(f,"FloatAdd",	0x1B8);	    /* A guess! */
+    enterSym(f,"FloatSub",	0x1BC);	    /* disicx - dxbxax -> dxbxax*/
+    enterSym(f,"FloatMult",	0x1C0);	    /* disicx * dxbxax -> dxbxax*/
+    enterSym(f,"FloatDivide",	0x1C4);	    /* disicx / dxbxax -> dxbxax*/
     enterSym(f,"UNKNOWN1C8",	0x1C8);
     enterSym(f,"DoubleToFloat",0x1CC);	/* dxax to dxbxax */
     enterSym(f,"UNKNOWN1D0",	0x1D0);
@@ -163,23 +163,23 @@ void TPL_PatternCollector::nextUnit(FILE *f)
 void TPL_PatternCollector::setVersionSpecifics()
 {
 
-    version = buf[3];			/* The x of TPUx */
+    version = buf[3];	    	/* The x of TPUx */
 
     switch (version)
     {
-    case '0':				/* Version 4.0 */
+    case '0':	    	    /* Version 4.0 */
         offStCseg = 0x14;	/* Offset to the LL giving the Cseg start */
-        charProc = 'T';		/* Indicates a proc in the dictionary */
-        charFunc = 'U';		/* Indicates a function in the dictionary */
-        skipPmap = 6;		/* Bytes to skip after Func to get pmap offset */
+        charProc = 'T';	    /* Indicates a proc in the dictionary */
+        charFunc = 'U';	    /* Indicates a function in the dictionary */
+        skipPmap = 6;	    /* Bytes to skip after Func to get pmap offset */
         break;
 
 
-    case '5':				/* Version 5.0 */
+    case '5':	    	    /* Version 5.0 */
         offStCseg = 0x18;	/* Offset to the LL giving the Cseg start */
-        charProc = 'T';		/* Indicates a proc in the dictionary */
-        charFunc = 'U';		/* Indicates a function in the dictionary */
-        skipPmap = 1;		/* Bytes to skip after Func to get pmap offset */
+        charProc = 'T';	    /* Indicates a proc in the dictionary */
+        charFunc = 'U';	    /* Indicates a function in the dictionary */
+        skipPmap = 1;	    /* Bytes to skip after Func to get pmap offset */
         break;
 
     default:
@@ -225,18 +225,18 @@ void TPL_PatternCollector::enterUnitProcs(FILE *f)
     cmap = readShort(f);
     pmap = readShort(f);
     fseek(f, unitBase+offStCseg, SEEK_SET);
-    csegBase = roundUp(readShort(f));		/* Round up to next 16 bdry */
+    csegBase = roundUp(readShort(f));	    /* Round up to next 16 bdry */
     printf("CMAP table at %04X\n", cmap);
     printf("PMAP table at %04X\n", pmap);
     printf("Code seg base %04X\n", csegBase);
 
     readCmapOffsets(f);
 
-    fseek(f, unitBase+pmap, SEEK_SET);		/* Go to first pmap entry */
-    if (readShort(f) != 0xFFFF)				/* FFFF means none */
+    fseek(f, unitBase+pmap, SEEK_SET);	    /* Go to first pmap entry */
+    if (readShort(f) != 0xFFFF)	    	    /* FFFF means none */
     {
         sprintf(name, "UNIT_INIT_%d", ++unitNum);
-        enterSym(f,name, 0);					/* This is the unit init code */
+        enterSym(f,name, 0);	    	    	/* This is the unit init code */
     }
 
     fseek(f, unitBase+0x0A, SEEK_SET);
@@ -260,7 +260,7 @@ void TPL_PatternCollector::enterUnitProcs(FILE *f)
                 cat = readByte(f);
                 if ((cat == charProc) or (cat == charFunc))
                 {
-                    grab(f,skipPmap);		/* Skip to the pmap */
+                    grab(f,skipPmap);	    /* Skip to the pmap */
                     pmapOff = readShort(f);	/* pmap offset */
                     printf("pmap offset for %13s: %04X\n", name, pmapOff);
                     enterSym(f,name, pmapOff);

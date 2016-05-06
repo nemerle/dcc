@@ -48,7 +48,7 @@ struct PH_FUNC_STRUCT
 #define NUM_PLIST   64              	/* Number of entries to increase allocation by */
 
 /* statics */
-static char buf[100];          				/* A general purpose buffer */
+static char buf[100];          	    	    /* A general purpose buffer */
 
 #define DCCLIBS "dcclibs.dat"           /* Name of the prototypes data file */
 
@@ -61,7 +61,7 @@ static void readProtoFile(void);
 static int  searchPList(char *name);
 static void checkHeap(char *msg);              /* For debugging */
 
-void fixWildCards(uint8_t pat[]);			/* In fixwild.c */
+void fixWildCards(uint8_t pat[]);	    	/* In fixwild.c */
 
 static bool locatePattern(const uint8_t *source, int iMin, int iMax, uint8_t *pattern,
                            int iPatLen, int *index);
@@ -140,41 +140,41 @@ static uint8_t pattBorl4on[] =
 
 static uint8_t pattBorl4Init[] =
 {
-    0xBA, WILD, WILD,		/* Mov dx, dseg */
+    0xBA, WILD, WILD,	    /* Mov dx, dseg */
     0x8E, 0xDA,         	/* mov ds, dx */
     0x8C, 0x06, WILD, WILD, /* mov [xx], es */
-    0x8B, 0xC4,				/* mov ax, sp */
-    0x05, 0x13, 0,			/* add ax, 13h */
-    0xB1, 0x04,				/* mov cl, 4 */
-    0xD3, 0xE8,				/* shr ax, cl */
-    0x8C, 0xD2				/* mov dx, ss */
+    0x8B, 0xC4,	    	    /* mov ax, sp */
+    0x05, 0x13, 0,	    	/* add ax, 13h */
+    0xB1, 0x04,	    	    /* mov cl, 4 */
+    0xD3, 0xE8,	    	    /* shr ax, cl */
+    0x8C, 0xD2	    	    /* mov dx, ss */
 };
 
 static uint8_t pattBorl5Init[] =
 {
-    0xBA, WILD, WILD,		/* Mov dx, dseg */
+    0xBA, WILD, WILD,	    /* Mov dx, dseg */
     0x8E, 0xDA,         	/* mov ds, dx */
     0x8C, 0x06, 0x30, 0,	/* mov [0030], es */
-    0x33, 0xED,				/* xor bp, bp <----- */
-    0x8B, 0xC4,				/* mov ax, sp */
-    0x05, 0x13, 0,			/* add ax, 13h */
-    0xB1, 0x04,				/* mov cl, 4 */
-    0xD3, 0xE8,				/* shr ax, cl */
-    0x8C, 0xD2				/* mov dx, ss */
+    0x33, 0xED,	    	    /* xor bp, bp <----- */
+    0x8B, 0xC4,	    	    /* mov ax, sp */
+    0x05, 0x13, 0,	    	/* add ax, 13h */
+    0xB1, 0x04,	    	    /* mov cl, 4 */
+    0xD3, 0xE8,	    	    /* shr ax, cl */
+    0x8C, 0xD2	    	    /* mov dx, ss */
 };
 
 static uint8_t pattBorl7Init[] =
 {
-    0xBA, WILD, WILD,		/* Mov dx, dseg */
+    0xBA, WILD, WILD,	    /* Mov dx, dseg */
     0x8E, 0xDA,         	/* mov ds, dx */
     0x8C, 0x06, 0x30, 0,	/* mov [0030], es */
-    0xE8, WILD, WILD,		/* call xxxx */
-    0xE8, WILD, WILD,		/* call xxxx... offset always 00A0? */
-    0x8B, 0xC4,				/* mov ax, sp */
-    0x05, 0x13, 0,			/* add ax, 13h */
-    0xB1, 0x04,				/* mov cl, 4 */
-    0xD3, 0xE8,				/* shr ax, cl */
-    0x8C, 0xD2				/* mov dx, ss */
+    0xE8, WILD, WILD,	    /* call xxxx */
+    0xE8, WILD, WILD,	    /* call xxxx... offset always 00A0? */
+    0x8B, 0xC4,	    	    /* mov ax, sp */
+    0x05, 0x13, 0,	    	/* add ax, 13h */
+    0xB1, 0x04,	    	    /* mov cl, 4 */
+    0xD3, 0xE8,	    	    /* shr ax, cl */
+    0x8C, 0xD2	    	    /* mov dx, ss */
 };
 
 
@@ -207,7 +207,7 @@ static uint8_t pattMainSmall[] =
     0xFF, 0x36, WILD, WILD,                 /* Push environment pointer */
     0xFF, 0x36, WILD, WILD,                 /* Push argv */
     0xFF, 0x36, WILD, WILD,                 /* Push argc */
-    0xE8, WILD, WILD						/* call _main */
+    0xE8, WILD, WILD	    	    	    /* call _main */
     //  0x50,                                   /* push ax... not in Borland V3 */
     //  0xE8                                    /* call _exit */
 };
@@ -269,16 +269,16 @@ static uint8_t pattMainLarge[] =
 /* This pattern is for the stack check code in Microsoft compilers */
 static uint8_t pattMsChkstk[] =
 {
-    0x59,					/* pop cx		*/
+    0x59,	    	    	/* pop cx	    */
     0x8B, 0xDC,          	/* mov bx, sp	*/
-    0x2B, 0xD8,				/* sub bx, ax	*/
-    0x72, 0x0A,				/* jb bad		*/
+    0x2B, 0xD8,	    	    /* sub bx, ax	*/
+    0x72, 0x0A,	    	    /* jb bad	    */
     0x3B, 0x1E, WILD, WILD,	/* cmp bx, XXXX */
-    0x72, 0x04,				/* jb bad		*/
-    0x8B, 0xE3,				/* mov sp, bx	*/
-    0xFF, 0xE1,				/* jmp [cx]		*/
-    0x33, 0xC0,				/* xor ax, ax	*/
-    0xE9					/* jmp XXXX		*/
+    0x72, 0x04,	    	    /* jb bad	    */
+    0x8B, 0xE3,	    	    /* mov sp, bx	*/
+    0xFF, 0xE1,	    	    /* jmp [cx]	    */
+    0x33, 0xC0,	    	    /* xor ax, ax	*/
+    0xE9	    	    	/* jmp XXXX	    */
 };
 
 /* Check this function to see if it is a library function. Return true if
@@ -318,7 +318,7 @@ bool PatternLocator::LibCheck(Function & pProc)
         i = NIL;
         if ((numFunc == 0) or (i=searchPList(ht[h].htSym)) != NIL)
         {
-            pProc.flg |= PROC_ISLIB; 		/* It's a lib function */
+            pProc.flg |= PROC_ISLIB; 	    /* It's a lib function */
             pProc.callingConv(CConv::C);
             if (i != NIL)
             {
@@ -369,7 +369,7 @@ bool PatternLocator::LibCheck(Function & pProc)
         {
             /* Have a symbol for it, but does not appear in a header file.
                 Treat it as if it is not a library function */
-            pProc.flg |= PROC_RUNTIME;		/* => is a runtime routine */
+            pProc.flg |= PROC_RUNTIME;	    /* => is a runtime routine */
         }
     }
     if (locatePattern(prog.image(), pProc.procEntry,
@@ -378,8 +378,8 @@ bool PatternLocator::LibCheck(Function & pProc)
     {
         /* Found _chkstk */
         pProc.name = "chkstk";
-        pProc.flg |= PROC_ISLIB; 		/* We'll say its a lib function */
-        pProc.args.numArgs = 0;		/* With no args */
+        pProc.flg |= PROC_ISLIB; 	    /* We'll say its a lib function */
+        pProc.args.numArgs = 0;	    /* With no args */
     }
 
     return (bool)((pProc.flg & PROC_ISLIB) != 0);
@@ -490,7 +490,7 @@ bool checkStartup(STATE &state)
             printf("Borland Turbo Pascal v4 detected\n");
             proj.setLoaderMetadata({eBorland,ePascal,eUnknownMemoryModel,4});
             prog.offMain = startOff;            /* Code starts immediately */
-            prog.segMain = prog.initCS;			/* At the 5 uint8_t jump */
+            prog.segMain = prog.initCS;	    	/* At the 5 uint8_t jump */
             return true;                     /* Already have vendor */
         }
         else if (locatePattern(prog.image(), init, init+26, pattBorl5Init, sizeof(pattBorl5Init), &i))

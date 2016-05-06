@@ -195,7 +195,7 @@ void Function::elimCondCodes ()
                         notSup = true;
                         std::cout << hex<<defIcode.loc_ip;
                         reportError (JX_NOT_DEF, defIcode.ll()->getOpcode());
-                        flg |= PROC_ASM;		/* generate asm */
+                        flg |= PROC_ASM;        /* generate asm */
                     }
                     if (not notSup)
                     {
@@ -223,7 +223,7 @@ void Function::elimCondCodes ()
                     ICODE &a(*defAt);
                     ICODE &b(*useAt);
                     reportError (NOT_DEF_USE,a.ll()->label,a.ll()->getOpcode(),b.ll()->getOpcode());
-                    flg |= PROC_ASM;		/* generate asm */
+                    flg |= PROC_ASM;        /* generate asm */
                 }
                 break;
             }
@@ -268,7 +268,7 @@ void Function::genLiveKtes ()
         def.reset();
         pbb = m_dfsLast[i];
         if (pbb->flg & INVALID_BB)
-            continue;	// skip invalid BBs
+            continue;   // skip invalid BBs
         for(ICODE &insn : *pbb)
         {
             if ((insn.type == HIGH_LEVEL) and ( insn.valid() ))
@@ -294,9 +294,9 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
     Function * pcallee;     /* invoked subroutine               */
     //ICODE  *ticode        /* icode that invokes a subroutine  */
     ;
-    LivenessSet prevLiveOut,	/* previous live out 				*/
-            prevLiveIn;		/* previous live in					*/
-    bool change;			/* is there change in the live sets?*/
+    LivenessSet prevLiveOut,    /* previous live out                */
+            prevLiveIn;         /* previous live in                 */
+    bool change;                /* is there change in the live sets?*/
 
     /* liveOut for this procedure */
     liveOut = in_liveOut;
@@ -447,7 +447,7 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
         if (not ticode->du.def.testRegAndSubregs(regi) and liveOut.testRegAndSubregs(regi) )
             start_at->du.lastDefRegi.addReg(regi);
     }
-    else		/* only 1 instruction in this basic block */
+    else    /* only 1 instruction in this basic block */
     {
         /* Check if last definition of this register */
         if ( liveOut.testRegAndSubregs(regi) )
@@ -488,7 +488,7 @@ void BB::ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode)
  * thus remove it.  Also check that this is not a return
  * from a library function (routines such as printf
  * return an integer, which is normally not taken into
- * account by the programmer). 	*/
+ * account by the programmer).  */
 void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
 {
     if (picode->valid() and not picode->du1.used(defRegIdx) and
@@ -496,7 +496,7 @@ void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
             (not ((picode->hl()->opcode == HLI_CALL) and
                   (picode->hl()->call.proc->flg & PROC_ISLIB))))
     {
-        if (not (this->liveOut.testRegAndSubregs(regi)))	/* not liveOut */
+        if (not (this->liveOut.testRegAndSubregs(regi)))    /* not liveOut */
         {
             bool res = picode->removeDefRegi (regi, defRegIdx+1,&Parent->localId);
             if (res == true)
@@ -511,7 +511,7 @@ void BB::RemoveUnusedDefs(eReg regi, int defRegIdx, iICODE picode)
                 }
             }
         }
-        else		/* liveOut */
+        else    /* liveOut */
             picode->du.lastDefRegi.addReg(regi);
     }
 }
@@ -636,7 +636,7 @@ static void forwardSubsLong (int longIdx, Expr *_exp, iICODE picode, iICODE tico
 }
 
 /* Returns whether the elements of the expression rhs are all x-clear from
- * instruction f up to instruction t.	*/
+ * instruction f up to instruction t.   */
 bool UnaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs)
 {
     if(nullptr==unaryExp)
@@ -719,7 +719,7 @@ int C_CallingConvention::processCArg (Function * callee, Function * pProc, ICODE
             }
         }
     }
-    else			/* user function */
+    else    /* user function */
     {
         if (callee->args.numArgs > 0)
         {
@@ -834,19 +834,19 @@ void Pascal_CallingConvention::processHLI(Function *func,Expr *_exp, iICODE pico
     int k;
     pp = picode->hl()->call.proc;
 
-    cb = pp->cbParam;	/* fixed # arguments */
+    cb = pp->cbParam;   /* fixed # arguments */
     k = 0;
     numArgs = 0;
     while(k<cb)
     {
         _exp = g_exp_stk.pop();
-        if (pp->flg & PROC_ISLIB)	/* library function */
+        if (pp->flg & PROC_ISLIB)   /* library function */
         {
             if (pp->args.numArgs > 0)
                 _exp = func->adjustActArgType(_exp, pp->args[numArgs].type);
             res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), func);
         }
-        else			/* user function */
+        else    /* user function */
         {
             if (pp->args.numArgs >0)
             {
@@ -875,15 +875,15 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
 {
     bool res;
 
-    ID *_retVal;         // function return value
-    Expr *_exp;     // expression pointer - for HLI_POP and HLI_CALL    */
-    //Expr *lhs;	// exp ptr for return value of a HLI_CALL		*/
-    iICODE ticode;     // Target icode                             */
+    ID *_retVal;        // function return value
+    Expr *_exp;         // expression pointer - for HLI_POP and HLI_CALL
+    //Expr *lhs;        // exp ptr for return value of a HLI_CALL
+    iICODE ticode;      // Target icode
     HLTYPE *ti_hl=nullptr;
     uint8_t regi;
     numHlIcodes = 0;
     assert(&fnc->localId==&locals);
-    // register(s) to be forward substituted	*/
+    // register(s) to be forward substituted
     auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
     for (auto picode = valid_and_highlevel.begin(); picode != valid_and_highlevel.end(); picode++)
     {
@@ -959,7 +959,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         newRegArg (pProc, picode, ticode);
                         picode->invalidate();
                         numHlIcodes--;
-                        break;	*/
+                        break;  */
                     default:
                         fprintf(stderr,"unhandled BB::findBBExps target opcode %d\n",ticode->hl()->opcode);
 
@@ -992,12 +992,12 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                     case HLI_JCOND:
                         _exp = _icHl.call.toAst();
                         res = Expr::insertSubTreeReg (ti_hl->exp.v, _exp, _retVal->id.regi, &locals);
-                        if (res)	/* was substituted */
+                        if (res)    /* was substituted */
                         {
                             picode->invalidate();
                             numHlIcodes--;
                         }
-                        else	/* cannot substitute function */
+                        else        /* cannot substitute function */
                         {
                             auto lhs = AstIdent::idID(_retVal,&locals,picode.base());
                             picode->setAsgn(lhs, _exp);
@@ -1061,7 +1061,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                                 numHlIcodes--;
                             }
                             break;
-                        case HLI_CALL:	/*** missing ***/
+                        case HLI_CALL:  /*** missing ***/
                             break;
                         default:
                             fprintf(stderr,"BB::findBBExps Unhandled target op %d\n",ticode->hl()->opcode);
@@ -1097,12 +1097,12 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
                         res = Expr::insertSubTreeLongReg (_exp,
                                                           ticode->hlU()->exp.v,
                                                           locals.newLongReg ( _retVal->type, _retVal->longId(), picode.base()));
-                        if (res)	/* was substituted */
+                        if (res)    /* was substituted */
                         {
                             picode->invalidate();
                             numHlIcodes--;
                         }
-                        else	/* cannot substitute function */
+                        else    /* cannot substitute function */
                         {
                             auto lhs = locals.createId(_retVal,picode.base());
                             picode->setAsgn(lhs, _exp);
@@ -1221,7 +1221,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
             /*idx = */localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), Icode.begin());
             localId.propLongId (rAX, rDX, "");
         }
-        else if (isAx or isBx or isCx or isDx)	/* uint16_t */
+        else if (isAx or isBx or isCx or isDx)  /* uint16_t */
         {
             eReg selected_reg;
             if (isAx)
@@ -1287,10 +1287,10 @@ void Function::dataFlow(LivenessSet &_liveOut)
     liveAnal = true;
     elimCondCodes();
     genLiveKtes();
-    liveRegAnalysis (_liveOut);   /* calls dataFlow() recursively */
-    if (not (flg & PROC_ASM))		/* can generate C for pProc		*/
+    liveRegAnalysis (_liveOut);     /* calls dataFlow() recursively */
+    if (not (flg & PROC_ASM))       /* can generate C for pProc     */
     {
-        genDU1 ();			/* generate def/use level 1 chain */
-        findExps (); 		/* forward substitution algorithm */
+        genDU1 ();          /* generate def/use level 1 chain */
+        findExps ();        /* forward substitution algorithm */
     }
 }

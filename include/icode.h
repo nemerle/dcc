@@ -7,7 +7,7 @@
 #include "BinaryImage.h"
 #include "libdis.h"
 #include "Enums.h"
-#include "state.h"			// State depends on INDEXBASE, but later need STATE
+#include "state.h"	    	// State depends on INDEXBASE, but later need STATE
 #include "CallConvention.h"
 
 #include <llvm/ADT/ilist.h>
@@ -137,7 +137,7 @@ struct DU
 };
 
 /* Definition-use chain for level 1 (within a basic block) */
-#define MAX_REGS_DEF	4		/* 2 regs def'd for long-reg vars */
+#define MAX_REGS_DEF	4	    /* 2 regs def'd for long-reg vars */
 
 
 struct Expr;
@@ -263,9 +263,9 @@ struct LLOperand
     bool        is_compound;
     size_t      width;
     /* Source operand if (flg & I)  */
-    struct {				/* Call & # actual arg bytes	*/
+    struct {	    	    /* Call & # actual arg bytes	*/
         Function *proc;     /*   pointer to target proc (for CALL(F))*/
-        int     cb;		/*   # actual arg bytes			*/
+        int     cb;	    /*   # actual arg bytes	    	*/
     } proc;
     LLOperand() : seg(rUNDEF),segOver(rUNDEF),segValue(0),regi(rUNDEF),off(0),
         opz(0),immed(0),is_offset(false),is_compound(0),width(0)
@@ -329,7 +329,7 @@ public:
     uint8_t         numBytes;       /* Number of bytes this instr   */
     uint32_t        label;          /* offset in image (20-bit adr) */
     LLOperand       m_dst;          /* destination operand          */
-    DU              flagDU;         /* def/use of flags				*/
+    DU              flagDU;         /* def/use of flags	    	    */
     int             caseEntry;
     std::vector<uint32_t> caseTbl2;
     int             hllLabNum;      /* label # for hll codegen      */

@@ -114,7 +114,7 @@ void ICODE::copyDU(const ICODE &duIcode, operDu _du, operDu duDu)
 
 /* Returns a unary conditional expression node.  This procedure should
  * only be used with the following conditional node types: NEGATION,
- * ADDRESSOF, DEREFERENCE, POST_INC, POST_DEC, PRE_INC, PRE_DEC	*/
+ * ADDRESSOF, DEREFERENCE, POST_INC, POST_DEC, PRE_INC, PRE_DEC */
 
 
 /* Returns an identifier conditional expression node of type GLOB_VAR */
@@ -256,7 +256,7 @@ AstIdent *AstIdent::Other(eReg seg, eReg regi, int16_t off)
 
 
 /* Returns an identifier conditional expression node of type TYPE_LONG or
- * TYPE_WORD_SIGN	*/
+ * TYPE_WORD_SIGN   */
 AstIdent *AstIdent::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
 {
     int idx;
@@ -402,9 +402,9 @@ int hlSize[] = {2, 1, 1, 2, 2, 4, 4, 4, 2, 2, 1, 4, 4};
 int Expr::hlTypeSize(Function * pproc) const
 {
     if (this == nullptr)
-        return (2);		/* for TYPE_UNKNOWN */
+        return (2);     /* for TYPE_UNKNOWN */
     fprintf(stderr,"hlTypeSize queried for Unkown type %d \n",m_type);
-    return 2;			// CC: is this correct?
+    return 2;           // CC: is this correct?
 }
 
 /* Returns the type of the expression */

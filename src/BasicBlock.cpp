@@ -28,7 +28,7 @@ BB *BB::Create(const rCODE &r,eBBKind _nodeType, Function *parent)
 {
     BB* pnewBB;
     pnewBB = new BB;
-    pnewBB->nodeType = _nodeType;	/* Initialise */
+    pnewBB->nodeType = _nodeType;   /* Initialise */
     pnewBB->immedDom = NO_DOM;
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =
     pnewBB->latchNode= pnewBB->loopFollow = NO_NODE;
@@ -46,7 +46,7 @@ BB *BB::Create(const rCODE &r,eBBKind _nodeType, Function *parent)
         parent->m_actual_cfg.push_back(pnewBB);
         pnewBB->Parent = parent;
 
-    if ( r.begin() != parent->Icode.end() )		/* Only for code BB's */
+    if ( r.begin() != parent->Icode.end() ) /* Only for code BB's */
         stats.numBBbef++;
     }
     return pnewBB;
@@ -201,12 +201,12 @@ bool BB::isEndOfPath(int latch_node_idx) const
 }
 void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode, int _ifFollow)
 {
-    int follow;						/* ifFollow                 	*/
-    BB * succ, *latch;				/* Successor and latching node 	*/
-    ICODE * picode;					/* Pointer to HLI_JCOND instruction	*/
-    QString l;                      /* Pointer to HLI_JCOND expression	*/
-    bool emptyThen,					/* THEN clause is empty			*/
-            repCond;				/* Repeat condition for while() */
+    int follow;                     /* ifFollow                     */
+    BB * succ, *latch;              /* Successor and latching node  */
+    ICODE * picode;                 /* Pointer to HLI_JCOND instruction */
+    QString l;                      /* Pointer to HLI_JCOND expression  */
+    bool emptyThen,                 /* THEN clause is empty         */
+            repCond;                /* Repeat condition for while() */
 
     /* Check if this basic block should be analysed */
     if ((_ifFollow != UN_INIT) and (this == pProc->m_dfsLast[_ifFollow]))
@@ -236,10 +236,10 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
         return;
 
     /* Check type of loop/node and process code */
-    if ( loopType!=eNodeHeaderType::NO_TYPE )	/* there is a loop */
+    if ( loopType!=eNodeHeaderType::NO_TYPE )   /* there is a loop */
     {
         assert(latch);
-        if (this != latch)		/* loop is over several bbs */
+        if (this != latch)  /* loop is over several bbs */
         {
             if (loopType == eNodeHeaderType::WHILE_TYPE)
             {
@@ -251,7 +251,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                 succ = edges[0].BBptr;
             if (succ->traversed != DFS_ALPHA)
                 succ->writeCode (indLevel, pProc, numLoc, latch->dfsLastNum,_ifFollow);
-            else	/* has been traversed so we need a goto */
+            else    /* has been traversed so we need a goto */
                 succ->front().ll()->emitGotoLabel (indLevel);
         }
 
@@ -293,20 +293,20 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
             succ = pProc->m_dfsLast[loopFollow];
             if (succ->traversed != DFS_ALPHA)
                 succ->writeCode (indLevel, pProc, numLoc, _latchNode, _ifFollow);
-            else		/* has been traversed so we need a goto */
+            else    /* has been traversed so we need a goto */
                 succ->front().ll()->emitGotoLabel (indLevel);
         }
     }
 
-    else		/* no loop, process nodeType of the graph */
+    else        /* no loop, process nodeType of the graph */
     {
-        if (nodeType == TWO_BRANCH)		/* if-then[-else] */
+        if (nodeType == TWO_BRANCH)     /* if-then[-else] */
         {
             stats.numHLIcode++;
             indLevel++;
             emptyThen = false;
 
-            if (ifFollow != MAX)		/* there is a follow */
+            if (ifFollow != MAX)        /* there is a follow */
             {
                 /* process the THEN part */
                 follow = ifFollow;
@@ -319,7 +319,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                         cCode.appendCode( "\n%s%s", indentStr(indLevel-1), qPrintable(l));
                         succ->writeCode (indLevel, pProc, numLoc, _latchNode,follow);
                     }
-                    else		/* empty THEN part => negate ELSE part */
+                    else	    /* empty THEN part => negate ELSE part */
                     {
                         l = writeJcondInv ( *back().hl(), pProc, numLoc);
                         cCode.appendCode( "\n%s%s", indentStr(indLevel-1), qPrintable(l));
@@ -332,9 +332,9 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
 
                 /* process the ELSE part */
                 succ = edges[ELSE].BBptr;
-                if (succ->traversed != DFS_ALPHA)		/* not visited */
+                if (succ->traversed != DFS_ALPHA)	    /* not visited */
                 {
-                    if (succ->dfsLastNum != follow)		/* ELSE part */
+                    if (succ->dfsLastNum != follow)	    /* ELSE part */
                     {
                         cCode.appendCode( "%s}\n%selse {\n",
                                           indentStr(indLevel-1), indentStr(indLevel - 1));
@@ -355,7 +355,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
                 if (succ->traversed != DFS_ALPHA)
                     succ->writeCode (indLevel, pProc, numLoc, _latchNode,_ifFollow);
             }
-            else		/* no follow => if..then..else */
+            else	    /* no follow => if..then..else */
             {
                 l = writeJcond ( *back().hl(), pProc, numLoc);
                 cCode.appendCode( "%s%s", indentStr(indLevel-1), qPrintable(l));
@@ -368,7 +368,7 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
 
         else 	/* fall, call, 1w */
         {
-            succ = edges[0].BBptr;		/* fall-through edge */
+            succ = edges[0].BBptr;	    /* fall-through edge */
             assert(succ->size()>0);
             if (succ->traversed != DFS_ALPHA)
             {
@@ -379,8 +379,8 @@ void BB::writeCode (int indLevel, Function * pProc , int *numLoc,int _latchNode,
 }
 /* Writes the code for the current basic block.
  * Args: pBB: pointer to the current basic block.
- *		 Icode: pointer to the array of icodes for current procedure.
- *		 lev: indentation level - used for formatting.	*/
+ *	     Icode: pointer to the array of icodes for current procedure.
+ *	     lev: indentation level - used for formatting.	*/
 void BB::writeBB(QTextStream &ostr,int lev, Function * pProc, int *numLoc)
 {
     /* Save the index into the code table in case there is a later goto

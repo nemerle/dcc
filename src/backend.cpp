@@ -30,12 +30,12 @@ using namespace boost;
 using namespace boost::adaptors;
 using namespace std;
 
-bundle cCode;			/* Procedure declaration and code */
+bundle cCode;	    	/* Procedure declaration and code */
 
 /* Returns a unique index to the next label */
 int getNextLabel()
 {
-    static int labelIdx = 1;	/* index of the next label		*/
+    static int labelIdx = 1;	/* index of the next label	    */
     return (labelIdx++);
 }
 
@@ -62,8 +62,8 @@ static void fixupLabels (PPROC pProc)
  * a unique label number for it.  This label is placed in the associated
  * icode for the node (pProc->Icode).  The procedure is done in sequential
  * order of dsfLast numbering.	*/
-{ int i;				/* index into the dfsLast array */
-    PBB *dfsLast;			/* pointer to the dfsLast array */
+{ int i;	    	    /* index into the dfsLast array */
+    PBB *dfsLast;	    	/* pointer to the dfsLast array */
 
     dfsLast = pProc->dfsLast;
     for (i = 0; i < pProc->numBBs; i++)
@@ -82,10 +82,10 @@ char *cChar (uint8_t c)
     static char res[3];
 
     switch (c) {
-        case 0x8:		/* backspace */
+        case 0x8:	    /* backspace */
             sprintf (res, "\\b");
             break;
-        case 0x9:		/* horizontal tab */
+        case 0x9:	    /* horizontal tab */
             sprintf (res, "\\t");
             break;
         case 0x0A:	/* new line */
@@ -97,7 +97,7 @@ char *cChar (uint8_t c)
         case 0x0D:	/* carriage return */
             sprintf (res, "\\r");
             break;
-        default: 		/* any other character*/
+        default: 	    /* any other character*/
             sprintf (res, "%c", c);
     }
     return (res);
@@ -106,8 +106,8 @@ char *cChar (uint8_t c)
 
 /* Prints the variable's name and initial contents on the file.
  * Note: to get to the value of the variable:
- *		com file: prog.Image[operand]
- *		exe file: prog.Image[operand+0x100] 	*/
+ *	    com file: prog.Image[operand]
+ *	    exe file: prog.Image[operand+0x100] 	*/
 static void printGlobVar (QTextStream &ostr,SYM * psym)
 {
     int j;
@@ -124,7 +124,7 @@ static void printGlobVar (QTextStream &ostr,SYM * psym)
             break;
         case 4: if (psym->type == TYPE_PTR)  /* pointer */
                 ostr << "uint16_t *\t"<<psym->name<<" = "<<LH(prog.image()+relocOp)<<";\n";
-            else 			/* char */
+            else 	    	/* char */
                 ostr << "char\t"<<psym->name<<"[4] = \""<<
                         prog.image()[relocOp]<<prog.image()[relocOp+1]<<
                         prog.image()[relocOp+2]<<prog.image()[relocOp+3]<<";\n";
@@ -155,7 +155,7 @@ void Project::writeGlobSymTable()
         {
             if (sym.duVal.isUSE_VAL())	/* first used */
                 printGlobVar (ostr,&sym);
-            else {					/* first defined */
+            else {	    	    	/* first defined */
                 switch (sym.size) {
                 case 1:  ostr<<"uint8_t\t"; break;
                 case 2:  ostr<<"int\t"; break;
@@ -198,7 +198,7 @@ static void writeHeader (QIODevice &_ios, const std::string &fileName)
  * to it.  If so, a goto is emitted to this label; otherwise, a new label
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be forward on
- *		 the code; that is, the target code has not been traversed yet. */
+ *	     the code; that is, the target code has not been traversed yet. */
 #if 0
 static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 {
@@ -279,12 +279,12 @@ void Function::codeGen (QIODevice &fs)
     fs.write(ostr_contents.toLatin1());
 
     /* Write procedure's code */
-    if (flg & PROC_ASM)		/* generate assembler */
+    if (flg & PROC_ASM)	    /* generate assembler */
     {
         Disassembler ds(3);
         ds.disassem(this->shared_from_this());
     }
-    else							/* generate C */
+    else	    	    	    	/* generate C */
     {
         m_actual_cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);
     }
@@ -325,7 +325,7 @@ void Function::codeGen (QIODevice &fs)
 static void backBackEnd (CALL_GRAPH * pcallGraph, QIODevice &_ios)
 {
 
-    //	IFace.Yield();			/* This is a good place to yield to other apps */
+    //	IFace.Yield();	    	/* This is a good place to yield to other apps */
 
     /* Check if this procedure has been processed already */
     if ((pcallGraph->proc->flg & PROC_OUTPUT) or

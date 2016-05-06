@@ -4,51 +4,51 @@
 
 #include <QtCore/QDebug>
 
-#define EXE_RELOCATION  0x10		/* EXE images rellocated to above PSP */
+#define EXE_RELOCATION  0x10    /* EXE images rellocated to above PSP */
 
-struct PSP {			/*        PSP structure		*/
-    uint16_t int20h;			/* interrupt 20h			*/
-    uint16_t eof;			/* segment, end of allocation block	*/
-    uint8_t res1;			/* reserved                         	*/
-    uint8_t dosDisp[5];		/* far call to DOS function dispatcher	*/
-    uint8_t int22h[4];		/* vector for terminate routine		*/
-    uint8_t int23h[4];		/* vector for ctrl+break routine		*/
-    uint8_t int24h[4];		/* vector for error routine		*/
-    uint8_t res2[22];			/* reserved			*/
-    uint16_t segEnv;			/* segment address of environment block	*/
-    uint8_t res3[34];			/* reserved			*/
-    uint8_t int21h[6];		/* opcode for int21h and far return	*/
-    uint8_t res4[6];			/* reserved			*/
-    uint8_t fcb1[16];			/* default file control block 1		*/
-    uint8_t fcb2[16];                       /* default file control block 2		*/
-    uint8_t res5[4];			/* reserved			*/
-    uint8_t cmdTail[0x80];		/* command tail and disk transfer area	*/
+struct PSP {        /*        PSP structure */
+    uint16_t int20h;        /* interrupt 20h                    */
+    uint16_t eof;           /* segment, end of allocation block */
+    uint8_t res1;           /* reserved                         */
+    uint8_t dosDisp[5];     /* far call to DOS function dispatcher  */
+    uint8_t int22h[4];      /* vector for terminate routine     */
+    uint8_t int23h[4];      /* vector for ctrl+break routine    */
+    uint8_t int24h[4];      /* vector for error routine         */
+    uint8_t res2[22];       /* reserved                         */
+    uint16_t segEnv;        /* segment address of environment block */
+    uint8_t res3[34];       /* reserved                         */
+    uint8_t int21h[6];      /* opcode for int21h and far return */
+    uint8_t res4[6];        /* reserved                         */
+    uint8_t fcb1[16];       /* default file control block 1     */
+    uint8_t fcb2[16];       /* default file control block 2     */
+    uint8_t res5[4];        /* reserved */
+    uint8_t cmdTail[0x80];  /* command tail and disk transfer area  */
 };
 
-static struct MZHeader {                    /*      EXE file header		 	 */
-    uint8_t     sigLo;		/* .EXE signature: 0x4D 0x5A	 */
+static struct MZHeader {                    /*      EXE file header */
+    uint8_t     sigLo;          /* .EXE signature: 0x4D 0x5A    */
     uint8_t     sigHi;
-    uint16_t	lastPageSize;	/* Size of the last page		 */
-    uint16_t	numPages;		/* Number of pages in the file	 */
-    uint16_t	numReloc;		/* Number of relocation items	 */
-    uint16_t	numParaHeader;	/* # of paragraphs in the header */
-    uint16_t	minAlloc;		/* Minimum number of paragraphs	 */
-    uint16_t	maxAlloc;		/* Maximum number of paragraphs	 */
-    uint16_t	initSS;		/* Segment displacement of stack */
-    uint16_t	initSP;		/* Contents of SP at entry       */
-    uint16_t	checkSum;		/* Complemented checksum         */
-    uint16_t	initIP;		/* Contents of IP at entry       */
-    uint16_t	initCS;		/* Segment displacement of code  */
-    uint16_t	relocTabOffset;	/* Relocation table offset       */
-    uint16_t	overlayNum;	/* Overlay number                */
+    uint16_t    lastPageSize;   /* Size of the last page        */
+    uint16_t    numPages;       /* Number of pages in the file  */
+    uint16_t    numReloc;       /* Number of relocation items   */
+    uint16_t    numParaHeader;  /* # of paragraphs in the header*/
+    uint16_t    minAlloc;       /* Minimum number of paragraphs */
+    uint16_t    maxAlloc;       /* Maximum number of paragraphs */
+    uint16_t    initSS;         /* Segment displacement of stack    */
+    uint16_t    initSP;         /* Contents of SP at entry       */
+    uint16_t    checkSum;       /* Complemented checksum         */
+    uint16_t    initIP;         /* Contents of IP at entry       */
+    uint16_t    initCS;         /* Segment displacement of code  */
+    uint16_t    relocTabOffset; /* Relocation table offset       */
+    uint16_t    overlayNum;     /* Overlay number                */
 } header;
 
 void DosLoader::prepareImage(PROG & prog, size_t sz, QFile & fp) {
     /* Allocate a block of memory for the program. */
     prog.cbImage  = sz + sizeof(PSP);
     prog.Imagez    = new uint8_t [prog.cbImage];
-    prog.Imagez[0] = 0xCD;		/* Fill in PSP int 20h location */
-    prog.Imagez[1] = 0x20;		/* for termination checking     */
+    prog.Imagez[0] = 0xCD;      /* Fill in PSP int 20h location */
+    prog.Imagez[1] = 0x20;      /* for termination checking     */
     /* Read in the image past where a PSP would go */
     if (sz != fp.read((char *)prog.Imagez + sizeof(PSP),sz))
         fatalError(CANNOT_READ, fp.fileName().toLocal8Bit().data());
@@ -148,7 +148,7 @@ bool ExeLoader::load(PROG & prog, QFile & fp) {
         fp.seek(LH(&header.relocTabOffset));
 
         /* Read in seg:offset pairs and convert to Image ptrs */
-        uint8_t	buf[4];
+        uint8_t buf[4];
         for (int i = 0; i < prog.cReloc; i++)
         {
             fp.read((char *)buf,4);

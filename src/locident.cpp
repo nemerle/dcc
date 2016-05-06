@@ -449,14 +449,15 @@ eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
         else if (id->longId().l() == regi)
             return (id->longId().h());
     }
-    return rUNDEF;	// Cristina: please check this!
+    return rUNDEF;  // Cristina: please check this!
 }
 
 
-/* Checks if the registers regL and regH have been used independently in
+/**
+ * Checks if the registers regL and regH have been used independently in
  * the local identifier table.  If so, macros for these registers are
  * placed in the local identifier table, as these registers belong to a
- * long register identifier.	*/
+ * long register identifier. */
 void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const QString &name)
 {
     for (ID &rid : id_arr)

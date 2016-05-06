@@ -817,7 +817,7 @@ static void strSrc(IStructuredTextTarget *out,LLInst *insn,bool skip_comma=false
         out->prtt(", ");
     if (insn->testFlags(I))
         out->addTaggedString(XT_Number,strHex(insn->src().getImm2()));
-    else if (insn->testFlags(IM_SRC))		/* level 2 */
+    else if (insn->testFlags(IM_SRC))   /* level 2 */
         out->addTaggedString(XT_Symbol,"dx:ax");
     else
         formatRM(out,insn->src());
