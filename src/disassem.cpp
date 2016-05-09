@@ -830,6 +830,7 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
     out->addSpace(4);
     out->addTaggedString(XT_Number,QString("%1").arg(insn->label,8,16,QChar('0').toUpper()));
     out->addSpace(4);
+
     out->addTaggedString(XT_Keyword,Machine_X86::opcodeName(insn->getOpcode()),insn);
     out->addSpace(2);
 
@@ -964,34 +965,43 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
         {
             bool is_dx_src=(inst.getOpcode() == iOUTS or inst.getOpcode() == iREP_OUTS);
             if(is_dx_src)
-                operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
+            {
+                out->addTaggedString(XT_Symbol,"dx");
+                out->prtt(", ");
+                out->addTaggedString(XT_Keyword,szPtr[inst.getFlag() & B]);
+                out->addSpace(2);
+            }
             else
-                operands_s<<szPtr[inst.getFlag() & B];
+                out->addTaggedString(XT_Keyword,szPtr[inst.getFlag() & B]);
             if (inst.getOpcode() == iLODS or
                     inst.getOpcode() == iREP_LODS or
                     inst.getOpcode() == iOUTS or
                     inst.getOpcode() == iREP_OUTS)
             {
-                operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
+                out->addTaggedString(XT_Symbol,Machine_X86::regName(inst.src().segOver)); // szWreg[src.segOver-rAX]
             }
             else
             {
-                operands_s<<"es:[di], "<<Machine_X86::regName(inst.src().segOver);
+                out->addTaggedString(XT_Symbol,"es:[di]");
+                out->prtt(", ");
+                out->addTaggedString(XT_Symbol,Machine_X86::regName(inst.src().segOver));
             }
-            operands_s<<":[si]";
+            out->addTaggedString(XT_Symbol,":[si]");
         }
         else
         {
+            out->delChars(2); // TODO: this is wonky way of adding instruction suffix
             if(inst.getFlag() & B)
-                opcode_with_mods+='B';
+                out->addTaggedString(XT_Keyword,"B");
             else
-                opcode_with_mods+='W';
+                out->addTaggedString(XT_Keyword,"W");
+            out->addSpace(2);
         }
         break;
     case iXLAT:
         if (inst.src().segOver)
         {
-            out->addTaggedString(XT_Keyword," " + szPtr[1]);
+            out->addTaggedString(XT_Keyword,QString(" ") + szPtr[1]);
             out->addTaggedString(XT_Symbol,Machine_X86::regName(inst.src().segOver)+":[bx]");
         }
         break;

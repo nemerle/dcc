@@ -6,6 +6,7 @@ public:
     virtual void TAGbegin(TAG_TYPE t,void *data)=0;
     virtual void TAGend(TAG_TYPE t)=0;
     virtual void prtt(const QString &v)=0;
+    virtual void delChars(int v) = 0;
 
     virtual void addEOL() = 0; // some targets might want to disable newlines
     void addSpace(int n=1) {

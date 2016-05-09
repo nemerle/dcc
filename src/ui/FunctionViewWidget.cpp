@@ -47,7 +47,12 @@ void FunctionViewWidget::prtt(const QString &s)
     collected_text+=s;
     //collected_text+="<br>";
 }
-
+void FunctionViewWidget::delChars(int v) {
+    assert(v>0);
+    collected_text = collected_text.remove(collected_text.size()-v,v);
+    while(v--)
+        m_doc_cursor->deletePreviousChar();
+}
 void FunctionViewWidget::addEOL()
 {
     m_doc_cursor->insertBlock(m_current_format);

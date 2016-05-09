@@ -35,6 +35,7 @@ public:
     void  addEOL() override;
     void  TAGbegin(enum TAG_TYPE tag_type, void * p);
     void  TAGend(enum TAG_TYPE tag_type);
+    void  delChars(int v);
 
 
 private slots:
