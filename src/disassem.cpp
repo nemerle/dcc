@@ -953,6 +953,67 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
         }
         break;
 
+    case iCMPS:  case iREPNE_CMPS:  case iREPE_CMPS:
+    case iSCAS:  case iREPNE_SCAS:  case iREPE_SCAS:
+    case iSTOS:  case iREP_STOS:
+    case iLODS:  case iREP_LODS:
+    case iMOVS:  case iREP_MOVS:
+    case iINS:   case iREP_INS:
+    case iOUTS:  case iREP_OUTS:
+        if (inst.src().segOver)
+        {
+            bool is_dx_src=(inst.getOpcode() == iOUTS or inst.getOpcode() == iREP_OUTS);
+            if(is_dx_src)
+                operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
+            else
+                operands_s<<szPtr[inst.getFlag() & B];
+            if (inst.getOpcode() == iLODS or
+                    inst.getOpcode() == iREP_LODS or
+                    inst.getOpcode() == iOUTS or
+                    inst.getOpcode() == iREP_OUTS)
+            {
+                operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
+            }
+            else
+            {
+                operands_s<<"es:[di], "<<Machine_X86::regName(inst.src().segOver);
+            }
+            operands_s<<":[si]";
+        }
+        else
+        {
+            if(inst.getFlag() & B)
+                opcode_with_mods+='B';
+            else
+                opcode_with_mods+='W';
+        }
+        break;
+    case iXLAT:
+        if (inst.src().segOver)
+        {
+            out->addTaggedString(XT_Keyword," " + szPtr[1]);
+            out->addTaggedString(XT_Symbol,Machine_X86::regName(inst.src().segOver)+":[bx]");
+        }
+        break;
+
+    case iIN:
+        out->addTaggedString(XT_Symbol, (inst.getFlag() & B)? "al" : "ax");
+        out->prtt(", ");
+        if(inst.testFlags(I))
+            out->addTaggedString(XT_Number, strHex(inst.src().getImm2()));
+        else
+            out->addTaggedString(XT_Symbol, "dx");
+        break;
+
+    case iOUT:
+    {
+        if(inst.testFlags(I))
+            out->addTaggedString(XT_Number, strHex(inst.src().getImm2()));
+        else
+            out->addTaggedString(XT_Symbol, "dx");
+        out->prtt(", ");
+        out->addTaggedString(XT_Symbol, (inst.getFlag() & B)? "al" : "ax");
+    }
     }
     out->addEOL();
 }
