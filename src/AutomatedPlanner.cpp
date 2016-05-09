@@ -37,6 +37,15 @@ void AutomatedPlanner::planFor(Function & func) {
     switch(func.nStep) {
     case eNotDecoded:
         addAction(func,new FollowControlFlow(func.state));
+        break;
+    case eDisassemblyInProgress:
+        // The command queue is empty and function is in eDisassemblyInProgress state ? Switch to eDisassembled
+        assert(false and "Not implemented yet");
+        break;
+    case eDissassembled:
+        // addAction(func,new LowLevelMarkImpure(func)
+        assert(false and "Not implemented yet");
+        break;
     }
 }
 

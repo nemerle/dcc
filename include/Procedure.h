@@ -148,6 +148,7 @@ enum DecompilationStep : uint32_t {
     eNotDecoded,    // no processing done yet
     eDisassemblyInProgress,
     eDissassembled, // low level disassembly done
+    //eLocatedImpureRefs,
     //eStackTracing, // tracing stack depth across function calls
 
 };
