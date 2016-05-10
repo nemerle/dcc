@@ -38,7 +38,7 @@ bool LoaderSelection::execute(CommandContext * ctx)
         return true;
     }
     if(com_loader.canLoad(finfo)) {
-        proj->setLoader(new ExeLoader);
+        proj->setLoader(new ComLoader);
         return true;
     }
     ctx->recordFailure(this,QString("None of the available loaders can load file %1").arg(m_filename));
