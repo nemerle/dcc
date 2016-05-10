@@ -187,13 +187,16 @@ bool FindMain::execute(CommandContext *ctx) {
     }
     /* Check for special settings of initial state, based on idioms of the startup code */
     if(checkStartup(ctx->m_project->m_entry_state)) {
-        proj.findByName("start")->markDoNotDecompile(); // we have main, do not decompile the start proc
+        start_func->markDoNotDecompile(); // we have main, do not decompile the start proc
         //TODO: main arguments and return values should depend on detected compiler/library
         FunctionType *main_type = FunctionType::get(Type{TYPE_WORD_SIGN},{ Type{TYPE_WORD_SIGN},Type{TYPE_PTR} },false);
         main_type->setCallingConvention(CConv::C);
         proj.addCommand(new CreateFunction("main",SegOffAddr {prog.segMain,prog.offMain},main_type));
 
         proj.addCommand(new LoadPatternLibrary());
+    } else {
+        start_func->state = proj.m_entry_state; // just in case we fail to find main, initialize 'state' for start func
+
     }
     return true;
 }
@@ -217,7 +220,6 @@ bool CreateFunction::execute(CommandContext *ctx) {
     if(m_name=="start") {
         proj.addCommand(new MachineStateInitialization);
         proj.addCommand(new FindMain);
-        func->state = proj.m_entry_state; // just in case we fail to find main, initialize 'state'
     }
 
 //    proj.addCommand(new ProcessFunction);
