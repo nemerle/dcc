@@ -32,7 +32,8 @@ using namespace std;
 //static void     FollowCtrl (Function * pProc, CALL_GRAPH * pcallGraph, STATE * pstate);
 static void     setBits(int16_t type, uint32_t start, uint32_t len);
 static void     process_MOV(LLInst &ll, STATE * pstate);
-static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
+static bool     process_JMP(const PtrFunction &func,ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph);
+static SYM *    lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 //void    interactDis(Function * initProc, int ic);
 
 /* Returns the size of the string pointed by sym and delimited by delim.
@@ -277,13 +278,13 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
                 /* Next icode. Note: not the same as GetLastIcode() because of the call to FollowCtrl() */
                 pIcode = func.Icode.GetIcode(ip);
                 /* do the jump path */
-                done = func.process_JMP (*pIcode, pstate, pcallGraph);
+                done = process_JMP(func.shared_from_this(),*pIcode, pstate, pcallGraph);
                 break;
             }
                 /*** Jumps ***/
             case iJMP:
             case iJMPF: /* Returns true if we've run into a loop */
-                done = func.process_JMP (*pIcode, pstate, pcallGraph);
+                done = process_JMP (func.shared_from_this(),*pIcode, pstate, pcallGraph);
                 break;
 
                 /*** Calls ***/
@@ -401,7 +402,7 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
     }
     return true;
 }
-bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
+static bool decodeIndirectJMP(const PtrFunction &func,ICODE & pIcode, STATE *pstate)
 {
     PROG &prog(Project::get()->prog);
 //    mov cx,NUM_CASES
@@ -418,9 +419,9 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
 //    jmp word ptr [bx+2*NUM_CASES]
     static const llIcode match_seq[] = {iMOV,iMOV,iMOV,iCMP,iJE,iADD,iLOOP,iJMP,iJMP};
 
-    if(Icode.size()<8)
+    if(func->Icode.size()<8)
         return false;
-    if(&Icode.back()!=&pIcode) // not the last insn in the list skip it
+    if(&func->Icode.back()!=&pIcode) // not the last insn in the list skip it
         return false;
     if(pIcode.ll()->src().regi != INDEX_BX) {
         return false;
@@ -428,7 +429,7 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
     // find address-wise predecessors of the icode
     std::deque<ICODE *> matched;
     QMap<uint32_t,ICODE *> addrmap;
-    for(ICODE & ic : Icode) {
+    for(ICODE & ic : func->Icode) {
         addrmap[ic.ll()->GetLlLabel()] = &ic;
     }
     auto iter = addrmap.find(pIcode.ll()->GetLlLabel());
@@ -478,16 +479,12 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
         STATE   StCopy = *pstate;
         uint32_t jump_target_location = table_addr + num_cases*2 + i*2;
         StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
-        iICODE last_current_insn = (++Icode.rbegin()).base();
-        Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
-        ++last_current_insn;
-        last_current_insn->ll()->caseEntry = i;
-        last_current_insn->ll()->setFlags(CASE);
-        pIcode.ll()->caseTbl2.push_back( last_current_insn->ll()->GetLlLabel() );
+        Project::get()->addCommand(func,new FollowControlFlow(StCopy));
+        Project::get()->addCommand(func,new MarkAsSwitchCase(pIcode.ll()->label,StCopy.IP,i));
     }
     return true;
 }
-bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
+static bool decodeIndirectJMP2(const PtrFunction &func,ICODE & pIcode, STATE *pstate)
 {
     PROG &prog(Project::get()->prog);
 //    mov cx,NUM_CASES
@@ -508,9 +505,9 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
 //    jmp word ptr [bx+2*NUM_CASES]
     static const llIcode match_seq[] = {iMOV,iMOV,iMOV,iCMP,iJNE,iMOV,iCMP,iJE,iADD,iLOOP,iJMP,iJMP};
 
-    if(Icode.size()<12)
+    if(func->Icode.size()<12)
         return false;
-    if(&Icode.back() != &pIcode) // not the last insn in the list skip it
+    if(&func->Icode.back() != &pIcode) // not the last insn in the list skip it
         return false;
     if(pIcode.ll()->src().regi != INDEX_BX) {
         return false;
@@ -518,7 +515,7 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
     // find address-wise predecessors of the icode
     std::deque<ICODE *> matched;
     QMap<uint32_t,ICODE *> addrmap;
-    for(ICODE & ic : Icode) {
+    for(ICODE & ic : func->Icode) {
         addrmap[ic.ll()->GetLlLabel()] = &ic;
     }
     auto iter = addrmap.find(pIcode.ll()->GetLlLabel());
@@ -564,41 +561,19 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
         STATE   StCopy = *pstate;
         uint32_t jump_target_location = table_addr + num_cases*4 + i*2;
         StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
-        iICODE last_current_insn = (++Icode.rbegin()).base();
-        Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
-        ++last_current_insn;
-        last_current_insn->ll()->caseEntry = i;
-        last_current_insn->ll()->setFlags(CASE);
-        pIcode.ll()->caseTbl2.push_back( last_current_insn->ll()->GetLlLabel() );
+        Project::get()->addCommand(func,new FollowControlFlow(StCopy));
+        Project::get()->addCommand(func,new MarkAsSwitchCase(pIcode.ll()->label,StCopy.IP,i));
     }
     return true;
 }
 
-bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
-{
+/* Look for switch() stmt. idiom of the form
+ *   JMP  uint16_t ptr  word_offset[rBX | rSI | rDI]        */
+static bool decodeIndirectJMP0(const PtrFunction &func,ICODE & pIcode, STATE *pstate) {
+    const static uint8_t i2r[4] = {rSI, rDI, rBP, rBX};
+
+    uint32_t seg = (pIcode.ll()->src().seg)? pIcode.ll()->src().seg: rDS;
     PROG &prog(Project::get()->prog);
-    static uint8_t i2r[4] = {rSI, rDI, rBP, rBX};
-    ICODE       _Icode;
-    uint32_t       cs, offTable, endTable;
-    uint32_t       i, k, seg, target;
-
-    if (pIcode.ll()->testFlags(I))
-    {
-        if (pIcode.ll()->getOpcode() == iJMPF)
-            pstate->setState( rCS, LH(prog.image() + pIcode.ll()->label + 3));
-        pstate->IP = pIcode.ll()->src().getImm2();
-        int64_t i = pIcode.ll()->src().getImm2();
-        if (i < 0)
-        {
-            exit(1);
-        }
-
-        /* Return true if jump target is already parsed */
-        return Icode.alreadyDecoded(i);
-    }
-    /* We've got an indirect JMP - look for switch() stmt. idiom of the form
-     *   JMP  uint16_t ptr  word_offset[rBX | rSI | rDI]        */
-    seg = (pIcode.ll()->src().seg)? pIcode.ll()->src().seg: rDS;
 
     /* Ensure we have a uint16_t offset & valid seg */
     if (pIcode.ll()->match(iJMP) and (pIcode.ll()->testFlags(WORD_OFF)) and
@@ -608,8 +583,9 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
              pIcode.ll()->src().regi == INDEX_BX))
     {
 
-        offTable = ((uint32_t)(uint16_t)pstate->r[seg] << 4) + pIcode.ll()->src().off;
-
+       uint32_t offTable = ((uint32_t)(uint16_t)pstate->r[seg] << 4) + pIcode.ll()->src().off;
+       uint32_t endTable;
+        uint32_t i;
         /* Firstly look for a leading range check of the form:-
          *      CMP {BX | SI | DI}, immed
          *      JA | JAE | JB | JBE
@@ -630,10 +606,10 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
         /* Now do some heuristic pruning.  Look for ptrs. into the table
          * and for addresses that don't appear to point to valid code.
         */
-        cs = (uint32_t)(uint16_t)pstate->r[rCS] << 4;
+        uint32_t cs = (uint32_t)(uint16_t)pstate->r[rCS] << 4;
         for (i = offTable; i < endTable; i += 2)
         {
-            target = cs + LH(&prog.image()[i]);
+            uint32_t target = cs + LH(&prog.image()[i]);
             if (target < endTable and target >= offTable)
                 endTable = target;
             else if (target >= (uint32_t)prog.cbImage)
@@ -642,10 +618,10 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 
         for (i = offTable; i < endTable; i += 2)
         {
-            target = cs + LH(&prog.image()[i]);
+            uint32_t target = cs + LH(&prog.image()[i]);
             /* Be wary of 00 00 as code - it's probably data */
-            if (not (prog.image()[target] or prog.image()[target+1]) or
-                    scan(target, _Icode))
+            ICODE _Icode;
+            if (not (prog.image()[target] or prog.image()[target+1]) or scan(target, _Icode)!=NO_ERR)
                 endTable = i;
         }
 
@@ -661,39 +637,55 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
             setBits(BM_DATA, offTable, endTable - offTable);
 
             pIcode.ll()->setFlags(SWITCH);
-            //pIcode.ll()->caseTbl2.numEntries = (endTable - offTable) / 2;
 
+            uint32_t k;
             for (i = offTable, k = 0; i < endTable; i += 2)
             {
                 StCopy = *pstate;
                 StCopy.IP = cs + LH(&prog.image()[i]);
-                iICODE last_current_insn = (++Icode.rbegin()).base();
-                //ip = Icode.size();
-
-                Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
-
-                ++last_current_insn;
-                last_current_insn->ll()->caseEntry = k++;
-                last_current_insn->ll()->setFlags(CASE);
-                pIcode.ll()->caseTbl2.push_back( last_current_insn->ll()->GetLlLabel() );
-
+                Project::get()->addCommand(func,new FollowControlFlow(StCopy));
+                Project::get()->addCommand(func,new MarkAsSwitchCase(pIcode.ll()->label,StCopy.IP,k++));
             }
             return true;
         }
     }
-    if(decodeIndirectJMP(pIcode,pstate,pcallGraph)) {
+    return false;
+}
+static bool process_JMP(const PtrFunction &func,ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
+{
+    PROG &prog(Project::get()->prog);
+
+    if (pIcode.ll()->testFlags(I))
+    {
+        if (pIcode.ll()->getOpcode() == iJMPF)
+            pstate->setState( rCS, LH(prog.image() + pIcode.ll()->label + 3));
+        pstate->IP = pIcode.ll()->src().getImm2();
+        int64_t i = pIcode.ll()->src().getImm2();
+        if (i < 0)
+        {
+            exit(1);
+        }
+
+        /* Return true if jump target is already parsed */
+        return func->Icode.alreadyDecoded(i);
+    }
+    /* We've got an indirect JMP */
+    if(decodeIndirectJMP0(func,pIcode,pstate)) {
         return true;
     }
-    if(decodeIndirectJMP2(pIcode,pstate,pcallGraph)) {
+    if(decodeIndirectJMP(func,pIcode,pstate)) {
+        return true;
+    }
+    if(decodeIndirectJMP2(func,pIcode,pstate)) {
         return true;
     }
 
     /* Can't do anything with this jump */
 
-    flg |= PROC_IJMP;
-    flg &= ~TERMINATES;
+    func->flg |= PROC_IJMP;
+    func->flg &= ~TERMINATES;
     // TODO: consider adding a new user-interactive command ResolveControlFlowFailure ?
-    interactDis(shared_from_this(), Icode.size()-1);
+    interactDis(func, func->Icode.size()-1);
     return true;
 }
 

@@ -232,7 +232,6 @@ public:
     void markImpure();
     void findImmedDom();
     void process_operands(ICODE &pIcode, STATE *pstate);
-    bool process_JMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     bool process_CALL(ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
     void freeCFG();
     void codeGen(QIODevice & fs);
@@ -285,10 +284,6 @@ protected:
     bool    findDerivedSeq(derSeq &derivedGi);
     bool    nextOrderGraph(derSeq &derivedGi);
     void    addOutEdgesForConditionalJump(BB*        pBB, int next_ip, LLInst *ll);
-
-private:
-    bool    decodeIndirectJMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
-    bool    decodeIndirectJMP2(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
 };
 
 typedef std::list<PtrFunction> FunctionListType;
