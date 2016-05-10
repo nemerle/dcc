@@ -2,6 +2,8 @@
  *          dcc project procedure list builder
  * (C) Cristina Cifuentes, Mike van Emmerik, Jeff Ledermann
  ****************************************************************************/
+#include "parser.h"
+
 #include "dcc.h"
 #include "project.h"
 #include "CallGraph.h"
@@ -18,6 +20,12 @@
 #include <deque>
 #include <QMap>
 #include <QtCore/QDebug>
+
+//TODO: The OS service resolution should be done iteratively:
+// for every unprocessed INT instruction, that calls OS service that does not terminate execution
+//  mark INT as non-termination instruction
+//  follow execution flow from next instruction
+//  recheck OS services
 
 using namespace std;
 
@@ -111,11 +119,60 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
     eIcode.ll()->label = Project::get()->SynthLab++;
     return Icode.addIcode(&eIcode);
 }
+/**
+ * @brief resolveOSServices
+ * @param ll
+ * @param pstate
+ * @return true if given OS service will terminate the program
+ */
+//TODO: convert into command
+bool resolveOSServices(LLInst *ll, STATE *pstate)
+{
+    PROG &prog(Project::get()->prog);
+    SYMTAB &global_symbol_table(Project::get()->symtab);
+
+    bool terminates=false;
+    if(pstate->isKnown(rAX))
+        assert(pstate->isKnown(rAH));
+    if (ll->src().getImm2() == 0x21 and pstate->isKnown(rAH))
+    {
+        int funcNum = pstate->r[rAH];
+        int operand;
+        int size;
+
+        /* Save function number */
+        ll->m_dst.off = (int16_t)funcNum;
+        //Icode.GetIcode(Icode.GetNumIcodes() - 1)->
+
+        /* Program termination: int21h, fn 00h, 31h, 4Ch */
+        terminates  = (bool)(funcNum == 0x00 or funcNum == 0x31 or funcNum == 0x4C);
+
+        /* String functions: int21h, fn 09h */
+        /* offset goes into DX */
+        if (pstate->isKnown(rDX))
+            if (funcNum == 0x09)
+            {
+                operand = ((uint32_t)(uint16_t)pstate->r[rDS]<<4) + (uint32_t)(uint16_t)pstate->r[rDX];
+                size = prog.fCOM ?
+                           strSize (&prog.image()[operand], '$') :
+                           strSize (&prog.image()[operand], '$'); // + 0x100
+                global_symbol_table.updateSymType (operand, TypeContainer(TYPE_STR, size));
+            }
+    }
+    else if ((ll->src().getImm2() == 0x2F) and pstate->isKnown(rAH))
+    {
+        ll->m_dst.off = pstate->r[rAH];
+    }
+    else    /* Program termination: int20h, int27h */
+        terminates = (ll->src().getImm2() == 0x20 or ll->src().getImm2() == 0x27);
+
+    return terminates;
+}
 
 /** FollowCtrl - Given an initial procedure, state information and symbol table
  * builds a list of procedures reachable from the initial procedure
  * using a depth first search.     */
-void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
+void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
 {
     Project *project(Project::get());
     PROG &prog(Project::get()->prog);
@@ -124,20 +181,20 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     uint32_t   offset;
     eErrorId err;
     bool   done = false;
-    SYMTAB &global_symbol_table(Project::get()->symtab);
-    if (name.contains("chkstk"))
+
+    if (func.name.contains("chkstk"))
     {
         // Danger! Dcc will likely fall over in this code.
         // So we act as though we have done with this proc
         // pProc->flg &= ~TERMINATES; // Not sure about this
         done = true;
         // And mark it as a library function, so structure() won't choke on it
-        flg |= PROC_ISLIB;
+        func.flg |= PROC_ISLIB;
         return;
     }
     if (option.VeryVerbose)
     {
-        qDebug() << "Parsing proc" << name << "at"<< QString::number(pstate->IP,16).toUpper();
+        qDebug() << "Parsing proc" << func.name << "at"<< QString::number(pstate->IP,16).toUpper();
     }
 
     while (not done )
@@ -149,14 +206,14 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         pstate->IP += (uint32_t)ll->numBytes;
         setBits(BM_CODE, ll->label, (uint32_t)ll->numBytes);
 
-        process_operands(_Icode,pstate);
+        func.process_operands(_Icode,pstate);
 
         /* Keep track of interesting instruction flags in procedure */
-        flg |= (ll->getFlag() & (NOT_HLL | FLOAT_OP));
+        func.flg |= (ll->getFlag() & (NOT_HLL | FLOAT_OP));
 
         /* Check if this instruction has already been parsed */
-        iICODE labLoc = Icode.labelSrch(ll->label);
-        if (Icode.end()!=labLoc)
+        iICODE labLoc = func.Icode.labelSrch(ll->label);
+        if (func.Icode.end()!=labLoc)
         {   /* Synthetic jump */
             _Icode.type = LOW_LEVEL;
             ll->set(iJMP,I | SYNTHETIC | NO_OPS);
@@ -166,11 +223,11 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
         /* Copy Icode to Proc */
         if ((ll->getOpcode() == iDIV) or (ll->getOpcode() == iIDIV))
-            pIcode = translate_DIV(ll, _Icode);
+            pIcode = func.translate_DIV(ll, _Icode);
         else if (_Icode.ll()->getOpcode() == iXCHG)
-            pIcode = translate_XCHG(ll, _Icode);
+            pIcode = func.translate_XCHG(ll, _Icode);
         else
-            pIcode = Icode.addIcode(&_Icode);
+            pIcode = func.Icode.addIcode(&_Icode);
 
         switch (ll->getOpcode()) {
             /*** Conditional jumps ***/
@@ -182,8 +239,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iJCXZ:
             {
                 STATE   StCopy;
-                int     ip      = Icode.size()-1;   /* Index of this jump */
-                ICODE  &prev(*(++Icode.rbegin()));  /* Previous icode */
+                int     ip      = func.Icode.size()-1;   /* Index of this jump */
+                ICODE  &prev(*(++func.Icode.rbegin()));  /* Previous icode */
                 bool   fBranch = false;
 
                 pstate->JCond.regi = 0;
@@ -203,29 +260,28 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 StCopy = *pstate;
 
                 /* Straight line code */
-                project->addCommand(shared_from_this(),new FollowControlFlow(StCopy)); // recurrent ?
+                project->addCommand(func.shared_from_this(),new FollowControlFlow(StCopy)); // recurrent ?
 
                 if (fBranch)                /* Do branching code */
                 {
                     pstate->JCond.regi = prev.ll()->m_dst.regi;
                 }
-                /* Next icode. Note: not the same as GetLastIcode() because of the call
-                                to FollowCtrl() */
-                pIcode = Icode.GetIcode(ip);
+                /* Next icode. Note: not the same as GetLastIcode() because of the call to FollowCtrl() */
+                pIcode = func.Icode.GetIcode(ip);
                 /* do the jump path */
-                done = process_JMP (*pIcode, pstate, pcallGraph);
+                done = func.process_JMP (*pIcode, pstate, pcallGraph);
                 break;
             }
                 /*** Jumps ***/
             case iJMP:
             case iJMPF: /* Returns true if we've run into a loop */
-                done = process_JMP (*pIcode, pstate, pcallGraph);
+                done = func.process_JMP (*pIcode, pstate, pcallGraph);
                 break;
 
                 /*** Calls ***/
             case iCALL:
             case iCALLF:
-                done = process_CALL (*pIcode, pcallGraph, pstate);
+                done = func.process_CALL (*pIcode, pcallGraph, pstate);
                 pstate->kill(rBX);
                 pstate->kill(rCX);
                 break;
@@ -233,48 +289,17 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 /*** Returns ***/
             case iRET:
             case iRETF:
-                this->flg |= (ll->getOpcode() == iRET)? PROC_NEAR:PROC_FAR;
-                this->flg &= ~TERMINATES;
+                func.flg |= (ll->getOpcode() == iRET)? PROC_NEAR:PROC_FAR;
+                func.flg &= ~TERMINATES;
                 done = true;
                 break;
             case iIRET:
-                this->flg &= ~TERMINATES;
+                func.flg &= ~TERMINATES;
                 done = true;
                 break;
 
             case iINT:
-                if (ll->src().getImm2() == 0x21 and pstate->f[rAH])
-                {
-                    int funcNum = pstate->r[rAH];
-                    int operand;
-                    int size;
-
-                    /* Save function number */
-                    Icode.back().ll()->m_dst.off = (int16_t)funcNum;
-                    //Icode.GetIcode(Icode.GetNumIcodes() - 1)->
-
-                    /* Program termination: int21h, fn 00h, 31h, 4Ch */
-                    done  = (bool)(funcNum == 0x00 or funcNum == 0x31 or
-                                    funcNum == 0x4C);
-
-                    /* String functions: int21h, fn 09h */
-                    if (pstate->f[rDX])      /* offset goes into DX */
-                        if (funcNum == 0x09)
-                        {
-                            operand = ((uint32_t)(uint16_t)pstate->r[rDS]<<4) +
-                                      (uint32_t)(uint16_t)pstate->r[rDX];
-                            size = prog.fCOM ?
-                                       strSize (&prog.image()[operand], '$') :
-                                       strSize (&prog.image()[operand], '$'); // + 0x100
-                            global_symbol_table.updateSymType (operand, TypeContainer(TYPE_STR, size));
-                        }
-                }
-                else if ((ll->src().getImm2() == 0x2F) and (pstate->f[rAH]))
-                {
-                    Icode.back().ll()->m_dst.off = pstate->r[rAH];
-                }
-                else    /* Program termination: int20h, int27h */
-                    done = (ll->src().getImm2() == 0x20 or ll->src().getImm2() == 0x27);
+                done = resolveOSServices(ll, pstate);
                 if (done)
                     pIcode->ll()->setFlags(TERMINATES);
                 break;
@@ -318,12 +343,12 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     }
 
     if (err) {
-        this->flg &= ~TERMINATES;
+        func.flg &= ~TERMINATES;
 
         if (err == INVALID_386OP or err == INVALID_OPCODE)
         {
             fatalError(err, prog.image()[_Icode.ll()->label], _Icode.ll()->label);
-            this->flg |= PROC_BADINST;
+            func.flg |= PROC_BADINST;
         }
         else if (err == IP_OUT_OF_RANGE)
             fatalError (err, _Icode.ll()->label);
@@ -414,11 +439,11 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
     // pattern starts at the last jmp
     ICODE *load_num_cases = matched[0];
     ICODE *load_jump_table_addr = matched[1];
-    ICODE *read_case_entry_insn = matched[2];
-    ICODE *cmp_case_val_insn = matched[3];
-    ICODE *exit_loop_insn = matched[4];
-    ICODE *add_bx_insn = matched[5];
-    ICODE *loop_insn = matched[6];
+//    ICODE *read_case_entry_insn = matched[2];
+//    ICODE *cmp_case_val_insn = matched[3];
+//    ICODE *exit_loop_insn = matched[4];
+//    ICODE *add_bx_insn = matched[5];
+//    ICODE *loop_insn = matched[6];
     ICODE *default_jmp = matched[7];
     ICODE *last_jmp = matched[8];
     for(int i=0; i<8; ++i) {

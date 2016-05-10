@@ -79,6 +79,7 @@ set(dcc_LIB_SOURCES
     src/idioms/xor_idioms.cpp
     src/locident.cpp
     src/liveness_set.cpp
+    src/parser.h
     src/parser.cpp
     src/procs.cpp
     src/project.cpp

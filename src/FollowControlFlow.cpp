@@ -1,6 +1,7 @@
 #include "FollowControlFlow.h"
 
 #include "project.h"
+#include "parser.h"
 
 QString FollowControlFlow::instanceDescription() const
 {
@@ -11,6 +12,7 @@ bool FollowControlFlow::execute(CommandContext *ctx)
 {
     Project &proj(*ctx->m_project);
     PtrFunction scanned_func(ctx->m_func);
-    scanned_func->FollowCtrl(proj.callGraph, &m_start_state);
+    scanned_func->switchState(eDisassemblyInProgress);
+    FollowCtrl(*scanned_func,proj.callGraph, &m_start_state);
     return false;
 }

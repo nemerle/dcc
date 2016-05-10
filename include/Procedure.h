@@ -231,7 +231,6 @@ public:
     void createCFG();
     void markImpure();
     void findImmedDom();
-    void FollowCtrl(CALL_GRAPH *pcallGraph, STATE *pstate);
     void process_operands(ICODE &pIcode, STATE *pstate);
     bool process_JMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     bool process_CALL(ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
@@ -256,6 +255,8 @@ public:
     void processDosInt(STATE *pstate, PROG &prog, bool done);
     ICODE *translate_DIV(LLInst *ll, ICODE &_Icode);
     ICODE *translate_XCHG(LLInst *ll, ICODE &_Icode);
+
+    void switchState(DecompilationStep s);
 protected:
     void extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &table);
     bool followAllTableEntries(JumpTable &table, uint32_t cs, ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);

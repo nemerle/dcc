@@ -131,3 +131,7 @@ void FunctionType::setCallingConvention(CConv::CC_Type cc)
     m_call_conv=CConv::create(cc);
     assert(m_call_conv);
 }
+void Function::switchState(DecompilationStep s)
+{
+    nStep = s;
+}
