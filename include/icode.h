@@ -596,7 +596,7 @@ class CIcodeRec : public std::list<ICODE>
 public:
     CIcodeRec();	// Constructor
 
-    ICODE *	addIcode(ICODE *pIcode);
+    ICODE *	addIcode(const ICODE * pIcode);
     void	SetInBB(rCODE &rang, BB* pnewBB);
     bool	labelSrch(uint32_t target, uint32_t &pIndex);
     iterator    labelSrch(uint32_t target);

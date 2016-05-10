@@ -44,80 +44,81 @@ int strSize (const uint8_t *sym, char delim)
     const uint8_t *end_ptr=std::find(sym,sym+(prog.cbImage-(till_end)),delim);
     return end_ptr-sym+1;
 }
-ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
+
+static std::vector<ICODE> rewrite_DIV(LLInst *ll, ICODE &_Icode)
 {
-    /* MOV rTMP, reg */
+    ICODE synth_mov = ICODE(); // MOV rTMP, reg
+    ICODE synth_mod = ICODE(); // MOD
 
-    ICODE eIcode = ICODE();
-
-    eIcode.type = LOW_LEVEL;
-    eIcode.ll()->set(iMOV,0,rTMP);
+    synth_mov.type = LOW_LEVEL;
+    synth_mov.ll()->set(iMOV,0,rTMP);
     if (ll->testFlags(B) )
     {
-        eIcode.ll()->setFlags( B );
-        eIcode.ll()->replaceSrc(rAX);
+        synth_mov.ll()->setFlags( B );
+        synth_mov.ll()->replaceSrc(rAX);
     }
     else    /* implicit dx:ax */
     {
-        eIcode.ll()->setFlags( IM_SRC );
-        eIcode.setRegDU( rDX, eUSE);
+        synth_mov.ll()->setFlags( IM_SRC );
+        synth_mov.setRegDU( rDX, eUSE);
     }
-    eIcode.setRegDU( rAX, eUSE);
-    eIcode.setRegDU( rTMP, eDEF);
-    eIcode.ll()->setFlags( SYNTHETIC );
+    synth_mov.setRegDU( rAX, eUSE);
+    synth_mov.setRegDU( rTMP, eDEF);
+    synth_mov.ll()->setFlags( SYNTHETIC );
     /* eIcode.ll()->label = Project::get()->SynthLab++; */
-    eIcode.ll()->label = _Icode.ll()->label;
-    Icode.addIcode(&eIcode);
-
-    /* iDIV, iIDIV */
-    Icode.addIcode(&_Icode);
+    synth_mov.ll()->label = _Icode.ll()->label;
 
     /* iMOD */
-    eIcode = ICODE();
-    eIcode.type = LOW_LEVEL;
-    eIcode.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
-    eIcode.ll()->replaceSrc(_Icode.ll()->src());
-    eIcode.du = _Icode.du;
-    eIcode.ll()->label = Project::get()->SynthLab++;
-    return Icode.addIcode(&eIcode);
+    synth_mod.type = LOW_LEVEL;
+    synth_mod.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
+    synth_mod.ll()->replaceSrc(_Icode.ll()->src());
+    synth_mod.du = _Icode.du;
+    synth_mod.ll()->label = Project::get()->SynthLab++;
+    return {
+        synth_mov,
+        _Icode,
+        synth_mod
+    };
 }
-ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
+static std::vector<ICODE> rewrite_XCHG(LLInst *ll,ICODE &_Icode)
 {
     /* MOV rTMP, regDst */
-    ICODE eIcode;
-    eIcode.type = LOW_LEVEL;
-    eIcode.ll()->set(iMOV,SYNTHETIC,rTMP,ll->m_dst);
-    eIcode.setRegDU( rTMP, eDEF);
-    if(eIcode.ll()->src().getReg2())
+    ICODE mov_tmp_dst;
+    mov_tmp_dst.type = LOW_LEVEL;
+    mov_tmp_dst.ll()->set(iMOV,SYNTHETIC,rTMP,ll->m_dst);
+    mov_tmp_dst.setRegDU( rTMP, eDEF);
+    if(mov_tmp_dst.ll()->src().getReg2())
     {
-        eReg srcreg=eIcode.ll()->src().getReg2();
-        eIcode.setRegDU( srcreg, eUSE);
+        eReg srcreg=mov_tmp_dst.ll()->src().getReg2();
+        mov_tmp_dst.setRegDU( srcreg, eUSE);
         if((srcreg>=rAL) and (srcreg<=rBH))
-            eIcode.ll()->setFlags( B );
+            mov_tmp_dst.ll()->setFlags( B );
     }
-    eIcode.ll()->label = ll->label;
-    Icode.addIcode(&eIcode);
-
+    mov_tmp_dst.ll()->label = ll->label;
     /* MOV regDst, regSrc */
-    ll->set(iMOV,SYNTHETIC|ll->getFlag());
-    Icode.addIcode(&_Icode);
-    ll->setOpcode(iXCHG); /* for next case */
+    ICODE mov_dst_src  = _Icode; // copy all XCHG things, but set opcode to iMOV and mark it as synthetic insn
+    mov_dst_src.ll()->set(iMOV,SYNTHETIC|ll->getFlag());
 
     /* MOV regSrc, rTMP */
-    eIcode = ICODE();
-    eIcode.type = LOW_LEVEL;
-    eIcode.ll()->set(iMOV,SYNTHETIC);
-    eIcode.ll()->replaceDst(ll->src());
-    if(eIcode.ll()->m_dst.regi)
+
+    ICODE mov_src_tmp;
+    mov_src_tmp.type = LOW_LEVEL;
+    mov_src_tmp.ll()->set(iMOV,SYNTHETIC);
+    mov_src_tmp.ll()->replaceDst(ll->src());
+    if(mov_src_tmp.ll()->m_dst.regi)
     {
-        if((eIcode.ll()->m_dst.regi>=rAL) and (eIcode.ll()->m_dst.regi<=rBH))
-            eIcode.ll()->setFlags( B );
-        eIcode.setRegDU( eIcode.ll()->m_dst.regi, eDEF);
+        if((mov_src_tmp.ll()->m_dst.regi>=rAL) and (mov_src_tmp.ll()->m_dst.regi<=rBH))
+            mov_src_tmp.ll()->setFlags( B );
+        mov_src_tmp.setRegDU( mov_src_tmp.ll()->m_dst.regi, eDEF);
     }
-    eIcode.ll()->replaceSrc(rTMP);
-    eIcode.setRegDU( rTMP, eUSE);
-    eIcode.ll()->label = Project::get()->SynthLab++;
-    return Icode.addIcode(&eIcode);
+    mov_src_tmp.ll()->replaceSrc(rTMP);
+    mov_src_tmp.setRegDU( rTMP, eUSE);
+    mov_src_tmp.ll()->label = Project::get()->SynthLab++;
+    return {
+        mov_tmp_dst,
+        mov_dst_src,
+        mov_src_tmp
+    };
 }
 /**
  * @brief resolveOSServices
@@ -125,8 +126,8 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
  * @param pstate
  * @return true if given OS service will terminate the program
  */
-//TODO: convert into command
-bool resolveOSServices(LLInst *ll, STATE *pstate)
+//TODO: convert into Command class
+static bool resolveOSServices(LLInst *ll, STATE *pstate)
 {
     PROG &prog(Project::get()->prog);
     SYMTAB &global_symbol_table(Project::get()->symtab);
@@ -222,12 +223,19 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
         }
 
         /* Copy Icode to Proc */
-        if ((ll->getOpcode() == iDIV) or (ll->getOpcode() == iIDIV))
-            pIcode = func.translate_DIV(ll, _Icode);
-        else if (_Icode.ll()->getOpcode() == iXCHG)
-            pIcode = func.translate_XCHG(ll, _Icode);
-        else
+        if ((ll->getOpcode() == iDIV) or (ll->getOpcode() == iIDIV)) {
+            std::vector<ICODE> translated = rewrite_DIV(ll,_Icode);
+            for(const ICODE &ic : translated)
+                pIcode = func.Icode.addIcode(&ic);
+        }
+        else if (_Icode.ll()->getOpcode() == iXCHG) {
+            std::vector<ICODE> translated = rewrite_XCHG(ll,_Icode);
+            for(const ICODE &ic : translated)
+                pIcode = func.Icode.addIcode(&ic);
+        }
+        else {
             pIcode = func.Icode.addIcode(&_Icode);
+        }
 
         switch (ll->getOpcode()) {
             /*** Conditional jumps ***/
@@ -307,12 +315,6 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
             case iMOV:
                 process_MOV(*pIcode->ll(), pstate);
                 break;
-
-                /* case iXCHG:
-            process_MOV (pIcode, pstate);
-
-            break; **** HERE ***/
-
             case iSHL:
                 if (pstate->JCond.regi == ll->m_dst.regi)
                 {
@@ -333,7 +335,7 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
                         /* and (Icode.ll()->flg & SEG_IMMED) */ )
                 {
                     offset = LH(&prog.image()[psym->label]);
-                    pstate->setState( (ll->getOpcode() == iLDS)? rDS: rES,
+                    pstate->setState( (ll->getOpcode() == iLDS)? rDS : rES,
                                       LH(&prog.image()[psym->label + 2]));
                     pstate->setState( ll->m_dst.regi, (int16_t)offset);
                     psym->type = TYPE_PTR;

@@ -253,8 +253,6 @@ public:
     Expr * adjustActArgType(Expr *_exp, hlType forType);
     QString writeCall(Function *tproc, STKFRAME &args, int *numLoc);
     void processDosInt(STATE *pstate, PROG &prog, bool done);
-    ICODE *translate_DIV(LLInst *ll, ICODE &_Icode);
-    ICODE *translate_XCHG(LLInst *ll, ICODE &_Icode);
 
     void switchState(DecompilationStep s);
 protected:
