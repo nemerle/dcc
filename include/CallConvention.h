@@ -1,6 +1,9 @@
 #pragma once
 #include "ast.h"
 
+#ifdef PASCAL
+#undef PASCAL
+#endif
 class QTextStream;
 
 struct CConv {
