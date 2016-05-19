@@ -33,6 +33,7 @@ using namespace std;
 static void     setBits(int16_t type, uint32_t start, uint32_t len);
 static void     process_MOV(LLInst &ll, STATE * pstate);
 static bool     process_JMP(const PtrFunction &func,ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph);
+static bool     process_CALL(const PtrFunction &func,ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate);
 static SYM *    lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t duFlag);
 //void    interactDis(Function * initProc, int ic);
 
@@ -257,7 +258,7 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
                 /* This sets up range check for indexed JMPs hopefully
                  * Handles JA/JAE for fall through and JB/JBE on branch
                  */
-                if (ip > 0 and prev.ll()->getOpcode() == iCMP and (prev.ll()->testFlags(I)))
+                if (ip > 0 and prev.ll()->match(iCMP,I) )
                 {
                     pstate->JCond.immed = (int16_t)prev.ll()->src().getImm2();
                     if (ll->match(iJA) or ll->match(iJBE) )
@@ -290,7 +291,7 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
                 /*** Calls ***/
             case iCALL:
             case iCALLF:
-                done = func.process_CALL (*pIcode, pcallGraph, pstate);
+                done = process_CALL(func.shared_from_this(),*pIcode, pcallGraph, pstate);
                 pstate->kill(rBX);
                 pstate->kill(rCX);
                 break;
@@ -319,7 +320,7 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
             case iSHL:
                 if (pstate->JCond.regi == ll->m_dst.regi)
                 {
-                    if ((ll->testFlags(I)) and ll->src().getImm2() == 1)
+                    if (ll->srcIsImmed() and ll->src().getImm2() == 1)
                         pstate->JCond.immed *= 2;
                     else
                         pstate->JCond.regi = 0;
@@ -375,33 +376,6 @@ void Function::extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &ta
         table.finish = table.start + 2;
 }
 
-/* process_JMP - Handles JMPs, returns true if we should end recursion  */
-bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcode, CALL_GRAPH* pcallGraph, STATE *pstate)
-{
-    PROG &prog(Project::get()->prog);
-    STATE   StCopy;
-
-    setBits(BM_DATA, table.start, table.size()*table.entrySize());
-
-    pIcode.ll()->setFlags(SWITCH);
-    pIcode.ll()->caseTbl2.resize( table.size() );
-    assert(pIcode.ll()->caseTbl2.size()<512);
-    uint32_t k=0;
-    for (size_t i = table.start; i < table.finish; i += 2)
-    {
-        StCopy = *pstate;
-        StCopy.IP = cs + LH(&prog.image()[i]);
-        iICODE last_current_insn = (++Icode.rbegin()).base();
-
-        Project::get()->addCommand(shared_from_this(),new FollowControlFlow(StCopy));
-
-        ++last_current_insn; // incremented here because FollowCtrl might have adde more instructions after the Jmp
-        last_current_insn->ll()->caseEntry = k++;
-        last_current_insn->ll()->setFlags(CASE);
-        pIcode.ll()->caseTbl2.push_back( last_current_insn->ll()->GetLlLabel() );
-    }
-    return true;
-}
 static bool decodeIndirectJMP(const PtrFunction &func,ICODE & pIcode, STATE *pstate)
 {
     PROG &prog(Project::get()->prog);
@@ -651,11 +625,12 @@ static bool decodeIndirectJMP0(const PtrFunction &func,ICODE & pIcode, STATE *ps
     }
     return false;
 }
+/* process_JMP - Handles JMPs, returns true if we should end recursion  */
 static bool process_JMP(const PtrFunction &func,ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGraph)
 {
     PROG &prog(Project::get()->prog);
 
-    if (pIcode.ll()->testFlags(I))
+    if (pIcode.ll()->srcIsImmed())
     {
         if (pIcode.ll()->getOpcode() == iJMPF)
             pstate->setState( rCS, LH(prog.image() + pIcode.ll()->label + 3));
@@ -699,17 +674,16 @@ static bool process_JMP(const PtrFunction &func,ICODE & pIcode, STATE *pstate, C
  *       programmer expected it to come back - otherwise surely a JMP would
  *       have been used.  */
 
-bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
+bool process_CALL(const PtrFunction &func,ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
     Project &project(*Project::get());
     PROG &prog(Project::get()->prog);
-    ICODE &last_insn(Icode.back());
-    STATE localState;     /* Local copy of the machine state */
+    ICODE &last_insn(func->Icode.back());
     uint32_t off;
     /* For Indirect Calls, find the function address */
     bool indirect = false;
     //pIcode.ll()->immed.proc.proc=fakeproc;
-    if ( not pIcode.ll()->testFlags(I) )
+    if ( not pIcode.ll()->srcIsImmed() )
     {
         /* Not immediate, i.e. indirect call */
 
@@ -754,14 +728,14 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
         if (pIcode.ll()->getOpcode() == iCALLF)
             tgtAddr= LH(&prog.image()[off]) + ((uint32_t)(LH(&prog.image()[off+2])) << 4);
         else
-            tgtAddr= LH(&prog.image()[off]) + ((uint32_t)(uint16_t)state.r[rCS] << 4);
+            tgtAddr= LH(&prog.image()[off]) + ((uint32_t)(uint16_t)pstate->r[rCS] << 4);
         pIcode.ll()->replaceSrc(LLOperand::CreateImm2( tgtAddr ) );
         pIcode.ll()->setFlags(I);
         indirect = true;
     }
 
     /* Process CALL.  Function address is located in pIcode.ll()->immed.op */
-    if (pIcode.ll()->testFlags(I))
+    if (pIcode.ll()->srcIsImmed())
     {
         /* Search procedure list for one with appropriate entry point */
         PtrFunction iter = Project::get()->findByEntry(pIcode.ll()->src().getImm2());
@@ -777,7 +751,7 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
             if (x.flg & PROC_ISLIB)
             {
                 /* A library function. No need to do any more to it */
-                pcallGraph->insertCallGraph (this->shared_from_this(), iter);
+                pcallGraph->insertCallGraph (func, iter);
                 //iter = (++pProcList.rbegin()).base();
                 last_insn.ll()->src().proc.proc = &x;
                 return false;
@@ -793,29 +767,21 @@ bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *psta
             x.depth = x.depth + 1;
             x.flg |= TERMINATES;
 
-            /* Save machine state in localState, load up IP and CS.*/
-            localState = *pstate;
             pstate->IP = pIcode.ll()->src().getImm2();
             if (pIcode.ll()->getOpcode() == iCALLF)
                 pstate->setState( rCS, LH(prog.image() + pIcode.ll()->label + 3));
             x.state = *pstate;
 
             /* Insert new procedure in call graph */
-            pcallGraph->insertCallGraph (this->shared_from_this(), iter);
+            pcallGraph->insertCallGraph (func, iter);
 
             /* Process new procedure */
             Project::get()->addCommand(iter,new FollowControlFlow(*pstate));
 
-            /* Restore segment registers & IP from localState */
-            pstate->IP = localState.IP;
-            pstate->setState( rCS, localState.r[rCS]);
-            pstate->setState( rDS, localState.r[rDS]);
-            pstate->setState( rES, localState.r[rES]);
-            pstate->setState( rSS, localState.r[rSS]);
 
         }
         else
-            Project::get()->callGraph->insertCallGraph (this->shared_from_this(), iter);
+            Project::get()->callGraph->insertCallGraph (func, iter);
 
         last_insn.ll()->src().proc.proc = &(*iter); // ^ target proc
 
@@ -834,7 +800,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
     uint8_t  srcReg = ll.src().regi;
     if (dstReg > 0 and dstReg < INDEX_BX_SI)
     {
-        if (ll.testFlags(I))
+        if (ll.srcIsImmed())
             pstate->setState( dstReg, (int16_t)ll.src().getImm2());
         else if (srcReg == 0)   /* direct memory offset */
         {
@@ -1096,7 +1062,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     }
 
     /* Use of register */
-    else if ((d == DST) or ((d == SRC) and (not pIcode.ll()->testFlags(I))))
+    else if ((d == DST) or ((d == SRC) and (not pIcode.ll()->srcIsImmed())))
         pIcode.du.use.addReg(pm->regi);
 }
 
@@ -1145,7 +1111,7 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         }
     }
     /* Definition of register */
-    else if ((d == DST) or ((d == SRC) and (not pIcode.ll()->testFlags(I))))
+    else if ((d == DST) or ((d == SRC) and (not pIcode.ll()->srcIsImmed())))
     {
         assert(not pIcode.ll()->match(iPUSH));
         pIcode.du1.addDef(pm->regi);
@@ -1182,7 +1148,7 @@ void Function::process_operands(ICODE & pIcode,  STATE * pstate)
     int   sseg = (ll_ins.src().seg)? ll_ins.src().seg: rDS;
     int   cb   = pIcode.ll()->testFlags(B) ? 1: 2;
     //x86_op_t *im= pIcode.insn.x86_get_imm();
-    bool Imm  = (pIcode.ll()->testFlags(I));
+    bool Imm  = (pIcode.ll()->srcIsImmed());
 
     switch (pIcode.ll()->getOpcode()) {
         case iAND:  case iOR:   case iXOR:

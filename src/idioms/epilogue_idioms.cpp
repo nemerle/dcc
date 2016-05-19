@@ -48,7 +48,7 @@ bool Idiom2::match(iICODE pIcode)
     iICODE nicode;
     if(pIcode==m_func->Icode.begin()) // pIcode->loc_ip == 0
         return false;
-    if ( pIcode->ll()->testFlags(I) or (not pIcode->ll()->match(rSP,rBP)) )
+    if ( pIcode->ll()->srcIsImmed() or (not pIcode->ll()->match(rSP,rBP)) )
         return false;
     if(distance(pIcode,m_end)<3)
         return false;
@@ -63,7 +63,7 @@ bool Idiom2::match(iICODE pIcode)
     }
     if(nicode == m_end)
         return false;
-
+    //TODO: strange test here - 'I' means instruction has immediate source operand
     if (nicode->ll()->match(iPOP,rBP) and not (nicode->ll()->testFlags(I | TARGET | CASE)) )
     {
         m_icodes.push_back(nicode++); // Matched POP BP
@@ -71,7 +71,7 @@ bool Idiom2::match(iICODE pIcode)
         /* Match RET(F) */
         if (    nicode != m_end and
                 not (nicode->ll()->testFlags(I | TARGET | CASE)) and
-                (nicode->ll()->match(iRET) or nicode->ll()->match(iRETF))
+                nicode->ll()->matchAny({iRET,iRETF})
                 )
         {
             m_icodes.push_back(nicode); // Matched RET
@@ -120,7 +120,7 @@ bool Idiom4::match(iICODE pIcode)
     {
         iICODE prev1 = --iICODE(pIcode);
         /* Check for POP BP */
-        if (prev1->ll()->match(iPOP,rBP) and not prev1->ll()->testFlags(I) )
+        if (prev1->ll()->match(iPOP,rBP) and not prev1->ll()->srcIsImmed() )
             m_icodes.push_back(prev1);
         else if(prev1!=m_func->Icode.begin())
         {
@@ -131,7 +131,7 @@ bool Idiom4::match(iICODE pIcode)
     }
 
     /* Check for RET(F) immed */
-    if (pIcode->ll()->testFlags(I) )
+    if (pIcode->ll()->srcIsImmed() )
     {
         m_param_count = (int16_t)pIcode->ll()->src().getImm2();
         return true;

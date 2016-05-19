@@ -309,7 +309,7 @@ struct LLOperand
         Op.regi = (eReg)Val;
         return Op;
     }
-    bool isSet()
+    bool isSet() const
     {
         return not (*this == LLOperand());
     }
@@ -322,84 +322,90 @@ struct LLOperand
 struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
 {
 protected:
-    uint32_t        flg;            /* icode flags                  */
-    LLOperand       m_src;          /* source operand               */
+    uint32_t            flg;            /* icode flags                  */
+    LLOperand           m_src;          /* source operand               */
 public:
-    int             codeIdx;    	/* Index into cCode.code        */
-    uint8_t         numBytes;       /* Number of bytes this instr   */
-    uint32_t        label;          /* offset in image (20-bit adr) */
-    LLOperand       m_dst;          /* destination operand          */
-    DU              flagDU;         /* def/use of flags	    	    */
-    int             caseEntry;
+    int                 codeIdx;    	/* Index into cCode.code        */
+    uint8_t             numBytes;       /* Number of bytes this instr   */
+    uint32_t            label;          /* offset in image (20-bit adr) */
+    LLOperand           m_dst;          /* destination operand          */
+    DU                  flagDU;         /* def/use of flags	    	    */
+    int                 caseEntry;
     std::vector<uint32_t> caseTbl2;
-    int             hllLabNum;      /* label # for hll codegen      */
-    bool conditionalJump()
-    {
-        return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
-    }
-    bool testFlags(uint32_t x) const { return (flg & x)!=0;}
-    void  setFlags(uint32_t flag) {flg |= flag;}
-    void  clrFlags(uint32_t flag);
-    uint32_t getFlag() const {return flg;}
-    uint32_t GetLlLabel() const { return label;}
+    int                 hllLabNum;      /* label # for hll codegen      */
+    bool                conditionalJump()
+                        {
+                            return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
+                        }
+    bool                testFlags(uint32_t x) const { return (flg & x)!=0;}
+    void                setFlags(uint32_t flag) {flg |= flag;}
+    void                clrFlags(uint32_t flag);
+    uint32_t            getFlag() const {return flg;}
+    uint32_t            GetLlLabel() const { return label;}
 
-    void SetImmediateOp(uint32_t dw) {m_src.SetImmediateOp(dw);}
+    void                SetImmediateOp(uint32_t dw) {m_src.SetImmediateOp(dw);}
 
-    bool match(llIcode op)
-    {
-        return (getOpcode()==op);
-    }
-    bool matchWithRegDst(llIcode op)
-    {
-        return (getOpcode()==op) and m_dst.isReg();
-    }
-    bool match(llIcode op,eReg dest)
-    {
-        return (getOpcode()==op) and match(dest);
-    }
-    bool match(llIcode op,eReg dest,uint32_t flgs)
-    {
-        return match(op) and match(dest) and testFlags(flgs);
-    }
-    bool match(llIcode op,eReg dest,eReg src_reg)
-    {
-        return match(op) and match(dest) and (m_src.regi==src_reg);
-    }
-    bool match(eReg dest,eReg src_reg)
-    {
-        return match(dest) and (m_src.regi==src_reg);
-    }
-    bool match(eReg dest)
-    {
-        return (m_dst.regi==dest);
-    }
-    bool match(llIcode op,uint32_t flgs)
-    {
-        return match(op) and testFlags(flgs);
-    }
-    void set(llIcode op,uint32_t flags)
-    {
-        setOpcode(op);
-        flg =flags;
-    }
-    void set(llIcode op,uint32_t flags,eReg dst_reg)
-    {
-        setOpcode(op);
-        m_dst = LLOperand::CreateReg2(dst_reg);
-        flg =flags;
-    }
-    void set(llIcode op,uint32_t flags,eReg dst_reg,const LLOperand &src_op)
-    {
-        setOpcode(op);
-        m_dst = LLOperand::CreateReg2(dst_reg);
-        m_src = src_op;
-        flg =flags;
-    }
+    bool                match(llIcode op)
+                        {
+                            return (getOpcode()==op);
+                        }
+    bool                matchWithRegDst(llIcode op)
+                        {
+                            return match(op) and m_dst.isReg();
+                        }
+    bool                match(llIcode op,eReg dest)
+                        {
+                            return match(op) and match(dest);
+                        }
+    bool                match(llIcode op,eReg dest,uint32_t flgs)
+                        {
+                            return match(op) and match(dest) and testFlags(flgs);
+                        }
+    bool                match(llIcode op,eReg dest,eReg src_reg)
+                        {
+                            return match(op) and match(dest) and (m_src.regi==src_reg);
+                        }
+    bool                match(eReg dest,eReg src_reg)
+                        {
+                            return match(dest) and (m_src.regi==src_reg);
+                        }
+    bool                matchAny(std::initializer_list<llIcode> ops) {
+                            for(llIcode op : ops) {
+                                if(match(op))
+                                    return true;
+                            }
+                            return false;
+                        }
+    bool                match(eReg dest)
+                        {
+                            return (m_dst.regi==dest);
+                        }
+    bool                match(llIcode op,uint32_t flgs)
+                        {
+                            return match(op) and testFlags(flgs);
+                        }
+    void                set(llIcode op,uint32_t flags)
+                        {
+                            setOpcode(op);
+                            flg =flags;
+                        }
+    void                set(llIcode op,uint32_t flags,eReg dst_reg)
+                        {
+                            setOpcode(op);
+                            m_dst = LLOperand::CreateReg2(dst_reg);
+                            flg =flags;
+                        }
+    void                set(llIcode op,uint32_t flags,eReg dst_reg,const LLOperand &src_op)
+                        {
+                            setOpcode(op);
+                            m_dst = LLOperand::CreateReg2(dst_reg);
+                            m_src = src_op;
+                            flg =flags;
+                        }
     void                emitGotoLabel(int indLevel);
     void                findJumpTargets(CIcodeRec &_pc);
     void                writeIntComment(QTextStream & s);
     void                dis1Line(int loc_ip, int pass);
-    QTextStream &       strSrc(QTextStream & os, bool skip_comma=false);
 
     void                flops(QTextStream & out);
     bool                isJmpInst();
@@ -408,18 +414,30 @@ public:
                         {
                             setOpcode(0);
                         }
+    const LLOperand &   dst() const { return m_dst; }
+    LLOperand &         dst()       { return m_dst; }
     const LLOperand &   src() const { return m_src; }
     LLOperand &         src()       { return m_src; }
     void                replaceSrc(const LLOperand &with) { m_src = with; }
     void                replaceSrc(eReg r) { m_src = LLOperand::CreateReg2(r); }
     void                replaceSrc(int64_t r) { m_src = LLOperand::CreateImm2(r); }
     void                replaceDst(const LLOperand &with) { m_dst = with; }
+    bool                srcIsImmed() const { return (flg & I)!=0; }
     condId              idType(opLoc sd) const;
     const LLOperand *   get(opLoc sd) const { return (sd == SRC) ? &src() : &m_dst; }
     LLOperand *         get(opLoc sd) { return (sd == SRC) ? &src() : &m_dst; }
 
     ICODE *             m_link;
 };
+struct ADDRESS {
+
+};
+struct BinaryArea {
+    ADDRESS start;
+    ADDRESS fin;
+};
+#include <boost/icl/interval_set.hpp>
+#include <boost/icl/interval_map.hpp>
 
 /* Icode definition: LOW_LEVEL and HIGH_LEVEL */
 struct ICODE
@@ -427,7 +445,7 @@ struct ICODE
     // use llvm names at least
     typedef BB MachineBasicBlock;
 protected:
-    LLInst m_ll;
+    LLInst *m_ll;
     HLTYPE m_hl;
     MachineBasicBlock * Parent;      	/* BB to which this icode belongs   */
     bool                invalid;        /* Has no HIGH_LEVEL equivalent     */
@@ -530,8 +548,8 @@ public:
     DU1                 du1;            /* du chain 1                       */
     int                 loc_ip; // used by CICodeRec to number ICODEs
 
-    LLInst *            ll() { return &m_ll;}
-    const LLInst *      ll() const { return &m_ll;}
+    LLInst *            ll() { return m_ll;}
+    const LLInst *      ll() const { return m_ll;}
 
     HLTYPE *            hlU() {
         //        assert(type==HIGH_LEVEL);
@@ -571,8 +589,46 @@ public:
     {
         return hlU()->call.newStkArg(exp,opcode,pproc);
     }
-    ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT_SCANNED),loc_ip(0)
+    ICODE() :Parent(0),invalid(false),type(NOT_SCANNED),loc_ip(0)
     {
+         m_ll = new LLInst(this);
+    }
+    ~ICODE() {
+        delete m_ll;
+    }
+    ICODE(const ICODE &v) {
+        m_ll = new LLInst(*v.m_ll);
+        m_hl = v.m_hl;
+        Parent = v.Parent;
+        insn = v.insn;
+        type = v.type;
+        du = v.du;
+        du1 = v.du1;
+        loc_ip = v.loc_ip;
+
+    }
+    ICODE & operator=(const ICODE &v) {
+        delete m_ll;
+        m_ll = v.m_ll;
+        m_hl = v.m_hl;
+        Parent = v.Parent;
+        insn = v.insn;
+        type = v.type;
+        du = v.du;
+        du1 = v.du1;
+        loc_ip = v.loc_ip;
+        return *this;
+    }
+    ICODE & operator=(ICODE &&v) {
+        std::swap(m_ll,v.m_ll);
+        std::swap(m_hl,v.m_hl);
+        std::swap(Parent , v.Parent);
+        std::swap(insn , v.insn);
+        std::swap(type , v.type);
+        std::swap(du , v.du);
+        std::swap(du1 , v.du1);
+        std::swap(loc_ip , v.loc_ip);
+        return *this;
     }
 public:
     const MachineBasicBlock* getParent() const { return Parent; }
@@ -594,12 +650,12 @@ struct MappingLLtoML
 class CIcodeRec : public std::list<ICODE>
 {
 public:
-    CIcodeRec();	// Constructor
+                CIcodeRec();	// Constructor
 
-    ICODE *	addIcode(const ICODE * pIcode);
-    void	SetInBB(rCODE &rang, BB* pnewBB);
-    bool	labelSrch(uint32_t target, uint32_t &pIndex);
+    ICODE *     addIcode(const ICODE * pIcode);
+    void        SetInBB(rCODE &rang, BB* pnewBB);
+    bool        labelSrch(uint32_t target, uint32_t &pIndex);
     iterator    labelSrch(uint32_t target);
-    ICODE *	GetIcode(size_t ip);
+    ICODE *     GetIcode(size_t ip);
     bool        alreadyDecoded(uint32_t target);
 };

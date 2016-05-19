@@ -237,7 +237,7 @@ void Function::bindIcodeOff()
     for(ICODE &c : Icode) // TODO: use filtered here
     {
         LLInst *ll=c.ll();
-        if (ll->testFlags(I) and ll->isJmpInst())
+        if (ll->srcIsImmed() and ll->isJmpInst())
         {
             iICODE loc=Icode.labelSrch(ll->src().getImm2());
             if (loc!=Icode.end())
@@ -254,7 +254,7 @@ void Function::bindIcodeOff()
         LLInst *ll=icode.ll();
         if (not ll->isJmpInst())
             continue;
-        if (ll->testFlags(I) )
+        if (ll->srcIsImmed())
         {
             uint32_t found;
             if (not Icode.labelSrch(ll->src().getImm2(), found))

@@ -15,10 +15,8 @@ CIcodeRec::CIcodeRec()
 {
 }
 
-/* Copies the icode that is pointed to by pIcode to the icode array.
- * If there is need to allocate extra memory, it is done so, and
- * the alloc variable is adjusted.        */
-ICODE * CIcodeRec::addIcode(ICODE *pIcode)
+/* Copies the icode that is pointed to by pIcode to the icode array. */
+ICODE * CIcodeRec::addIcode(const ICODE *pIcode)
 {
     push_back(*pIcode);
     back().loc_ip = size()-1;
@@ -84,8 +82,7 @@ void LLInst::emitGotoLabel (int indLevel)
         hllLabNum = getNextLabel();
         setFlags(HLL_LABEL);
 
-        /* Node has been traversed already, so backpatch this label into
-                 * the code */
+        /* Node has been traversed already, so backpatch this label into the code */
         cCode.code.addLabelBundle (codeIdx, hllLabNum);
     }
     cCode.appendCode( "%sgoto L%ld;\n", indentStr(indLevel), hllLabNum);

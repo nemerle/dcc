@@ -113,7 +113,7 @@ static vector<POSSTACK_ENTRY> posStack; /* position stack */
 
 void LLInst::findJumpTargets(CIcodeRec &_pc)
 {
-    if (testFlags(I) and not testFlags(JMP_ICODE) and isJmpInst())
+    if (srcIsImmed() and not testFlags(JMP_ICODE) and isJmpInst())
     {
         /* Replace the immediate operand with an icode index */
         iICODE labTgt=_pc.labelSrch(src().getImm2());
@@ -214,364 +214,7 @@ void Disassembler::disassem(PtrFunction ppProc)
  ****************************************************************************/
 void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
 {
-    PROG &prog(Project::get()->prog);
-    QString oper_contents;
-    QTextStream oper_stream(&oper_contents);
-    QString hex_bytes;
-    QString result_contents;
-    QTextStream result_stream(&result_contents);
-    QString opcode_with_mods;
-
-    QString operands_contents;
-    QTextStream operands_s(&operands_contents);
-    oper_stream.setNumberFlags(QTextStream::UppercaseBase|QTextStream::UppercaseDigits);
-
-    /* Disassembly stage 1 --
-     * Do not try to display NO_CODE entries or synthetic instructions,
-     * other than JMPs, that have been introduced for def/use analysis. */
-    if ((option.asm1) and
-            ( inst.testFlags(NO_CODE) or
-              (inst.testFlags(SYNTHETIC) and (inst.getOpcode() != iJMP))))
-    {
-        return;
-    }
-    else if (inst.testFlags(NO_CODE))
-    {
-        return;
-    }
-    if (inst.testFlags(TARGET | CASE))
-    {
-        if (pass == 3)
-            cCode.appendCode("\n"); /* Print to c code buffer */
-        else
-            m_fp<< "\n";              /* No, print to the stream */
-    }
-
-    /* Find next instruction label and print hex bytes */
-    if (inst.testFlags(SYNTHETIC))
-        nextInst = inst.label;
-    else
-    {
-        cb = (uint32_t) inst.numBytes;
-        nextInst = inst.label + cb;
-
-        /* Output hex code in program image */
-        if (pass != 3)
-        {
-            for (j = 0; j < cb; j++)
-            {
-                hex_bytes += QString("%1").arg(uint16_t(prog.image()[inst.label + j]),2,16,QChar('0')).toUpper();
-            }
-            hex_bytes += ' ';
-        }
-    }
-    oper_stream.setFieldWidth(POS_LAB);
-    oper_stream.setFieldAlignment(QTextStream::AlignLeft);
-    oper_stream << hex_bytes;
-    /* Check if there is a symbol here */
-    selectTable(Label);
-    oper_stream.setFieldWidth(5); // align for the labels
-    {
-        QString lab_contents;
-        QTextStream lab_stream(&lab_contents);
-        if (readVal(lab_stream, inst.label, nullptr))
-        {
-            lab_stream << ':';             /* Also removes the null */
-        }
-        else if (inst.testFlags(TARGET))    /* Symbols override Lnn labels */
-        {
-            /* Print label */
-            if (pl.count(loc_ip)==0)
-            {
-                pl[loc_ip] = ++g_lab;
-            }
-            lab_stream<< "L"<<pl[loc_ip]<<':';
-        }
-        lab_stream.flush();
-        oper_stream << lab_contents;
-        oper_stream.setFieldWidth(0);
-    }
-    if ((inst.getOpcode()==iSIGNEX )and inst.testFlags(B))
-    {
-        inst.setOpcode(iCBW);
-    }
-    opcode_with_mods += Machine_X86::opcodeName(inst.getOpcode());
-
-    switch ( inst.getOpcode() )
-    {
-    case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
-    case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-        strDst(operands_s,inst.getFlag(), inst.m_dst);
-        inst.strSrc(operands_s);
-        break;
-
-    case iESC:
-        inst.flops(operands_s);
-        break;
-
-    case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
-    case iROR:
-        strDst(operands_s,inst.getFlag() | I, inst.m_dst);
-        if(inst.testFlags(I))
-            inst.strSrc(operands_s);
-        else
-            operands_s<<", cl";
-        break;
-
-    case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-        strDst(operands_s,inst.getFlag() | I, inst.m_dst);
-        break;
-
-    case iPUSH:
-        if (inst.testFlags(I))
-        {
-            operands_s<<strHex(inst.src().getImm2());
-        }
-        else
-        {
-            strDst(operands_s,inst.getFlag() | I, inst.m_dst);
-        }
-        break;
-
-    case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
-        if (inst.testFlags(I))
-        {
-            strDst(operands_s,inst.getFlag(), inst.m_dst) <<", ";
-            formatRM(operands_s, inst.src());
-            inst.strSrc(operands_s);
-        }
-        else
-            strDst(operands_s,inst.getFlag() | I, inst.src());
-        break;
-
-    case iLDS:  case iLES:  case iBOUND:
-        strDst(operands_s,inst.getFlag(), inst.m_dst)<<", dword ptr";
-        inst.strSrc(operands_s,true);
-        break;
-
-    case iJB:  case iJBE:  case iJAE:  case iJA:
-    case iJL:  case iJLE:  case iJGE:  case iJG:
-    case iJE:  case iJNE:  case iJS:   case iJNS:
-    case iJO:  case iJNO:  case iJP:   case iJNP:
-    case iJCXZ:case iLOOP: case iLOOPE:case iLOOPNE:
-    case iJMP: case iJMPF:
-
-        /* Check if there is a symbol here */
-    {
-        ICODE *lab=pc.GetIcode(inst.src().getImm2());
-        selectTable(Label);
-        if ((inst.src().getImm2() < (uint32_t)numIcode) and  /* Ensure in range */
-                readVal(operands_s, lab->ll()->label, nullptr))
-        {
-            break;                          /* Symbolic label. Done */
-        }
-    }
-
-        if (inst.testFlags(NO_LABEL))
-        {
-            //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
-            operands_s<<strHex(inst.src().getImm2());
-        }
-        else if (inst.testFlags(I) )
-        {
-            j = inst.src().getImm2();
-            if (pl.count(j)==0)       /* Forward jump */
-            {
-                pl[j] = ++g_lab;
-            }
-            if (inst.getOpcode() == iJMPF)
-            {
-                operands_s<<" far ptr ";
-            }
-            operands_s<<"L"<<pl[j];
-        }
-        else if (inst.getOpcode() == iJMPF)
-        {
-            operands_s<<"dword ptr";
-            inst.strSrc(operands_s,true);
-        }
-        else
-        {
-            strDst(operands_s,I, inst.src());
-        }
-        break;
-
-    case iCALL: case iCALLF:
-        if (inst.testFlags(I))
-        {
-            QString oper = QString("%1 ptr %2")
-                    .arg((inst.getOpcode() == iCALL) ? "near" : "far")
-                    .arg((inst.src().proc.proc)->name);
-            operands_s<< qPrintable(oper);
-        }
-        else if (inst.getOpcode() == iCALLF)
-        {
-            operands_s<<"dword ptr ";
-            inst.strSrc(operands_s,true);
-        }
-        else
-            strDst(operands_s,I, inst.src());
-        break;
-
-    case iENTER:
-        operands_s<<strHex(inst.m_dst.off) << ", " << strHex(inst.src().getImm2());
-        break;
-
-    case iRET:  case iRETF:  case iINT:
-        if (inst.testFlags(I))
-        {
-            operands_s<<strHex(inst.src().getImm2());
-        }
-        break;
-
-    case iCMPS:  case iREPNE_CMPS:  case iREPE_CMPS:
-    case iSCAS:  case iREPNE_SCAS:  case iREPE_SCAS:
-    case iSTOS:  case iREP_STOS:
-    case iLODS:  case iREP_LODS:
-    case iMOVS:  case iREP_MOVS:
-    case iINS:   case iREP_INS:
-    case iOUTS:  case iREP_OUTS:
-        if (inst.src().segOver)
-        {
-            bool is_dx_src=(inst.getOpcode() == iOUTS or inst.getOpcode() == iREP_OUTS);
-            if(is_dx_src)
-                operands_s<<"dx, "<<szPtr[inst.getFlag() & B];
-            else
-                operands_s<<szPtr[inst.getFlag() & B];
-            if (inst.getOpcode() == iLODS or
-                    inst.getOpcode() == iREP_LODS or
-                    inst.getOpcode() == iOUTS or
-                    inst.getOpcode() == iREP_OUTS)
-            {
-                operands_s<<Machine_X86::regName(inst.src().segOver); // szWreg[src.segOver-rAX]
-            }
-            else
-            {
-                operands_s<<"es:[di], "<<Machine_X86::regName(inst.src().segOver);
-            }
-            operands_s<<":[si]";
-        }
-        else
-        {
-            if(inst.getFlag() & B)
-                opcode_with_mods+='B';
-            else
-                opcode_with_mods+='W';
-        }
-        break;
-
-    case iXLAT:
-        if (inst.src().segOver)
-        {
-            operands_s<<" "<<szPtr[1];
-            operands_s<<Machine_X86::regName(inst.src().segOver)<<":[bx]";
-        }
-        break;
-
-    case iIN:
-        (inst.getFlag() & B)? operands_s<<"al, " : operands_s<< "ax, ";
-        (inst.testFlags(I))? operands_s << strHex(inst.src().getImm2()) : operands_s<< "dx";
-        break;
-
-    case iOUT:
-    {
-        QString d1=((inst.testFlags(I))? strHex(inst.src().getImm2()): "dx");
-        QString d2=((inst.getFlag() & B) ? ", al": ", ax");
-        operands_s<<d1 << d2;
-    }
-        break;
-
-    default:
-        break;
-    }
-    oper_stream.setFieldWidth(15);
-    operands_s.flush();
-    oper_stream << qSetFieldWidth(15) << opcode_with_mods << qSetFieldWidth(0) << operands_contents;
-    /* Comments */
-    if (inst.testFlags(SYNTHETIC))
-    {
-        fImpure = false;
-    }
-    else
-    {
-        for (j = inst.label, fImpure = 0; j > 0 and j < (int)nextInst; j++)
-        {
-            fImpure |= BITMAP(j, BM_DATA);
-        }
-    }
-    result_stream.setFieldWidth(54);
-    result_stream.setFieldAlignment(QTextStream::AlignLeft);
-    oper_stream.flush();
-    result_stream << oper_contents;
-    result_stream.setFieldWidth(0);
-    /* Check for user supplied comment */
-    selectTable(Comment);
-    QString cbuf_contents;
-    QTextStream cbuf(&cbuf_contents);
-    if (readVal(cbuf, inst.label, nullptr))
-    {
-        cbuf.flush();
-        result_stream <<"; "<<*cbuf.string();
-    }
-    else if (fImpure or (inst.testFlags(SWITCH | CASE | SEG_IMMED | IMPURE | SYNTHETIC | TERMINATES)))
-    {
-        if (inst.testFlags(CASE))
-        {
-            result_stream << ";Case l"<< inst.caseEntry;
-        }
-        if (inst.testFlags(SWITCH))
-        {
-            result_stream << ";Switch ";
-        }
-        if (fImpure)
-        {
-            result_stream << ";Accessed as data ";
-        }
-        if (inst.testFlags(IMPURE))
-        {
-            result_stream << ";Impure operand ";
-        }
-        if (inst.testFlags(SEG_IMMED))
-        {
-            result_stream << ";Segment constant";
-        }
-        if (inst.testFlags(TERMINATES))
-        {
-            result_stream << ";Exit to DOS";
-        }
-    }
-
-    /* Comment on iINT icodes */
-    if (inst.getOpcode() == iINT)
-        inst.writeIntComment(result_stream);
-
-    /* Display output line */
-    if(pass==3)
-    {
-        /* output to .b code buffer */
-        if (inst.testFlags(SYNTHETIC))
-            result_stream<<";Synthetic inst";
-        if (pass == 3) {    /* output to .b code buffer */
-            cCode.appendCode("%s\n", qPrintable(result_contents));
-        }
-
-    }
-    else
-    {
-        char buf[12];
-        /* output to .a1 or .a2 file */
-        if (not inst.testFlags(SYNTHETIC) )
-        {
-            sprintf(buf,"%03d %06X",loc_ip, inst.label);
-        }
-        else    /* SYNTHETIC instruction */
-        {
-            sprintf(buf,"%03d       ",loc_ip);
-            result_stream<<";Synthetic inst";
-        }
-        result_stream.flush();
-        m_fp<<buf<< " " << result_contents << "\n";
-    }
+    assert(false);
 }
 
 
@@ -630,19 +273,19 @@ static QTextStream & strDst(QTextStream &os,uint32_t flg, const LLOperand &pm)
 /****************************************************************************
  * strSrc                                                                   *
  ****************************************************************************/
-QTextStream &LLInst::strSrc(QTextStream &os,bool skip_comma)
-{
-    if(false==skip_comma)
-        os<<", ";
-    if (testFlags(I))
-        os<<strHex(src().getImm2());
-    else if (testFlags(IM_SRC)) /* level 2 */
-        os<<"dx:ax";
-    else
-        formatRM(os, src());
+//QTextStream &LLInst::strSrc(QTextStream &os,bool skip_comma)
+//{
+//    if(false==skip_comma)
+//        os<<", ";
+//    if (srcIsImmed())
+//        os<<strHex(src().getImm2());
+//    else if (testFlags(IM_SRC)) /* level 2 */
+//        os<<"dx:ax";
+//    else
+//        formatRM(os, src());
 
-    return os;
-}
+//    return os;
+//}
 
 
 
@@ -769,62 +412,55 @@ void LLInst::flops(QTextStream &out)
         }
     }
 }
-/****************************************************************************
- * formatRM
- ***************************************************************************/
-static void formatRM(IStructuredTextTarget *out,const LLOperand &pm)
-{
-    if (pm.segOver)
-    {
-        out->prtt(Machine_X86::regName(pm.segOver)+':');
-    }
+struct AsmFormatter {
+    IStructuredTextTarget * target;
+    int operand_count;
+    void visitOperand(const LLOperand &pm) {
+        if(not pm.isSet())
+            return;
+        if(operand_count>0) {
+            target->prtt(", ");
+        }
+        operand_count++;
+        if (pm.immed and not pm.isReg()) {
+            //target->addTaggedString(XT_Keyword,szPtr[flg&B]);
+            target->addTaggedString(XT_Number,strHex(pm.getImm2()));
+            return;
+        }
 
-    if (pm.regi == rUNDEF)
-    {
-        out->prtt(QString("[")+strHex((uint32_t)pm.off)+"]");
-    }
-    else if (pm.isReg())
-    {
-        out->prtt(Machine_X86::regName(pm.regi));
-    }
-
-    else if (pm.off)
-    {
-        if (pm.off < 0)
+        if (pm.segOver)
         {
-            out->prtt("["+Machine_X86::regName(pm.regi)+"-"+strHex((uint32_t)(- pm.off))+"]");
+            target->prtt(Machine_X86::regName(pm.segOver)+':');
+        }
+
+        if (pm.regi == rUNDEF)
+        {
+            target->prtt(QString("[")+strHex((uint32_t)pm.off)+"]");
+        }
+        else if (pm.isReg())
+        {
+            target->prtt(Machine_X86::regName(pm.regi));
+        }
+
+        else if (pm.off)
+        {
+            if (pm.off < 0)
+            {
+                target->prtt("["+Machine_X86::regName(pm.regi)+"-"+strHex((uint32_t)(- pm.off))+"]");
+            }
+            else
+            {
+                target->prtt("["+Machine_X86::regName(pm.regi)+"+"+strHex((uint32_t)(pm.off))+"]");
+            }
         }
         else
-        {
-            out->prtt("["+Machine_X86::regName(pm.regi)+"+"+strHex((uint32_t)(pm.off))+"]");
-        }
+            target->prtt("["+Machine_X86::regName(pm.regi)+"]");
+
     }
-    else
-        out->prtt("["+Machine_X86::regName(pm.regi)+"]");
-}
-static void strDst(IStructuredTextTarget *out,uint32_t flg, const LLOperand &pm)
-{
-    /* Immediates to memory require size descriptor */
-    //os << setw(WID_PTR);
-    if ((flg & I) and not pm.isReg()) {
-        out->addTaggedString(XT_Keyword,szPtr[flg&B]);
-    }
-    formatRM(out,pm);
-}
-static void strSrc(IStructuredTextTarget *out,LLInst *insn,bool skip_comma=false)
-{
-    if(false==skip_comma)
-        out->prtt(", ");
-    if (insn->testFlags(I))
-        out->addTaggedString(XT_Number,strHex(insn->src().getImm2()));
-    else if (insn->testFlags(IM_SRC))   /* level 2 */
-        out->addTaggedString(XT_Symbol,"dx:ax");
-    else
-        formatRM(out,insn->src());
-}
+};
 
 void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
-
+    AsmFormatter formatter {out};
     const LLInst &inst(*insn);
     QString opcode = Machine_X86::opcodeName(insn->getOpcode());
     out->addSpace(4);
@@ -837,50 +473,32 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
     switch(insn->getOpcode()) {
     case iADD:  case iADC:  case iSUB:  case iSBB:  case iAND:  case iOR:
     case iXOR:  case iTEST: case iCMP:  case iMOV:  case iLEA:  case iXCHG:
-        strDst(out,insn->getFlag(), insn->m_dst);
-        strSrc(out,insn);
-        break;
+
     case iSAR:  case iSHL:  case iSHR:  case iRCL:  case iRCR:  case iROL:
     case iROR:
-        strDst(out,insn->getFlag() | I, insn->m_dst);
-        if(insn->testFlags(I))
-            strSrc(out,insn);
-        else {
-            out->prtt(", ");
-            out->addTaggedString(XT_Symbol,"cl");
-        }
+        formatter.visitOperand(insn->dst());
+        formatter.visitOperand(insn->src());
         break;
 
     case iINC:  case iDEC:  case iNEG:  case iNOT:  case iPOP:
-        strDst(out,insn->getFlag() | I, insn->m_dst);
+        formatter.visitOperand(insn->dst());
         break;
     case iPUSH:
-        if (inst.testFlags(I))
-        {
-            out->addTaggedString(XT_Number,strHex(inst.src().getImm2()));
-        }
-        else
-        {
-            strDst(out,insn->getFlag() | I, insn->m_dst);
-        }
+        formatter.visitOperand(insn->dst());
         break;
 
     case iDIV:  case iIDIV:  case iMUL: case iIMUL: case iMOD:
-        if (inst.testFlags(I))
+        if (inst.srcIsImmed())
         {
-            strDst(out,insn->getFlag(), insn->m_dst);
-            out->prtt(", ");
-            formatRM(out, inst.src());
-            strSrc(out,insn);
+            formatter.visitOperand(insn->dst());
+            formatter.visitOperand(insn->src());
         }
         else
-            strDst(out,insn->getFlag() | I, insn->m_dst);
+            formatter.visitOperand(insn->dst());
         break;
     case iLDS:  case iLES:  case iBOUND:
-        strDst(out,inst.getFlag(), inst.m_dst);
-        out->prtt(", ");
-        out->addTaggedString(XT_Keyword,"dword ptr");
-        strSrc(out,insn,true);
+        formatter.visitOperand(insn->dst());
+        formatter.visitOperand(insn->src());
         break;
     case iJB:  case iJBE:  case iJAE:  case iJA:
     case iJL:  case iJLE:  case iJGE:  case iJG:
@@ -904,7 +522,7 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
             //strcpy(p + WID_PTR, strHex(pIcode->ll()->immed.op));
             out->addTaggedString(XT_AsmLabel,strHex(inst.src().getImm2()));
         }
-        else if (inst.testFlags(I) )
+        else if (inst.srcIsImmed() )
         {
             int64_t tgt_addr = inst.src().getImm2();
             if (inst.getOpcode() == iJMPF)
@@ -916,16 +534,16 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
         else if (inst.getOpcode() == iJMPF)
         {
             out->addTaggedString(XT_Keyword,"dword ptr");
-            strSrc(out,insn,true);
+            formatter.visitOperand(inst.src());
         }
         else
         {
-            strDst(out,I,inst.src());
+            formatter.visitOperand(inst.src());
         }
 
         break;
     case iCALL: case iCALLF:
-        if (inst.testFlags(I))
+        if (inst.srcIsImmed())
         {
             out->addTaggedString(XT_Keyword,QString("%1 ptr ").arg((inst.getOpcode() == iCALL) ? "near" : "far"));
             out->addTaggedString(XT_AsmLabel,(inst.src().proc.proc)->name);
@@ -933,25 +551,21 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
         else if (inst.getOpcode() == iCALLF)
         {
             out->addTaggedString(XT_Keyword,"dword ptr ");
-            strSrc(out,insn,true);
+            formatter.visitOperand(inst.src());
         }
         else
-            strDst(out,I,inst.src());
+            formatter.visitOperand(inst.src());
         break;
 
     case iENTER:
-        out->addTaggedString(XT_AsmOffset,strHex(inst.m_dst.off));
-        out->prtt(", ");
-        out->addTaggedString(XT_AsmOffset,strHex(inst.src().getImm2()));
+        formatter.visitOperand(inst.dst());
+        formatter.visitOperand(inst.src());
         break;
 
     case iRET:
     case iRETF:
     case iINT:
-        if (inst.testFlags(I))
-        {
-            out->addTaggedString(XT_Number,strHex(inst.src().getImm2()));
-        }
+        formatter.visitOperand(inst.src());
         break;
 
     case iCMPS:  case iREPNE_CMPS:  case iREPE_CMPS:
@@ -1009,15 +623,13 @@ void toStructuredText(LLInst *insn,IStructuredTextTarget *out, int level) {
     case iIN:
         out->addTaggedString(XT_Symbol, (inst.getFlag() & B)? "al" : "ax");
         out->prtt(", ");
-        if(inst.testFlags(I))
-            out->addTaggedString(XT_Number, strHex(inst.src().getImm2()));
-        else
-            out->addTaggedString(XT_Symbol, "dx");
+        formatter.visitOperand(inst.src());
         break;
 
     case iOUT:
     {
-        if(inst.testFlags(I))
+        formatter.visitOperand(inst.src());
+        if(inst.srcIsImmed())
             out->addTaggedString(XT_Number, strHex(inst.src().getImm2()));
         else
             out->addTaggedString(XT_Symbol, "dx");

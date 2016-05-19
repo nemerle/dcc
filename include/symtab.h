@@ -9,6 +9,7 @@
 
 #include <QtCore/QString>
 #include <string>
+#include <vector>
 #include <stdint.h>
 
 class QTextStream;

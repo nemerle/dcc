@@ -222,7 +222,7 @@ AstIdent *AstIdent::Long(LOCAL_ID *localId, opLoc sd, iICODE pIcode, hlFirst f, 
 {
     AstIdent *newExp;
     /* Check for long constant and save it as a constant expression */
-    if ((sd == SRC) and pIcode->ll()->testFlags(I))  /* constant */
+    if ((sd == SRC) and pIcode->ll()->srcIsImmed())  /* constant */
     {
         int value;
         if (f == HIGH_FIRST)
@@ -313,7 +313,7 @@ Expr *AstIdent::id(const LLInst &ll_insn, opLoc sd, Function * pProc, iICODE ix_
         duIcode.setRegDU(rTMP, (operDu)eUSE);
     }
 
-    else if ((sd == SRC) and ll_insn.testFlags(I)) /* constant */
+    else if ((sd == SRC) and ll_insn.srcIsImmed()) /* constant */
         newExp = new Constant(ll_insn.src().getImm2(), 2);
     else if (pm.regi == rUNDEF) /* global variable */
         newExp = new GlobalVariable(pm.segValue, pm.off);
@@ -377,7 +377,7 @@ condId LLInst::idType(opLoc sd) const
 {
     const LLOperand &pm((sd == SRC) ? src() : m_dst);
 
-    if ((sd == SRC) and testFlags(I))
+    if ((sd == SRC) and srcIsImmed())
         return (CONSTANT);
     else if (pm.regi == 0)
         return (GLOB_VAR);

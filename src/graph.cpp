@@ -93,7 +93,7 @@ void Function::createCFG()
                         pBB->addOutEdge(elem);
                     hasCase = true;
                 }
-                else if ((ll->getFlag() & (I | NO_LABEL)) == I) //TODO: WHY NO_LABEL TESTIT
+                else if (ll->srcIsImmed() and not ll->testFlags(NO_LABEL)) //TODO: WHY NO_LABEL TESTIT
                 {
                     pBB = BB::Create(current_range, ONE_BRANCH, this);
                     pBB->addOutEdge(ll->src().getImm2());

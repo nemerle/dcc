@@ -33,10 +33,10 @@ bool Idiom14::match(iICODE pIcode)
     LLInst * matched [] {m_icodes[0]->ll(),m_icodes[1]->ll()};
     /* Check for regL */
     m_regL = matched[0]->m_dst.regi;
-    if (not matched[0]->testFlags(I) and ((m_regL == rAX) or (m_regL ==rBX)))
+    if (not matched[0]->srcIsImmed() and ((m_regL == rAX) or (m_regL ==rBX)))
     {
         /* Check for XOR regH, regH */
-        if (matched[1]->match(iXOR) and not matched[1]->testFlags(I))
+        if (matched[1]->match(iXOR) and not matched[1]->srcIsImmed())
         {
             m_regH = matched[1]->m_dst.regi;
             if (m_regH == matched[1]->src().getReg2())
@@ -84,7 +84,7 @@ bool Idiom13::match(iICODE pIcode)
 
     /* Check for regL */
     regi = m_icodes[0]->ll()->m_dst.regi;
-    if (not m_icodes[0]->ll()->testFlags(I) and (regi >= rAL) and (regi <= rBH))
+    if (not m_icodes[0]->ll()->srcIsImmed() and (regi >= rAL) and (regi <= rBH))
     {
         /* Check for MOV regH, 0 */
         if (m_icodes[1]->ll()->match(iMOV,I) and (m_icodes[1]->ll()->src().getImm2() == 0))

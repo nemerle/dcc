@@ -25,7 +25,7 @@ bool Idiom3::match(iICODE picode)
     /* Match ADD  SP, immed */
     for(int i=0; i<2; ++i)
         m_icodes[i] = picode++;
-    if ( m_icodes[1]->ll()->testFlags(I) and m_icodes[1]->ll()->match(iADD,rSP))
+    if ( m_icodes[1]->ll()->srcIsImmed() and m_icodes[1]->ll()->match(iADD,rSP))
     {
         m_param_count = m_icodes[1]->ll()->src().getImm2();
         return true;
@@ -39,7 +39,7 @@ bool Idiom3::match(iICODE picode)
 }
 int Idiom3::action()
 {
-    if (m_icodes[0]->ll()->testFlags(I) )
+    if (m_icodes[0]->ll()->srcIsImmed())
     {
         m_icodes[0]->ll()->src().addProcInformation(m_param_count,CConv::C);
     }
@@ -97,7 +97,7 @@ bool Idiom17::match(iICODE picode)
 }
 int Idiom17::action()
 {
-    if (m_icodes[0]->ll()->testFlags(I))
+    if (m_icodes[0]->ll()->srcIsImmed())
     {
         m_icodes[0]->ll()->src().addProcInformation(m_param_count,CConv::C);
         for(size_t idx=1; idx<m_icodes.size(); ++idx)

@@ -152,6 +152,7 @@ enum DecompilationStep : uint32_t {
     //eStackTracing, // tracing stack depth across function calls
 
 };
+
 class Function : public std::enable_shared_from_this<Function>
 {
     typedef llvm::iplist<BB> BasicBlockListType;
@@ -232,7 +233,6 @@ public:
     void markImpure();
     void findImmedDom();
     void process_operands(ICODE &pIcode, STATE *pstate);
-    bool process_CALL(ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
     void freeCFG();
     void codeGen(QIODevice & fs);
     void mergeFallThrough(BB *pBB);
@@ -256,7 +256,6 @@ public:
     void switchState(DecompilationStep s);
 protected:
     void extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &table);
-    bool followAllTableEntries(JumpTable &table, uint32_t cs, ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);
     bool removeInEdge_Flag_and_ProcessLatch(BB *pbb, BB *a, BB *b);
     bool Case_X_and_Y(BB* pbb, BB* thenBB, BB* elseBB);
     bool Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB);
@@ -283,7 +282,7 @@ protected:
     void    genLiveKtes();
     bool    findDerivedSeq(derSeq &derivedGi);
     bool    nextOrderGraph(derSeq &derivedGi);
-    void    addOutEdgesForConditionalJump(BB*        pBB, int next_ip, LLInst *ll);
+    void    addOutEdgesForConditionalJump(BB *pBB, int next_ip, LLInst *ll);
 };
 
 typedef std::list<PtrFunction> FunctionListType;

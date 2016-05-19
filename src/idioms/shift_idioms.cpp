@@ -21,7 +21,7 @@ bool Idiom8::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) and (m_icodes[0]->ll()->src().getImm2() == 1))
+    if (m_icodes[0]->ll()->srcIsImmed() and (m_icodes[0]->ll()->src().getImm2() == 1))
         if ( m_icodes[1]->ll()->match(iRCR,I) and
             (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
@@ -65,7 +65,7 @@ bool Idiom15::match(iICODE pIcode)
     if(distance(pIcode,m_end)<2)
         return false;
     /* Match SHL reg, 1 */
-    if (not pIcode->ll()->testFlags(I) or (pIcode->ll()->src().getImm2() != 1))
+    if (not pIcode->ll()->srcIsImmed() or (pIcode->ll()->src().getImm2() != 1))
         return false;
     m_icodes.clear();
     regi = pIcode->ll()->m_dst.regi;
@@ -110,7 +110,7 @@ bool Idiom12::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) and (m_icodes[0]->ll()->src().getImm2() == 1))
+    if (m_icodes[0]->ll()->srcIsImmed() and (m_icodes[0]->ll()->src().getImm2() == 1))
         if (m_icodes[1]->ll()->match(iRCL,I) and (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;
@@ -150,7 +150,7 @@ bool Idiom9::match(iICODE pIcode)
         return false;
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
-    if (m_icodes[0]->ll()->testFlags(I) and (m_icodes[0]->ll()->src().getImm2() == 1))
+    if (m_icodes[0]->ll()->srcIsImmed() and (m_icodes[0]->ll()->src().getImm2() == 1))
         if (m_icodes[1]->ll()->match(iRCR,I) and (m_icodes[1]->ll()->src().getImm2() == 1))
             return true;
     return false;

@@ -332,7 +332,7 @@ void Function::highLevelGen()
                     lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
             }
         if(ll->getOpcode()==iPUSH) {
-            if(ll->testFlags(I)) {
+            if(ll->srcIsImmed()) {
                 lhs = new Constant(src_ll->opz,src_ll->byteWidth());
             }
 //            lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);

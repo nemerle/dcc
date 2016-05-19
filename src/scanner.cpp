@@ -1068,7 +1068,7 @@ static void none1(int )
  ****************************************************************************/
 static void none2(int )
 {
-    if ( pIcode->ll()->testFlags(I) )
+    if ( pIcode->ll()->srcIsImmed() )
         pIcode->ll()->setFlags(NO_OPS);
 }
 

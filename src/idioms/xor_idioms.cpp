@@ -26,7 +26,7 @@ bool Idiom21::match (iICODE picode)
     m_icodes[0]=picode++;
     m_icodes[1]=picode++;
 
-    if (not m_icodes[1]->ll()->testFlags(I))
+    if (not m_icodes[1]->ll()->srcIsImmed())
         return false;
 
     dst = &m_icodes[0]->ll()->m_dst;
@@ -87,8 +87,8 @@ bool Idiom7::match(iICODE picode)
 }
 int Idiom7::action()
 {
-    Expr *lhs;
-    lhs = AstIdent::id (*m_icode->ll(), DST, m_func, m_icode, *m_icode, NONE);
+    Expr *lhs = AstIdent::id (*m_icode->ll(), DST, m_func, m_icode, *m_icode, NONE);
+
     m_icode->setAsgn(dynamic_cast<AstIdent *>(lhs), new Constant(0, 2));
     m_icode->du.use.reset();    /* clear register used in iXOR */
     m_icode->ll()->setFlags(I);
@@ -117,7 +117,7 @@ bool Idiom10::match(iICODE pIcode)
     m_icodes[0]=pIcode++;
     m_icodes[1]=pIcode++;
     /* Check OR reg, reg */
-    if (not m_icodes[0]->ll()->testFlags(I)  and
+    if (not m_icodes[0]->ll()->srcIsImmed()  and
             m_icodes[0]->ll()->src().isReg() and
             (m_icodes[0]->ll()->src().getReg2() == m_icodes[0]->ll()->m_dst.getReg2()))
         if (m_icodes[1]->ll()->match(iJNE)) //.conditionalJump()
