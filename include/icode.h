@@ -12,8 +12,6 @@
 
 #include <llvm/ADT/ilist.h>
 #include <llvm/ADT/ilist_node.h>
-#include <llvm/MC/MCInst.h>
-#include <llvm/IR/Instruction.h>
 #include <boost/range/iterator_range.hpp>
 #include <QtCore/QString>
 
@@ -63,12 +61,7 @@ public:
     }
     friend void swap(LivenessSet& first, LivenessSet& second) // nothrow
     {
-        // enable ADL (not necessary in our case, but good practice)
-        using std::swap;
-
-        // by swapping the members of two classes,
-        // the two classes are effectively swapped
-        swap(first.registers, second.registers);
+        std::swap(first.registers, second.registers);
     }
     LivenessSet &operator|=(const LivenessSet &other)
     {
@@ -319,9 +312,10 @@ struct LLOperand
     bool compound() const {return is_compound;} // dx:ax pair
     size_t byteWidth() const { assert(width<=4); return width;}
 };
-struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
+struct LLInst //: public llvm::ilist_node<LLInst>
 {
 protected:
+    uint32_t        m_opcode;       // Low level opcode identifier
     uint32_t        flg;            /* icode flags                  */
     LLOperand       m_src;            /* source operand               */
 public:
@@ -333,22 +327,25 @@ public:
     int             caseEntry;
     std::vector<uint32_t> caseTbl2;
     int         hllLabNum;      /* label # for hll codegen      */
-    bool conditionalJump()
-    {
-        return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
-    }
-    bool testFlags(uint32_t x) const { return (flg & x)!=0;}
-    void  setFlags(uint32_t flag) {flg |= flag;}
-    void  clrFlags(uint32_t flag)
-    {
-        if(getOpcode()==iMOD)
-        {
-            assert(false);
-        }
-        flg &= ~flag;
-    }
-    uint32_t getFlag() const {return flg;}
-    uint32_t GetLlLabel() const { return label;}
+
+    uint32_t    getOpcode() const { return m_opcode;}
+    void        setOpcode(uint32_t op) { m_opcode=op; }
+    bool        conditionalJump()
+                {
+                    return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
+                }
+    bool        testFlags(uint32_t x) const { return (flg & x)!=0;}
+    void        setFlags(uint32_t flag) {flg |= flag;}
+    void        clrFlags(uint32_t flag)
+                {
+                    if(getOpcode()==iMOD)
+                    {
+                        assert(false);
+                    }
+                    flg &= ~flag;
+                }
+    uint32_t    getFlag() const {return flg;}
+    uint32_t    GetLlLabel() const { return label;}
 
     void SetImmediateOp(uint32_t dw) {m_src.SetImmediateOp(dw);}
 
@@ -605,14 +602,14 @@ public:
 };
 /** Map n low level instructions to m high level instructions
 */
-struct MappingLLtoML
-{
-    typedef llvm::iplist<llvm::Instruction> InstListType;
-    typedef boost::iterator_range<iICODE> rSourceRange;
-    typedef boost::iterator_range<InstListType::iterator> rTargetRange;
-    rSourceRange m_low_level;
-    rTargetRange m_middle_level;
-};
+//struct MappingLLtoML
+//{
+//    typedef llvm::iplist<llvm::Instruction> InstListType;
+//    typedef boost::iterator_range<iICODE> rSourceRange;
+//    typedef boost::iterator_range<InstListType::iterator> rTargetRange;
+//    rSourceRange m_low_level;
+//    rTargetRange m_middle_level;
+//};
 // This is the icode array object.
 class CIcodeRec : public std::list<ICODE>
 {

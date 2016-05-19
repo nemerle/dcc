@@ -74,7 +74,7 @@ void PROG::displayLoadInfo(void)
         printf("Minimum allocation   = %04X paras\n", LH(&header.minAlloc));
         printf("Maximum allocation   = %04X paras\n", LH(&header.maxAlloc));
     }
-    printf("Load image size      = %04" PRIiPTR "\n", cbImage - sizeof(PSP));
+    printf("Load image size      = %08lX\n", cbImage - sizeof(PSP));
     printf("Initial SS:SP        = %04X:%04X\n", initSS, initSP);
     printf("Initial CS:IP        = %04X:%04X\n", initCS, initIP);
 
