@@ -1,18 +1,17 @@
+#pragma once
+#include "Enums.h"
 /*
  *$Log:	parsehdr.h,v $
  */
 /* Header file for parsehdr.c */
 
 typedef unsigned long dword;    /* 32 bits	*/
-typedef unsigned char byte;	    /* 8 bits 	*/ 
+typedef unsigned char byte;	    /* 8 bits 	*/
 typedef unsigned short word;    /* 16 bits	*/
 typedef unsigned char boolT;    /* 8 bits 	*/
 
-#define TRUE  1
-#define FALSE 0
-
 #define BUFF_SIZE 8192          /* Holds a declaration */
-#define FBUF_SIZE 32700         /* Holds part of a header file */
+#define FBUF_SIZE 32700        /* Holds part of a header file */
 
 #define	NARGS		15
 #define	NAMES_L		160
@@ -38,11 +37,8 @@ void	phWarning(char *errmsg);
 
 #define  SYMLEN     16                  /* Including the null */
 #define  Int        long                /* For locident.h */
-#define  int16 short int                /* For locident.h */
-#include "locident.h"                   /* For the hlType enum */
-#define  bool       unsigned char       /* For internal use */
-#define  TRUE       1
-#define  FALSE      0
+//#include "locident.h"                   /* For the hlType enum */
+//#define  bool       unsigned char       /* For internal use */
 
 typedef
 struct ph_func_tag
