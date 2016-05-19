@@ -10,7 +10,8 @@
 #include "msvc_fixes.h"
 
 #include <boost/range.hpp>
-#include <boost/range/adaptors.hpp>
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/assign.hpp>
 #include <stdint.h>

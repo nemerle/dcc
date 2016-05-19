@@ -11,7 +11,6 @@
 
 #include <boost/range/rbegin.hpp>
 #include <boost/range/rend.hpp>
-#include <boost/range/adaptors.hpp>
 #include <string.h>
 
 using namespace std;

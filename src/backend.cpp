@@ -17,7 +17,7 @@
 #include <cassert>
 #include <string>
 #include <boost/range.hpp>
-#include <boost/range/adaptors.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/algorithm.hpp>
 
 #include <fstream>

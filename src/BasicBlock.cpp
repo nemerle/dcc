@@ -10,7 +10,7 @@
 #include <string>
 #include <boost/range/rbegin.hpp>
 #include <boost/range/rend.hpp>
-#include <boost/range/adaptors.hpp>
+
 using namespace std;
 using namespace boost;
 
