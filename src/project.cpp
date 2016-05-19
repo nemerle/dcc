@@ -15,7 +15,6 @@ OPTION  option;             /* Command line options                 */
 Project *Project::s_instance = nullptr;
 Project::Project() : callGraph(nullptr)
 {
-    memset(&prog,0,sizeof(prog));
 }
 void Project::initialize()
 {
