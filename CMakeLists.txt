@@ -27,8 +27,8 @@ ENDIF()
 
 
 
-find_package(LLVM REQUIRED CONFIG)
-llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES native mc support tablegen)
+#find_package(LLVM REQUIRED CONFIG)
+#llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES native mc support tablegen)
 
 INCLUDE_DIRECTORIES(
     3rd_party/libdisasm
@@ -36,7 +36,6 @@ INCLUDE_DIRECTORIES(
     include/idioms
     common
     ${Boost_INCLUDE_DIRS}
-    ${LLVM_INCLUDE_DIRS}
 )
 
 
@@ -136,7 +135,7 @@ qt5_use_modules(dcc_lib Core)
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
-TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES}  LLVMSupport)
+TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s)
 qt5_use_modules(dcc_original Core)
 SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD 11)
 SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD_REQUIRED ON)

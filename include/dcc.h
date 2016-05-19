@@ -5,7 +5,6 @@
 #pragma once
 //TODO: Remove boolT
 
-#include <llvm/ADT/ilist.h>
 #include <utility>
 #include <algorithm>
 #include <bitset>

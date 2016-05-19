@@ -6,8 +6,6 @@
 #include "StackFrame.h"
 #include "CallConvention.h"
 
-#include <llvm/ADT/ilist.h>
-//#include <llvm/ADT/ilist_node.h>
 #include <QtCore/QString>
 #include <bitset>
 #include <map>
@@ -25,29 +23,6 @@ struct PROG;
 
 struct Function;
 
-namespace llvm
-{
-// Traits for intrusive list of basic blocks...
-template<>
-struct ilist_traits<BB> : public ilist_default_traits<BB>
-{
-
-    // createSentinel is used to get hold of the node that marks the end of the
-    // list... (same trick used here as in ilist_traits<Instruction>)
-    BB *createSentinel() const {
-        return static_cast<BB*>(&Sentinel);
-    }
-    static void destroySentinel(BB*) {}
-
-    BB *provideInitialHead() const { return createSentinel(); }
-    BB *ensureHead(BB*) const { return createSentinel(); }
-    static void noteHead(BB*, BB*) {}
-
-    //static ValueSymbolTable *getSymTab(Function *ItemParent);
-private:
-    mutable ilist_half_node<BB> Sentinel;
-};
-}
 /* Procedure FLAGS */
 enum PROC_FLAGS
 {
@@ -113,9 +88,9 @@ public:
     }
     void push_back(BB *v) { m_listBB.push_back(v);}
 };
-struct Function : public llvm::ilist_node<Function>
+struct Function
 {
-    typedef llvm::iplist<BB> BasicBlockListType;
+    typedef std::list<BB *> BasicBlockListType;
     // BasicBlock iterators...
     typedef BasicBlockListType::iterator iterator;
     typedef BasicBlockListType::const_iterator const_iterator;
@@ -245,25 +220,6 @@ private:
     bool    decodeIndirectJMP(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
     bool    decodeIndirectJMP2(ICODE &pIcode, STATE *pstate, CALL_GRAPH *pcallGraph);
 };
-namespace llvm {
-template<> struct ilist_traits<typename ::Function>
-  : public ilist_default_traits<typename ::Function> {
-
-  // createSentinel is used to get hold of the node that marks the end of the
-  // list... (same trick used here as in ilist_traits<Instruction>)
-  typename ::Function *createSentinel() const {
-    return static_cast<typename ::Function*>(&Sentinel);
-  }
-  static void destroySentinel(typename ::Function*) {}
-
-  typename ::Function *provideInitialHead() const { return createSentinel(); }
-  typename ::Function *ensureHead(::Function*) const { return createSentinel(); }
-  static void noteHead(typename ::Function*, typename ::Function*) {}
-
-private:
-  mutable ilist_node<typename ::Function> Sentinel;
-};
-}
-typedef llvm::iplist<Function> FunctionListType;
+typedef std::list<Function> FunctionListType;
 typedef FunctionListType lFunction;
 typedef lFunction::iterator ilFunction;

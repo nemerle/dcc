@@ -10,8 +10,6 @@
 #include "state.h"			// State depends on INDEXBASE, but later need STATE
 #include "CallConvention.h"
 
-#include <llvm/ADT/ilist.h>
-#include <llvm/ADT/ilist_node.h>
 #include <boost/range/iterator_range.hpp>
 #include <QtCore/QString>
 
@@ -312,7 +310,7 @@ struct LLOperand
     bool compound() const {return is_compound;} // dx:ax pair
     size_t byteWidth() const { assert(width<=4); return width;}
 };
-struct LLInst //: public llvm::ilist_node<LLInst>
+struct LLInst
 {
 protected:
     uint32_t        m_opcode;       // Low level opcode identifier
@@ -604,7 +602,6 @@ public:
 */
 //struct MappingLLtoML
 //{
-//    typedef llvm::iplist<llvm::Instruction> InstListType;
 //    typedef boost::iterator_range<iICODE> rSourceRange;
 //    typedef boost::iterator_range<InstListType::iterator> rTargetRange;
 //    rSourceRange m_low_level;
@@ -616,10 +613,10 @@ class CIcodeRec : public std::list<ICODE>
 public:
     CIcodeRec();	// Constructor
 
-    ICODE *	addIcode(ICODE *pIcode);
-    void	SetInBB(rCODE &rang, BB* pnewBB);
-    bool	labelSrch(uint32_t target, uint32_t &pIndex);
+    ICODE *     addIcode(ICODE *pIcode);
+    void        SetInBB(rCODE &rang, BB* pnewBB);
+    bool        labelSrch(uint32_t target, uint32_t &pIndex);
     iterator    labelSrch(uint32_t target);
-    ICODE *	GetIcode(size_t ip);
+    ICODE *     GetIcode(size_t ip);
     bool        alreadyDecoded(uint32_t target);
 };

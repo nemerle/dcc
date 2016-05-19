@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <cassert>
 #include <list>
-#include <llvm/ADT/ilist.h>
 #include <boost/icl/interval.hpp>
 #include <boost/icl/interval_map.hpp>
 #include <boost/icl/split_interval_map.hpp>
@@ -29,7 +28,7 @@ class Project : public IProject
             QString     m_output_path;
 public:
 
-    typedef llvm::iplist<Function> FunctionListType;
+    typedef std::list<Function> FunctionListType;
     typedef FunctionListType lFunction;
     typedef FunctionListType::iterator ilFunction;
 

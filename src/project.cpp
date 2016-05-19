@@ -56,7 +56,7 @@ return iter;
 
 ilFunction Project::createFunction(FunctionType *f,const QString &name)
 {
-    pProcList.push_back(Function::Create(f,0,name,0));
+    pProcList.push_back(*Function::Create(f,0,name,0));
     return (++pProcList.rbegin()).base();
 }
 

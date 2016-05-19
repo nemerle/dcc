@@ -3,7 +3,6 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QDir>
-#include <llvm/ADT/ilist.h>
 
 class IXmlTarget;
 
