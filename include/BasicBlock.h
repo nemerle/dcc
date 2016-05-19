@@ -3,8 +3,6 @@
 #include <vector>
 #include <bitset>
 #include <string>
-#include <llvm/ADT/ilist.h>
-#include <llvm/ADT/ilist_node.h>
 #include <boost/range/iterator_range.hpp>
 #include "icode.h"
 #include "types.h"
@@ -27,7 +25,7 @@ struct TYPEADR_TYPE
     TYPEADR_TYPE(interval *v) : ip(0),BBptr(nullptr),intPtr(v)
     {}
 };
-struct BB : public llvm::ilist_node<BB>
+struct BB
 {
     friend struct Function;
 private:

@@ -9,8 +9,8 @@
 
 #include <stdlib.h>
 
-ICODE::TypeFilter<HIGH_LEVEL> ICODE::select_high_level;
-ICODE::TypeAndValidFilter<HIGH_LEVEL> ICODE::select_valid_high_level;
+ICODE::TypeFilter<HIGH_LEVEL_ICODE> ICODE::select_high_level;
+ICODE::TypeAndValidFilter<HIGH_LEVEL_ICODE> ICODE::select_valid_high_level;
 CIcodeRec::CIcodeRec()
 {
 }

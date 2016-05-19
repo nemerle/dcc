@@ -6,7 +6,6 @@
 #include "StackFrame.h"
 #include "CallConvention.h"
 
-#include <llvm/ADT/ilist.h>
 #include <memory>
 #include <stdint.h>
 #include <QtCore/QString>
@@ -26,29 +25,6 @@ struct PROG;
 struct IStructuredTextTarget;
 struct Function;
 
-namespace llvm
-{
-// Traits for intrusive list of basic blocks...
-template<>
-struct ilist_traits<BB> : public ilist_default_traits<BB>
-{
-
-    // createSentinel is used to get hold of the node that marks the end of the
-    // list... (same trick used here as in ilist_traits<Instruction>)
-    BB *createSentinel() const {
-        return static_cast<BB*>(&Sentinel);
-    }
-    static void destroySentinel(BB*) {}
-
-    BB *provideInitialHead() const { return createSentinel(); }
-    BB *ensureHead(BB*) const { return createSentinel(); }
-    static void noteHead(BB*, BB*) {}
-
-    //static ValueSymbolTable *getSymTab(Function *ItemParent);
-private:
-    mutable ilist_half_node<BB> Sentinel;
-};
-}
 /* Procedure FLAGS */
 enum PROC_FLAGS
 {
@@ -155,7 +131,7 @@ enum DecompilationStep : uint32_t {
 
 class Function : public std::enable_shared_from_this<Function>
 {
-    typedef llvm::iplist<BB> BasicBlockListType;
+    typedef std::list<BB *> BasicBlockListType;
     // BasicBlock iterators...
     typedef BasicBlockListType::iterator iterator;
     typedef BasicBlockListType::const_iterator const_iterator;
@@ -284,7 +260,6 @@ protected:
     bool    nextOrderGraph(derSeq &derivedGi);
     void    addOutEdgesForConditionalJump(BB *pBB, int next_ip, LLInst *ll);
 };
-
 typedef std::list<PtrFunction> FunctionListType;
 typedef FunctionListType lFunction;
 typedef lFunction::iterator ilFunction;

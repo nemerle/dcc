@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 
 #SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
-IF(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
+IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE -DNOMINMAX)
     ADD_DEFINITIONS(/W4)
 ELSE()
@@ -11,7 +11,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} "  ) #--coverage
 ENDIF()
-
+SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
@@ -30,17 +30,12 @@ enable_testing()
 ENDIF()
 
 
-
-find_package(LLVM REQUIRED CONFIG)
-llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES native mc support tablegen)
-
 INCLUDE_DIRECTORIES(
     3rd_party/libdisasm
     include
     include/idioms
     common
     ${Boost_INCLUDE_DIRS}
-    ${LLVM_INCLUDE_DIRS}
 )
 
 
@@ -125,6 +120,7 @@ set(dcc_HEADERS
     include/bundle.h
     include/BinaryImage.h
     include/DccFrontend.h
+    include/Enums.h
     include/dcc.h
     include/disassem.h
     include/dosdcc.h
@@ -165,8 +161,10 @@ qt5_use_modules(dcc_lib Core)
 
 ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_UI_SOURCES})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
-TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES}  LLVMSupport)
+TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s)
 qt5_use_modules(dcc_original Core Widgets)
+SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD 11)
+SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD_REQUIRED ON)
 #ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)

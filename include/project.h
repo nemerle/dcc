@@ -6,7 +6,6 @@
 #include "state.h"
 #include "src/Command.h"
 
-#include <llvm/ADT/ilist.h>
 #include <boost/icl/interval.hpp>
 #include <boost/icl/interval_map.hpp>
 #include <boost/icl/split_interval_map.hpp>

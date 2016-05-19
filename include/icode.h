@@ -10,10 +10,6 @@
 #include "state.h"	    	// State depends on INDEXBASE, but later need STATE
 #include "CallConvention.h"
 
-#include <llvm/ADT/ilist.h>
-#include <llvm/ADT/ilist_node.h>
-#include <llvm/MC/MCInst.h>
-#include <llvm/IR/Instruction.h>
 #include <boost/range/iterator_range.hpp>
 #include <QtCore/QString>
 
@@ -63,12 +59,7 @@ public:
     }
     friend void swap(LivenessSet& first, LivenessSet& second) // nothrow
     {
-        // enable ADL (not necessary in our case, but good practice)
-        using std::swap;
-
-        // by swapping the members of two classes,
-        // the two classes are effectively swapped
-        swap(first.registers, second.registers);
+        std::swap(first.registers, second.registers);
     }
     LivenessSet &operator|=(const LivenessSet &other)
     {
@@ -319,9 +310,10 @@ struct LLOperand
     bool compound() const {return is_compound;} // dx:ax pair
     size_t byteWidth() const { assert(width<=4); return width;}
 };
-struct LLInst : public llvm::MCInst //: public llvm::ilist_node<LLInst>
+struct LLInst
 {
 protected:
+    uint32_t        m_opcode;       // Low level opcode identifier
     uint32_t            flg;            /* icode flags                  */
     LLOperand           m_src;          /* source operand               */
 public:
@@ -333,6 +325,9 @@ public:
     int                 caseEntry;
     std::vector<uint32_t> caseTbl2;
     int                 hllLabNum;      /* label # for hll codegen      */
+
+    uint32_t    getOpcode() const { return m_opcode;}
+    void        setOpcode(uint32_t op) { m_opcode=op; }
     bool                conditionalJump()
                         {
                             return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
@@ -469,8 +464,8 @@ public:
         bool operator()(ICODE *ic) {return (ic->type==TYPE) and (ic->valid());}
         bool operator()(ICODE &ic) {return (ic.type==TYPE) and ic.valid();}
     };
-    static TypeFilter<HIGH_LEVEL> select_high_level;
-    static TypeAndValidFilter<HIGH_LEVEL> select_valid_high_level;
+    static TypeFilter<HIGH_LEVEL_ICODE> select_high_level;
+    static TypeAndValidFilter<HIGH_LEVEL_ICODE> select_valid_high_level;
     /* Def/Use of registers and stack variables */
     struct DU_ICODE
     {
@@ -572,7 +567,7 @@ public:
     // set this icode to be an assign
     void setAsgn(Expr *lhs, Expr *rhs)
     {
-        type=HIGH_LEVEL;
+        type=HIGH_LEVEL_ICODE;
         hlU()->setAsgn(lhs,rhs);
     }
     void setUnary(hlIcode op, Expr *_exp);
@@ -589,7 +584,7 @@ public:
     {
         return hlU()->call.newStkArg(exp,opcode,pproc);
     }
-    ICODE() :Parent(0),invalid(false),type(NOT_SCANNED),loc_ip(0)
+    ICODE() :Parent(0),invalid(false),type(NOT_SCANNED_ICODE),loc_ip(0)
     {
          m_ll = new LLInst(this);
     }
@@ -638,14 +633,13 @@ public:
 };
 /** Map n low level instructions to m high level instructions
 */
-struct MappingLLtoML
-{
-    typedef llvm::iplist<llvm::Instruction> InstListType;
-    typedef boost::iterator_range<iICODE> rSourceRange;
-    typedef boost::iterator_range<InstListType::iterator> rTargetRange;
-    rSourceRange m_low_level;
-    rTargetRange m_middle_level;
-};
+//struct MappingLLtoML
+//{
+//    typedef boost::iterator_range<iICODE> rSourceRange;
+//    typedef boost::iterator_range<InstListType::iterator> rTargetRange;
+//    rSourceRange m_low_level;
+//    rTargetRange m_middle_level;
+//};
 // This is the icode array object.
 class CIcodeRec : public std::list<ICODE>
 {

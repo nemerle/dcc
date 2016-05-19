@@ -52,7 +52,7 @@ static std::vector<ICODE> rewrite_DIV(LLInst *ll, ICODE &_Icode)
     ICODE synth_mov = ICODE(); // MOV rTMP, reg
     ICODE synth_mod = ICODE(); // MOD
 
-    synth_mov.type = LOW_LEVEL;
+    synth_mov.type = LOW_LEVEL_ICODE;
     synth_mov.ll()->set(iMOV,0,rTMP);
     if (ll->testFlags(B) )
     {
@@ -71,7 +71,7 @@ static std::vector<ICODE> rewrite_DIV(LLInst *ll, ICODE &_Icode)
     synth_mov.ll()->label = _Icode.ll()->label;
 
     /* iMOD */
-    synth_mod.type = LOW_LEVEL;
+    synth_mod.type = LOW_LEVEL_ICODE;
     synth_mod.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
     synth_mod.ll()->replaceSrc(_Icode.ll()->src());
     synth_mod.du = _Icode.du;
@@ -86,7 +86,7 @@ static std::vector<ICODE> rewrite_XCHG(LLInst *ll,ICODE &_Icode)
 {
     /* MOV rTMP, regDst */
     ICODE mov_tmp_dst;
-    mov_tmp_dst.type = LOW_LEVEL;
+    mov_tmp_dst.type = LOW_LEVEL_ICODE;
     mov_tmp_dst.ll()->set(iMOV,SYNTHETIC,rTMP,ll->m_dst);
     mov_tmp_dst.setRegDU( rTMP, eDEF);
     if(mov_tmp_dst.ll()->src().getReg2())
@@ -104,7 +104,7 @@ static std::vector<ICODE> rewrite_XCHG(LLInst *ll,ICODE &_Icode)
     /* MOV regSrc, rTMP */
 
     ICODE mov_src_tmp;
-    mov_src_tmp.type = LOW_LEVEL;
+    mov_src_tmp.type = LOW_LEVEL_ICODE;
     mov_src_tmp.ll()->set(iMOV,SYNTHETIC);
     mov_src_tmp.ll()->replaceDst(ll->src());
     if(mov_src_tmp.ll()->m_dst.regi)
@@ -218,7 +218,7 @@ void FollowCtrl(Function &func,CALL_GRAPH * pcallGraph, STATE *pstate)
         iICODE labLoc = func.Icode.labelSrch(ll->label);
         if (func.Icode.end()!=labLoc)
         {   /* Synthetic jump */
-            _Icode.type = LOW_LEVEL;
+            _Icode.type = LOW_LEVEL_ICODE;
             ll->set(iJMP,I | SYNTHETIC | NO_OPS);
             ll->replaceSrc(LLOperand::CreateImm2(labLoc->ll()->GetLlLabel()));
             ll->label = Project::get()->SynthLab++;
