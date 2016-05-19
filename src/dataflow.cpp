@@ -148,7 +148,7 @@ void Function::elimCondCodes ()
         {
             llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
-            if ((useAt->type != LOW_LEVEL) or ( not useAt->valid() ) or ( 0 == use ))
+            if ((useAt->type != LOW_LEVEL_ICODE) or ( not useAt->valid() ) or ( 0 == use ))
                 continue;
             /* Find definition within the same basic block */
             defAt=useAt;
@@ -271,7 +271,7 @@ void Function::genLiveKtes ()
             continue;	// skip invalid BBs
         for(ICODE &insn : *pbb)
         {
-            if ((insn.type == HIGH_LEVEL) and ( insn.valid() ))
+            if ((insn.type == HIGH_LEVEL_ICODE) and ( insn.valid() ))
             {
                 liveUse |= (insn.du.use - def);
                 def |= insn.du.def;
@@ -886,7 +886,7 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     numHlIcodes = 0;
     assert(&fnc->localId==&locals);
     // register(s) to be forward substituted	*/
-    auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL>());
+    auto valid_and_highlevel = instructions | filtered(ICODE::TypeAndValidFilter<HIGH_LEVEL_ICODE>());
     for (auto picode = valid_and_highlevel.begin(); picode != valid_and_highlevel.end(); picode++)
     {
         ICODE &_ic(*picode);

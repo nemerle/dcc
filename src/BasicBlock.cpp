@@ -391,7 +391,7 @@ void BB::writeBB(QTextStream &ostr,int lev, Function * pProc, int *numLoc)
 
     for(ICODE &pHli : instructions)
     {
-        if ((pHli.type == HIGH_LEVEL) and ( pHli.valid() )) //TODO: use filtering range here.
+        if ((pHli.type == HIGH_LEVEL_ICODE) and ( pHli.valid() )) //TODO: use filtering range here.
         {
             QString line = pHli.hl()->write1HlIcode(pProc, numLoc);
             if (not line.isEmpty())

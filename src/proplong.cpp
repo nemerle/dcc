@@ -248,7 +248,7 @@ void Function::propLongStk (int i, const ID &pLocId)
         next1 = ++iICODE(pIcode);
         if(next1==pEnd)
             break;
-        if ((pIcode->type == HIGH_LEVEL) or ( not pIcode->valid() ))
+        if ((pIcode->type == HIGH_LEVEL_ICODE) or ( not pIcode->valid() ))
             continue;
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
         {
@@ -323,7 +323,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE be
         ICODE &icode(*pIcode);
 
 
-        if ((icode.type == HIGH_LEVEL) or ( not icode.valid() ))
+        if ((icode.type == HIGH_LEVEL_ICODE) or ( not icode.valid() ))
             continue;
         if (icode.ll()->getOpcode() != next1->ll()->getOpcode())
             continue;
@@ -401,7 +401,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
         LLOperand * pmH,* pmL;            /* Pointers to dst LOW_LEVEL icodes */
         int arc;
 
-        if ((pIcode->type == HIGH_LEVEL) or ( not pIcode->valid() ))
+        if ((pIcode->type == HIGH_LEVEL_ICODE) or ( not pIcode->valid() ))
             continue;
 
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())

@@ -42,7 +42,7 @@ ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
 
     ICODE eIcode = ICODE();
 
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW_LEVEL_ICODE;
     eIcode.ll()->set(iMOV,0,rTMP);
     if (ll->testFlags(B) )
     {
@@ -66,7 +66,7 @@ ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
 
     /* iMOD */
     eIcode = ICODE();
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW_LEVEL_ICODE;
     eIcode.ll()->set(iMOD,ll->getFlag() | SYNTHETIC  | IM_TMP_DST);
     eIcode.ll()->replaceSrc(_Icode.ll()->src());
     eIcode.du = _Icode.du;
@@ -77,7 +77,7 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
 {
     /* MOV rTMP, regDst */
     ICODE eIcode;
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW_LEVEL_ICODE;
     eIcode.ll()->set(iMOV,SYNTHETIC,rTMP,ll->m_dst);
     eIcode.setRegDU( rTMP, eDEF);
     if(eIcode.ll()->src().getReg2())
@@ -97,7 +97,7 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
 
     /* MOV regSrc, rTMP */
     eIcode = ICODE();
-    eIcode.type = LOW_LEVEL;
+    eIcode.type = LOW_LEVEL_ICODE;
     eIcode.ll()->set(iMOV,SYNTHETIC);
     eIcode.ll()->replaceDst(ll->src());
     if(eIcode.ll()->m_dst.regi)
@@ -157,7 +157,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         iICODE labLoc = Icode.labelSrch(ll->label);
         if (Icode.end()!=labLoc)
         {   /* Synthetic jump */
-            _Icode.type = LOW_LEVEL;
+            _Icode.type = LOW_LEVEL_ICODE;
             ll->set(iJMP,I | SYNTHETIC | NO_OPS);
             ll->replaceSrc(LLOperand::CreateImm2(labLoc->ll()->GetLlLabel()));
             ll->label = SynthLab++;
