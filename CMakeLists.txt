@@ -1,5 +1,5 @@
 PROJECT(dcc_original)
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.1)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 find_package(Qt5Core)
@@ -15,7 +15,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} "  ) #--coverage
 ENDIF()
-
+SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 include(cotire)
@@ -95,6 +95,7 @@ set(dcc_HEADERS
     include/bundle.h
     include/BinaryImage.h
     include/DccFrontend.h
+    include/Enums.h
     include/dcc.h
     include/disassem.h
     include/dosdcc.h
@@ -137,6 +138,8 @@ ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 ADD_DEPENDENCIES(dcc_original dcc_lib)
 TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s ${REQ_LLVM_LIBRARIES}  LLVMSupport)
 qt5_use_modules(dcc_original Core)
+SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD 11)
+SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD_REQUIRED ON)
 #ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
 ADD_SUBDIRECTORY(src)
