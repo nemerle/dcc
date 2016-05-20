@@ -22,7 +22,6 @@ Project::Project() :
 {
     m_project_command_stream.setMaximumCommandCount(10);
     connect(&m_project_command_stream,SIGNAL(streamCompleted(bool)),SLOT(onCommandStreamFinished(bool)));
-    memset(&prog,0,sizeof(prog));
 }
 void Project::initialize()
 {
