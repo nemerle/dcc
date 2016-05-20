@@ -87,10 +87,10 @@ bool callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 //static  FILE   *dis_g_fp;
 static  CIcodeRec pc;
-static  int     cb, j, numIcode, allocIcode;
+static  int     cb, numIcode, allocIcode;
 static  map<int,int> pl;
 static  uint32_t   nextInst;
-static  bool    fImpure;
+//static  bool    fImpure;
 //static  int     g_lab;
 static  PtrFunction pProc;          /* Points to current proc struct */
 
