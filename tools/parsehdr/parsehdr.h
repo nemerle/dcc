@@ -20,8 +20,8 @@ typedef unsigned char boolT;    /* 8 bits 	*/
 
 #define	ERRF	stdout
 
-void	phError(char *errmsg);
-void	phWarning(char *errmsg);
+void	phError(const char * errmsg);
+void	phWarning(const char * errmsg);
 
 #define	ERR(msg)		phError(msg)
 #ifdef DEBUG

@@ -58,7 +58,7 @@ boolT phDoCB(int id, char *data) {
   return true;
 }
 
-void phError(char *errmsg) {
+void phError(const char *errmsg) {
   char msg[200];
 
   sprintf(msg, "PH *ERROR*\nFile: %s L=%d C=%d O=%lu\n%s", fileName, line, col,
@@ -66,7 +66,7 @@ void phError(char *errmsg) {
   printf(msg);
 }
 
-void phWarning(char *errmsg) {
+void phWarning(const char *errmsg) {
   char msg[200];
 
   sprintf(msg, "PH -warning-\nFile: %s L=%d C=%d O=%lu\n%s\n", fileName, line,
