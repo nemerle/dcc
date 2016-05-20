@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <list>
 
-struct Function;
+class Function;
 /* Types of basic block nodes */
 /* Real basic blocks: type defined according to their out-edges */
 enum eBBKind

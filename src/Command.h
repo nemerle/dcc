@@ -7,7 +7,7 @@
 #include <QtCore/QPair>
 
 class Project;
-struct Function;
+class Function;
 typedef std::shared_ptr<Function> PtrFunction;
 enum CommandLevel {
     eProject,

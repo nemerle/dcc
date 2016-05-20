@@ -9,7 +9,7 @@
 #include <QtCore/QString>
 #include <vector>
 
-struct Function;
+class Function;
 
 // This will create a PatternLocator instance load it and pass it to project instance.
 struct LoadPatternLibrary : public Command {

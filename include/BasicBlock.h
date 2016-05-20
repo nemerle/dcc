@@ -9,7 +9,7 @@
 #include "graph.h"
 //#include "icode.h"
 /* Basic block (BB) node definition */
-struct Function;
+class Function;
 class CIcodeRec;
 struct BB;
 struct LOCAL_ID;
@@ -27,7 +27,7 @@ struct TYPEADR_TYPE
 };
 struct BB
 {
-    friend struct Function;
+    friend class Function;
 private:
     BB(const BB&);
     BB() : nodeType(0),traversed(DFS_NONE),

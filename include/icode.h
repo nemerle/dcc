@@ -25,7 +25,7 @@
 
 struct LOCAL_ID;
 struct BB;
-struct Function;
+class Function;
 struct STKFRAME;
 class CIcodeRec;
 struct ICODE;

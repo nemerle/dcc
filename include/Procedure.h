@@ -19,11 +19,11 @@ class QTextStream;
 struct CALL_GRAPH;
 struct Expr;
 struct Disassembler;
-struct Function;
+class Function;
 struct CALL_GRAPH;
 struct PROG;
 struct IStructuredTextTarget;
-struct Function;
+
 
 /* Procedure FLAGS */
 enum PROC_FLAGS
@@ -119,7 +119,7 @@ public:
     }
     void push_back(BB *v) { m_listBB.push_back(v);}
 };
-typedef std::shared_ptr<struct Function> PtrFunction;
+typedef std::shared_ptr<Function> PtrFunction;
 enum DecompilationStep : uint32_t {
     eNotDecoded,    // no processing done yet
     eDisassemblyInProgress,

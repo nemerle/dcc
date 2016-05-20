@@ -28,7 +28,7 @@ static const condOp condOpJCond[12] = {LESS, LESS_EQUAL, GREATER_EQUAL, GREATER,
                                        EQUAL, NOT_EQUAL, LESS, GREATER_EQUAL,
                                        LESS_EQUAL, GREATER, GREATER_EQUAL, LESS};
 struct AstIdent;
-struct Function;
+class Function;
 struct STKFRAME;
 struct LOCAL_ID;
 struct ICODE;

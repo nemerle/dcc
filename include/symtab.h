@@ -86,7 +86,7 @@ public:
     void updateSymType(uint32_t symbol, const TypeContainer &tc);
     SYM *updateGlobSym(uint32_t operand, int size, uint16_t duFlag, bool &inserted_new);
 };
-struct Function;
+class Function;
 struct SYMTABLE
 {
     std::string pSymName;              /* Ptr to symbolic name or comment */

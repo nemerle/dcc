@@ -14,7 +14,7 @@
 #include <QTextStream>
 
 struct LLInst;
-struct Function;
+class Function;
 typedef std::shared_ptr<Function> PtrFunction;
 
 struct Disassembler
