@@ -406,8 +406,9 @@ void phChar(char ch) {
 /* Take a lump of data from a header file, and churn the state machine
     through each char */
 boolT phData(char *buff, int ndata) {
-  int i, j;
+  int i;
 #ifdef DEBUG
+  int j=0;
   char cLine[81];
   char cfLine[90];
 #endif
@@ -415,7 +416,6 @@ boolT phData(char *buff, int ndata) {
   if (ndata < 1) {
     ndata = strlen(buff);
   }
-  j = 0;
 
   for (i = 0; i < ndata; i++) {
     phChar(buff[i]);
