@@ -32,7 +32,7 @@ byte func;  /* Function header detected */
 byte hash_ext;
 int curly; /* Level inside curly brackets */
 int xtern; /* Level inside a extern "C" {} situation */
-int round; /* Level inside () */
+int round1; /* Level inside () */
 int line, col;
 dword chars;
 char lastch;
@@ -151,7 +151,7 @@ void phInit(char *filename) // filename is for reference only!!!
   slosh = last_slosh = start = func = comment = double_slash = hash = ignore1 =
       quote1 = quote2 = hash_ext = false;
 
-  buff_idx = curly = xtern = col = round = 0;
+  buff_idx = curly = xtern = col = round1 = 0;
 
   line = 1;
 
@@ -268,12 +268,12 @@ void phChar(char ch) {
     if (!IsIgnore()) {
       char st[80];
 
-      if ((curly == xtern) && (round == 0) && (start)) {
+      if ((curly == xtern) && (round1 == 0) && (start)) {
         func = true;
         DBG("[FUNCTION]")
       }
-      round++;
-      sprintf(st, "[ROUND++ %d]", round);
+      round1++;
+      sprintf(st, "[ROUND++ %d]", round1);
       DBG(st)
     }
     break;
@@ -282,9 +282,9 @@ void phChar(char ch) {
     if (!IsIgnore()) {
       char st[80];
 
-      if (round > 0) {
-        round--;
-        sprintf(st, "[ROUND-- %d]", round);
+      if (round1 > 0) {
+        round1--;
+        sprintf(st, "[ROUND-- %d]", round1);
         DBG(st)
       } else {
         ERR("too many \")\"\n");
@@ -464,8 +464,8 @@ boolT phPost(void) {
     err = false;
   }
 
-  if (round > 0) {
-    sprintf(msg, "EOF: ( level = %d", round);
+  if (round1 > 0) {
+    sprintf(msg, "EOF: ( level = %d", round1);
     WARN(msg);
     err = false;
   }
