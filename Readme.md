@@ -6,6 +6,8 @@ To reflect those fixes, I've edited the original readme a bit.
 dcc Distribution
 ================
 
+[![Join the chat at https://gitter.im/nemerle/dcc](https://badges.gitter.im/nemerle/dcc.svg)](https://gitter.im/nemerle/dcc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 The code provided in this distribution is (C) by their authors:
 -	Cristina Cifuentes (most of dcc code)
 -	Mike van Emmerik (signatures and prototype code)
