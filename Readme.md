@@ -127,3 +127,19 @@ recognised the compiler library used. You can place the signatures in a
 different direcory to where you are working if you set the DCC environment
 variable to point to their path. Note that if dcc can't find its signature
 files, it will be severely handicapped. 
+
+Building on Windows
+-------------------
+
+- Install CMake;
+- Run cmake-gui;
+- Clone DCC repo;
+- Create some directory, for ex. "vstudio" in dcc repo root;
+- Specify dcc's root as Source dir, and "vstudio" dir as a Build directory;
+- Press Configure;
+- Now, download Boost, unpack it;
+- Specify Boost_INCLUDE_DIR as root of previously unpacked archive (for ex.: "C:/boost_1_60_0");
+- Now, unpack&build or install Qt5 for your build system;
+- Specify Qt5Core_DIR as "/lib/cmake/Qt5Core" subdirectory of your Qt5 installation dir (for ex.: "c:/Qt/Qt5.6.0/5.6/msvc2015/lib/cmake/Qt5Core");
+- Press Configure again;
+- Then press Build. That's it!
