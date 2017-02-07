@@ -5,14 +5,13 @@
 /* Descended from xansi; thanks Geoff! thanks Glenn! */
 
 #include "parsehdr.h"
-#include <malloc.h> /* For debugging */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <algorithm>
 
-dword userval;
-
+static dword userval;
+namespace {
 /* the IGNORE byte */
 byte slosh;
 byte last_slosh;
@@ -51,7 +50,7 @@ PH_ARG_STRUCT *pArg; /* Pointer to the arguements array */
 int numArg;          /* How many elements saved so far */
 int allocArg;        /* How many elements allocated so far */
 int headArg;         /* Head of the arguements linked list */
-
+}
 // DO Callback
 boolT phDoCB(int id, char *data) {
   /*	return callback(hDCX, id, data, userval);*/

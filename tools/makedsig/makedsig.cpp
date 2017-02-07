@@ -10,7 +10,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
 #include <memory.h>
 #include <string.h>
 #include <algorithm>
@@ -22,7 +21,7 @@
 
 void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll);		/* Save the info */
 
-int	 numKeys;				/* Number of useful codeview symbols */
+static int	 numKeys;				/* Number of useful codeview symbols */
 
 
 static void printUsage(bool longusage) {

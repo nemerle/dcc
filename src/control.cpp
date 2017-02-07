@@ -12,8 +12,6 @@
 #include <cassert>
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
-
 
 typedef std::list<int> nodeList; /* dfsLast index to the node */
 
