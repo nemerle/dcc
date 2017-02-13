@@ -100,7 +100,5 @@ QString writeJcondInv(HLTYPE, Function *, int *);
 /* Exported funcions from locident.c */
 bool checkLongEq(LONG_STKID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &atOffset);
 bool checkLongRegEq(LONGID_TYPE, iICODE, int, Function *, Assignment &asgn, LLInst &);
-eReg otherLongRegi(eReg, int, LOCAL_ID *);
-
 
 extern const char *indentStr(int level);

@@ -221,9 +221,6 @@ struct AstIdent : public UnaryOperator
     virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
     virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
     virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);
-protected:
-    eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl);
-
 };
 struct GlobalVariable : public AstIdent
 {
@@ -272,7 +269,7 @@ struct Constant : public AstIdent
     }
     QString walkCondExpr(Function *pProc, int *numLoc) const;
     int hlTypeSize(Function *pproc) const;
-    hlType expType(Function *pproc) const;
+    hlType expType(Function *pproc) const { return TYPE_CONST; }
 };
 struct FuncNode : public AstIdent
 {

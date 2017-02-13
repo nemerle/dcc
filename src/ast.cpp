@@ -850,26 +850,12 @@ Expr *AstIdent::performLongRemoval(eReg regi, LOCAL_ID *locId)
 
     if (ident.idType == LONG_VAR)
     {
-        otherRegi = otherLongRegi (regi, ident.idNode.longIdx, locId);
+        otherRegi = locId->getPairedRegisterAt(ident.idNode.longIdx,regi);
         delete this;
         return new RegisterNode(locId->newByteWordReg(TYPE_WORD_SIGN,otherRegi),WORD_REG,locId);
     }
     return this;
 }
-eReg AstIdent::otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
-{
-    ID *id = &locTbl->id_arr[idx];
-    if ((id->loc == REG_FRAME) and ((id->type == TYPE_LONG_SIGN) or
-                                    (id->type == TYPE_LONG_UNSIGN)))
-    {
-        if (id->longId().h() == regi)
-            return (id->longId().l());
-        else if (id->longId().l() == regi)
-            return (id->longId().h());
-    }
-    return rUNDEF;	// Cristina: please check this!
-}
-
 
 QString Constant::walkCondExpr(Function *, int *) const
 {
@@ -884,10 +870,7 @@ int Constant::hlTypeSize(Function *) const
     return kte.size;
 }
 
-hlType Constant::expType(Function *pproc) const
-{
-    return TYPE_CONST;
-}
+
 
 QString FuncNode::walkCondExpr(Function *pProc, int *numLoc) const
 {

@@ -10,6 +10,8 @@
 #include "msvc_fixes.h"
 
 #include <cstring>
+#include <QtCore/QDebug>
+
 static const int LOCAL_ID_DELTA = 25;
 static const int IDX_ARRAY_DELTA = 5;
 
@@ -55,6 +57,14 @@ ID::ID(hlType t, const LONGGLB_TYPE &s) : type(t),illegal(false)
     loc=GLB_FRAME;
     id.longGlb = s;
     assert((t==TYPE_LONG_SIGN) or (t==TYPE_LONG_UNSIGN));
+}
+
+eReg ID::getPairedRegister(eReg first) const {
+    if (longId().h() == first)
+        return (longId().l());
+    else if (longId().l() == first)
+        return (longId().h());
+    return rUNDEF;
 }
 
 
@@ -174,7 +184,7 @@ int LOCAL_ID::newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_)
     for (idx = 0; idx < id_arr.size(); idx++)
     {
         ID &entry(id_arr[idx]);
-        if(not entry.isLong() or (entry.loc != REG_FRAME))
+        if(not entry.isLongRegisterPair())
             continue;
         if (/*(locSym->id[idx].type == t) and   Not checking type */
                 (entry.longId().h() == regH) and
@@ -222,7 +232,7 @@ int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
     printf("%d",t);
     /* Not in the table, create new identifier */
     id_arr.emplace_back(t, LONGGLB_TYPE(seg,offH,offL));
-    return (id_arr.size() - 1);
+    return id_arr.size() - 1;
 
 }
 
@@ -232,10 +242,8 @@ int LOCAL_ID::newLongGlb(int16_t seg, int16_t offH, int16_t offL,hlType t)
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
 int LOCAL_ID::newLongIdx( int16_t seg, int16_t offH, int16_t offL,uint8_t regi, hlType t)
 {
-    size_t idx;
-
     /* Check for entry in the table */
-    for (idx = 0; idx < id_arr.size(); idx++)
+    for (size_t idx = 0; idx < id_arr.size(); idx++)
     {
         if (/*(locSym->id[idx].type == t) and   Not checking type */
                 (id_arr[idx].id.longGlb.seg == seg) and
@@ -247,8 +255,7 @@ int LOCAL_ID::newLongIdx( int16_t seg, int16_t offH, int16_t offL,uint8_t regi, 
 
     /* Not in the table, create new identifier */
     id_arr.emplace_back(t,LONGGLB_TYPE(seg,offH,offL,regi));
-    idx = id_arr.size() - 1;
-    return (idx);
+    return id_arr.size() - 1;
 }
 
 
@@ -326,7 +333,7 @@ int LOCAL_ID::newLong(opLoc sd, iICODE pIcode, hlFirst f, iICODE ix,operDu du, L
     else  /* (pm->regi >= INDEXBASE and pm->off = 0) => indexed and no off */
         printf ("long not supported, idx and no off\n");
 
-    return (idx);
+    return idx;
 }
 
 
@@ -423,25 +430,19 @@ bool checkLongRegEq (LONGID_TYPE longId, iICODE pIcode, int i,
     return false;
 }
 
-
-
 /* Given an index into the local identifier table for a long register
  * variable, determines whether regi is the high or low part, and returns
  * the other part   */
-eReg otherLongRegi (eReg regi, int idx, LOCAL_ID *locTbl)
+eReg LOCAL_ID::getPairedRegisterAt(int idx,eReg regi) const
 {
-    ID *id;
-
-    id = &locTbl->id_arr[idx];
-    if ((id->loc == REG_FRAME) and ((id->type == TYPE_LONG_SIGN) or
-                                    (id->type == TYPE_LONG_UNSIGN)))
+    eReg res=rUNDEF; // Cristina: please check this!
+    const ID *id = &id_arr[idx];
+    if (id->isLongRegisterPair())
     {
-        if (id->longId().h() == regi)
-            return (id->longId().l());
-        else if (id->longId().l() == regi)
-            return (id->longId().h());
+        res = id->getPairedRegister(regi);
     }
-    return rUNDEF;	// Cristina: please check this!
+    qWarning() << "Cannot find paired register";
+    return res;
 }
 
 

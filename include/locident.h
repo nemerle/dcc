@@ -96,10 +96,9 @@ protected:
     LONGID_TYPE     m_longId; /* For TYPE_LONG_(UN)SIGN registers			 */
 public:
     hlType              type;       /* Probable type                            */
-    bool                illegal;    /* Boolean: not a valid field any more      */
-    //std::vector<iICODE> idx;
     IDX_ARRAY           idx;        /* Index into icode array (REG_FRAME only)  */
     frameType           loc;        /* Frame location                           */
+    bool                illegal;    /* Boolean: not a valid field any more      */
     bool                hasMacro;   /* Identifier requires a macro              */
     char                macro[10];  /* Macro for this identifier                */
     QString             name;       /* Identifier's name                        */
@@ -143,6 +142,8 @@ public:
                                 sprintf (buf, "loc%d", i);
                                 name=buf;
                             }
+    bool                    isLongRegisterPair() const { return (loc == REG_FRAME) and isLong();}
+    eReg                    getPairedRegister(eReg first) const;
 };
 
 struct LOCAL_ID
@@ -174,6 +175,7 @@ public:
     void processTargetIcode(ICODE & picode, int &numHlIcodes, ICODE & ticode, bool isLong) const;
     void forwardSubs(Expr *lhs, Expr *rhs, ICODE & picode, ICODE & ticode, int &numHlIcodes) const;
     AstIdent *createId(const ID *retVal, iICODE ix_);
+    eReg getPairedRegisterAt(int idx,eReg first) const;
 };
 
 
