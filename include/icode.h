@@ -165,8 +165,8 @@ struct AssignType : public HlTypeSupport
     /* for HLI_ASSIGN */
 protected:
 public:
-    Expr    *m_lhs;
-    Expr    *rhs;
+    Expr *  m_lhs;
+    Expr *  m_rhs;
     AssignType() {}
     Expr *lhs() const {return m_lhs;}
     void lhs(Expr *l);
@@ -176,8 +176,8 @@ public:
 struct ExpType : public HlTypeSupport
 {
     /* for HLI_JCOND, HLI_RET, HLI_PUSH, HLI_POP*/
-    Expr    *v;
-    ExpType() : v(0) {}
+    Expr *  v;
+    ExpType() : v(nullptr) {}
     bool removeRegFromLong(eReg regi, LOCAL_ID *locId)
     {
         v=performLongRemoval(regi,locId,v);

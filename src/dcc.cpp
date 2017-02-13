@@ -25,12 +25,11 @@ extern SYMTAB  symtab;             /* Global symbol table      			  */
 extern STATS   stats;              /* cfg statistics       				  */
 extern OPTION  option;             /* Command line options     			  */
 
-static char *initargs(int argc, char *argv[]);
-static void displayTotalStats(void);
+static void displayTotalStats();
 /****************************************************************************
  * main
  ***************************************************************************/
-void setupOptions(QCoreApplication &app) {
+void setupOptions(const QCoreApplication &app) {
     //[-a1a2cmsi]
     QCommandLineParser parser;
     parser.setApplicationDescription("dcc");
@@ -80,7 +79,7 @@ void setupOptions(QCoreApplication &app) {
     option.Interact = false;
     option.Calls = parser.isSet(boolOpts[2]);
     option.filename = args.first();
-    option.CustomEntryPoint = parser.value(entryPointOption).toUInt(0,16);
+    option.CustomEntryPoint = parser.value(entryPointOption).toUInt(nullptr,16);
     if(parser.isSet(targetFileOption))
         asm1_name = asm2_name = parser.value(targetFileOption);
     else if(option.asm1 or option.asm2) {

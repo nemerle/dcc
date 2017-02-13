@@ -148,7 +148,7 @@ int Idiom4::action()
     if(m_param_count)
     {
         m_func->cbParam = (int16_t)m_param_count;
-        m_func->callingConv(CConv::PASCAL);
+        m_func->callingConv(CConv::ePascal);
     }
     return 1;
 }

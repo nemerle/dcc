@@ -7,15 +7,15 @@
 #include "CallGraph.h"
 #include "msvc_fixes.h"
 
-#include <inttypes.h>
-#include <string.h>
-#include <stdlib.h>		/* For exit() */
-#include <sstream>
-#include <stdio.h>
-#include <algorithm>
-#include <deque>
 #include <QMap>
 #include <QtCore/QDebug>
+#include <inttypes.h>
+#include <cstring>
+#include <cstdlib>		/* For exit() */
+#include <cstdio>
+#include <sstream>
+#include <algorithm>
+#include <deque>
 
 using namespace std;
 
@@ -129,7 +129,6 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
         // Danger! Dcc will likely fall over in this code.
         // So we act as though we have done with this proc
         //		pProc->flg &= ~TERMINATES;			// Not sure about this
-        done = true;
         // And mark it as a library function, so structure() won't choke on it
         flg |= PROC_ISLIB;
         return;

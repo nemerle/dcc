@@ -15,9 +15,9 @@ CConv *CConv::create(Type v)
     if(nullptr==u_call)
         u_call = new Unknown_CallingConvention;
     switch(v) {
-    case UNKNOWN: return u_call;
-    case C: return c_call;
-    case PASCAL: return p_call;
+    case eUnknown: return u_call;
+    case eCdecl: return c_call;
+    case ePascal: return p_call;
     }
     assert(false);
     return nullptr;

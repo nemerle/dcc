@@ -88,7 +88,7 @@ void CALL_GRAPH::write()
 /* Updates the argument table by including the register(s) (ie. lhs of
  * picode) and the actual expression (ie. rhs of picode).
  * Note: register(s) are only included once in the table.   */
-void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
+void LOCAL_ID::newRegArg(ICODE &picode, ICODE &ticode) const
 {
     AstIdent *lhs;
     STKFRAME * call_args_stackframe, *target_stackframe;
@@ -101,13 +101,13 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     eReg regH;		/* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
-    tproc = ticode->hl()->call.proc;
+    tproc = ticode.hl()->call.proc;
     tproc->flg |= REG_ARGS;
 
     /* Get registers and index into target procedure's local list */
-    call_args_stackframe = ticode->hl()->call.args;
+    call_args_stackframe = ticode.hl()->call.args;
     target_stackframe = &tproc->args;
-    lhs = dynamic_cast<AstIdent *>(picode->hl()->asgn.lhs());
+    lhs = dynamic_cast<AstIdent *>(picode.hl()->asgn.lhs());
     RegisterNode *lhs_reg = dynamic_cast<RegisterNode *>(lhs);
     assert(lhs);
     type = lhs->ident.type();
@@ -188,13 +188,13 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
     /* Do ps (actual arguments) */
     STKSYM newsym;
     newsym.setArgName(call_args_stackframe->size());
-    newsym.actual = picode->hl()->asgn.rhs;
+    newsym.actual = picode.hl()->asgn.m_rhs;
     newsym.regs = lhs;
     /* Mask off high and low register(s) in picode */
     switch (type) {
         case REGISTER:
             id = &id_arr[lhs_reg->regiIdx];
-            picode->du.def.clrReg(id->id.regi);
+            picode.du.def.clrReg(id->id.regi);
             if (id->id.regi < rAL)
                 newsym.type = TYPE_WORD_SIGN;
             else
@@ -202,8 +202,8 @@ void LOCAL_ID::newRegArg(iICODE picode, iICODE ticode) const
             break;
         case LONG_VAR:
             id = &id_arr[lhs->ident.idNode.longIdx];
-            picode->du.def.clrReg(id->longId().h());
-            picode->du.def.clrReg(id->longId().l());
+            picode.du.def.clrReg(id->longId().h());
+            picode.du.def.clrReg(id->longId().l());
             newsym.type = TYPE_LONG_SIGN;
             break;
         default:

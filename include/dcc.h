@@ -28,24 +28,24 @@ extern bundle cCode;			/* Output C procedure's declaration and code */
 
 extern QString asm1_name, asm2_name; /* Assembler output filenames 		*/
 
-typedef struct {            /* Command line option flags */
-    unsigned verbose        : 1;
-    unsigned VeryVerbose    : 1;
-    unsigned asm1           : 1;    /* Early disassembly listing */
-    unsigned asm2           : 1;    /* Disassembly listing after restruct */
-    unsigned Map            : 1;
-    unsigned Stats          : 1;
-    unsigned Interact       : 1;    /* Interactive mode */
-    unsigned Calls          : 1;    /* Follow register indirect calls */
+/** Command line option flags */
+struct OPTION
+{
+    bool verbose;
+    bool VeryVerbose;
+    bool asm1;          /* Early disassembly listing */
+    bool asm2;          /* Disassembly listing after restruct */
+    bool Map;
+    bool Stats;
+    bool Interact;      /* Interactive mode */
+    bool Calls;         /* Follow register indirect calls */
     QString	filename;			/* The input filename */
     uint32_t CustomEntryPoint;
-} OPTION;
+};
 
 extern OPTION option;       /* Command line options             */
 
 #include "BinaryImage.h"
-
-
 
 /* Memory map states */
 enum eAreaType

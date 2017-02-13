@@ -6,6 +6,7 @@
 #include "msvc_fixes.h"
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 #include <QtCore/QStringList>
 
 #include <stdio.h>
@@ -58,6 +59,9 @@ int main(int argc, char *argv[])
         collector = new TPL_PatternCollector;
     } else if(arg2.endsWith(".lib")) {
         collector = new LIB_PatternCollector;
+    } else {
+        qCritical() << "Unsupported file type.";
+        return -1;
     }
     if ((srcfile = fopen(argv[1], "rb")) == NULL)
     {

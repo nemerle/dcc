@@ -100,7 +100,7 @@ protected:
         hasCase(false),liveAnal(0)
     {
         type = new FunctionType;
-        callingConv(CConv::UNKNOWN);
+        callingConv(CConv::eUnknown);
     }
 
 public:

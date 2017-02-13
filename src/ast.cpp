@@ -259,14 +259,13 @@ AstIdent *AstIdent::Other(eReg seg, eReg regi, int16_t off)
  * TYPE_WORD_SIGN	*/
 AstIdent *AstIdent::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
 {
-    int idx;
     AstIdent *newExp=nullptr;
     switch(retVal->type)
     {
     case TYPE_LONG_SIGN:
     {
         newExp  = new AstIdent();
-        idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->longId(), ix_);
+        int idx = locsym->newLongReg (TYPE_LONG_SIGN, retVal->longId(), ix_);
         newExp->ident.idType = LONG_VAR;
         newExp->ident.idNode.longIdx = idx;
         break;

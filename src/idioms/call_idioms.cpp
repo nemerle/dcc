@@ -41,7 +41,7 @@ int Idiom3::action()
 {
     if (m_icodes[0]->ll()->testFlags(I) )
     {
-        m_icodes[0]->ll()->src().addProcInformation(m_param_count,CConv::C);
+        m_icodes[0]->ll()->src().addProcInformation(m_param_count,CConv::eCdecl);
     }
     else
     {
@@ -99,7 +99,7 @@ int Idiom17::action()
 {
     if (m_icodes[0]->ll()->testFlags(I))
     {
-        m_icodes[0]->ll()->src().addProcInformation(m_param_count,CConv::C);
+        m_icodes[0]->ll()->src().addProcInformation(m_param_count,CConv::eCdecl);
         for(size_t idx=1; idx<m_icodes.size(); ++idx)
         {
             m_icodes[idx]->invalidate();

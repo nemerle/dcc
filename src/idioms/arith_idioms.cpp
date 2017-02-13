@@ -147,13 +147,13 @@ bool Idiom18::match(iICODE picode)
             break;
         case 1:  /* register variable */
             /* Check previous instruction for a MOV */
-            if ( (m_icodes[0]->ll()->src().regi == m_icodes[1]->ll()->m_dst.regi))
+            if ( m_icodes[0]->ll()->src().regi == m_icodes[1]->ll()->m_dst.regi)
             {
                 return true;
             }
             break;
         case 2: /* local */
-            if ((m_icodes[0]->ll()->src().off == m_icodes[1]->ll()->m_dst.off))
+            if (m_icodes[0]->ll()->src().off == m_icodes[1]->ll()->m_dst.off)
             {
                 return true;
             }

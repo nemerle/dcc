@@ -7,25 +7,29 @@
 #include "msvc_fixes.h"
 
 #include <boost/range/algorithm.hpp>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 #include <algorithm>
 #include <list>
-#include <cassert>
-#include <stdio.h>
-#include <string.h>
 
+namespace {
 typedef std::list<int> nodeList; /* dfsLast index to the node */
 
-#define ancestor(a,b)	((a->dfsLastNum < b->dfsLastNum) and (a->dfsFirstNum < b->dfsFirstNum))
 /* there is a path on the DFST from a to b if the a was first visited in a
  * dfs, and a was later visited than b when doing the last visit of each
  * node. */
+bool inline ancestor(BB *a,BB *b)
+{
+    return  (a->dfsLastNum < b->dfsLastNum) and (a->dfsFirstNum < b->dfsFirstNum);
+}
 
 
-/* Checks if the edge (p,s) is a back edge.  If node s was visited first
+/** Checks if the edge (p,s) is a back edge.  If node s was visited first
  * during the dfs traversal (ie. s has a smaller dfsFirst number) or s == p,
  * then it is a backedge.
  * Also incrementes the number of backedges entries to the header node. */
-static bool isBackEdge (BB * p,BB * s)
+bool isBackEdge (BB * p,BB * s)
 {
     if (p->dfsFirstNum >= s->dfsFirstNum)
     {
@@ -36,9 +40,9 @@ static bool isBackEdge (BB * p,BB * s)
 }
 
 
-/* Finds the common dominator of the current immediate dominator
+/** Finds the common dominator of the current immediate dominator
  * currImmDom and its predecessor's immediate dominator predImmDom  */
-static int commonDom (int currImmDom, int predImmDom, Function * pProc)
+int commonDom (int currImmDom, int predImmDom, Function * pProc)
 {
     if (currImmDom == NO_DOM)
         return (predImmDom);
@@ -55,67 +59,44 @@ static int commonDom (int currImmDom, int predImmDom, Function * pProc)
     }
     return (currImmDom);
 }
-
-
-/* Finds the immediate dominator of each node in the graph pProc->cfg.
- * Adapted version of the dominators algorithm by Hecht and Ullman; finds
- * immediate dominators only.
- * Note: graph should be reducible */
-void Function::findImmedDom ()
-{
-    BB * currNode;
-    for (size_t currIdx = 0; currIdx < numBBs; currIdx++)
-    {
-        currNode = m_dfsLast[currIdx];
-        if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
-            continue;
-        for (BB * inedge : currNode->inEdges)
-        {
-            size_t predIdx = inedge->dfsLastNum;
-            if (predIdx < currIdx)
-                currNode->immedDom = commonDom (currNode->immedDom, predIdx, this);
-        }
-    }
-}
-
-
-/* Inserts the node n to the list l. */
-static void insertList (nodeList &l, int n)
-{
-    l.push_back(n);
-}
-
-
 /* Returns whether or not the node n (dfsLast numbering of a basic block)
  * is on the list l. */
-static bool inList (const nodeList &l, int n)
+bool inList (const nodeList &l, int n)
 {
     return std::find(l.begin(),l.end(),n)!=l.end();
 }
-
-
-/* Frees space allocated by the list l.  */
-static void freeList (nodeList &l)
-{
-    l.clear();
-}
-
-
 /* Returns whether the node n belongs to the queue list q. */
-static bool inInt(BB * n, queue &q)
+bool inInt(BB * n, queue &q)
 {
     return std::find(q.begin(),q.end(),n)!=q.end();
 }
-
-
+/** Recursive procedure to find nodes that belong to the interval (ie. nodes
+ * from G1).                                */
+void findNodesInInt (queue &intNodes, int level, interval *Ii)
+{
+    if (level == 1)
+    {
+        for(BB *en : Ii->nodes)
+        {
+            appendQueue(intNodes,en);
+        }
+    }
+    else
+    {
+        for(BB *en : Ii->nodes)
+        {
+            findNodesInInt(intNodes,level-1,en->correspInt);
+        }
+    }
+}
 /* Finds the follow of the endless loop headed at node head (if any).
  * The follow node is the closest node to the loop. */
-static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
+void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
 {
     head->loopFollow = MAX;
     for( int loop_node :  loopNodes)
     {
-        for (TYPEADR_TYPE &typeaddr: pProc->m_dfsLast[loop_node]->edges)
+        for (const TYPEADR_TYPE &typeaddr: pProc->m_dfsLast[loop_node]->edges)
         {
             int succ = typeaddr.BBptr->dfsLastNum;
             if ((not inList(loopNodes, succ)) and (succ < head->loopFollow))
@@ -128,7 +109,7 @@ static void findEndlessFollow (Function * pProc, nodeList &loopNodes, BB * head)
 //static void findNodesInLoop(BB * latchNode,BB * head,PPROC pProc,queue *intNodes)
 /* Flags nodes that belong to the loop determined by (latchNode, head) and
  * determines the type of loop.                     */
-static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &intNodes)
+void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &intNodes)
 {
     int i, headDfsNum, intNodeType;
     nodeList loopNodes;
@@ -139,7 +120,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
     /* Flag nodes in loop headed by head (except header node) */
     headDfsNum = head->dfsLastNum;
     head->loopHead = headDfsNum;
-    insertList (loopNodes, headDfsNum);
+    loopNodes.push_back(headDfsNum);
     for (i = headDfsNum + 1; i < latchNode->dfsLastNum; i++)
     {
         if (pProc->m_dfsLast[i]->flg & INVALID_BB)	/* skip invalid BBs */
@@ -148,14 +129,14 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
         immedDom = pProc->m_dfsLast[i]->immedDom;
         if (inList (loopNodes, immedDom) and inInt(pProc->m_dfsLast[i], intNodes))
         {
-            insertList (loopNodes, i);
+            loopNodes.push_back(i);
             if (pProc->m_dfsLast[i]->loopHead == NO_NODE)/*not in other loop*/
                 pProc->m_dfsLast[i]->loopHead = headDfsNum;
         }
     }
     latchNode->loopHead = headDfsNum;
     if (latchNode != head)
-        insertList (loopNodes, latchNode->dfsLastNum);
+        loopNodes.push_back(latchNode->dfsLastNum);
 
     /* Determine type of loop and follow node */
     intNodeType = head->nodeType;
@@ -216,7 +197,7 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
                 }
 
                 /* Check if couldn't find it, then it is a strangely formed
-                                 * loop, so it is safer to consider it an endless loop */
+                 * loop, so it is safer to consider it an endless loop */
                 if (pbb->dfsLastNum <= head->dfsLastNum)
                 {
                     head->loopType = eNodeHeaderType::ENDLESS_TYPE;
@@ -235,32 +216,79 @@ static void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &int
             findEndlessFollow (pProc, loopNodes, head);
         }
 
-    freeList(loopNodes);
+    loopNodes.clear();
 }
-
-//static void findNodesInInt (queue **intNodes, int level, interval *Ii)
-/* Recursive procedure to find nodes that belong to the interval (ie. nodes
- * from G1).                                */
-static void findNodesInInt (queue &intNodes, int level, interval *Ii)
+/** \returns whether the BB indexed by s is a successor of the BB indexed by \arg h
+ *  \note that h is a case node.
+ */
+bool successor (int s, int h, Function * pProc)
 {
-    if (level == 1)
+    BB * header = pProc->m_dfsLast[h];
+    auto iter = std::find_if(header->edges.begin(),
+                             header->edges.end(),
+                             [s](const TYPEADR_TYPE &te)->bool{ return te.BBptr->dfsLastNum == s;});
+    return iter!=header->edges.end();
+}
+
+
+/** Recursive procedure to tag nodes that belong to the case described by
+ * the list l, head and tail (dfsLast index to first and exit node of the
+ * case).                               */
+void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
+{
+    int current;      /* index to current node */
+
+    pBB->traversed = DFS_CASE;
+    current = pBB->dfsLastNum;
+    if ((current != tail) and (pBB->nodeType != MULTI_BRANCH) and (inList (l, pBB->immedDom)))
     {
-        for(BB *en : Ii->nodes)
+        l.push_back(current);
+        pBB->caseHead = head;
+        for(TYPEADR_TYPE &edge : pBB->edges)
         {
-            appendQueue(intNodes,en);
+            if (edge.BBptr->traversed != DFS_CASE)
+                tagNodesInCase (edge.BBptr, l, head, tail);
         }
     }
-    else
+}
+
+/** Flags all nodes in the list l as having follow node f, and deletes all
+ * nodes from the list.                         */
+void flagNodes (nodeList &l, int f, Function * pProc)
+{
+    for(int idx : l)
     {
-        for(BB *en : Ii->nodes)
+        pProc->m_dfsLast[idx]->ifFollow = f;
+    }
+    l.clear();
+}
+
+
+} // end of anonymouse namespace
+
+/** Finds the immediate dominator of each node in the graph pProc->cfg.
+ * Adapted version of the dominators algorithm by Hecht and Ullman; finds
+ * immediate dominators only.
+ * Note: graph should be reducible */
+void Function::findImmedDom ()
+{
+    BB * currNode;
+    for (size_t currIdx = 0; currIdx < numBBs; currIdx++)
+    {
+        currNode = m_dfsLast[currIdx];
+        if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
+            continue;
+        for (BB * inedge : currNode->inEdges)
         {
-            findNodesInInt(intNodes,level-1,en->correspInt);
+            size_t predIdx = inedge->dfsLastNum;
+            if (predIdx < currIdx)
+                currNode->immedDom = commonDom (currNode->immedDom, predIdx, this);
         }
     }
 }
 
 
-/* Algorithm for structuring loops */
+/** Algorithm for structuring loops */
 void Function::structLoops(derSeq *derivedG)
 {
     interval *Ii;
@@ -276,8 +304,7 @@ void Function::structLoops(derSeq *derivedG)
     for(auto & elem : *derivedG)
     {
         level++;
-        Ii = elem.Ii;
-        while (Ii)       /* for all intervals Ii of Gi */
+        for (Ii = elem.Ii; Ii!=nullptr; Ii = Ii->next)       /* for all intervals Ii of Gi */
         {
             latchNode = nullptr;
             intNodes.clear();
@@ -319,45 +346,6 @@ void Function::structLoops(derSeq *derivedG)
                     latchNode->flg |= IS_LATCH_NODE;
                 }
             }
-
-            /* Next interval */
-            Ii = Ii->next;
-        }
-
-        /* Next derived sequence */
-    }
-}
-
-
-/* Returns whether the BB indexed by s is a successor of the BB indexed by
- * h.  Note that h is a case node.                  */
-static bool successor (int s, int h, Function * pProc)
-{
-    BB * header = pProc->m_dfsLast[h];
-    auto iter = std::find_if(header->edges.begin(),
-                             header->edges.end(),
-                             [s](const TYPEADR_TYPE &te)->bool{ return te.BBptr->dfsLastNum == s;});
-    return iter!=header->edges.end();
-}
-
-
-/* Recursive procedure to tag nodes that belong to the case described by
- * the list l, head and tail (dfsLast index to first and exit node of the
- * case).                               */
-static void tagNodesInCase (BB * pBB, nodeList &l, int head, int tail)
-{
-    int current;      /* index to current node */
-
-    pBB->traversed = DFS_CASE;
-    current = pBB->dfsLastNum;
-    if ((current != tail) and (pBB->nodeType != MULTI_BRANCH) and (inList (l, pBB->immedDom)))
-    {
-        insertList (l, current);
-        pBB->caseHead = head;
-        for(TYPEADR_TYPE &edge : pBB->edges)
-        {
-            if (edge.BBptr->traversed != DFS_CASE)
-                tagNodesInCase (edge.BBptr, l, head, tail);
         }
     }
 }
@@ -385,9 +373,7 @@ void Function::structCases()
             if ((not successor(j, i, this)) and (m_dfsLast[j]->immedDom == i))
             {
                 if (exitNode == NO_NODE)
-                {
                     exitNode = j;
-                }
                 else if (m_dfsLast[exitNode]->inEdges.size() < m_dfsLast[j]->inEdges.size())
                     exitNode = j;
             }
@@ -396,7 +382,7 @@ void Function::structCases()
 
         /* Tag nodes that belong to the case by recording the
                          * header field with caseHeader.           */
-        insertList (caseNodes, i);
+        caseNodes.push_back(i);
         m_dfsLast[i]->caseHead = i;
         for(TYPEADR_TYPE &pb : caseHeader->edges)
         {
@@ -409,20 +395,6 @@ void Function::structCases()
     }
 }
 
-
-/* Flags all nodes in the list l as having follow node f, and deletes all
- * nodes from the list.                         */
-static void flagNodes (nodeList &l, int f, Function * pProc)
-{
-    nodeList::iterator p;
-    for(int idx : l)
-    {
-        pProc->m_dfsLast[idx]->ifFollow = f;
-    }
-    l.clear();
-}
-
-
 /* Structures if statements */
 void Function::structIfs ()
 {
@@ -434,7 +406,7 @@ void Function::structIfs ()
             unresolved 	/* List of unresolved if nodes  		*/
             ;
     BB * currNode,    			/* Pointer to current node  			*/
-            * pbb;
+       * pbb;
 
     /* Linear scan of nodes in reverse dfsLast order */
     for (curr = numBBs - 1; curr >= 0; curr--)
@@ -453,7 +425,7 @@ void Function::structIfs ()
             {
                 if (m_dfsLast[desc]->immedDom == curr)
                 {
-                    insertList (domDesc, desc);
+                    domDesc.push_back(desc);
                     pbb = m_dfsLast[desc];
                     if ((pbb->inEdges.size() - pbb->numBackEdges) >= followInEdges)
                     {
@@ -472,9 +444,9 @@ void Function::structIfs ()
                     flagNodes (unresolved, follow, this);
             }
             else
-                insertList (unresolved, curr);
+                unresolved.push_back(curr);
         }
-        freeList (domDesc);
+        domDesc.clear();
     }
 }
 bool Function::removeInEdge_Flag_and_ProcessLatch(BB *pbb,BB *a,BB *b)
@@ -651,8 +623,7 @@ void Function::compoundCond()
     }
 }
 
-
-/* Structuring algorithm to find the structures of the graph pProc->cfg */
+/** Structuring algorithm to find the structures of the graph pProc->cfg */
 void Function::structure(derSeq *derivedG)
 {
     /* Find immediate dominators of the graph */

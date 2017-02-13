@@ -532,7 +532,7 @@ QString AssignType::writeOut(Function *pProc, int *numLoc) const
 {
     return QString("%1 = %2;\n")
             .arg(m_lhs->walkCondExpr (pProc, numLoc))
-            .arg(rhs->walkCondExpr (pProc, numLoc));
+            .arg(m_rhs->walkCondExpr (pProc, numLoc));
 }
 QString CallType::writeOut(Function *pProc, int *numLoc) const
 {
@@ -553,7 +553,7 @@ void HLTYPE::set(Expr *l, Expr *r)
     //assert((asgn.lhs==0) and (asgn.rhs==0)); //prevent memory leaks
     assert(dynamic_cast<UnaryOperator *>(l));
     asgn.m_lhs=l;
-    asgn.rhs=r;
+    asgn.m_rhs=r;
 }
 /* Returns a string with the contents of the current high-level icode.
  * Note: this routine does not output the contens of HLI_JCOND icodes.  This is

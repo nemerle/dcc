@@ -1,16 +1,13 @@
 #pragma once
 #include "ast.h"
 
-#ifdef PASCAL
-#undef PASCAL
-#endif
 class QTextStream;
 
 struct CConv {
     enum Type {
-        UNKNOWN=0,
-        C,
-        PASCAL
+        eUnknown=0,
+        eCdecl,
+        ePascal
     };
     virtual void processHLI(Function *func, Expr *_exp, iICODE picode)=0;
     virtual void writeComments(QTextStream &)=0;

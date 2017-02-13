@@ -170,9 +170,9 @@ public:
     void flagByteWordId(int off);
     void propLongId(uint8_t regL, uint8_t regH, const QString & name);
     size_t csym() const {return id_arr.size();}
-    void newRegArg(iICODE picode, iICODE ticode) const;
-    void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong) const;
-    void forwardSubs(Expr *lhs, Expr *rhs, iICODE picode, iICODE ticode, int &numHlIcodes) const;
+    void newRegArg(ICODE & picode, ICODE & ticode) const;
+    void processTargetIcode(ICODE & picode, int &numHlIcodes, ICODE & ticode, bool isLong) const;
+    void forwardSubs(Expr *lhs, Expr *rhs, ICODE & picode, ICODE & ticode, int &numHlIcodes) const;
     AstIdent *createId(const ID *retVal, iICODE ix_);
 };
 

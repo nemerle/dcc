@@ -477,7 +477,7 @@ bool LibCheck(Function & pProc)
         if ((numFunc == 0) or (i=searchPList(ht[h].htSym)) != NIL)
         {
             pProc.flg |= PROC_ISLIB; 		/* It's a lib function */
-            pProc.callingConv(CConv::C);
+            pProc.callingConv(CConv::eCdecl);
             if (i != NIL)
             {
                 /* Allocate space for the arg struct, and copy the hlType to
@@ -534,7 +534,7 @@ bool LibCheck(Function & pProc)
         pProc.args.numArgs = 0;		/* With no args */
     }
 
-    return (bool)((pProc.flg & PROC_ISLIB) != 0);
+    return pProc.isLibrary();
 }
 
 
@@ -548,8 +548,7 @@ void grab(int n, FILE *_file)
     }
 }
 
-uint16_t
-readFileShort(FILE *f)
+uint16_t readFileShort(FILE *f)
 {
     uint8_t b1, b2;
 

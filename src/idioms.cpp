@@ -213,12 +213,12 @@ void Function::findIdioms()
     /* Check if number of parameter bytes match their calling convention */
     if ((flg & PROC_HLL) and (not args.empty()))
     {
-        args.m_minOff += (flg & PROC_FAR ? 4 : 2);
+        args.m_minOff += ((flg & PROC_FAR)!=0 ? 4 : 2);
         delta = args.maxOff - args.m_minOff;
         if (cbParam != delta)
         {
             cbParam = delta;
-            callingConv(CConv::UNKNOWN);
+            callingConv(CConv::eUnknown);
         }
     }
 }
