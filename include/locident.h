@@ -28,7 +28,7 @@ struct LLInst;
 typedef std::list<ICODE>::iterator iICODE;
 struct IDX_ARRAY : public std::vector<iICODE>
 {
-    bool inList(iICODE idx)
+    bool inList(iICODE idx) const
     {
         return std::find(begin(),end(),idx)!=end();
     }

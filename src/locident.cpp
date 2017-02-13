@@ -75,8 +75,7 @@ eReg ID::getPairedRegister(eReg first) const {
  *            ix : index into icode array where this var is used */
 void LOCAL_ID::newIdent(hlType t, frameType f)
 {
-    ID newid(t,f);
-    id_arr.push_back(newid);
+    id_arr.emplace_back(t,f);
 }
 
 
@@ -92,9 +91,8 @@ int LOCAL_ID::newByteWordReg(hlType t, eReg regi)
         return found-id_arr.begin();
     /* Not in table, create new identifier */
     newIdent (t, REG_FRAME);
-    int idx = id_arr.size() - 1;
-    id_arr[idx].id.regi = regi;
-    return (idx);
+    id_arr.back().id.regi = regi;
+    return id_arr.size() - 1;
 }
 
 

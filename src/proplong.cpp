@@ -69,8 +69,8 @@ static bool isLong22 (iICODE pIcode, iICODE pEnd, iICODE &off)
     // preincrement because pIcode is not checked here
     iICODE icodes[] = { ++pIcode,++pIcode,++pIcode };
     if (   icodes[1]->ll()->match(iCMP) and
-           (isJCond ((llIcode)icodes[0]->ll()->getOpcode())) and
-           (isJCond ((llIcode)icodes[2]->ll()->getOpcode())))
+           (isJCond (icodes[0]->ll()->getOpcode())) and
+           (isJCond (icodes[2]->ll()->getOpcode())))
     {
         off = initial_icode;
         advance(off,2);
@@ -500,7 +500,7 @@ int Function::findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE be
          *           JX lab
          *      => HLI_JCOND (regH:regL X 0) lab
          * This is better code than HLI_JCOND (HI(regH:regL) | LO(regH:regL)) */
-        else if (pIcode->ll()->match(iOR) and (next1 != pEnd) and (isJCond ((llIcode)next1->ll()->getOpcode())))
+        else if (pIcode->ll()->match(iOR) and (next1 != pEnd) and (isJCond (next1->ll()->getOpcode())))
         {
             if (pLocId.longId().srcDstRegMatch(pIcode,pIcode))
             {

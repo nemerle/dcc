@@ -313,7 +313,7 @@ struct LLOperand
 struct LLInst
 {
 protected:
-    uint32_t        m_opcode;       // Low level opcode identifier
+    llIcode        m_opcode;       // Low level opcode identifier
     uint32_t        flg;            /* icode flags                  */
     LLOperand       m_src;            /* source operand               */
 public:
@@ -326,8 +326,8 @@ public:
     std::vector<uint32_t> caseTbl2;
     int         hllLabNum;      /* label # for hll codegen      */
 
-    uint32_t    getOpcode() const { return m_opcode;}
-    void        setOpcode(uint32_t op) { m_opcode=op; }
+    llIcode     getOpcode() const { return m_opcode;}
+    void        setOpcode(uint32_t op) { m_opcode=(llIcode)op; }
     bool        conditionalJump()
                 {
                     return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);

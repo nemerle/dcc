@@ -99,7 +99,7 @@ enum icodeType
 /* LOW_LEVEL icode opcodes */
 enum llIcode
 {
-    //iINVALID,
+    iINVALID=-1,
     iCBW,		/* 0 */
     iAAA,
     iAAD,

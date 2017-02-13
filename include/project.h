@@ -54,7 +54,7 @@ public:
             ilFunction  createFunction(FunctionType *f, const QString & name);
             bool        valid(ilFunction iter);
 
-            int         getSymIdxByAdd(uint32_t adr);
+            int         getSymIdxByAddr(uint32_t adr);
             bool        validSymIdx(size_t idx);
             size_t      symbolSize(size_t idx);
             hlType      symbolType(size_t idx);

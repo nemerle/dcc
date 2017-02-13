@@ -735,7 +735,7 @@ int C_CallingConvention::processCArg (Function * callee, Function * pProc, ICODE
                 callee->args.adjustForArgType (numArgs, _exp->expType (pProc));
         }
     }
-    res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), pProc);
+    res = picode->newStkArg (_exp, picode->ll()->getOpcode(), pProc);
     /* Do not update the size of k if the expression was a segment register
          * in a near call */
     if (res == false)
@@ -850,7 +850,7 @@ void Pascal_CallingConvention::processHLI(Function *func,Expr *_exp, iICODE pico
         {
             if (pp->args.numArgs > 0)
                 _exp = func->adjustActArgType(_exp, pp->args[numArgs].type);
-            res = picode->newStkArg (_exp, (llIcode)picode->ll()->getOpcode(), func);
+            res = picode->newStkArg (_exp, picode->ll()->getOpcode(), func);
         }
         else			/* user function */
         {
@@ -863,7 +863,7 @@ void Pascal_CallingConvention::processHLI(Function *func,Expr *_exp, iICODE pico
                 else
                     pp->args.adjustForArgType (numArgs,_exp->expType (func));
             }
-            res = picode->newStkArg (_exp,(llIcode)picode->ll()->getOpcode(), func);
+            res = picode->newStkArg (_exp, picode->ll()->getOpcode(), func);
         }
         if (res == false)
             k += _exp->hlTypeSize (func);

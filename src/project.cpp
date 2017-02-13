@@ -5,12 +5,11 @@
 #include "CallGraph.h"
 #include "project.h"
 #include "Procedure.h"
+
 using namespace std;
-//Project g_proj;
+
 QString asm1_name, asm2_name;     /* Assembler output filenames     */
-SYMTAB  symtab;             /* Global symbol table                  */
 STATS   stats;              /* cfg statistics                       */
-//PROG    prog;               /* programs fields                    */
 OPTION  option;             /* Command line options                 */
 Project *Project::s_instance = nullptr;
 Project::Project() : callGraph(nullptr)
@@ -40,7 +39,7 @@ bool Project::valid(ilFunction iter)
 ilFunction Project::funcIter(Function *to_find)
 {
     auto iter=std::find_if(pProcList.begin(),pProcList.end(),
-                             [to_find](const Function &f)->bool {return to_find==&f;});
+                           [to_find](const Function &f)->bool {return to_find==&f;});
     assert(iter!=pProcList.end());
     return iter;
 }
@@ -49,8 +48,8 @@ ilFunction Project::findByEntry(uint32_t entry)
 {
     /* Search procedure list for one with appropriate entry point */
     ilFunction iter= std::find_if(pProcList.begin(),pProcList.end(),
-        [entry](const Function &f)  { return f.procEntry==entry; });
-return iter;
+                                  [entry](const Function &f)  { return f.procEntry==entry; });
+    return iter;
 }
 
 ilFunction Project::createFunction(FunctionType *f,const QString &name)
@@ -59,7 +58,7 @@ ilFunction Project::createFunction(FunctionType *f,const QString &name)
     return (++pProcList.rbegin()).base();
 }
 
-int Project::getSymIdxByAdd(uint32_t adr)
+int Project::getSymIdxByAddr(uint32_t adr)
 {
     size_t i;
     for (i = 0; i < symtab.size(); i++)
@@ -98,8 +97,6 @@ Project *Project::get()
         s_instance=new Project;
     return s_instance;
 }
-
-
 SourceMachine *Project::machine()
 {
     return nullptr;

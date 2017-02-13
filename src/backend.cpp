@@ -158,9 +158,9 @@ void Project::writeGlobSymTable()
             else {					/* first defined */
                 switch (sym.size) {
                 case 1:  ostr<<"uint8_t\t"; break;
-                case 2:  ostr<<"int\t"; break;
+                case 2:  ostr<<"int16_t\t"; break;
                     case 4:  if (sym.type == TYPE_PTR)
-                        ostr<<"int\t*";
+                        ostr<<"int32_t\t*";
                         else
                         ostr<<"char\t*";
                         break;
