@@ -274,6 +274,7 @@ AstIdent *AstIdent::idID (const ID *retVal, LOCAL_ID *locsym, iICODE ix_)
             newExp->ident.idNode.longIdx = idx;
             break;
         }
+        case TYPE_WORD_UNSIGN:
         case TYPE_WORD_SIGN:
             newExp = new RegisterNode(locsym->newByteWordReg(retVal->type, retVal->id.regi),WORD_REG,locsym);
             break;
