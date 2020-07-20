@@ -1,32 +1,35 @@
 PROJECT(dcc_original)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.7)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
-find_package(Qt5Core)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-OPTION(dcc_build_tests "Enable unit tests." OFF)
+find_package(Qt5 COMPONENTS Core)
+
+option(dcc_build_tests "Enable unit tests." OFF)
 #SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
-ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
-IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE -DNOMINMAX)
-    ADD_DEFINITIONS(/W4)
-ELSE()
+add_definitions(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE -DNOMINMAX)
+    add_definitions(/W4)
+else()
 #-D_GLIBCXX_DEBUG
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} "  ) #--coverage
-ENDIF()
-SET(CMAKE_CXX_STANDARD 11)
-SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} "  ) #--coverage
+endif()
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 include(cotire)
-FIND_PACKAGE(Boost)
-IF(dcc_build_tests)
+find_package(Boost)
+if(dcc_build_tests)
 enable_testing()
-    FIND_PACKAGE(GMock)
-ENDIF()
+    find_package(GMock)
+endif()
 
 
-INCLUDE_DIRECTORIES(
+include_directories(
     3rd_party/libdisasm
     include
     include/idioms
@@ -35,9 +38,9 @@ INCLUDE_DIRECTORIES(
 )
 
 
-ADD_SUBDIRECTORY(3rd_party)
-ADD_SUBDIRECTORY(common)
-ADD_SUBDIRECTORY(tools)
+add_subdirectory(3rd_party)
+add_subdirectory(common)
+add_subdirectory(tools)
 
 
 set(dcc_LIB_SOURCES
@@ -122,21 +125,19 @@ set(dcc_HEADERS
 
 )
 
-SOURCE_GROUP(Source FILES ${dcc_SOURCES})
-SOURCE_GROUP(Headers FILES ${dcc_HEADERS})
+source_group(Source FILES ${dcc_SOURCES})
+source_group(Headers FILES ${dcc_HEADERS})
 
-ADD_LIBRARY(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
-qt5_use_modules(dcc_lib Core)
+add_library(dcc_lib STATIC ${dcc_LIB_SOURCES} ${dcc_HEADERS})
+target_link_libraries(dcc_lib PUBLIC Qt5::Core)
 #cotire(dcc_lib)
 
-ADD_EXECUTABLE(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
-ADD_DEPENDENCIES(dcc_original dcc_lib)
-TARGET_LINK_LIBRARIES(dcc_original dcc_lib dcc_hash disasm_s)
-qt5_use_modules(dcc_original Core)
-SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD 11)
-SET_PROPERTY(TARGET dcc_original PROPERTY CXX_STANDARD_REQUIRED ON)
+add_executable(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
+target_link_libraries(dcc_original dcc_lib dcc_hash disasm_s Qt5::Core)
+set_property(TARGET dcc_original PROPERTY CXX_STANDARD 11)
+set_property(TARGET dcc_original PROPERTY CXX_STANDARD_REQUIRED ON)
 #ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
-ADD_SUBDIRECTORY(src)
+    add_subdirectory(src)
 endif()
 

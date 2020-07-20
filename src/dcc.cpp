@@ -15,6 +15,7 @@
 #include <iostream>
 #include <QtCore/QCoreApplication>
 #include <QCommandLineParser>
+#include <QFileInfo>
 
 #include <QtCore/QFile>
 
@@ -80,8 +81,9 @@ void setupOptions(const QCoreApplication &app) {
     option.Calls = parser.isSet(boolOpts[2]);
     option.filename = args.first();
     option.CustomEntryPoint = parser.value(entryPointOption).toUInt(nullptr,16);
-    if(parser.isSet(targetFileOption))
+    if(parser.isSet(targetFileOption)) {
         asm1_name = asm2_name = parser.value(targetFileOption);
+    }
     else if(option.asm1 or option.asm2) {
         asm1_name = option.filename+".a1";
         asm2_name = option.filename+".a2";
@@ -100,6 +102,9 @@ int main(int argc, char **argv)
      * each procedure.
     */
     Project::get()->create(option.filename);
+
+    if(!asm1_name.isEmpty())
+        Project::get()->set_output_path(QFileInfo(asm1_name).path());
 
     DccFrontend fe(&app);
     if(not Project::get()->load()) {

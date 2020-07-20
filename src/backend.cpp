@@ -26,8 +26,6 @@
 #include <string.h>
 #include <stdio.h>
 
-using namespace boost;
-using namespace boost::adaptors;
 using namespace std;
 
 bundle cCode;			/* Procedure declaration and code */
@@ -216,6 +214,8 @@ static void emitFwdGotoLabel (ICODE * pt, int indLevel)
  * and invokes the procedure that writes the code of the given record *hli */
 void Function::codeGen (QIODevice &fs)
 {
+    using namespace boost::adaptors;
+
     int numLoc;
     QString ostr_contents;
     QTextStream ostr(&ostr_contents);

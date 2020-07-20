@@ -152,7 +152,7 @@ bool ExpStack::empty()
 size_t STKFRAME::getLocVar(int off)
 {
     auto iter=findByLabel(off);
-    return distance(begin(),iter);
+    return std::distance(begin(),iter);
 }
 
 
@@ -175,7 +175,7 @@ void Function::elimCondCodes ()
     for( BB * pBB : valid_reversed_bbs)
     {
         //auto reversed_instructions = pBB->range() | reversed;
-        for (useAt = pBB->rbegin(); useAt != pBB->rend(); useAt++)
+        for (useAt = pBB->rbegin(); useAt != pBB->rend(); ++useAt)
         {
             llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
@@ -184,7 +184,7 @@ void Function::elimCondCodes ()
             /* Find definition within the same basic block */
             defAt=useAt;
             ++defAt;
-            for (; defAt != pBB->rend(); defAt++)
+            for (; defAt != pBB->rend(); ++defAt)
             {
                 ICODE &defIcode(*defAt);
                 def = defAt->ll()->flagDU.d;
@@ -451,7 +451,7 @@ bool BB::FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at)
         return true;
     if ((regi == rSI) and (flg & SI_REGVAR))
         return true;
-    if (distance(start_at,end())>1) /* several instructions */
+    if (std::distance(start_at,end())>1) /* several instructions */
     {
         iICODE ticode=end();
         // Only check uses of HIGH_LEVEL icodes

@@ -1,4 +1,4 @@
-SET(disasm_LIB_SRCS
+set(disasm_LIB_SRCS
    ia32_implicit.cpp
    ia32_implicit.h
    ia32_insn.cpp

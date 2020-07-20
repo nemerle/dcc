@@ -45,7 +45,8 @@ public:
 public:
             void        create(const QString &a);
             bool        load();
-    const   QString &   output_path() const {return m_output_path;}
+    const   QString &   output_path() const {return m_output_path; }
+            void        set_output_path(const QString &path) { m_output_path=path; }
     const   QString &   project_name() const {return m_project_name;}
     const   QString &   binary_path() const {return m_fname;}
             QString     output_name(const char *ext);

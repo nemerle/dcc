@@ -9,8 +9,8 @@
 #include "Enums.h"
 #include "state.h"			// State depends on INDEXBASE, but later need STATE
 #include "CallConvention.h"
+#include "boost_fwd.h"
 
-#include <boost/range/iterator_range.hpp>
 #include <QtCore/QString>
 
 #include <memory>
@@ -30,9 +30,10 @@ struct STKFRAME;
 class CIcodeRec;
 struct ICODE;
 struct bundle;
-typedef std::list<ICODE>::iterator iICODE;
-typedef std::list<ICODE>::reverse_iterator riICODE;
-typedef boost::iterator_range<iICODE> rCODE;
+
+using iICODE = std::list<ICODE>::iterator;
+using riICODE = std::list<ICODE>::reverse_iterator;
+using rCODE = boost::iterator_range<iICODE>;
 
 struct LivenessSet
 {

@@ -174,7 +174,7 @@ AstIdent *AstIdent::Param(int off, const STKFRAME * argSymtab)
     auto iter=argSymtab->findByLabel(off);
     if (iter == argSymtab->end())
         printf ("Error, cannot find argument var\n");
-    newExp->ident.idNode.localIdx = distance(argSymtab->begin(),iter);
+    newExp->ident.idNode.localIdx = std::distance(argSymtab->cbegin(),iter);
     return (newExp);
 }
 

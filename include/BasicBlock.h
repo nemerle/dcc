@@ -1,30 +1,34 @@
 #pragma once
+#include "icode.h"
+#include "types.h"
+#include "graph.h"
+
+#include <boost/range/iterator_range.hpp>
 #include <list>
 #include <vector>
 #include <bitset>
 #include <string>
-#include <boost/range/iterator_range.hpp>
-#include "icode.h"
-#include "types.h"
-#include "graph.h"
-//#include "icode.h"
+
 /* Basic block (BB) node definition */
 struct Function;
 class CIcodeRec;
 struct BB;
 struct LOCAL_ID;
 struct interval;
+
 //TODO: consider default address value -> INVALID
 struct TYPEADR_TYPE
 {
-    uint32_t         ip;             /* Out edge icode address       */
-    BB *          BBptr;          /* Out edge pointer to next BB  */
+    uint32_t      ip;             /* Out edge icode address       */
+    BB *          BBptr=nullptr;  /* Out edge pointer to next BB  */
     interval     *intPtr;         /* Out edge ptr to next interval*/
-    TYPEADR_TYPE(uint32_t addr=0) : ip(addr),BBptr(nullptr),intPtr(nullptr)
+
+    TYPEADR_TYPE(uint32_t addr=0) : ip(addr),intPtr(nullptr)
     {}
-    TYPEADR_TYPE(interval *v) : ip(0),BBptr(nullptr),intPtr(v)
+    TYPEADR_TYPE(interval *v) : ip(0),intPtr(v)
     {}
 };
+
 struct BB
 {
     friend struct Function;
@@ -41,7 +45,7 @@ private:
 
     }
     //friend class SymbolTableListTraits<BB, Function>;
-    typedef boost::iterator_range<iICODE> rCODE;
+    using rCODE = boost::iterator_range<iICODE>;
     rCODE instructions;
     rCODE &my_range() {return instructions;}
 
@@ -57,10 +61,11 @@ public:
     ICODE &front();
     ICODE &back();
     size_t size();
+
     uint8_t            nodeType;    /* Type of node                                     */
-    eDFS             traversed;     /* last traversal id is held here traversed yet?    */
-    int             numHlIcodes;    /* No. of high-level icodes                         */
-    uint32_t         flg;           /* BB flags                                         */
+    eDFS               traversed;   /* last traversal id is held here traversed yet?    */
+    int                numHlIcodes; /* No. of high-level icodes                         */
+    uint32_t           flg;         /* BB flags                                         */
 
     /* In edges and out edges */
     std::vector<BB *> inEdges; // does not own held pointers
@@ -79,9 +84,9 @@ public:
     // For live register analysis
     //  LiveIn(b) = LiveUse(b) U (LiveOut(b) - Def(b))
     LivenessSet liveUse;            /* LiveUse(b)               */
-    LivenessSet def;                /* Def(b)                   */
-    LivenessSet liveIn;             /* LiveIn(b)                */
-    LivenessSet liveOut;            /* LiveOut(b)               */
+    LivenessSet     def;                /* Def(b)                   */
+    LivenessSet     liveIn;             /* LiveIn(b)                */
+    LivenessSet     liveOut;            /* LiveOut(b)               */
 
     /* For structuring analysis */
     int             dfsFirstNum;    /* DFS #: first visit of node   */

@@ -8,8 +8,8 @@
 
 #include "Enums.h"
 #include "msvc_fixes.h"
+#include "boost_fwd.h"
 
-#include <boost/range/iterator_range.hpp>
 #include <stdint.h>
 #include <cstring>
 #include <list>
@@ -36,6 +36,7 @@ struct LLInst;
 struct LLOperand;
 struct ID;
 typedef std::list<ICODE>::iterator iICODE;
+
 typedef boost::iterator_range<iICODE> rICODE;
 #include "IdentType.h"
 

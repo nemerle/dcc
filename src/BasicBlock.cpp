@@ -421,7 +421,7 @@ ICODE &BB::back()
 
 size_t BB::size()
 {
-    return distance(instructions.begin(),instructions.end());
+    return std::distance(instructions.begin(),instructions.end());
 }
 
 ICODE &BB::front()
