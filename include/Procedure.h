@@ -202,8 +202,8 @@ protected:
     void propLongGlb(int i, const ID &pLocId);
     void processTargetIcode(iICODE picode, int &numHlIcodes, iICODE ticode, bool isLong);
 
-    int     findBackwarLongDefs(int loc_ident_idx, const ID &pLocId, iICODE iter);
-    int     findForwardLongUses(int loc_ident_idx, const ID &pLocId, iICODE beg);
+    int     findBackwarLongDefs(int loc_ident_idx, const LONGID_TYPE &longRegId, iICODE iter);
+    int     findForwardLongUses(int loc_ident_idx, const LONGID_TYPE &loc_id_longid, iICODE beg);
     void    structCases();
     void    findExps();
     void    genDU1();

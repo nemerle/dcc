@@ -6,18 +6,19 @@
 #include <QFileInfo>
 
 static void perform_test(QString exepath,QString filepath, QStringList args) {
-    const QString tgtpathbase("./tests/outputs/"+QFileInfo(filepath).completeBaseName());
+    const QString tgt_path_base("./tests/outputs/"+QFileInfo(filepath).completeBaseName());
+    const QString asm_tgt_path_base("./tests/outputs/"+QFileInfo(filepath).fileName());
 
     QProcess p;
     p.setProgram(exepath);
-    QStringList assembly1_args = { QString("-a 1"), QString("-o" + tgtpathbase + ".a1"), filepath };
+    QStringList assembly1_args = { QString("-a 1"), QString("-o" + asm_tgt_path_base + ".a1"), filepath };
     p.setArguments(assembly1_args);
     p.start();
     if(!p.waitForFinished(30000)) {
         qCritical() << "Timeout while calling"<<p.program()<<"with"<<p.arguments();
     }
 
-    QStringList assembly2_args = { QString("-a 2"), QString("-o" + tgtpathbase + ".a2"), filepath };
+    QStringList assembly2_args = { QString("-a 2"), QString("-o" + asm_tgt_path_base + ".a2"), filepath };
     p.setArguments(assembly2_args);
     p.start();
     if(!p.waitForFinished(30000)) {
@@ -26,7 +27,7 @@ static void perform_test(QString exepath,QString filepath, QStringList args) {
 
     QStringList decompile_args;
     decompile_args.append(args);
-    decompile_args.append({ QString("-o" + tgtpathbase), filepath });
+    decompile_args.append({ QString("-o" + tgt_path_base), filepath });
     p.setArguments(decompile_args);
     p.start();
     if(!p.waitForFinished(30000)) {

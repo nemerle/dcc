@@ -189,7 +189,7 @@ int LOCAL_ID::newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_)
                 (entry.longId().l() == regL))
         {
             /* Check for occurrence in the list */
-            if (entry.idx.inList(ix_))
+            if (inList(entry.idx,ix_))
                 return idx;
             else
             {

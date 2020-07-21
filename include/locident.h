@@ -25,14 +25,12 @@ struct Expr;
 struct AstIdent;
 struct ICODE;
 struct LLInst;
-typedef std::list<ICODE>::iterator iICODE;
-struct IDX_ARRAY : public std::vector<iICODE>
-{
-    bool inList(iICODE idx) const
-    {
-        return std::find(begin(),end(),idx)!=end();
-    }
-};
+using iICODE=std::list<ICODE>::iterator;
+using IDX_ARRAY = std::vector<iICODE>;
+
+inline bool inList(const IDX_ARRAY &arr,iICODE idx) {
+    return std::find(arr.begin(),arr.end(),idx)!=arr.end();
+}
 
 enum frameType
 {
