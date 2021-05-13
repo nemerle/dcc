@@ -5,17 +5,20 @@
  * (C) Cristina Cifuentes
  ****************************************************************************/
 #pragma once
+
+#include <QtCore/QString>
 #include <stdio.h>
 #include <vector>
-#include <QtCore/QString>
-#include <QtCore/QIODevice>
 
-struct strTable : std::vector<QString>
+class QIODevice;
+
+struct strTable
 {
     /* Returns the next available index into the table */
-    size_t nextIdx() {return size();}
+    size_t nextIdx() {return entries.size();}
 public:
     void addLabelBundle(int idx, int label);
+    std::vector<QString> entries;
 };
 
 struct bundle
@@ -27,8 +30,8 @@ public:
     void appendDecl(const QString &);
     void init()
     {
-        decl.clear();
-        code.clear();
+        decl.entries.clear();
+        code.entries.clear();
     }
     strTable    decl;   /* Declarations */
     strTable    code;   /* C code       */

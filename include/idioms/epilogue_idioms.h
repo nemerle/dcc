@@ -1,7 +1,9 @@
 #pragma once
 #include "idiom.h"
 #include "icode.h"
+
 #include <deque>
+
 struct EpilogIdiom : public Idiom
 {
 protected:

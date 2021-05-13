@@ -2,10 +2,10 @@
 // (C) 1997 Mike Van Emmerik
 #include "icode.h"
 
-#include "msvc_fixes.h"
+#include "ast.h" // Some icode types depend on these
 #include "dcc.h"
-#include "types.h"		// Common types like uint8_t, etc
-#include "ast.h"		// Some icode types depend on these
+#include "msvc_fixes.h"
+#include "types.h" // Common types like uint8_t, etc
 
 #include <stdlib.h>
 
@@ -20,9 +20,9 @@ CIcodeRec::CIcodeRec()
  * the alloc variable is adjusted.        */
 ICODE * CIcodeRec::addIcode(ICODE *pIcode)
 {
-    push_back(*pIcode);
-    back().loc_ip = size()-1;
-    return &back();
+    entries.push_back(*pIcode);
+    entries.back().loc_ip = entries.size()-1;
+    return &entries.back();
 }
 
 void CIcodeRec::SetInBB(rCODE &rang, BB *pnewBB)
@@ -36,26 +36,27 @@ void CIcodeRec::SetInBB(rCODE &rang, BB *pnewBB)
 bool CIcodeRec::labelSrch(uint32_t target, uint32_t &pIndex)
 {
     iICODE location=labelSrch(target);
-    if(end()==location)
-            return false;
+    if(entries.end()==location)
+        return false;
     pIndex=location->loc_ip;
     return true;
 }
+
 bool CIcodeRec::alreadyDecoded(uint32_t target)
 {
     iICODE location=labelSrch(target);
-    if(end()==location)
-            return false;
-    return true;
+    return location!=entries.end();
 }
 CIcodeRec::iterator CIcodeRec::labelSrch(uint32_t target)
 {
-    return find_if(begin(),end(),[target](ICODE &l) -> bool {return l.ll()->label==target;});
+    return find_if(entries.begin(),entries.end(),[target](ICODE &l) -> bool {
+        return l.ll()->label==target;
+    });
 }
 ICODE * CIcodeRec::GetIcode(size_t ip)
 {
-    assert(ip<size());
-    iICODE res=begin();
+    assert(ip<entries.size());
+    iICODE res=entries.begin();
     advance(res,ip);
     return &(*res);
 }
@@ -112,3 +113,23 @@ void AssignType::lhs(Expr *l)
     m_lhs=l;
 }
 
+
+LivenessSet &LivenessSet::operator&=(const LivenessSet &other)
+{
+    std::set<eReg> res;
+    std::set_intersection(registers.begin(),registers.end(),
+                          other.registers.begin(),other.registers.end(),
+                          std::inserter(res, res.end()));
+    registers = res;
+    return *this;
+}
+
+LivenessSet &LivenessSet::operator-=(const LivenessSet &other)
+{
+    std::set<eReg> res;
+    std::set_difference(registers.begin(),registers.end(),
+                        other.registers.begin(),other.registers.end(),
+                        std::inserter(res, res.end()));
+    registers = res;
+    return *this;
+}

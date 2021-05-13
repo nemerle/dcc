@@ -14,7 +14,7 @@
 #include <list>
 
 namespace {
-typedef std::list<int> nodeList; /* dfsLast index to the node */
+using nodeList = std::list<int>; /* dfsLast index to the node */
 
 /* there is a path on the DFST from a to b if the a was first visited in a
  * dfs, and a was later visited than b when doing the last visit of each
@@ -183,7 +183,7 @@ void findNodesInLoop(BB * latchNode,BB * head,Function * pProc,queue &intNodes)
             pbb = latchNode;
             thenDfs = head->edges[THEN].BBptr->dfsLastNum;
             elseDfs = head->edges[ELSE].BBptr->dfsLastNum;
-            while (1)
+            while (true)
             {
                 if (pbb->dfsLastNum == thenDfs)
                 {
@@ -301,7 +301,7 @@ void Function::structLoops(derSeq *derivedG)
 
     /* Structure loops */
     /* for all derived sequences Gi */
-    for(auto & elem : *derivedG)
+    for(auto & elem : derivedG->entries)
     {
         level++;
         for (Ii = elem.Ii; Ii!=nullptr; Ii = Ii->next)       /* for all intervals Ii of Gi */
@@ -313,8 +313,8 @@ void Function::structLoops(derSeq *derivedG)
            * list of nodes of interval Ii.              */
             initInt = Ii;
             for (size_t i = 1; i < level; i++)
-                initInt = (*initInt->nodes.begin())->correspInt;
-            intHead = *initInt->nodes.begin();
+                initInt = initInt->nodes.front()->correspInt;
+            intHead = initInt->nodes.front();
 
             /* Find nodes that belong to the interval (nodes from G1) */
             findNodesInInt (intNodes, level, Ii);

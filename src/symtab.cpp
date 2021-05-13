@@ -91,7 +91,7 @@ void TABLEINFO_TYPE::create(tableType type)
     }
 }
 
-void createSymTables(void)
+void createSymTables()
 {
     /* Initilise the comment table */
     /* NB - there is no symbol hashed comment table */
@@ -124,7 +124,7 @@ void TABLEINFO_TYPE::destroy()
     delete [] symTab; // The symbol hashed label table
     delete [] valTab; // And the value hashed label table
 }
-void destroySymTables(void)
+void destroySymTables()
 {
     selectTable(Label);
     currentTabInfo.destroy();
@@ -186,7 +186,7 @@ SYM * SYMTAB::updateGlobSym (uint32_t operand, int size, uint16_t duFlag,bool &i
     }
     push_back(v);
     inserted_new=true;
-    return (&back());
+    return &back();
 }
 
 //template<> class SymbolTableCommon<SYM>;

@@ -26,7 +26,6 @@ static SYM *     lookupAddr (LLOperand *pm, STATE * pstate, int size, uint16_t d
 void    interactDis(Function * initProc, int ic);
 extern uint32_t    SynthLab;
 
-
 /* Returns the size of the string pointed by sym and delimited by delim.
  * Size includes delimiter.     */
 int strSize (const uint8_t *sym, char delim)
@@ -36,6 +35,7 @@ int strSize (const uint8_t *sym, char delim)
     const uint8_t *end_ptr=std::find(sym,sym+(prog.cbImage-(till_end)),delim);
     return end_ptr-sym+1;
 }
+
 ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
 {
     /* MOV rTMP, reg */
@@ -73,7 +73,8 @@ ICODE * Function::translate_DIV(LLInst *ll, ICODE &_Icode)
     eIcode.ll()->label = SynthLab++;
     return Icode.addIcode(&eIcode);
 }
-ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
+
+ICODE *Function::translate_XCHG(LLInst *ll,ICODE &r_Icode)
 {
     /* MOV rTMP, regDst */
     ICODE eIcode;
@@ -92,7 +93,7 @@ ICODE *Function::translate_XCHG(LLInst *ll,ICODE &_Icode)
 
     /* MOV regDst, regSrc */
     ll->set(iMOV,SYNTHETIC|ll->getFlag());
-    Icode.addIcode(&_Icode);
+    Icode.addIcode(&r_Icode);
     ll->setOpcode(iXCHG); /* for next case */
 
     /* MOV regSrc, rTMP */
@@ -154,7 +155,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
 
         /* Check if this instruction has already been parsed */
         iICODE labLoc = Icode.labelSrch(ll->label);
-        if (Icode.end()!=labLoc)
+        if (Icode.entries.end()!=labLoc)
         {   /* Synthetic jump */
             _Icode.type = LOW_LEVEL_ICODE;
             ll->set(iJMP,I | SYNTHETIC | NO_OPS);
@@ -180,8 +181,8 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iJCXZ:
             {
                 STATE   StCopy;
-                int     ip      = Icode.size()-1;	/* Index of this jump */
-                ICODE  &prev(*(++Icode.rbegin())); /* Previous icode */
+                int     ip      = Icode.entries.size()-1;	/* Index of this jump */
+                ICODE  &prev(*(++Icode.entries.rbegin())); /* Previous icode */
                 bool   fBranch = false;
 
                 pstate->JCond.regi = 0;
@@ -244,7 +245,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                     int size;
 
                     /* Save function number */
-                    Icode.back().ll()->m_dst.off = (int16_t)funcNum;
+                    Icode.entries.back().ll()->m_dst.off = (int16_t)funcNum;
                     //Icode.GetIcode(Icode.GetNumIcodes() - 1)->
 
                     /* Program termination: int21h, fn 00h, 31h, 4Ch */
@@ -265,7 +266,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 }
                 else if ((ll->src().getImm2() == 0x2F) and (pstate->f[rAH]))
                 {
-                    Icode.back().ll()->m_dst.off = pstate->r[rAH];
+                    Icode.entries.back().ll()->m_dst.off = pstate->r[rAH];
                 }
                 else    /* Program termination: int20h, int27h */
                     done = (ll->src().getImm2() == 0x20 or ll->src().getImm2() == 0x27);
@@ -357,7 +358,7 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
     {
         StCopy = *pstate;
         StCopy.IP = cs + LH(&prog.image()[i]);
-        iICODE last_current_insn = (++Icode.rbegin()).base();
+        iICODE last_current_insn = (++Icode.entries.rbegin()).base();
 
         FollowCtrl (pcallGraph, &StCopy);
 
@@ -385,9 +386,9 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
 //    jmp word ptr [bx+2*NUM_CASES]
     static const llIcode match_seq[] = {iMOV,iMOV,iMOV,iCMP,iJE,iADD,iLOOP,iJMP,iJMP};
 
-    if(Icode.size()<8)
+    if(Icode.entries.size()<8)
         return false;
-    if(&Icode.back()!=&pIcode) // not the last insn in the list skip it
+    if(&Icode.entries.back()!=&pIcode) // not the last insn in the list skip it
         return false;
     if(pIcode.ll()->src().regi != INDEX_BX) {
         return false;
@@ -395,7 +396,7 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
     // find address-wise predecessors of the icode
     std::deque<ICODE *> matched;
     QMap<uint32_t,ICODE *> addrmap;
-    for(ICODE & ic : Icode) {
+    for(ICODE & ic : Icode.entries) {
         addrmap[ic.ll()->GetLlLabel()] = &ic;
     }
     auto iter = addrmap.find(pIcode.ll()->GetLlLabel());
@@ -445,7 +446,7 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
         STATE   StCopy = *pstate;
         uint32_t jump_target_location = table_addr + num_cases*2 + i*2;
         StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
-        iICODE last_current_insn = (++Icode.rbegin()).base();
+        iICODE last_current_insn = (++Icode.entries.rbegin()).base();
         FollowCtrl (pcallGraph, &StCopy);
         ++last_current_insn;
         last_current_insn->ll()->caseEntry = i;
@@ -475,9 +476,9 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
 //    jmp word ptr [bx+2*NUM_CASES]
     static const llIcode match_seq[] = {iMOV,iMOV,iMOV,iCMP,iJNE,iMOV,iCMP,iJE,iADD,iLOOP,iJMP,iJMP};
 
-    if(Icode.size()<12)
+    if(Icode.entries.size()<12)
         return false;
-    if(&Icode.back() != &pIcode) // not the last insn in the list skip it
+    if(&Icode.entries.back() != &pIcode) // not the last insn in the list skip it
         return false;
     if(pIcode.ll()->src().regi != INDEX_BX) {
         return false;
@@ -485,7 +486,7 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
     // find address-wise predecessors of the icode
     std::deque<ICODE *> matched;
     QMap<uint32_t,ICODE *> addrmap;
-    for(ICODE & ic : Icode) {
+    for(ICODE & ic : Icode.entries) {
         addrmap[ic.ll()->GetLlLabel()] = &ic;
     }
     auto iter = addrmap.find(pIcode.ll()->GetLlLabel());
@@ -531,7 +532,7 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
         STATE   StCopy = *pstate;
         uint32_t jump_target_location = table_addr + num_cases*4 + i*2;
         StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
-        iICODE last_current_insn = (++Icode.rbegin()).base();
+        iICODE last_current_insn = (++Icode.entries.rbegin()).base();
         FollowCtrl (pcallGraph, &StCopy);
         ++last_current_insn;
         last_current_insn->ll()->caseEntry = i;
@@ -634,7 +635,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
             {
                 StCopy = *pstate;
                 StCopy.IP = cs + LH(&prog.image()[i]);
-                iICODE last_current_insn = (++Icode.rbegin()).base();
+                iICODE last_current_insn = (++Icode.entries.rbegin()).base();
                 //ip = Icode.size();
 
                 FollowCtrl (pcallGraph, &StCopy);
@@ -658,7 +659,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 
     flg |= PROC_IJMP;
     flg &= ~TERMINATES;
-    interactDis(this, this->Icode.size()-1);
+    interactDis(this, Icode.entries.size()-1);
     return true;
 }
 
@@ -675,7 +676,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 bool Function::process_CALL(ICODE & pIcode, CALL_GRAPH * pcallGraph, STATE *pstate)
 {
     PROG &prog(Project::get()->prog);
-    ICODE &last_insn(Icode.back());
+    ICODE &last_insn(Icode.entries.back());
     STATE localState;     /* Local copy of the machine state */
     uint32_t off;
     /* For Indirect Calls, find the function address */
@@ -1027,7 +1028,7 @@ static void setBits(int16_t type, uint32_t start, uint32_t len)
 static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int size)
 {
     const LLOperand * pm = pIcode.ll()->get(d) ;
-    SYM *  psym;
+    const SYM *  psym;
 
     if ( Machine_X86::isMemOff(pm->regi) )
     {
@@ -1060,7 +1061,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
             {
                 setBits (BM_DATA, psym->label, (uint32_t)size);
                 pIcode.ll()->setFlags(SYM_USE);
-                pIcode.ll()->caseEntry = distance(&Project::get()->symtab[0],psym); //WARNING: was setting case count
+                pIcode.ll()->caseEntry = distance<const SYM *>(&Project::get()->symtab[0],psym); //WARNING: was setting case count
 
             }
         }
@@ -1080,13 +1081,12 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
     LLOperand *pm   = pIcode.ll()->get(d);
     if (pm->regi==0)
     {
-        SYM *  psym;
-        psym = lookupAddr(pm, pstate, size, eDEF);
+        const SYM * psym = lookupAddr(pm, pstate, size, eDEF);
         if (nullptr!=psym)
         {
             setBits(BM_DATA, psym->label, (uint32_t)size);
             pIcode.ll()->setFlags(SYM_DEF);
-            pIcode.ll()->caseEntry = distance(&Project::get()->symtab[0],psym); // WARNING: was setting Case count
+            pIcode.ll()->caseEntry = distance<const SYM *>(&Project::get()->symtab[0],psym); // WARNING: was setting Case count
         }
     }
     else if (pm->regi >= INDEX_BX_SI)

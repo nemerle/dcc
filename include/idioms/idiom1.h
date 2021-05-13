@@ -1,5 +1,8 @@
 #pragma once
+
 #include "idiom.h"
+#include <vector>
+
 struct Idiom1 : public Idiom
 {
 protected:

@@ -1,8 +1,6 @@
 #pragma once
-#include <vector>
 #include "idiom.h"
 #include "icode.h"
-#include <deque>
 
 struct Idiom5 : public Idiom
 {

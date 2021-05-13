@@ -23,17 +23,16 @@ PerfectHash g_pattern_hasher;
 #define  NIL   -1                   /* Used like NULL, but 0 is valid */
 
 /* Hash table structure */
-typedef struct HT_tag
+struct HT
 {
     char    htSym[SYMLEN];
     uint8_t    htPat[PATLEN];
-} HT;
+};
 
 /* Structure of the prototypes table. Same as the struct in parsehdr.h,
     except here we don't need the "next" index (the elements are already
     sorted by function name) */
-typedef
-struct ph_func_tag
+struct PH_FUNC_STRUCT
 {
     char    name[SYMLEN];               /* Name of function or arg */
     hlType  typ;                        /* Return type */
@@ -41,8 +40,7 @@ struct ph_func_tag
     int     firstArg;                   /* Index of first arg in chain */
     //  int     next;                       /* Index of next function in chain */
     bool    bVararg;                    /* True if variable arguements */
-} PH_FUNC_STRUCT;
-
+};
 
 #define NUM_PLIST   64              	/* Number of entries to increase allocation by */
 
@@ -68,9 +66,9 @@ static  int     numArg;                 /* Number of param names actually stored
 void grab(int n, FILE *_file);
 uint16_t readFileShort(FILE *_file);
 void readFileSection(uint16_t* p, int len, FILE *_file);
-void cleanup(void);
+void cleanup();
 void checkStartup(STATE *state);
-void readProtoFile(void);
+void readProtoFile();
 int  searchPList(char *name);
 void checkHeap(char *msg);              /* For debugging */
 
@@ -484,10 +482,10 @@ bool LibCheck(Function & pProc)
                     the appropriate field */
                 arg = pFunc[i].firstArg;
                 pProc.args.numArgs = pFunc[i].numArg;
-                pProc.args.resize(pFunc[i].numArg);
                 for (j=0; j < pFunc[i].numArg; j++)
                 {
-                    pProc.args[j].type = pArg[arg++];
+                    // create and assign type to the stack frame symbols
+                    pProc.args.push_back(STKSYM(pArg[arg+j]));
                 }
                 if (pFunc[i].typ != TYPE_UNKNOWN)
                 {
@@ -846,7 +844,7 @@ gotVendor:
     by dcc, rather than considered as known functions. When a prototype is
     found (in searchPList()), the parameter info is written to the proc struct.
 */
-void readProtoFile(void)
+void readProtoFile()
 {
     IDcc *dcc = IDcc::get();
     QString szProFName = dcc->dataDir("prototypes").absoluteFilePath(DCCLIBS); /* Full name of dclibs.lst */

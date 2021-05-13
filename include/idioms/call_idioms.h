@@ -1,8 +1,9 @@
 #pragma once
-#include <vector>
 #include "idiom.h"
 #include "icode.h"
-#include <deque>
+
+#include <vector>
+
 struct CallIdiom : public Idiom
 {
 protected:
@@ -14,6 +15,7 @@ public:
     }
 
 };
+
 struct Idiom3 : public CallIdiom
 {
 protected:
@@ -27,6 +29,7 @@ public:
     bool match(iICODE pIcode);
     int action();
 };
+
 struct Idiom17 : public CallIdiom
 {
 protected:

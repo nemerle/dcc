@@ -11,22 +11,22 @@
 struct Function;
 /* Types of basic block nodes */
 /* Real basic blocks: type defined according to their out-edges */
+
 enum eBBKind
 {
-    ONE_BRANCH = 0,   /* unconditional branch */
-    TWO_BRANCH = 1,   /* conditional branch   */
-    MULTI_BRANCH=2,   /* case branch          */
-    FALL_NODE=3,   /* fall through         */
-    RETURN_NODE=4,   /* procedure/program return */
-    CALL_NODE=5,   /* procedure call       */
-    LOOP_NODE=6,   /* loop instruction     */
-    REP_NODE=7,   /* repeat instruction   */
-    INTERVAL_NODE=8,   /* contains interval list */
+  ONE_BRANCH = 0,    /* unconditional branch */
+  TWO_BRANCH = 1,    /* conditional branch   */
+  MULTI_BRANCH = 2,  /* case branch          */
+  FALL_NODE = 3,     /* fall through         */
+  RETURN_NODE = 4,   /* procedure/program return */
+  CALL_NODE = 5,     /* procedure call       */
+  LOOP_NODE = 6,     /* loop instruction     */
+  REP_NODE = 7,      /* repeat instruction   */
+  INTERVAL_NODE = 8, /* contains interval list */
 
-    TERMINATE_NODE=11,   /* Exit to DOS          */
-    NOWHERE_NODE=12   /* No outedges going anywhere */
+  TERMINATE_NODE = 11, /* Exit to DOS          */
+  NOWHERE_NODE = 12    /* No outedges going anywhere */
 };
-
 
 /* Depth-first traversal constants */
 enum eDFS
@@ -54,8 +54,11 @@ enum eNodeHeaderType
 #define NO_DOM          MAX /* node has no dominator    	*/
 #define UN_INIT         MAX /* uninitialized variable   	*/
 
-#define THEN            0   /* then edge            */
-#define ELSE            1   /* else edge            */
+enum eEdgeType {
+    THEN = 0,  /* then edge, always first */
+    ELSE = 1   /* else edge, always second */
+};
+
 
 /* Basic Block (BB) flags */
 
@@ -64,7 +67,7 @@ enum eNodeHeaderType
 
 struct BB;
 /* Interval structure */
-typedef std::list<BB *> queue;
+using queue = std::list<BB *>;
 
 struct interval
 {
@@ -90,10 +93,11 @@ struct derSeq_Entry
 public:
     void findIntervals(Function *c);
 };
-class derSeq : public std::list<derSeq_Entry>
+class derSeq
 {
 public:
     void display();
+    std::list<derSeq_Entry> entries;
 };
 void    freeDerivedSeq(derSeq &derivedG);                   /* reducible.c  */
 

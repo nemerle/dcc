@@ -3,9 +3,6 @@
 #include <stdint.h>
 #include <cassert>
 #include <list>
-#include <boost/icl/interval.hpp>
-#include <boost/icl/interval_map.hpp>
-#include <boost/icl/split_interval_map.hpp>
 #include <unordered_set>
 #include <QtCore/QString>
 #include "symtab.h"

@@ -9,7 +9,9 @@ find_package(Qt5 COMPONENTS Core)
 
 option(dcc_build_tests "Enable unit tests." OFF)
 #SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
-add_definitions(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
+if(WIN32)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
+endif()
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D__UNIX__ -D_CRT_NONSTDC_NO_DEPRECATE -DNOMINMAX)
     add_definitions(/W4)
@@ -23,8 +25,9 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeScripts;${CMAKE_MODULE_PATH})
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 include(cotire)
 find_package(Boost)
+
 if(dcc_build_tests)
-enable_testing()
+    enable_testing()
     find_package(GMock)
 endif()
 
@@ -63,6 +66,7 @@ set(dcc_LIB_SOURCES
     src/icode.cpp
     src/RegisterNode
     src/idioms.cpp
+    src/idioms/idiom.cpp
     src/idioms/idiom1.cpp
     src/idioms/arith_idioms.cpp
     src/idioms/call_idioms.cpp
@@ -96,10 +100,8 @@ set(dcc_HEADERS
     include/Enums.h
     include/dcc.h
     include/disassem.h
-    include/dosdcc.h
     include/error.h
     include/graph.h
-    include/hlicode.h
     include/machine_x86.h
     include/icode.h
     include/idioms/idiom.h
@@ -134,8 +136,7 @@ target_link_libraries(dcc_lib PUBLIC Qt5::Core)
 
 add_executable(dcc_original ${dcc_SOURCES} ${dcc_HEADERS})
 target_link_libraries(dcc_original dcc_lib dcc_hash disasm_s Qt5::Core)
-set_property(TARGET dcc_original PROPERTY CXX_STANDARD 11)
-set_property(TARGET dcc_original PROPERTY CXX_STANDARD_REQUIRED ON)
+
 #ADD_SUBDIRECTORY(gui)
 if(dcc_build_tests)
     add_subdirectory(src)

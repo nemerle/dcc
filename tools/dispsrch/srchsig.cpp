@@ -22,11 +22,11 @@ static uint16_t *g;               /* g[] */
 #define SYMLEN 16
 #define PATLEN 23
 
-typedef struct HT_tag {
+struct HT {
     /* Hash table structure */
     char htSym[SYMLEN];
     uint8_t htPat[PATLEN];
-} HT;
+};
 
 HT *ht; /* Declare a pointer to a hash table */
 

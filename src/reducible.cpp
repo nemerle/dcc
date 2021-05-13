@@ -94,7 +94,6 @@ void interval::appendNodeInt(queue &pqH, BB *node)
     node->inInterval = this;
 }
 
-
 /* Finds the intervals of graph derivedGi->Gi and places them in the list
  * of intervals derivedGi->Ii.
  * Algorithm by M.S.Hecht.                      */
@@ -174,7 +173,6 @@ void derSeq_Entry::findIntervals (Function *c)
     }
 }
 
-
 /* Displays the intervals of the graph Gi.              */
 static void displayIntervals (interval *pI)
 {
@@ -207,7 +205,6 @@ static void displayIntervals (interval *pI)
 //    q.clear();
 //}
 
-
 /* Frees the storage allocated for the interval pI */
 static void freeInterval (interval **pI)
 {
@@ -222,13 +219,13 @@ static void freeInterval (interval **pI)
     }
 }
 
-
 /* Frees the storage allocated by the derived sequence structure, except
  * for the original graph cfg (derivedG->Gi).               */
 void freeDerivedSeq(derSeq &derivedG)
 {
-    derivedG.clear();
+    derivedG.entries.clear();
 }
+
 derSeq_Entry::~derSeq_Entry()
 {
     freeInterval (&Ii);
@@ -245,9 +242,9 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
     bool   sameGraph; /* Boolean, isomorphic graphs           */
 
     /* Process Gi's intervals */
-    derSeq_Entry &prev_entry(derivedGi.back());
-    derivedGi.push_back(derSeq_Entry());
-    derSeq_Entry &new_entry(derivedGi.back());
+    derSeq_Entry &prev_entry(derivedGi.entries.back());
+    derivedGi.entries.push_back(derSeq_Entry());
+    derSeq_Entry &new_entry(derivedGi.entries.back());
 
     sameGraph = true;
     BBnode = nullptr;
@@ -301,15 +298,13 @@ bool Function::nextOrderGraph (derSeq &derivedGi)
     return not sameGraph;
 }
 
-
-
 /* Finds the derived sequence of the graph derivedG->Gi (ie. cfg).
  * Constructs the n-th order graph and places all the intermediate graphs
  * in the derivedG list sequence.                   */
 bool Function::findDerivedSeq (derSeq &derivedGi)
 {
-    derSeq::iterator iter=derivedGi.begin();
-    assert(iter!=derivedGi.end());
+    assert(!derivedGi.entries.empty());
+    auto iter=derivedGi.entries.begin();
     BB *Gi = iter->Gi;      /* Current derived sequence graph       */
     while (not trivialGraph (Gi))
     {
@@ -327,12 +322,12 @@ bool Function::findDerivedSeq (derSeq &derivedGi)
     if (not trivialGraph (Gi))
     {
         ++iter;
-        derivedGi.erase(iter,derivedGi.end()); /* remove Gi+1 */
+        derivedGi.entries.erase(iter,derivedGi.entries.end()); /* remove Gi+1 */
         //        freeDerivedSeq(derivedGi->next);
         //        derivedGi->next = NULL;
         return false;
     }
-    derivedGi.back().findIntervals (this);
+    derivedGi.entries.back().findIntervals (this);
     return true;
 }
 
@@ -341,15 +336,14 @@ void derSeq::display()
 {
     int n = 1;      /* Derived sequence number */
     printf ("\nDerived Sequence Intervals\n");
-    derSeq::iterator iter=this->begin();
-    while (iter!=this->end())
+    auto iter=entries.begin();
+    while (iter!=entries.end())
     {
         printf ("\nIntervals for G%X\n", n++);
         displayIntervals (iter->Ii);
         ++iter;
     }
 }
-
 
 /* Checks whether the control flow graph, cfg, is reducible or not.
  * If it is not reducible, it is converted into an equivalent reducible
@@ -359,13 +353,13 @@ void derSeq::display()
 derSeq * Function::checkReducibility()
 {
     derSeq * der_seq;
-    uint8_t    reducible;  /* Reducible graph flag     */
+    uint8_t  reducible;  /* Reducible graph flag     */
 
     numInt = 1;         /* reinitialize no. of intervals*/
     stats.nOrder = 1;   /* nOrder(cfg) = 1      */
     der_seq = new derSeq;
-    der_seq->resize(1);
-    der_seq->back().Gi = *m_actual_cfg.begin(); /*m_cfg.front()*/;
+    der_seq->entries.emplace_back();
+    der_seq->entries.back().Gi = *m_actual_cfg.begin(); /*m_cfg.front()*/;
     reducible = findDerivedSeq(*der_seq);
 
     if (not reducible)
@@ -375,4 +369,3 @@ derSeq * Function::checkReducibility()
     }
     return der_seq;
 }
-

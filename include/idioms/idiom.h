@@ -1,15 +1,20 @@
 #pragma once
-#include "icode.h"
-#include "Procedure.h"
+
+#include <list>
+#include <stdint.h>
+
+struct ICODE;
+struct Function;
+
+using iICODE=std::list<ICODE>::iterator;
+
 struct Idiom
 {
 protected:
     Function *m_func;
     iICODE m_end;
 public:
-    Idiom(Function *f) : m_func(f),m_end(f->Icode.end())
-    {
-    }
+    Idiom(Function *f);
     virtual uint8_t minimum_match_length()=0;
     virtual bool match(iICODE at)=0;
     virtual int action()=0;
@@ -20,3 +25,4 @@ public:
         return 1;
     }
 };
+

@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     }
     if (option.verbose)
         Project::get()->prog.displayLoadInfo();
-    if(false==fe.FrontEnd ())
+    if(not fe.FrontEnd ())
         return -1;
     if(option.asm1)
         return 0;
@@ -148,7 +148,3 @@ displayTotalStats ()
     printf ("  Total reduction of instructions  : %2.2f%%\n", 100.0 -
             (stats.totalHL * 100.0) / stats.totalLL);
 }
-
-
-
-

@@ -309,11 +309,11 @@ void Function::highLevelGen()
     iICODE pIcode;          /* ptr to current icode node */
     Expr *rhs;              /* left- and right-hand side of expression */
     uint32_t _flg;          /* icode flags */
-    numIcode = Icode.size();
-    for (iICODE i = Icode.begin(); i!=Icode.end() ; ++i)
+    numIcode = Icode.entries.size();
+    for (iICODE i = Icode.entries.begin(); i!=Icode.entries.end() ; ++i)
     {
         Expr *lhs=nullptr;
-        assert(numIcode==Icode.size());
+        assert(numIcode==Icode.entries.size());
         pIcode = i; //Icode.GetIcode(i)
         LLInst *ll = pIcode->ll();
         LLOperand *dst_ll = ll->get(DST);
@@ -463,7 +463,6 @@ void Function::highLevelGen()
                 break;
         }
     }
-
 }
 
 
@@ -480,18 +479,15 @@ void Function::highLevelGen()
 QString Function::writeCall (Function * tproc, STKFRAME & args, int *numLoc)
 {
     //string condExp;
-    QString ostr;
-    ostr+=tproc->name+" (";
+    QStringList slist;
     for(const STKSYM &sym : args)
     {
         if(sym.actual)
-            ostr += sym.actual->walkCondExpr(this, numLoc);
+            slist.push_back(sym.actual->walkCondExpr(this, numLoc));
         else
-            ostr +=  "";
-        if((&sym)!=&(args.back()))
-            ostr += ", ";
+            slist.push_back("/*Missing Actual Arg*/");
     }
-    ostr += ")";
+    QString ostr = tproc->name+" (" + slist.join(", ")+")";
     return ostr;
 }
 

@@ -10,9 +10,13 @@
 #include <QtCore/QString>
 #include <string>
 #include <stdint.h>
+#include <vector>
+
 struct Expr;
 struct AstIdent;
 struct TypeContainer;
+class QTextStream;
+
 /* * * * * * * * * * * * * * * * * */
 /* Symbol table structs and protos */
 /* * * * * * * * * * * * * * * * * */
@@ -22,7 +26,7 @@ struct SymbolCommon
     int         size;   /* Size/maximum size                */
     hlType      type;       /* probable type                */
     eDuVal      duVal;      /* DEF, USE, VAL    						*/
-    SymbolCommon() : size(0),type(TYPE_UNKNOWN)
+    SymbolCommon(hlType t=TYPE_UNKNOWN) : size(0),type(t)
     {}
 };
 struct SYM : public SymbolCommon
@@ -52,25 +56,48 @@ struct STKSYM : public SymbolCommon
         sprintf (buf, "arg%d", i);
         name = buf;
     }
+    STKSYM(hlType t=TYPE_UNKNOWN) : SymbolCommon(t) {}
 };
 template<class T>
-class SymbolTableCommon : public std::vector<T>
+class SymbolTableCommon
 {
+    std::vector<T> storage;
 public:
     typedef typename std::vector<T>::iterator iterator;
     typedef typename std::vector<T>::const_iterator const_iterator;
+
     iterator findByLabel(typename T::tLabel lab)
     {
-        auto iter = std::find_if(this->begin(),this->end(),
+        auto iter = std::find_if(storage.begin(),storage.end(),
                                  [lab](T &s)->bool {return s.label==lab;});
         return iter;
     }
     const_iterator findByLabel(typename T::tLabel lab) const
     {
-        auto iter = std::find_if(this->begin(),this->end(),
+        auto iter = std::find_if(storage.begin(),storage.end(),
                                  [lab](const T &s)->bool {return s.label==lab;});
         return iter;
     }
+    const T& operator[](size_t idx) const {
+        return storage[idx];
+    }
+    T& operator[](size_t idx) {
+        return storage[idx];
+    }
+
+    void push_back(const T &entry) {
+        storage.push_back(entry);
+    }
+    iterator begin() { return storage.begin(); }
+    const_iterator begin() const { return storage.cbegin(); }
+    iterator end() { return storage.end(); }
+    const_iterator end() const { return storage.cend(); }
+
+    T &back() { return storage.back(); }
+
+    size_t size() const { return storage.size(); }
+
+    bool empty() const { return storage.empty(); }
 
 };
 /* SYMBOL TABLE */
@@ -105,8 +132,8 @@ enum tableType                     /* The table types */
 };
 constexpr int NUM_TABLE_TYPES = int(Comment)+1; /* Number of entries: must be last */
 
-void    createSymTables(void);
-void    destroySymTables(void);
+void    createSymTables();
+void    destroySymTables();
 bool    readVal (QTextStream & symName, uint32_t   symOff, Function *symProc);
 void    selectTable(tableType);     /* Select a particular table */
 

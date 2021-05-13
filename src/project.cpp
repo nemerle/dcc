@@ -54,31 +54,37 @@ ilFunction Project::findByEntry(uint32_t entry)
 
 ilFunction Project::createFunction(FunctionType *f,const QString &name)
 {
-    pProcList.push_back(*Function::Create(f,0,name,0));
+    pProcList.push_back(*Function::Create(f,0,name,nullptr));
     return (++pProcList.rbegin()).base();
 }
 
 int Project::getSymIdxByAddr(uint32_t adr)
 {
     size_t i;
-    for (i = 0; i < symtab.size(); i++)
-        if (symtab[i].label == adr)
+    for (i = 0; i < symtab.size(); i++) {
+        if (symtab[i].label == adr) {
             break;
+        }
+    }
     return i;
 }
+
 bool Project::validSymIdx(size_t idx)
 {
     return idx<symtab.size();
 }
+
 const SYM &Project::getSymByIdx(size_t idx) const
 {
     return symtab[idx];
 }
+
 size_t Project::symbolSize(size_t idx)
 {
     assert(validSymIdx(idx));
     return symtab[idx].size;
 }
+
 hlType Project::symbolType(size_t idx)
 {
     assert(validSymIdx(idx));
@@ -90,6 +96,7 @@ const QString &Project::symbolName(size_t idx)
     assert(validSymIdx(idx));
     return symtab[idx].name;
 }
+
 Project *Project::get()
 {
     //WARNING: poor man's singleton, not thread safe
@@ -97,8 +104,8 @@ Project *Project::get()
         s_instance=new Project;
     return s_instance;
 }
+
 SourceMachine *Project::machine()
 {
     return nullptr;
 }
-

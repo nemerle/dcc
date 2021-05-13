@@ -104,7 +104,7 @@ public:
     int             index;          /* Index, used in several ways  */
     static BB * Create(void *ctx=0,const std::string &s="",Function *parent=0,BB *insertBefore=0);
     static BB * CreateIntervalBB(Function *parent);
-    static BB *     Create(const rCODE &r, eBBKind _nodeType, Function *parent);
+    static BB * Create(const rCODE &r, eBBKind _nodeType, Function *parent);
     void    writeCode(int indLevel, Function *pProc, int *numLoc, int latchNode, int ifFollow);
     void    mergeFallThrough(CIcodeRec &Icode);
     void    dfsNumbering(std::vector<BB *> &dfsLast, int *first, int *last);

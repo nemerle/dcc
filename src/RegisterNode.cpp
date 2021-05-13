@@ -12,8 +12,6 @@
 #include <cassert>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range.hpp>
-//#include <boost/range/algorithm.hpp>
-//#include <boost/assign.hpp>
 
 using namespace std;
 using namespace boost::adaptors;
@@ -59,18 +57,18 @@ RegisterNode::RegisterNode(const LLOperand &op, LOCAL_ID *locsym)
 QString RegisterNode::walkCondExpr(Function *pProc, int *numLoc) const
 {
     QString codeOut;
-
     QString o;
+
     assert(&pProc->localId==m_syms);
     ID *id = &pProc->localId.id_arr[regiIdx];
     if (id->name[0] == '\0')	/* no name */
     {
         id->setLocalName(++(*numLoc));
-        codeOut += QString("%1 %2; ").arg(TypeContainer::typeName(id->type)).arg(id->name);
+        codeOut += QString("%1 %2; ").arg(TypeContainer::typeName(id->type),id->name);
         codeOut += QString("/* %1 */\n").arg(Machine_X86::regName(id->id.regi));
     }
     if (id->hasMacro)
-        o += QString("%1(%2)").arg(id->macro).arg(id->name);
+        o += QString("%1(%2)").arg(id->macro,id->name);
     else
         o += id->name;
 
@@ -82,16 +80,16 @@ int RegisterNode::hlTypeSize(Function *) const
 {
     if (regiType == BYTE_REG)
         return 1;
-    else
-        return 2;
+
+    return 2;
 }
 
-hlType RegisterNode::expType(Function *pproc) const
+hlType RegisterNode::expType(Function *) const
 {
     if (regiType == BYTE_REG)
         return TYPE_BYTE_SIGN;
-    else
-        return TYPE_WORD_SIGN;
+
+    return TYPE_WORD_SIGN;
 }
 
 Expr *RegisterNode::insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym)
@@ -114,9 +112,12 @@ bool RegisterNode::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_
     range_to_check.advance_begin(1);
     auto all_valid_and_high_level_after_start = range_to_check | filtered(ICODE::select_valid_high_level);
     for (ICODE &i : all_valid_and_high_level_after_start)
+    {
         if (i.du.def.testRegAndSubregs(regi))
+        {
             return false;
-    if (all_valid_and_high_level_after_start.end().base() != lastBBinst)
-        return true;
-    return false;
+        }
+    }
+
+    return all_valid_and_high_level_after_start.end().base() != lastBBinst;
 }

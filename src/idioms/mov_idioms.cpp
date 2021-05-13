@@ -1,6 +1,6 @@
 #include "mov_idioms.h"
 
-#include "dcc.h"
+#include "Procedure.h"
 #include "msvc_fixes.h"
 
 using namespace std;

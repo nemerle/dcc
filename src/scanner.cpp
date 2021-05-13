@@ -543,14 +543,15 @@ eErrorId scan(uint32_t ip, ICODE &p)
         return (IP_OUT_OF_RANGE);
     }
     int cnt=disassembleOneLibDisasm(ip,p.insn);
+
+    SegPrefix = RepPrefix = 0;
+
     if(cnt)
     {
         convertUsedFlags(p.insn,p);
         convertPrefix(p.insn.prefix,p);
-
     }
 
-    SegPrefix = RepPrefix = 0;
     pInst    = prog.image() + ip;
     pIcode   = &p;
 
@@ -603,7 +604,7 @@ static bool relocItem(const uint8_t *p)
 /***************************************************************************
  getWord - returns next uint16_t from image
  **************************************************************************/
-static uint16_t getWord(void)
+static uint16_t getWord()
 {
     uint16_t w = LH(pInst);
     pInst += 2;

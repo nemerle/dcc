@@ -18,7 +18,7 @@
 #include <list>
 #include <bitset>
 #include <set>
-#include <algorithm>
+//#include <algorithm>
 #include <initializer_list>
 
 //enum condId;
@@ -67,24 +67,8 @@ public:
         registers.insert(other.registers.begin(),other.registers.end());
         return *this;
     }
-    LivenessSet &operator&=(const LivenessSet &other)
-    {
-        std::set<eReg> res;
-        std::set_intersection(registers.begin(),registers.end(),
-                              other.registers.begin(),other.registers.end(),
-                              std::inserter(res, res.end()));
-        registers = res;
-        return *this;
-    }
-    LivenessSet &operator-=(const LivenessSet &other)
-    {
-        std::set<eReg> res;
-        std::set_difference(registers.begin(),registers.end(),
-                            other.registers.begin(),other.registers.end(),
-                            std::inserter(res, res.end()));
-        registers = res;
-        return *this;
-    }
+    LivenessSet &operator&=(const LivenessSet &other);
+    LivenessSet &operator-=(const LivenessSet &other);
     LivenessSet operator-(const LivenessSet &other) const
     {
         return LivenessSet(*this) -= other;
@@ -493,7 +477,7 @@ public:
     struct DU1
     {
     protected:
-        int     numRegsDef;             /* # registers defined by this inst */
+        int     numRegsDef=0;             /* # registers defined by this inst */
 
     public:
         struct Use
@@ -509,16 +493,16 @@ public:
                 uses.erase(iter);
                 assert("Same user more then once!" and uses.end()==std::find(uses.begin(),uses.end(),us));
             }
-
         };
+
         uint8_t	regi[MAX_REGS_DEF+1];	/* registers defined by this inst   */
         Use     idx[MAX_REGS_DEF+1];
         //int     idx[MAX_REGS_DEF][MAX_USES];	/* inst that uses this def  */
-        bool    used(int regIdx)
+        bool    used(int regIdx) const
         {
             return not idx[regIdx].uses.empty();
         }
-        int     numUses(int regIdx)
+        int     numUses(int regIdx) const
         {
             return idx[regIdx].uses.size();
         }
@@ -540,9 +524,6 @@ public:
         DU1 &addDef(eReg r) {numRegsDef++; return *this;}
         DU1 &setDef(eReg r) {numRegsDef=1; return *this;}
         void removeDef(eReg r) {numRegsDef--;}
-        DU1() : numRegsDef(0)
-        {
-        }
     };
     icodeType           type;           /* Icode type                       */
     DU_ICODE            du;             /* Def/use regs/vars                */
@@ -608,10 +589,12 @@ public:
 //    rSourceRange m_low_level;
 //    rTargetRange m_middle_level;
 //};
+
 // This is the icode array object.
-class CIcodeRec : public std::list<ICODE>
+class CIcodeRec
 {
 public:
+    using iterator = std::list<ICODE>::iterator;
     CIcodeRec();	// Constructor
 
     ICODE *     addIcode(ICODE *pIcode);
@@ -620,4 +603,6 @@ public:
     iterator    labelSrch(uint32_t target);
     ICODE *     GetIcode(size_t ip);
     bool        alreadyDecoded(uint32_t target);
+
+    std::list<ICODE> entries;
 };

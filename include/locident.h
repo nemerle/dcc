@@ -15,8 +15,6 @@
 #include <stdint.h>
 #include <vector>
 #include <list>
-#include <set>
-#include <algorithm>
 
 /* Type definition */
 // this array has to stay in-order of addition i.e. not std::set<iICODE,std::less<iICODE> >
@@ -28,9 +26,7 @@ struct LLInst;
 using iICODE=std::list<ICODE>::iterator;
 using IDX_ARRAY = std::vector<iICODE>;
 
-inline bool inList(const IDX_ARRAY &arr,iICODE idx) {
-    return std::find(arr.begin(),arr.end(),idx)!=arr.end();
-}
+inline bool inList(const IDX_ARRAY &arr,iICODE idx);
 
 enum frameType
 {

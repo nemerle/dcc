@@ -9,8 +9,9 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
-#include <cstring>
 #include <QtCore/QDebug>
+#include <algorithm>
+#include <cstring>
 
 static const int LOCAL_ID_DELTA = 25;
 static const int IDX_ARRAY_DELTA = 5;
@@ -122,10 +123,9 @@ int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
 {
     /* Check for entry in the table */
     auto found=std::find_if(id_arr.begin(),id_arr.end(),[off,regOff](ID &el)->bool {
-        if ((el.id.bwId.off == off) and (el.id.bwId.regOff == regOff))
-            return true;
-        return false;
+        return (el.id.bwId.off == off) and (el.id.bwId.regOff == regOff);
     });
+
     if(found!=id_arr.end())
         return found-id_arr.begin(); //return Index to found element
 
@@ -136,7 +136,6 @@ int LOCAL_ID::newByteWordStk(hlType t, int off, uint8_t regOff)
     last_id.id.bwId.off = off;
     return id_arr.size()-1;
 }
-
 
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new global identifier node of type
@@ -167,7 +166,6 @@ int LOCAL_ID::newIntIdx(int16_t seg, int16_t off, eReg regi, hlType t)
     return id_arr.size() - 1;
 }
 
-
 /* Checks if the entry exists in the locSym, if so, returns the idx to this
  * entry; otherwise creates a new register identifier node of type
  * TYPE_LONG_(UN)SIGN and returns the index to this new entry.  */
@@ -189,22 +187,21 @@ int LOCAL_ID::newLongReg(hlType t, const LONGID_TYPE &longT, iICODE ix_)
                 (entry.longId().l() == regL))
         {
             /* Check for occurrence in the list */
-            if (inList(entry.idx,ix_))
-                return idx;
-            else
+            if (!inList(entry.idx,ix_))
             {
                 /* Insert icode index in list */
                 entry.idx.push_back(ix_);
-                return idx;
             }
+            return idx;
         }
     }
 
     /* Not in the table, create new identifier */
     id_arr.emplace_back(t, LONGID_TYPE(regH,regL));
     id_arr.back().idx.push_back(ix_);
-    return (id_arr.size() - 1);
+    return id_arr.size() - 1;
 }
+
 /** \returns an identifier conditional expression node of type TYPE_LONG or TYPE_WORD_SIGN	*/
 AstIdent * LOCAL_ID::createId(const ID *retVal, iICODE ix_)
 {
@@ -469,4 +466,8 @@ void LOCAL_ID::propLongId (uint8_t regL, uint8_t regH, const QString &name)
             strcpy (rid.macro, "HI");
         }
     }
+}
+
+bool inList(const IDX_ARRAY &arr, iICODE idx) {
+    return std::find(arr.begin(),arr.end(),idx)!=arr.end();
 }

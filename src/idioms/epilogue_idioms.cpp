@@ -46,7 +46,7 @@ void EpilogIdiom::popStkVars(iICODE pIcode)
 bool Idiom2::match(iICODE pIcode)
 {
     iICODE nicode;
-    if(pIcode==m_func->Icode.begin()) // pIcode->loc_ip == 0
+    if(pIcode==m_func->Icode.entries.begin()) // pIcode->loc_ip == 0
         return false;
     if ( pIcode->ll()->testFlags(I) or (not pIcode->ll()->match(rSP,rBP)) )
         return false;
@@ -110,19 +110,19 @@ bool Idiom4::match(iICODE pIcode)
     m_param_count = 0;
     /* Check for [POP DI]
      *           [POP SI] */
-    if(distance(m_func->Icode.begin(),pIcode)>=3)
+    if(distance(m_func->Icode.entries.begin(),pIcode)>=3)
     {
         iICODE search_at(pIcode);
         advance(search_at,-3);
         popStkVars(search_at);
     }
-    if(pIcode != m_func->Icode.begin())
+    if(pIcode != m_func->Icode.entries.begin())
     {
         iICODE prev1 = --iICODE(pIcode);
         /* Check for POP BP */
         if (prev1->ll()->match(iPOP,rBP) and not prev1->ll()->testFlags(I) )
             m_icodes.push_back(prev1);
-        else if(prev1!=m_func->Icode.begin())
+        else if(prev1!=m_func->Icode.entries.begin())
         {
             iICODE search_at(pIcode);
             advance(search_at,-2);

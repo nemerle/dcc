@@ -69,10 +69,13 @@ static bool
 TwoWild(uint8_t pat[])
 {
     pat[pc++] = WILD;
-    if (pc >= PATLEN) return true;      /* Pattern exhausted */
+    if (pc >= PATLEN)
+    {
+        return true;      /* Pattern exhausted */
+    }
     pat[pc++] = WILD;
-    if (pc >= PATLEN) return true;
-    return false;
+
+    return pc >= PATLEN;
 }
 
 /* Change the next four bytes to wild cards */
@@ -89,7 +92,10 @@ FourWild(uint8_t pat[])
 static void
 chop(uint8_t pat[])
 {
-    if (pc >= PATLEN) return;               /* Could go negative otherwise */
+    if (pc >= PATLEN)
+    {
+        return;               /* Could go negative otherwise */
+    }
     memset(&pat[pc], 0, PATLEN - pc);
 }
 

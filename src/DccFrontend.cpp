@@ -56,11 +56,11 @@ static struct MZHeader {				/*      EXE file header		 	 */
 #define EXE_RELOCATION  0x10		/* EXE images rellocated to above PSP */
 
 //static void LoadImage(char *filename);
-static void displayMemMap(void);
+static void displayMemMap();
 /****************************************************************************
 * displayLoadInfo - Displays low level loader type info.
 ***************************************************************************/
-void PROG::displayLoadInfo(void)
+void PROG::displayLoadInfo()
 {
     int	i;
 
@@ -110,7 +110,7 @@ static void fill(int ip, char *bf)
 /*****************************************************************************
 * displayMemMap - Displays the memory bitmap
 ****************************************************************************/
-static void displayMemMap(void)
+static void displayMemMap()
 {
     PROG &prog(Project::get()->prog);
 
@@ -130,7 +130,7 @@ static void displayMemMap(void)
         {
             fill(ip, b2);	/* Skip until next two are not same */
             fill(ip+16, b3);
-            if (not (strcmp(b1, b2) || strcmp(b1, b3)))
+            if (not (strcmp(b1, b2) != 0 || strcmp(b1, b3) != 0))
             {
                 printf("                   :\n");
                 do

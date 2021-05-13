@@ -167,15 +167,14 @@ AstIdent *AstIdent::Loc(int off, LOCAL_ID *localId)
 /* Returns an identifier conditional expression node of type PARAM */
 AstIdent *AstIdent::Param(int off, const STKFRAME * argSymtab)
 {
-    AstIdent *newExp;
-    
-    newExp = new AstIdent();
+    AstIdent *newExp = new AstIdent();
+
     newExp->ident.idType = PARAM;
     auto iter=argSymtab->findByLabel(off);
     if (iter == argSymtab->end())
         printf ("Error, cannot find argument var\n");
-    newExp->ident.idNode.localIdx = std::distance(argSymtab->cbegin(),iter);
-    return (newExp);
+    newExp->ident.idNode.localIdx = std::distance(argSymtab->begin(),iter);
+    return newExp;
 }
 
 
@@ -551,7 +550,7 @@ QString AstIdent::walkCondExpr(Function *pProc, int *numLoc) const
     int16_t off;              /* temporal - for OTHER */
     ID* id;                 /* Pointer to local identifier table */
     BWGLB_TYPE* bwGlb;      /* Ptr to BWGLB_TYPE (global indexed var) */
-    STKSYM * psym;          /* Pointer to argument in the stack */
+    const STKSYM * psym;          /* Pointer to argument in the stack */
     QString codeContents;
     QString collectedContents;
     

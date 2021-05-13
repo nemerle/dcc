@@ -29,7 +29,7 @@ using namespace std;
 #define POS_OPC     20              /* Position of opcode */
 #define POS_OPR     25              /* Position of operand */
 #define	WID_PTR     10              /* Width of the "xword ptr" lingo */
-#define POS_OPR2    POS_OPR+WID_PTR /* Position of operand after "xword ptr" */
+#define POS_OPR2    (POS_OPR+WID_PTR) /* Position of operand after "xword ptr" */
 #define POS_CMT     54              /* Position of comment */
 
 static const char *szFlops0C[] =
@@ -116,7 +116,7 @@ void LLInst::findJumpTargets(CIcodeRec &_pc)
     {
         /* Replace the immediate operand with an icode index */
         iICODE labTgt=_pc.labelSrch(src().getImm2());
-        if (labTgt!=_pc.end())
+        if (labTgt!=_pc.entries.end())
         {
             m_src.SetImmediateOp(labTgt->loc_ip);
             /* This icode is the target of a jump */
@@ -144,7 +144,7 @@ void Disassembler::disassem(Function * ppProc)
 
     pProc = ppProc;             /* Save the passes pProc */
     createSymTables();
-    allocIcode = numIcode = pProc->Icode.size();
+    allocIcode = numIcode = pProc->Icode.entries.size();
     cb = allocIcode * sizeof(ICODE);
     if (numIcode == 0)
     {
@@ -169,7 +169,7 @@ void Disassembler::disassem(Function * ppProc)
     {
         /* Bind jump offsets to labels */
         //for (i = 0; i < numIcode; i++)
-        for( ICODE &icode : pc)
+        for( ICODE &icode : pc.entries)
         {
             LLInst *ll=icode.ll();
             ll->findJumpTargets(pc);
@@ -188,7 +188,7 @@ void Disassembler::disassem(Function * ppProc)
 
     /* Loop over array printing each record */
     nextInst = 0;
-    for( ICODE &icode : pc)
+    for( ICODE &icode : pc.entries)
     {
         this->dis1Line(*icode.ll(),icode.loc_ip,pass);
     }
@@ -203,7 +203,7 @@ void Disassembler::disassem(Function * ppProc)
 
     }
 
-    pc.clear();
+    pc.entries.clear();
     destroySymTables();
 }
 /****************************************************************************
@@ -228,7 +228,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     /* Disassembly stage 1 --
      * Do not try to display NO_CODE entries or synthetic instructions,
      * other than JMPs, that have been introduced for def/use analysis. */
-    if ((option.asm1) and
+    if (option.asm1 and
             ( inst.testFlags(NO_CODE) or
               (inst.testFlags(SYNTHETIC) and (inst.getOpcode() != iJMP))))
     {
@@ -487,13 +487,10 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     operands_s.flush();
     oper_stream << qSetFieldWidth(15) << opcode_with_mods << qSetFieldWidth(0) << operands_contents;
     /* Comments */
-    if (inst.testFlags(SYNTHETIC))
+    fImpure = false;
+    if (!inst.testFlags(SYNTHETIC))
     {
-        fImpure = false;
-    }
-    else
-    {
-        for (j = inst.label, fImpure = 0; j > 0 and j < (int)nextInst; j++)
+        for (j = inst.label; j > 0 and j < (int)nextInst; j++)
         {
             fImpure |= BITMAP(j, BM_DATA);
         }

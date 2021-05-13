@@ -21,7 +21,6 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
-#include <boost/iterator/filter_iterator.hpp>
 #include <cstring>
 #include <deque>
 /*****************************************************************************
@@ -51,8 +50,8 @@ void Function::findIdioms()
     iICODE  pEnd, pIcode;   /* Pointers to end of BB and current icodes */
     int16_t   delta;
 
-    pIcode = Icode.begin();
-    pEnd = Icode.end();
+    pIcode = Icode.entries.begin();
+    pEnd = Icode.entries.end();
     Idiom1  i01(this);
     Idiom2  i02(this);
     Idiom3  i03(this);
@@ -79,11 +78,7 @@ void Function::findIdioms()
     Idiom18 i18(this);
     Idiom19 i19(this);
     Idiom20 i20(this);
-    struct is_valid
-    {
-        bool operator()(ICODE &z) { return z.valid();}
-    };
-    typedef boost::filter_iterator<is_valid,iICODE> ifICODE;
+
     while (pIcode != pEnd)
     {
         switch (pIcode->ll()->getOpcode())
@@ -189,7 +184,7 @@ void Function::findIdioms()
             break;
 
         case iENTER:		/* ENTER is equivalent to init PUSH bp */
-            if (pIcode == Icode.begin()) //ip == 0
+            if (pIcode == Icode.entries.begin()) //ip == 0
             {
                 flg |= (PROC_HLL | PROC_IS_HLL);
             }
@@ -230,18 +225,18 @@ void Function::bindIcodeOff()
 {
 
     iICODE pIcode;            /* ptr icode array      */
-    if (Icode.empty())        /* No Icode */
+    if (Icode.entries.empty())        /* No Icode */
         return;
-    pIcode = Icode.begin();
+    pIcode = Icode.entries.begin();
 
     /* Flag all jump targets for BB construction and disassembly stage 2 */
-    for(ICODE &c : Icode) // TODO: use filtered here
+    for(ICODE &c : Icode.entries) // TODO: use filtered here
     {
         LLInst *ll=c.ll();
         if (ll->testFlags(I) and ll->isJmpInst())
         {
             iICODE loc=Icode.labelSrch(ll->src().getImm2());
-            if (loc!=Icode.end())
+            if (loc!=Icode.entries.end())
                 loc->ll()->setFlags(TARGET);
         }
     }
@@ -250,7 +245,7 @@ void Function::bindIcodeOff()
      * is found (no code at dest. of jump) are simply left unlinked and
      * flagged as going nowhere.  */
     //for (pIcode = Icode.begin(); pIcode!= Icode.end(); pIcode++)
-    for(ICODE &icode : Icode)
+    for(ICODE &icode : Icode.entries)
     {
         LLInst *ll=icode.ll();
         if (not ll->isJmpInst())
@@ -268,7 +263,9 @@ void Function::bindIcodeOff()
         {
             /* for case table       */
             for (uint32_t &p : ll->caseTbl2)
+            {
                 Icode.labelSrch(p, p); // for each entry in caseTable replace it with target insn Idx
+            }
         }
     }
 }

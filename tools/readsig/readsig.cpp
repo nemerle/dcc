@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 
 
 void
-cleanup(void)
+cleanup()
 {
     // TODO: g_pattern_hasher.hashCleanup();
     /* Free the storage for variable sized tables etc */

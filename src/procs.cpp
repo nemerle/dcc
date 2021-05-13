@@ -142,7 +142,7 @@ void LOCAL_ID::newRegArg(ICODE &picode, ICODE &ticode) const
         LONGID_TYPE regHL = id_arr[longIdx].longId();
         regH=regHL.h();
         regL=regHL.l();
-        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regHL, tproc->Icode.begin() /*0*/);
+        tidx = tproc->localId.newLongReg(TYPE_LONG_SIGN, regHL, tproc->Icode.entries.begin() /*0*/);
         /* Check if register argument already on the formal argument list */
         for(STKSYM &tgt_sym : *target_stackframe)
         {
@@ -158,7 +158,7 @@ void LOCAL_ID::newRegArg(ICODE &picode, ICODE &ticode) const
     else
         ;//regExist = false;
     /* Do ts (formal arguments) */
-    if (regExist == false)
+    if (!regExist)
     {
         STKSYM newsym;
 
@@ -232,7 +232,7 @@ bool CallType::newStkArg(Expr *exp, llIcode opcode, Function * pproc)
         regi =  pproc->localId.id_arr[expr->regiIdx].id.regi;
         if ((regi >= rES) and (regi <= rDS))
         {
-            return (opcode == iCALLF) ? false : true;
+            return opcode != iCALLF;
         }
     }
 

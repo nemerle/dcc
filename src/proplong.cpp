@@ -17,9 +17,7 @@
  * high-level conditional jump icodes (iJB..iJG) */
 static bool isJCond (llIcode opcode)
 {
-    if ((opcode >= iJB) and (opcode <= iJG))
-        return true;
-    return false;
+    return (opcode >= iJB) and (opcode <= iJG);
 }
 
 
@@ -239,20 +237,24 @@ void Function::propLongStk (int i, const ID &pLocId)
     iICODE next1, pEnd;
     iICODE l23;
     /* Check all icodes for offHi:offLo */
-    pEnd = Icode.end();
-    size_t stat_size=Icode.size();
+    pEnd = Icode.entries.end();
+    size_t stat_size=Icode.entries.size();
 //    for (idx = 0; idx < (Icode.size() - 1); idx++)
-    for(auto pIcode = Icode.begin(); ;++pIcode)
+    for(auto pIcode = Icode.entries.begin(); ;++pIcode)
     {
-        assert(Icode.size()==stat_size);
+        assert(Icode.entries.size()==stat_size);
         next1 = ++iICODE(pIcode);
         if(next1==pEnd)
+        {
             break;
+        }
         if ((pIcode->type == HIGH_LEVEL_ICODE) or ( not pIcode->valid() ))
+        {
             continue;
+        }
         if (pIcode->ll()->getOpcode() == next1->ll()->getOpcode())
         {
-            if (checkLongEq (pLocId.longStkId(), pIcode, i, this, asgn, *next1->ll()) == true)
+            if (checkLongEq(pLocId.longStkId(), pIcode, i, this, asgn, *next1->ll()) )
             {
                 switch (pIcode->ll()->getOpcode())
                 {
@@ -316,7 +318,7 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const LONGID_TYPE &longRegI
     iICODE pIcode;
     riICODE rev(beg);
     bool forced_finish=false;
-    for (; not forced_finish and rev!=Icode.rend();rev++) //idx = pLocId_idx - 1; idx > 0 ; idx--
+    for (; not forced_finish and rev!=Icode.entries.rend();rev++) //idx = pLocId_idx - 1; idx > 0 ; idx--
     {
         pIcode = (++riICODE(rev)).base();//forward iterator from rev
         iICODE next1((++iICODE(pIcode))); // next instruction
@@ -385,12 +387,12 @@ int Function::findBackwarLongDefs(int loc_ident_idx, const LONGID_TYPE &longRegI
             break;
         } /* eos */
     }
-    return rev!=Icode.rend();
+    return rev!=Icode.entries.rend();
 }
 int Function::findForwardLongUses(int loc_ident_idx, const LONGID_TYPE &loc_id_longid, iICODE beg)
 {
     bool forced_finish=false;
-    auto pEnd=Icode.end();
+    auto pEnd=Icode.entries.end();
     iICODE long_loc;
     Assignment asgn;
 
@@ -459,9 +461,9 @@ int Function::findForwardLongUses(int loc_ident_idx, const LONGID_TYPE &loc_id_l
                                                   LOW_FIRST, pIcode, eUSE, *next1->ll());
                     condOp toCreate=DUMMY;
                     switch (pIcode->ll()->getOpcode()) {
-                    case iAND: toCreate=AND; break;
-                    case iOR:  toCreate=OR; break;
-                    case iXOR: toCreate= XOR; break;
+                    case iAND: toCreate = AND; break;
+                    case iOR:  toCreate = OR; break;
+                    case iXOR: toCreate = XOR; break;
                     }
                     if(DUMMY!=toCreate)
                     {

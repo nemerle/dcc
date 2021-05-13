@@ -184,7 +184,7 @@ public:
     QString writeCall(Function *tproc, STKFRAME &args, int *numLoc);
     void processDosInt(STATE *pstate, PROG &prog, bool done);
     ICODE *translate_DIV(LLInst *ll, ICODE &_Icode);
-    ICODE *translate_XCHG(LLInst *ll, ICODE &_Icode);
+    ICODE *translate_XCHG(LLInst *ll, ICODE &r_Icode);
 protected:
     void extractJumpTableRange(ICODE& pIcode, STATE *pstate, JumpTable &table);
     bool followAllTableEntries(JumpTable &table, uint32_t cs, ICODE &pIcode, CALL_GRAPH *pcallGraph, STATE *pstate);

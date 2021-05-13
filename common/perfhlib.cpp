@@ -55,37 +55,37 @@ void PerfectHash::setHashParams(int _NumEntry, int _EntryLen, int _SetSize, char
     NumVert  = _NumVert;
 
     /* Allocate the variable sized tables etc */
-    if ((T1base = (uint16_t *)malloc(EntryLen * SetSize * sizeof(uint16_t))) == 0)
+    if ((T1base = (uint16_t *)malloc(EntryLen * SetSize * sizeof(uint16_t))) == nullptr)
     {
         goto BadAlloc;
     }
-    if ((T2base = (uint16_t *)malloc(EntryLen * SetSize * sizeof(uint16_t))) == 0)
-    {
-        goto BadAlloc;
-    }
-
-    if ((graphNode = (int *)malloc((NumEntry*2 + 1) * sizeof(int))) == 0)
-    {
-        goto BadAlloc;
-    }
-    if ((graphNext = (int *)malloc((NumEntry*2 + 1) * sizeof(int))) == 0)
-    {
-        goto BadAlloc;
-    }
-    if ((graphFirst = (int *)malloc((NumVert + 1) * sizeof(int))) == 0)
+    if ((T2base = (uint16_t *)malloc(EntryLen * SetSize * sizeof(uint16_t))) == nullptr)
     {
         goto BadAlloc;
     }
 
-    if ((g = (short *)malloc((NumVert+1) * sizeof(short))) == 0)
+    if ((graphNode = (int *)malloc((NumEntry*2 + 1) * sizeof(int))) == nullptr)
     {
         goto BadAlloc;
     }
-    if ((visited = (bool *)malloc((NumVert+1) * sizeof(bool))) == 0)
+    if ((graphNext = (int *)malloc((NumEntry*2 + 1) * sizeof(int))) == nullptr)
     {
         goto BadAlloc;
     }
-    if ((deleted = (bool *)malloc((NumEntry+1) * sizeof(bool))) == 0)
+    if ((graphFirst = (int *)malloc((NumVert + 1) * sizeof(int))) == nullptr)
+    {
+        goto BadAlloc;
+    }
+
+    if ((g = (short *)malloc((NumVert+1) * sizeof(short))) == nullptr)
+    {
+        goto BadAlloc;
+    }
+    if ((visited = (bool *)malloc((NumVert+1) * sizeof(bool))) == nullptr)
+    {
+        goto BadAlloc;
+    }
+    if ((deleted = (bool *)malloc((NumEntry+1) * sizeof(bool))) == nullptr)
     {
         goto BadAlloc;
     }
@@ -97,7 +97,7 @@ BadAlloc:
     exit(1);
 }
 
-void PerfectHash::hashCleanup(void)
+void PerfectHash::hashCleanup()
 {
     /* Free the storage for variable sized tables etc */
     if (T1base) free(T1base);
@@ -164,7 +164,7 @@ void PerfectHash::map(PatternCollector *collector)
             break;
         }
     }
-    while (/* there is a cycle */ 1);
+    while (/* there is a cycle */ true);
 
 }
 
@@ -298,7 +298,7 @@ bool PerfectHash::DFS(int parentE, int v)
     return false;
 }
 
-bool PerfectHash::isCycle(void)
+bool PerfectHash::isCycle()
 {
     int v, e;
 
@@ -344,7 +344,7 @@ void PerfectHash::traverse(int u)
 
 }
 
-void PerfectHash::assign(void)
+void PerfectHash::assign()
 {
     int v;
 

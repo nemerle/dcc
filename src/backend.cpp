@@ -1,7 +1,7 @@
 /*****************************************************************************
- * Project: 	dcc
- * File:	backend.c
- * Purpose:	Back-end module.  Generates C code for each procedure.
+ * Project:     dcc
+ * File:    backend.c
+ * Purpose:    Back-end module.  Generates C code for each procedure.
  * (C) Cristina Cifuentes
  ****************************************************************************/
 #include "dcc.h"
@@ -28,12 +28,12 @@
 
 using namespace std;
 
-bundle cCode;			/* Procedure declaration and code */
+bundle cCode;            /* Procedure declaration and code */
 
 /* Returns a unique index to the next label */
 int getNextLabel()
 {
-    static int labelIdx = 1;	/* index of the next label		*/
+    static int labelIdx = 1;    /* index of the next label        */
     return (labelIdx++);
 }
 
@@ -59,9 +59,9 @@ static void fixupLabels (PPROC pProc)
 /* Checks the graph (pProc->cfg) for any nodes that have labels, and gives
  * a unique label number for it.  This label is placed in the associated
  * icode for the node (pProc->Icode).  The procedure is done in sequential
- * order of dsfLast numbering.	*/
-{ int i;				/* index into the dfsLast array */
-    PBB *dfsLast;			/* pointer to the dfsLast array */
+ * order of dsfLast numbering.    */
+{ int i;                /* index into the dfsLast array */
+    PBB *dfsLast;            /* pointer to the dfsLast array */
 
     dfsLast = pProc->dfsLast;
     for (i = 0; i < pProc->numBBs; i++)
@@ -80,22 +80,22 @@ char *cChar (uint8_t c)
     static char res[3];
 
     switch (c) {
-        case 0x8:		/* backspace */
+        case 0x8:        /* backspace */
             sprintf (res, "\\b");
             break;
-        case 0x9:		/* horizontal tab */
+        case 0x9:        /* horizontal tab */
             sprintf (res, "\\t");
             break;
-        case 0x0A:	/* new line */
+        case 0x0A:    /* new line */
             sprintf (res, "\\n");
             break;
-        case 0x0C:	/* form feed */
+        case 0x0C:    /* form feed */
             sprintf (res, "\\f");
             break;
-        case 0x0D:	/* carriage return */
+        case 0x0D:    /* carriage return */
             sprintf (res, "\\r");
             break;
-        default: 		/* any other character*/
+        default:         /* any other character*/
             sprintf (res, "%c", c);
     }
     return (res);
@@ -104,8 +104,8 @@ char *cChar (uint8_t c)
 
 /* Prints the variable's name and initial contents on the file.
  * Note: to get to the value of the variable:
- *		com file: prog.Image[operand]
- *		exe file: prog.Image[operand+0x100] 	*/
+ *        com file: prog.Image[operand]
+ *        exe file: prog.Image[operand+0x100]     */
 static void printGlobVar (QTextStream &ostr,SYM * psym)
 {
     int j;
@@ -122,7 +122,7 @@ static void printGlobVar (QTextStream &ostr,SYM * psym)
             break;
         case 4: if (psym->type == TYPE_PTR)  /* pointer */
                 ostr << "uint16_t *\t"<<psym->name<<" = "<<LH(prog.image()+relocOp)<<";\n";
-            else 			/* char */
+            else             /* char */
                 ostr << "char\t"<<psym->name<<"[4] = \""<<
                         prog.image()[relocOp]<<prog.image()[relocOp+1]<<
                         prog.image()[relocOp+2]<<prog.image()[relocOp+3]<<";\n";
@@ -148,25 +148,26 @@ void Project::writeGlobSymTable()
 
     if (symtab.empty())
         return;
+
     ostr<<"/* Global variables */\n";
-        for (SYM &sym : symtab)
-        {
-            if (sym.duVal.isUSE_VAL())	/* first used */
-                printGlobVar (ostr,&sym);
-            else {					/* first defined */
-                switch (sym.size) {
-                case 1:  ostr<<"uint8_t\t"; break;
-                case 2:  ostr<<"int16_t\t"; break;
-                    case 4:  if (sym.type == TYPE_PTR)
-                        ostr<<"int32_t\t*";
-                        else
-                        ostr<<"char\t*";
-                        break;
-                default: ostr<<"char\t*";
-                }
-            ostr<<sym.name<<";\t/* size = "<<sym.size<<" */\n";
+    for (SYM &sym : symtab)
+    {
+        if (sym.duVal.isUSE_VAL())    /* first used */
+            printGlobVar (ostr,&sym);
+        else {                    /* first defined */
+            switch (sym.size) {
+            case 1:  ostr<<"uint8_t\t"; break;
+            case 2:  ostr<<"int16_t\t"; break;
+                case 4:  if (sym.type == TYPE_PTR)
+                    ostr<<"int32_t\t*";
+                    else
+                    ostr<<"char\t*";
+                    break;
+            default: ostr<<"char\t*";
             }
+        ostr<<sym.name<<";\t/* size = "<<sym.size<<" */\n";
         }
+    }
     ostr<< "\n";
     ostr.flush();
     cCode.appendDecl( contents );
@@ -196,7 +197,8 @@ static void writeHeader (QIODevice &_ios, const std::string &fileName)
  * to it.  If so, a goto is emitted to this label; otherwise, a new label
  * is created and a goto is also emitted.
  * Note: this procedure is to be used when the label is to be forward on
- *		 the code; that is, the target code has not been traversed yet. */
+ *       the code; that is, the target code has not been traversed yet.
+*/
 #if 0
 static void emitFwdGotoLabel (ICODE * pt, int indLevel)
 {
@@ -227,14 +229,14 @@ void Function::codeGen (QIODevice &fs)
     /* Write procedure/function header */
     cCode.init();
     if (flg & PROC_IS_FUNC)      /* Function */
-        ostr << QString("\n%1 %2 (").arg(TypeContainer::typeName(retVal.type)).arg(name);
+        ostr << QString("\n%1 %2 (").arg(TypeContainer::typeName(retVal.type),name);
     else                                /* Procedure */
         ostr << "\nvoid "+name+" (";
 
     /* Write arguments */
     struct validArg
     {
-        bool operator()(STKSYM &s) { return s.invalid==false;}
+        bool operator()(STKSYM &s) { return !s.invalid; }
     };
     QStringList parts;
     for (STKSYM &arg : (args | filtered(validArg())))
@@ -279,12 +281,12 @@ void Function::codeGen (QIODevice &fs)
     fs.write(ostr_contents.toLatin1());
 
     /* Write procedure's code */
-    if (flg & PROC_ASM)		/* generate assembler */
+    if (flg & PROC_ASM)        /* generate assembler */
     {
         Disassembler ds(3);
         ds.disassem(this);
     }
-    else							/* generate C */
+    else                            /* generate C */
     {
         m_actual_cfg.front()->writeCode (1, this, &numLoc, MAX, UN_INIT);
     }
@@ -300,7 +302,7 @@ void Function::codeGen (QIODevice &fs)
         for (size_t i = 0; i < numBBs; i++)
         {
             pBB = m_dfsLast[i];
-            if (pBB->flg & INVALID_BB)	continue;	/* skip invalid BBs */
+            if (pBB->flg & INVALID_BB)    continue;    /* skip invalid BBs */
             debug_stream << "BB "<<i<<"\n";
             debug_stream << "  Start = "<<pBB->begin()->loc_ip;
             debug_stream << ", end = "<<pBB->begin()->loc_ip+pBB->size()<<"\n";
@@ -321,11 +323,11 @@ void Function::codeGen (QIODevice &fs)
 
 
 /* Recursive procedure. Displays the procedure's code in depth-first order
- * of the call graph.	*/
+ * of the call graph.    */
 static void backBackEnd (CALL_GRAPH * pcallGraph, QIODevice &_ios)
 {
 
-    //	IFace.Yield();			/* This is a good place to yield to other apps */
+    //    IFace.Yield();            /* This is a good place to yield to other apps */
 
     /* Check if this procedure has been processed already */
     if ((pcallGraph->proc->flg & PROC_OUTPUT) or
@@ -340,7 +342,7 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, QIODevice &_ios)
     }
 
     /* Generate code for this procedure */
-    stats.numLLIcode = pcallGraph->proc->Icode.size();
+    stats.numLLIcode = pcallGraph->proc->Icode.entries.size();
     stats.numHLIcode = 0;
     pcallGraph->proc->codeGen (_ios);
 
@@ -354,16 +356,15 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, QIODevice &_ios)
     }
 }
 
-
 /* Invokes the necessary routines to produce code one procedure at a time. */
 void BackEnd(CALL_GRAPH * pcallGraph)
 {
     /* Get output file name */
     QString outNam(Project::get()->output_name("b")); /* b for beta */
-    QFile fs(outNam); /* Output C file 	*/
+    QFile fs(outNam); /* Output C file     */
 
     /* Open output file */
-    if(not fs.open(QFile::WriteOnly|QFile::Text))
+    if(not fs.open(QFile::WriteOnly|QFile::Text|QFile::Truncate))
         fatalError (CANNOT_OPEN, outNam.toStdString().c_str());
 
     qDebug()<<"dcc: Writing C beta file"<<outNam;
@@ -382,5 +383,3 @@ void BackEnd(CALL_GRAPH * pcallGraph)
     fs.close();
     qDebug() << "dcc: Finished writing C beta file";
 }
-
-

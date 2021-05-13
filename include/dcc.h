@@ -73,7 +73,7 @@ extern STATS stats; /* Icode statistics */
 
 /**** Global function prototypes ****/
 
-void    udm(void);                                          /* udm.c        */
+void    udm();                                          /* udm.c        */
 void    freeCFG(BB * cfg);                                  /* graph.c      */
 BB *    newBB(BB *, int, int, uint8_t, int, Function *);    /* graph.c      */
 void    BackEnd(CALL_GRAPH *);              /* backend.c    */

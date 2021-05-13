@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
+
 struct PROG /* Loaded program image parameters  */
 {
     int16_t     initCS=0;

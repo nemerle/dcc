@@ -21,7 +21,7 @@ using namespace std;
  * tab is removed and replaced by this label */
 void strTable::addLabelBundle (int idx, int label)
 {
-    QString &processedLine(at(idx));
+    QString &processedLine(entries.at(idx));
     QString s = QString("l%1: ").arg(label);
     if(processedLine.size()<4)
         processedLine = s;
@@ -33,8 +33,8 @@ void strTable::addLabelBundle (int idx, int label)
 /* Writes the contents of the string table on the file fp.  */
 static void writeStrTab (QIODevice &ios, strTable &strTab)
 {
-    for (size_t i = 0; i < strTab.size(); i++)
-        ios.write(strTab[i].toLatin1());
+    for (const QString & entr : strTab.entries)
+        ios.write(entr.toLatin1());
 }
 
 
@@ -50,7 +50,7 @@ void writeBundle (QIODevice &ios, bundle procCode)
 /* Frees the storage allocated by the string table. */
 static void freeStrTab (strTable &strTab)
 {
-    strTab.clear();
+    strTab.entries.clear();
 }
 
 
@@ -67,12 +67,12 @@ void bundle::appendCode(const char *format,...)
     char buf[lineSize]={0};
     va_start (args, format);
     vsprintf (buf, format, args);
-    code.push_back(buf);
+    code.entries.push_back(buf);
     va_end (args);
 }
 void bundle::appendCode(const QString & s)
 {
-    code.push_back(s);
+    code.entries.push_back(s);
 }
 
 void bundle::appendDecl(const char *format,...)
@@ -81,13 +81,13 @@ void bundle::appendDecl(const char *format,...)
     char buf[lineSize]={0};
     va_start (args, format);
     vsprintf (buf, format, args);
-    decl.push_back(buf);
+    decl.entries.push_back(buf);
     va_end (args);
 }
 
 void bundle::appendDecl(const QString &v)
 {
-    decl.push_back(v);
+    decl.entries.push_back(v);
 }
 
 

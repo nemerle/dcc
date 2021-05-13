@@ -1,7 +1,7 @@
 /*****************************************************************************
  * File: comwrite.c
  * Purpose: writes comments about C programs and descriptions about dos
- *	    interrupts in the string line given.
+ *        interrupts in the string line given.
  * Project: dcc
  * (C) Cristina Cifuentes
  ****************************************************************************/
@@ -14,7 +14,7 @@
 #include <sstream>
 #include <QTextStream>
 using namespace std;
-#define intSize		40
+#define intSize        40
 
 static const char *int21h[] =
 {
@@ -129,28 +129,27 @@ static const char *int21h[] =
     "Extended open file"
 };
 
-
-static const char *intOthers[] = {
-    "Exit",					/* 0x20 */
-    "",					/* other table */
-    "Terminate handler address",		/* 0x22 */
-    "Ctrl-C handler address",		/* 0x23 */
-    "Critical-error handler address",	/* 0x24 */
-    "Absolute disk read",			/* 0x25 */
-    "Absolute disk write",			/* 0x26 */
-    "Terminate and stay resident",		/* 0x27 */
-    "Reserved",				/* 0x28 */
-    "Reserved",				/* 0x29 */
-    "Reserved",				/* 0x2A */
-    "Reserved",				/* 0x2B */
-    "Reserved",				/* 0x2C */
-    "Reserved",				/* 0x2D */
-    "Reserved"				/* 0x2E */
+static const char *intOthers[] =
+{
+    "Exit",                           /* 0x20 */
+    "",                               /* other table */
+    "Terminate handler address",      /* 0x22 */
+    "Ctrl-C handler address",         /* 0x23 */
+    "Critical-error handler address", /* 0x24 */
+    "Absolute disk read",             /* 0x25 */
+    "Absolute disk write",            /* 0x26 */
+    "Terminate and stay resident",    /* 0x27 */
+    "Reserved",                       /* 0x28 */
+    "Reserved",                       /* 0x29 */
+    "Reserved",                       /* 0x2A */
+    "Reserved",                       /* 0x2B */
+    "Reserved",                       /* 0x2C */
+    "Reserved",                       /* 0x2D */
+    "Reserved"                        /* 0x2E */
 };
 
-
 /* Writes the description of the current interrupt. Appends it to the
- * string s.	*/
+ * string s.    */
 void LLInst::writeIntComment (QTextStream &s)
 {
     uint32_t src_immed=src().getImm2();
@@ -200,27 +199,27 @@ void Function::writeProcComments()
 void Function::writeProcComments(QTextStream &ostr)
 {
     int i;
-    ID *id;			/* Pointer to register argument identifier */
-    STKSYM * psym;		/* Pointer to register argument symbol */
+    ID *id;                 /* Pointer to register argument identifier */
+    const STKSYM * psym;    /* Pointer to register argument symbol */
 
     /* About the parameters */
-    if (this->cbParam)
-        ostr << "/* Takes "<<this->cbParam<<" bytes of parameters.\n";
-    else if (this->flg & REG_ARGS)
+    if (cbParam)
+        ostr << "/* Takes "<<cbParam<<" bytes of parameters.\n";
+    else if (flg & REG_ARGS)
     {
         ostr << "/* Uses register arguments:\n";
-        for (i = 0; i < this->args.numArgs; i++)
+        for (i = 0; i < args.numArgs; i++)
         {
-            psym = &this->args[i];
+            psym = &args[i];
             ostr << " *     "<<psym->name<<" = ";
             if (psym->regs->ident.type() == REGISTER)
             {
-                id = &this->localId.id_arr[((RegisterNode *)psym->regs)->regiIdx];
+                id = &localId.id_arr[((RegisterNode *)psym->regs)->regiIdx];
                 ostr << Machine_X86::regName(id->id.regi);
             }
-            else		/* long register */
+            else        /* long register */
             {
-                id = &this->localId.id_arr[psym->regs->ident.idNode.longIdx];
+                id = &localId.id_arr[psym->regs->ident.idNode.longIdx];
                 ostr << Machine_X86::regName(id->longId().h()) << ":";
                 ostr << Machine_X86::regName(id->longId().l());
             }
@@ -232,15 +231,15 @@ void Function::writeProcComments(QTextStream &ostr)
         ostr << "/* Takes no parameters.\n";
 
     /* Type of procedure */
-    if (this->flg & PROC_RUNTIME)
+    if (flg & PROC_RUNTIME)
         ostr << " * Runtime support routine of the compiler.\n";
-    if (this->flg & PROC_IS_HLL)
+    if (flg & PROC_IS_HLL)
         ostr << " * High-level language prologue code.\n";
-    if (this->flg & PROC_ASM)
+    if (flg & PROC_ASM)
     {
         ostr << " * Untranslatable routine.  Assembler provided.\n";
-        if (this->flg & PROC_IS_FUNC)
-            switch (this->retVal.type) { // TODO: Functions return value in various regs
+        if (flg & PROC_IS_FUNC)
+            switch (retVal.type) { // TODO: Functions return value in various regs
             case TYPE_BYTE_SIGN: case TYPE_BYTE_UNSIGN:
                 ostr << " * Return value in register al.\n";
                 break;
@@ -251,7 +250,7 @@ void Function::writeProcComments(QTextStream &ostr)
                 ostr << " * Return value in registers dx:ax.\n";
                 break;
             default:
-                fprintf(stderr,"Unknown retval type %d",this->retVal.type);
+                fprintf(stderr,"Unknown retval type %d",retVal.type);
                 break;
             } /* eos */
     }
@@ -259,25 +258,25 @@ void Function::writeProcComments(QTextStream &ostr)
     /* Calling convention */
     callingConv()->writeComments(ostr);
     /* Other flags */
-    if (this->flg & (PROC_BADINST | PROC_IJMP))
+    if (flg & (PROC_BADINST | PROC_IJMP))
     {
         ostr << " * Incomplete due to an ";
-        if(this->flg & PROC_BADINST)
+        if(flg & PROC_BADINST)
             ostr << "untranslated opcode.\n";
         else
             ostr << "indirect JMP.\n";
     }
-    if (this->flg & PROC_ICALL)
+    if (flg & PROC_ICALL)
         ostr << " * Indirect call procedure.\n";
-    if (this->flg & IMPURE)
+    if (flg & IMPURE)
         ostr << " * Contains impure code.\n";
-    if (this->flg & NOT_HLL)
+    if (flg & NOT_HLL)
         ostr << " * Contains instructions not normally used by compilers.\n";
-    if (this->flg & FLOAT_OP)
+    if (flg & FLOAT_OP)
         ostr << " * Contains coprocessor instructions.\n";
 
     /* Graph reducibility */
-    if (this->flg & GRAPH_IRRED)
+    if (flg & GRAPH_IRRED)
         ostr << " * Irreducible control flow graph.\n";
     ostr << " */\n{\n";
 }

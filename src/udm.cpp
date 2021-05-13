@@ -71,7 +71,7 @@ void Function::controlFlowAnalysis()
     freeDerivedSeq(*derivedG);
 
 }
-void udm(void)
+void udm()
 {
 
     /* Build the control flow graph, find idioms, and convert low-level

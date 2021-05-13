@@ -28,15 +28,16 @@ namespace
 struct ExpStack
 {
     Function *func;
-    typedef std::list<Expr *> EXP_STK;
+    using EXP_STK = std::list<Expr *>;
     EXP_STK expStk;      /* local expression stack */
 
     void        init(Function *f);
     void        push(Expr *);
     Expr *      pop();
     Expr *      top() const {
-        if(not expStk.empty())
+        if(not expStk.empty()) {
             return expStk.back();
+        }
         return nullptr;
     }
     int         numElem();
@@ -171,13 +172,13 @@ void Function::elimCondCodes ()
     riICODE useAt;      /* Instruction that used flag    */
     riICODE defAt;      /* Instruction that defined flag */
     //lhs=rhs=_expr=0;
-    auto valid_reversed_bbs = (m_dfsLast | reversed | filtered(BB::ValidFunctor()) );
-    for( BB * pBB : valid_reversed_bbs)
+    auto valid_bbs_reversed = (m_dfsLast | reversed | filtered(BB::ValidFunctor()) );
+    for( BB * pBB : valid_bbs_reversed)
     {
         //auto reversed_instructions = pBB->range() | reversed;
         for (useAt = pBB->rbegin(); useAt != pBB->rend(); ++useAt)
         {
-            llIcode useAtOp = llIcode(useAt->ll()->getOpcode());
+            llIcode useAtOp(useAt->ll()->getOpcode());
             use = useAt->ll()->flagDU.u;
             if ((useAt->type != LOW_LEVEL_ICODE) or ( not useAt->valid() ) or ( 0 == use ))
                 continue;
@@ -1226,7 +1227,7 @@ void Function::preprocessReturnDU(LivenessSet &_liveOut)
             retVal.type = TYPE_LONG_SIGN;
             retVal.loc = REG_FRAME;
             retVal.longId() = LONGID_TYPE(rDX,rAX);
-            /*idx = */localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), Icode.begin());
+            /*idx = */localId.newLongReg(TYPE_LONG_SIGN, LONGID_TYPE(rDX,rAX), Icode.entries.begin());
             localId.propLongId (rAX, rDX, "");
         }
         else if (isAx or isBx or isCx or isDx)	/* uint16_t */

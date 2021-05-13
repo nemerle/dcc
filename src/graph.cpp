@@ -9,8 +9,6 @@
 #include "dcc.h"
 #include "project.h"
 
-#include <boost/range/rbegin.hpp>
-#include <boost/range/rend.hpp>
 #include <string.h>
 
 using namespace std;
@@ -47,11 +45,11 @@ void Function::createCFG()
 
     BB *        psBB;
     BB *        pBB;
-    iICODE 	pIcode = Icode.begin();
+    iICODE 	pIcode = Icode.entries.begin();
 
     stats.numBBbef = stats.numBBaft = 0;
     rICODE  current_range=make_iterator_range(pIcode,++iICODE(pIcode));
-    for (; pIcode!=Icode.end(); ++pIcode,current_range.advance_end(1))
+    for (; pIcode!=Icode.entries.end(); ++pIcode,current_range.advance_end(1))
     {
         iICODE nextIcode = ++iICODE(pIcode);
         pBB = nullptr;
@@ -62,7 +60,7 @@ void Function::createCFG()
             continue;
         /* Stick a NOWHERE_NODE on the end if we terminate
          * with anything other than a ret, jump or terminate */
-        if (nextIcode == Icode.end() and
+        if (nextIcode == Icode.entries.end() and
                 (not ll->testFlags(TERMINATES)) and
                 (not ll->match(iJMP)) and (not ll->match(iJMPF)) and
                 (not ll->match(iRET)) and (not ll->match(iRETF)))
@@ -122,7 +120,7 @@ void Function::createCFG()
                     pBB = BB::Create(current_range,  TERMINATE_NODE, this);
                 }
                 /* Check for a fall through */
-                else if (nextIcode != Icode.end())
+                else if (nextIcode != Icode.entries.end())
                 {
                     if (nextIcode->ll()->testFlags(TARGET | CASE))
                     {
@@ -138,7 +136,7 @@ void Function::createCFG()
             // end iterator will be updated by expression in for statement
             current_range=make_iterator_range(nextIcode,nextIcode);
         }
-        if (nextIcode == Icode.end())
+        if (nextIcode == Icode.entries.end())
             break;
     }
     for (auto pr : m_ip_to_bb)
@@ -165,7 +163,7 @@ void Function::createCFG()
 void Function::markImpure()
 {
     PROG &prog(Project::get()->prog);
-    for(ICODE &icod : Icode)
+    for(ICODE &icod : Icode.entries)
     {
         if ( not icod.ll()->testFlags(SYM_USE | SYM_DEF))
             continue;
