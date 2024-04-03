@@ -154,6 +154,7 @@ static size_t modrm_decode16( unsigned char *buf, unsigned int buf_len,
 		case MOD16_RM_BXDI:
 			ia32_handle_register(&ea->base, REG_WORD_OFFSET + 3);
 			ia32_handle_register(&ea->index, REG_WORD_OFFSET + 7);
+		    break;
 		case MOD16_RM_BPSI:
                         op->flags.op_seg = x86_op_flags::op_ss_seg>>8;
 			ia32_handle_register(&ea->base, REG_WORD_OFFSET + 5);
