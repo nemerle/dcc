@@ -33,12 +33,12 @@ struct BB
 {
     friend struct Function;
 private:
-    BB(const BB&);
+    BB(const BB&) = delete;
     BB() : nodeType(0),traversed(DFS_NONE),
         numHlIcodes(0),flg(0),
         inEdges(0),
-        edges(0),beenOnH(0),inEdgeCount(0),reachingInt(0),
-        inInterval(0),correspInt(0),
+        edges(0),beenOnH(0),inEdgeCount(0),reachingInt(nullptr),
+        inInterval(nullptr),correspInt(nullptr),
         dfsFirstNum(0),dfsLastNum(0),immedDom(0),ifFollow(0),loopType(NO_TYPE),latchNode(0),
         numBackEdges(0),loopHead(0),loopFollow(0),caseHead(0),caseTail(0),index(0)
     {
@@ -52,7 +52,7 @@ private:
 public:
     struct ValidFunctor
     {
-        bool operator()(BB *p) {return p->valid();}
+        bool operator()(BB *p) const {return p&&p->valid();}
     };
     iICODE begin();
     iICODE end() const;
@@ -135,6 +135,6 @@ private:
     bool    FindUseBeforeDef(eReg regi, int defRegIdx, iICODE start_at);
     void    ProcessUseDefForFunc(eReg regi, int defRegIdx, ICODE &picode);
     bool    isEndOfPath(int latch_node_idx) const;
-    Function *Parent;
+    Function *Parent = nullptr;
 
 };

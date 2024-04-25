@@ -202,8 +202,7 @@ void Function::freeCFG()
  ****************************************************************************/
 void Function::compressCFG()
 {
-    BB *pNxt;
-    int	ip, first=0, last;
+    int first=0, last;
 
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
@@ -213,8 +212,8 @@ void Function::compressCFG()
             continue;
         for (TYPEADR_TYPE &edgeRef : pBB->edges)
         {
-            ip   = pBB->rbegin()->loc_ip;
-            pNxt = edgeRef.BBptr->rmJMP(ip, edgeRef.BBptr);
+            int ip = pBB->rbegin()->loc_ip;
+            BB* pNxt = edgeRef.BBptr->rmJMP(ip, edgeRef.BBptr);
 
             if (not pBB->edges.empty())   /* Might have been clobbered */
             {
@@ -261,6 +260,8 @@ void Function::compressCFG()
     /* Now do a dfs numbering traversal and fill in the inEdges[] array */
     last = numBBs - 1;
     m_actual_cfg.front()->dfsNumbering(m_dfsLast, &first, &last);
+    for (const auto* v : m_dfsLast)
+        assert(v);
 }
 
 
@@ -319,14 +320,13 @@ BB *BB::rmJMP(int marker, BB * pBB)
  ****************************************************************************/
 void BB::mergeFallThrough( CIcodeRec &Icode)
 {
-    BB *	pChild;
     if (nullptr==this)
     {
         printf("mergeFallThrough on empty BB!\n");
     }
     while (nodeType == FALL_NODE or nodeType == ONE_BRANCH)
     {
-        pChild = edges[0].BBptr;
+        BB* pChild = edges[0].BBptr;
         /* Jump to next instruction can always be removed */
         if (nodeType == ONE_BRANCH)
         {

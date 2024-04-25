@@ -53,8 +53,6 @@ static struct MZHeader {				/*      EXE file header		 	 */
     uint16_t	overlayNum;		/* Overlay number                */
 } header;
 
-#define EXE_RELOCATION  0x10		/* EXE images rellocated to above PSP */
-
 //static void LoadImage(char *filename);
 static void displayMemMap();
 /****************************************************************************
@@ -193,12 +191,15 @@ struct DosLoader {
 protected:
     void prepareImage(PROG &prog,size_t sz,QFile &fp) {
         /* Allocate a block of memory for the program. */
-        prog.cbImage  = sz + sizeof(PSP);
-        prog.Imagez    = new uint8_t [prog.cbImage];
-        prog.Imagez[0] = 0xCD;		/* Fill in PSP int 20h location */
-        prog.Imagez[1] = 0x20;		/* for termination checking     */
+        prog.cbImage  = (sz + sizeof(PSP) + 15) & ~0xF; // align to next 16 bytes
+        prog.Imagez = new uint8_t [prog.cbImage];
+        uint8_t* psp_area = ((sz + 15) & ~0xF) + prog.Imagez;
+        psp_area[0] = 0xCD;		/* Fill in PSP int 20h location */
+        psp_area[1] = 0x20;		/* for termination checking     */
+        // calculate psp segment offset from the start of program data
+        prog.pspSegmentOffset = ((sz + 15) & ~0xF) >> 4;
         /* Read in the image past where a PSP would go */
-        if (sz != fp.read((char *)prog.Imagez + sizeof(PSP),sz))
+        if (sz != fp.read((char *)prog.Imagez,sz))
             fatalError(CANNOT_READ, fp.fileName().toLocal8Bit().data());
     }
 };
@@ -281,11 +282,11 @@ struct ExeLoader : public DosLoader {
         * to have to load DS from a constant so it'll be pretty
         * obvious.
         */
-        prog.initCS = (int16_t)LH(&header.initCS) + EXE_RELOCATION;
-        prog.initIP = (int16_t)LH(&header.initIP);
-        prog.initSS = (int16_t)LH(&header.initSS) + EXE_RELOCATION;
-        prog.initSP = (int16_t)LH(&header.initSP);
-        prog.cReloc = (int16_t)LH(&header.numReloc);
+        prog.initCS = (uint16_t)LH(&header.initCS);
+        prog.initIP = (uint16_t)LH(&header.initIP);
+        prog.initSS = (uint16_t)LH(&header.initSS);
+        prog.initSP = (uint16_t)LH(&header.initSP);
+        prog.cReloc = (uint16_t)LH(&header.numReloc);
 
         /* Allocate the relocation table */
         if (prog.cReloc)
@@ -298,7 +299,7 @@ struct ExeLoader : public DosLoader {
             for (int i = 0; i < prog.cReloc; i++)
             {
                 fp.read((char *)buf,4);
-                prog.relocTable[i] = LH(buf) + (((int)LH(buf+2) + EXE_RELOCATION)<<4);
+                prog.relocTable[i] = LH(buf) + (((int)LH(buf+2))<<4);
             }
         }
         /* Seek to start of image */
@@ -315,7 +316,7 @@ struct ExeLoader : public DosLoader {
         /* Relocate segment constants */
         for(uint32_t v : prog.relocTable) {
             uint8_t *p = &prog.Imagez[v];
-            uint16_t  w = (uint16_t)LH(p) + EXE_RELOCATION;
+            uint16_t  w = (uint16_t)LH(p);
             *p++    = (uint8_t)(w & 0x00FF);
             *p      = (uint8_t)((w & 0xFF00) >> 8);
         }
@@ -361,7 +362,7 @@ void DccFrontend::parse(Project &proj)
     STATE state;
 
     /* Set initial state */
-    state.setState(rES, 0);   /* PSP segment */
+    state.setState(rES, prog.initCS+prog.pspSegmentOffset);   /* PSP segment */
     state.setState(rDS, 0);
     state.setState(rCS, prog.initCS);
     state.setState(rSS, prog.initSS);

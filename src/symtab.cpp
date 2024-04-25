@@ -24,8 +24,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
+#include <functional>
 #include "dcc.h"
 #include "symtab.h"
+
 
 #define TABLESIZE 16                /* Number of entries added each expansion */
 /* Probably has to be a power of 2 */

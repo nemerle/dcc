@@ -299,7 +299,7 @@ void Function::genLiveKtes ()
         liveUse.reset();
         def.reset();
         pbb = m_dfsLast[i];
-        if (pbb->flg & INVALID_BB)
+        if (!pbb || pbb->flg & INVALID_BB)
             continue;	// skip invalid BBs
         for(ICODE &insn : *pbb)
         {
@@ -325,15 +325,14 @@ void Function::liveRegAnalysis (LivenessSet &in_liveOut)
     //BB * pbb=0;             /* pointer to current basic block   */
     Function * pcallee;     /* invoked subroutine               */
     //ICODE  *ticode        /* icode that invokes a subroutine  */
-    ;
-    LivenessSet prevLiveOut,	/* previous live out 				*/
-            prevLiveIn;		/* previous live in					*/
-    bool change;			/* is there change in the live sets?*/
 
+    LivenessSet prevLiveOut;	/* previous live out 				*/
+    LivenessSet  prevLiveIn;		/* previous live in					*/
+    
     /* liveOut for this procedure */
     liveOut = in_liveOut;
 
-    change = true;
+    bool change = true; /* is there change in the live sets?*/
     while (change)
     {
         /* Process nodes in reverse postorder order */
@@ -884,8 +883,8 @@ void BB::findBBExps(LOCAL_ID &locals,Function *fnc)
     bool res;
 
     ID *_retVal;         // function return value
-    Expr *_exp;     // expression pointer - for HLI_POP and HLI_CALL    */
-    iICODE ticode;     // Target icode                             */
+    Expr *_exp=nullptr;  // expression pointer - for HLI_POP and HLI_CALL    */
+    iICODE ticode;       // Target icode                             */
     HLTYPE *ti_hl=nullptr;
     uint8_t regi;
     numHlIcodes = 0;

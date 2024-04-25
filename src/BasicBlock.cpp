@@ -26,8 +26,7 @@ BB *BB::Create(void */*ctx*/, const string &/*s*/, Function *parent, BB */*inser
 */
 BB *BB::Create(const rCODE &r,eBBKind _nodeType, Function *parent)
 {
-    BB* pnewBB;
-    pnewBB = new BB;
+    BB* pnewBB = new BB;
     pnewBB->nodeType = _nodeType;    /* Initialise */
     pnewBB->immedDom = NO_DOM;
     pnewBB->loopHead = pnewBB->caseHead = pnewBB->caseTail =

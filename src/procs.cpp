@@ -91,7 +91,8 @@ void CALL_GRAPH::write()
 void LOCAL_ID::newRegArg(ICODE &picode, ICODE &ticode) const
 {
     AstIdent *lhs;
-    STKFRAME * call_args_stackframe, *target_stackframe;
+    STKFRAME* call_args_stackframe;
+    STKFRAME* target_stackframe;
     const ID *id;
     int tidx;
     bool regExist=false;
