@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
         printf("Expected 'gg'\n");
         exit(3);
     }
-    len = numVert * sizeof(uint16_t);
+    len = int(numVert * sizeof(uint16_t));
     w = readFileShort();
     if (w != len) {
         printf("Problem with size of g[]: file %d, calc %d\n", w, len);

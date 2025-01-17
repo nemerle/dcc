@@ -6,8 +6,6 @@
 #include "project.h"
 #include "Procedure.h"
 
-using namespace std;
-
 QString asm1_name, asm2_name;     /* Assembler output filenames     */
 STATS   stats;              /* cfg statistics                       */
 OPTION  option;             /* Command line options                 */
@@ -58,18 +56,17 @@ ilFunction Project::createFunction(FunctionType *f,const QString &name)
     return (++pProcList.rbegin()).base();
 }
 
-int Project::getSymIdxByAddr(uint32_t adr)
+size_t Project::getSymIdxByAddr(uint32_t adr)
 {
-    size_t i;
-    for (i = 0; i < symtab.size(); i++) {
+    for (size_t i = 0; i < symtab.size(); i++) {
         if (symtab[i].label == adr) {
-            break;
+            return i;
         }
     }
-    return i;
+    return ~0U; // numeric_limits<size_t>::max()?
 }
 
-bool Project::validSymIdx(size_t idx)
+bool Project::validSymIdx(size_t idx) const
 {
     return idx<symtab.size();
 }

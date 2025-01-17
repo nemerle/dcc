@@ -13,9 +13,7 @@
 #include <QtCore/QIODevice>
 #define deltaProcLines  20
 
-using namespace std;
 /* Allocates memory for a new bundle and initializes it to zero.    */
-
 
 /* Adds the given label to the start of the line strTab[idx].  The first
  * tab is removed and replaced by this label */

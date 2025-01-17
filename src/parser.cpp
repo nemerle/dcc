@@ -17,8 +17,6 @@
 #include <algorithm>
 #include <deque>
 
-using namespace std;
-
 //static void     FollowCtrl (Function * pProc, CALL_GRAPH * pcallGraph, STATE * pstate);
 static void     setBits(int16_t type, uint32_t start, uint32_t len);
 static void     process_MOV(LLInst &ll, STATE * pstate);
@@ -122,7 +120,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
     ICODE   _Icode, *pIcode;     /* This gets copied to pProc->Icode[] later */
     SYM *    psym;
     uint32_t   offset;
-    eErrorId err;
+    eErrorId err= NO_ERR;
     bool   done = false;
     SYMTAB &global_symbol_table(Project::get()->symtab);
     if (name.contains("chkstk"))
@@ -181,7 +179,7 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
             case iJCXZ:
             {
                 STATE   StCopy;
-                int     ip      = Icode.entries.size()-1;	/* Index of this jump */
+                int     ip  = (int)Icode.entries.size()-1;	/* Index of this jump */
                 ICODE  &prev(*(++Icode.entries.rbegin())); /* Previous icode */
                 bool   fBranch = false;
 
@@ -241,28 +239,22 @@ void Function::FollowCtrl(CALL_GRAPH * pcallGraph, STATE *pstate)
                 if (ll->src().getImm2() == 0x21 and pstate->f[rAH])
                 {
                     int funcNum = pstate->r[rAH];
-                    int operand;
-                    int size;
 
                     /* Save function number */
                     Icode.entries.back().ll()->m_dst.off = (int16_t)funcNum;
                     //Icode.GetIcode(Icode.GetNumIcodes() - 1)->
 
                     /* Program termination: int21h, fn 00h, 31h, 4Ch */
-                    done  = (bool)(funcNum == 0x00 or funcNum == 0x31 or
-                                    funcNum == 0x4C);
+                    done  = (bool)(funcNum == 0x00 or funcNum == 0x31 or funcNum == 0x4C);
 
                     /* String functions: int21h, fn 09h */
-                    if (pstate->f[rDX])      /* offset goes into DX */
-                        if (funcNum == 0x09)
-                        {
-                            operand = ((uint32_t)(uint16_t)pstate->r[rDS]<<4) +
-                                      (uint32_t)(uint16_t)pstate->r[rDX];
-                            size = prog.fCOM ?
-                                       strSize (&prog.image()[operand], '$') :
-                                       strSize (&prog.image()[operand], '$'); // + 0x100
-                            global_symbol_table.updateSymType (operand, TypeContainer(TYPE_STR, size));
-                        }
+                    /* offset goes into DX */
+                    if (pstate->f[rDX] && funcNum == 0x09)      
+                    {
+                        int operand = ((uint32_t)(uint16_t)pstate->r[rDS] << 4) + (uint32_t)(uint16_t)pstate->r[rDX];
+                        int size = prog.fCOM ? strSize(&prog.image()[operand], '$') : strSize(&prog.image()[operand], '$'); // + 0x100
+                        global_symbol_table.updateSymType (operand, TypeContainer(TYPE_STR, size));
+                    }
                 }
                 else if ((ll->src().getImm2() == 0x2F) and (pstate->f[rAH]))
                 {
@@ -348,7 +340,7 @@ bool Function::followAllTableEntries(JumpTable &table, uint32_t cs, ICODE& pIcod
     PROG &prog(Project::get()->prog);
     STATE   StCopy;
 
-    setBits(BM_DATA, table.start, table.size()*table.entrySize());
+    setBits(BM_DATA, table.start, uint32_t(table.size()*table.entrySize()));
 
     pIcode.ll()->setFlags(SWITCH);
     pIcode.ll()->caseTbl2.resize( table.size() );
@@ -429,7 +421,8 @@ bool Function::decodeIndirectJMP(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pca
     }
     // verify that bx+offset == 2* case count
     uint32_t num_cases = load_num_cases->ll()->src().getImm2();
-    if(last_jmp->ll()->src().off != 2*num_cases)
+
+    if(last_jmp->ll()->src().off != int16_t(2*num_cases))
         return false;
     const LLOperand &op = last_jmp->ll()->src();
     if(op.regi != INDEX_BX)
@@ -514,8 +507,8 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
         }
     }
     // verify that bx+offset == 2* case count
-    uint32_t num_cases = load_num_cases->ll()->src().getImm2();
-    if(last_jmp->ll()->src().off != 4*num_cases)
+    uint32_t num_cases = (uint32_t)load_num_cases->ll()->src().getImm2();
+    if(last_jmp->ll()->src().off != int16_t(4*num_cases))
         return false;
     const LLOperand &op = last_jmp->ll()->src();
     if(op.regi != INDEX_BX)
@@ -528,7 +521,7 @@ bool Function::decodeIndirectJMP2(ICODE & pIcode, STATE *pstate, CALL_GRAPH * pc
     setBits(BM_DATA, table_addr, num_cases*4 + num_cases*2); // num_cases of long values + num cases short ptrs
     pIcode.ll()->setFlags(SWITCH);
 
-    for(int i=0; i<num_cases; ++i) {
+    for(uint32_t i=0; i<num_cases; ++i) {
         STATE   StCopy = *pstate;
         uint32_t jump_target_location = table_addr + num_cases*4 + i*2;
         StCopy.IP = cs + *(uint16_t *)(prog.image()+jump_target_location);
@@ -546,27 +539,27 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 {
     PROG &prog(Project::get()->prog);
     static uint8_t i2r[4] = {rSI, rDI, rBP, rBX};
-    ICODE       _Icode;
-    uint32_t       cs, offTable, endTable;
-    uint32_t       i, k, seg, target;
+    ICODE   _Icode;
+    uint32_t endTable;
+    uint32_t i, k, target;
 
     if (pIcode.ll()->testFlags(I))
     {
         if (pIcode.ll()->getOpcode() == iJMPF)
             pstate->setState( rCS, LH(prog.image() + pIcode.ll()->label + 3));
-        pstate->IP = pIcode.ll()->src().getImm2();
-        int64_t i = pIcode.ll()->src().getImm2();
-        if (i < 0)
+        int64_t ip = pIcode.ll()->src().getImm2();
+        if (ip < 0)
         {
-            exit(1);
+            abort();
         }
+        pstate->IP = (uint32_t)ip;
 
         /* Return true if jump target is already parsed */
-        return Icode.alreadyDecoded(i);
+        return Icode.alreadyDecoded(ip);
     }
     /* We've got an indirect JMP - look for switch() stmt. idiom of the form
      *   JMP  uint16_t ptr  word_offset[rBX | rSI | rDI]        */
-    seg = (pIcode.ll()->src().seg)? pIcode.ll()->src().seg: rDS;
+    uint32_t seg = (pIcode.ll()->src().seg) ? pIcode.ll()->src().seg : rDS;
 
     /* Ensure we have a uint16_t offset & valid seg */
     if (pIcode.ll()->match(iJMP) and (pIcode.ll()->testFlags(WORD_OFF)) and
@@ -576,7 +569,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
              pIcode.ll()->src().regi == INDEX_BX))
     {
 
-        offTable = ((uint32_t)(uint16_t)pstate->r[seg] << 4) + pIcode.ll()->src().off;
+        uint32_t offTable = ((uint32_t)(uint16_t)pstate->r[seg] << 4) + pIcode.ll()->src().off;
 
         /* Firstly look for a leading range check of the form:-
          *      CMP {BX | SI | DI}, immed
@@ -598,7 +591,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
         /* Now do some heuristic pruning.  Look for ptrs. into the table
          * and for addresses that don't appear to point to valid code.
         */
-        cs = (uint32_t)(uint16_t)pstate->r[rCS] << 4;
+        uint32_t cs = (uint32_t)(uint16_t)pstate->r[rCS] << 4;
         for (i = offTable; i < endTable; i += 2)
         {
             target = cs + LH(&prog.image()[i]);
@@ -659,7 +652,7 @@ bool Function::process_JMP (ICODE & pIcode, STATE *pstate, CALL_GRAPH * pcallGra
 
     flg |= PROC_IJMP;
     flg &= ~TERMINATES;
-    interactDis(this, Icode.entries.size()-1);
+    interactDis(this, (int)Icode.entries.size()-1);
     return true;
 }
 
@@ -864,7 +857,7 @@ static void process_MOV(LLInst & ll, STATE * pstate)
                 pstate->setMemoryByte(psym->label,(uint8_t)pstate->r[srcReg]);
                 if(psym->size>1)
                 {
-                    pstate->setMemoryByte(psym->label,(uint8_t)pstate->r[srcReg]>>8);
+                    pstate->setMemoryByte(psym->label,(uint8_t)(pstate->r[srcReg]>>8));
                     //prog.image()[psym->label+1] = (uint8_t)(pstate->r[srcReg] >> 8);
                 }
                 psym->duVal.setFlags(eDuVal::DEF);
@@ -1061,7 +1054,7 @@ static void use (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
             {
                 setBits (BM_DATA, psym->label, (uint32_t)size);
                 pIcode.ll()->setFlags(SYM_USE);
-                pIcode.ll()->caseEntry = distance<const SYM *>(&Project::get()->symtab[0],psym); //WARNING: was setting case count
+                pIcode.ll()->caseEntry = std::distance<const SYM *>(&Project::get()->symtab[0],psym); //WARNING: was setting case count
 
             }
         }
@@ -1086,7 +1079,7 @@ static void def (opLoc d, ICODE & pIcode, Function * pProc, STATE * pstate, int 
         {
             setBits(BM_DATA, psym->label, (uint32_t)size);
             pIcode.ll()->setFlags(SYM_DEF);
-            pIcode.ll()->caseEntry = distance<const SYM *>(&Project::get()->symtab[0],psym); // WARNING: was setting Case count
+            pIcode.ll()->caseEntry = std::distance<const SYM *>(&Project::get()->symtab[0],psym); // WARNING: was setting Case count
         }
     }
     else if (pm->regi >= INDEX_BX_SI)

@@ -3,9 +3,6 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
-using namespace std;
-
-
 /*****************************************************************************
  * idiom11 - Negate long integer
  *      NEG regH

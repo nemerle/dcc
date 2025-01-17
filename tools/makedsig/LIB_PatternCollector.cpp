@@ -38,8 +38,8 @@ int LIB_PatternCollector::readSyms(FILE *fl)
     int i;
     int count = 0;
     int	firstSym = 0;			/* First symbol this module */
-    uint8_t b, c, type;
-    uint16_t w, len;
+    uint8_t b, c;
+    uint16_t w;
 
     codeLNAMES = NONE;			/* Invalidate indexes for code segment */
     codeSEGDEF = NONE;			/* Else won't be assigned */
@@ -54,8 +54,8 @@ int LIB_PatternCollector::readSyms(FILE *fl)
 
     while (not feof(fl))
     {
-        type = readByte(fl);
-        len = readWord(fl);
+        uint8_t type = readByte(fl);
+        uint16_t len = readWord(fl);
         /* Note: uncommenting the following generates a *lot* of output */
         /*printf("Offset %05lX: type %02X len %d\n", offset-3, type, len);//*/
         switch (type)

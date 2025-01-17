@@ -27,7 +27,6 @@ static uint16_t *g;
 
 int main(int argc, char *argv[])
 {
-    uint16_t w, len;
     int h, i, j;
     long filePos;
 
@@ -82,8 +81,8 @@ int main(int argc, char *argv[])
         printf("Expected 'T1'\n");
         exit(3);
     }
-    len = PatLen * 256 * sizeof(uint16_t);
-    w = readFileShort();
+    uint16_t len = uint16_t(PatLen * 256 * sizeof(uint16_t));
+    uint16_t w = readFileShort();
     if (w != len)
     {
         printf("Problem with size of T1: file %d, calc %d\n", w, len);
@@ -120,7 +119,7 @@ int main(int argc, char *argv[])
         printf("Expected 'gg'\n");
         exit(3);
     }
-    len = numVert * sizeof(uint16_t);
+    len = uint16_t(numVert * sizeof(uint16_t));
     w = readFileShort();
     if (w != len)
     {

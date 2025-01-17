@@ -5,8 +5,6 @@
 
 #include <QtCore/QDebug>
 
-using namespace std;
-
 /*****************************************************************************
  * idiom5 - Long addition.
  *      ADD reg/stackOff, reg/stackOff
@@ -30,11 +28,11 @@ bool Idiom5::match(iICODE pIcode)
 
 int Idiom5::action()
 {
-    AstIdent *rhs,*lhs;
-    Expr *expr;
-    lhs = AstIdent::Long (&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF, *m_icodes[1]->ll());
-    rhs = AstIdent::Long (&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE, *m_icodes[1]->ll());
-    expr = new BinaryOperator(ADD,lhs, rhs);
+    AstIdent* lhs = AstIdent::Long(&m_func->localId, DST, m_icodes[0], LOW_FIRST, m_icodes[0], USE_DEF,
+                                   *m_icodes[1]->ll());
+    AstIdent* rhs = AstIdent::Long(&m_func->localId, SRC, m_icodes[0], LOW_FIRST, m_icodes[0], eUSE,
+                                   *m_icodes[1]->ll());
+    Expr* expr = new BinaryOperator(ADD, lhs, rhs);
     m_icodes[0]->setAsgn(lhs, expr);
     m_icodes[1]->invalidate();
     return 2;
@@ -200,7 +198,7 @@ bool Idiom19::match(iICODE picode)
     if(std::distance(picode,m_end)<2)
         return false;
     ICODE &ic(*picode);
-    int type;
+
     for(int i=0; i<2; ++i)
         m_icodes[i] =picode++;
     m_is_dec = m_icodes[0]->ll()->match(iDEC);

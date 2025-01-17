@@ -39,7 +39,6 @@ void pattSearch(void);
 PerfectHash g_pattern_hasher;
 
 int main(int argc, char *argv[]) {
-    uint16_t w, len;
     int h, i;
     int patlen;
 
@@ -50,12 +49,12 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    if ((f = fopen(argv[1], "rb")) == NULL) {
+    if ((f = fopen(argv[1], "rb")) == nullptr) {
         printf("Cannot open signature file %s\n", argv[1]);
         exit(2);
     }
 
-    if ((fpat = fopen(argv[2], "rb")) == NULL) {
+    if ((fpat = fopen(argv[2], "rb")) == nullptr) {
         printf("Cannot open pattern file %s\n", argv[2]);
         exit(2);
     }
@@ -90,8 +89,8 @@ int main(int argc, char *argv[]) {
         printf("Expected 'T1'\n");
         exit(3);
     }
-    len = PatLen * 256 * sizeof(uint16_t);
-    w = readFileShort();
+    uint16_t len = uint16_t(PatLen * 256 * sizeof(uint16_t));
+    uint16_t w = readFileShort();
     if (w != len) {
         printf("Problem with size of T1: file %d, calc %d\n", w, len);
         exit(4);
@@ -135,7 +134,7 @@ int main(int argc, char *argv[]) {
 
     /* This is now the hash table */
     /* First allocate space for the table */
-    if ((ht = (HT *)malloc(numKeys * sizeof(HT))) == 0) {
+    if ((ht = (HT *)malloc(numKeys * sizeof(HT))) == nullptr) {
         printf("Could not allocate hash table\n");
         exit(1);
     }

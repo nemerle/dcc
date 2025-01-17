@@ -3,7 +3,6 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
-using namespace std;
 /*****************************************************************************
  * idiom3 - C calling convention.
  *          CALL(F)  proc_X

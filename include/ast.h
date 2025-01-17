@@ -66,13 +66,13 @@ public:
     virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx)=0;
     virtual hlType expType(Function *pproc) const=0;
     virtual int hlTypeSize(Function *pproc) const=0;
-    virtual Expr * performLongRemoval(eReg regi, LOCAL_ID *locId) { return this; }
+    virtual Expr * performLongRemoval(eReg /*regi*/, LOCAL_ID */*locId*/) { return this; }
 };
 struct UnaryOperator : public Expr
 {
     UnaryOperator(condNodeType t=UNKNOWN_OP) : Expr(t),unaryExp(nullptr) {}
     Expr *unaryExp;
-    virtual Expr *inverse() const
+    Expr *inverse() const override
     {
         if (m_type == NEGATION) //TODO: memleak here
         {
@@ -80,13 +80,13 @@ struct UnaryOperator : public Expr
         }
         return this->clone();
     }
-    virtual Expr *clone() const
+    Expr *clone() const override
     {
         UnaryOperator *newExp = new UnaryOperator(*this);
         newExp->unaryExp = unaryExp->clone();
         return newExp;
     }
-    virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
+    bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs) override;
     static UnaryOperator *Create(condNodeType t, Expr *sub_expr)
     {
         UnaryOperator *newExp = new UnaryOperator();
@@ -94,17 +94,17 @@ struct UnaryOperator : public Expr
         newExp->unaryExp = sub_expr;
         return (newExp);
     }
-    ~UnaryOperator()
+    ~UnaryOperator() override
     {
         delete unaryExp;
         unaryExp=nullptr;
     }
 public:
-    int hlTypeSize(Function *pproc) const;
-    virtual QString walkCondExpr(Function *pProc, int *numLoc) const;
-    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
-    virtual hlType expType(Function *pproc) const;
-    virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
+    int hlTypeSize(Function *pproc) const override;
+    QString walkCondExpr(Function *pProc, int *numLoc) const override;
+    Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym) override;
+    hlType expType(Function *pproc) const override;
+    Expr *insertSubTreeLongReg(Expr *_expr, int longIdx) override;
 private:
     QString wrapUnary(Function *pProc, int *numLoc, QChar op) const;
 };
@@ -125,7 +125,7 @@ struct BinaryOperator : public Expr
         m_lhs=l;
         m_rhs=r;
     }
-    ~BinaryOperator()
+    ~BinaryOperator() override
     {
         assert(m_lhs!=m_rhs or m_lhs==nullptr);
         delete m_lhs;
@@ -164,11 +164,11 @@ struct BinaryOperator : public Expr
 
     }
     void changeBoolOp(condOp newOp);
-    virtual Expr *inverse() const;
-    virtual Expr *clone() const;
-    virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs);
-    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
-    virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
+    Expr* inverse() const override;
+    Expr *clone() const override;
+    bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locs) override;
+    Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym) override;
+    Expr *insertSubTreeLongReg(Expr *_expr, int longIdx) override;
     const Expr *lhs() const
     {
         return const_cast<const Expr *>(const_cast<BinaryOperator *>(this)->lhs());
@@ -191,10 +191,10 @@ struct BinaryOperator : public Expr
     condOp op() const { return m_op;}
     /* Changes the boolean conditional operator at the root of this expression */
     void op(condOp o) { m_op=o;}
-    QString walkCondExpr(Function * pProc, int* numLoc) const;
+    QString walkCondExpr(Function * pProc, int* numLoc) const override;
 public:
-    hlType expType(Function *pproc) const;
-    int hlTypeSize(Function *pproc) const;
+    hlType expType(Function *pproc) const override;
+    int hlTypeSize(Function *pproc) const override;
 };
 struct AstIdent : public UnaryOperator
 {
@@ -211,44 +211,44 @@ struct AstIdent : public UnaryOperator
     static AstIdent *  idID(const ID *retVal, LOCAL_ID *locsym, iICODE ix_);
     static Expr * id(const LLInst &ll_insn, opLoc sd, Function *pProc, iICODE ix_, ICODE &duIcode, operDu du);
 
-    virtual Expr *clone() const
+    Expr *clone() const override
     {
         return new AstIdent(*this);
     }
-    virtual int hlTypeSize(Function *pproc) const;
-    virtual hlType expType(Function *pproc) const;
-    virtual Expr * performLongRemoval(eReg regi, LOCAL_ID *locId);
-    virtual QString walkCondExpr(Function *pProc, int *numLoc) const;
-    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
-    virtual Expr *insertSubTreeLongReg(Expr *_expr, int longIdx);
-    virtual bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);
+    int hlTypeSize(Function *pproc) const override;
+    hlType expType(Function *pproc) const override;
+    Expr * performLongRemoval(eReg regi, LOCAL_ID *locId) override;
+    QString walkCondExpr(Function *pProc, int *numLoc) const override;
+    Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym) override;
+    Expr *insertSubTreeLongReg(Expr *_expr, int longIdx) override;
+    bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId) override;
 };
 struct GlobalVariable : public AstIdent
 {
     bool valid;
     int globIdx;
-    virtual Expr *clone() const
+    Expr *clone() const override
     {
         return new GlobalVariable(*this);
     }
     GlobalVariable(int16_t segValue, int16_t off);
-    QString walkCondExpr(Function *pProc, int *numLoc) const;
-    int hlTypeSize(Function *pproc) const;
-    hlType expType(Function *pproc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const override;
+    int hlTypeSize(Function *pproc) const override;
+    hlType expType(Function *pproc) const override;
 };
 struct GlobalVariableIdx : public AstIdent
 {
     bool valid;
     int idxGlbIdx;	/* idx into localId, GLOB_VAR_IDX   */
 
-    virtual Expr *clone() const
+    Expr *clone() const override
     {
         return new GlobalVariableIdx(*this);
     }
     GlobalVariableIdx(int16_t segValue, int16_t off, uint8_t regi, const LOCAL_ID *locSym);
-    QString walkCondExpr(Function *pProc, int *numLoc) const;
-    int hlTypeSize(Function *pproc) const;
-    hlType expType(Function *pproc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const override;
+    int hlTypeSize(Function *pproc) const override;
+    hlType expType(Function *pproc) const override;
 };
 struct Constant : public AstIdent
 {
@@ -264,13 +264,13 @@ struct Constant : public AstIdent
         kte.kte = _kte;
         kte.size = size;
     }
-    virtual Expr *clone() const
+    Expr *clone() const override
     {
         return new Constant(*this);
     }
-    QString walkCondExpr(Function *pProc, int *numLoc) const;
-    int hlTypeSize(Function *pproc) const;
-    hlType expType(Function *pproc) const { return TYPE_CONST; }
+    QString walkCondExpr(Function *pProc, int *numLoc) const override;
+    int hlTypeSize(Function *pproc) const override;
+    hlType expType(Function */*pproc*/) const override { return TYPE_CONST; }
 };
 struct FuncNode : public AstIdent
 {
@@ -284,13 +284,13 @@ struct FuncNode : public AstIdent
         call.proc = pproc;
         call.args = args;
     }
-    virtual Expr *clone() const
+    Expr *clone() const override
     {
         return new FuncNode(*this);
     }
-    QString walkCondExpr(Function *pProc, int *numLoc) const;
-    int hlTypeSize(Function *pproc) const;
-    hlType expType(Function *pproc) const;
+    QString walkCondExpr(Function *pProc, int *numLoc) const override;
+    int hlTypeSize(Function *pproc) const override;
+    hlType expType(Function *pproc) const override;
 };
 struct RegisterNode : public AstIdent
 {
@@ -298,7 +298,7 @@ struct RegisterNode : public AstIdent
     regType     regiType;  /* for REGISTER only                */
     int         regiIdx;   /* index into localId, REGISTER		*/
 
-    virtual Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym);
+    Expr *insertSubTreeReg(Expr *_expr, eReg regi, const LOCAL_ID *locsym) override;
 
     RegisterNode(int idx, regType reg_type,const LOCAL_ID *syms)
     {
@@ -310,12 +310,12 @@ struct RegisterNode : public AstIdent
     RegisterNode(const LLOperand &, LOCAL_ID *locsym);
 
     //RegisterNode(eReg regi, uint32_t icodeFlg, LOCAL_ID *locsym);
-    virtual Expr *clone() const
+    Expr *clone() const override
     {
         return new RegisterNode(*this);
     }
-    QString walkCondExpr(Function *pProc, int *numLoc) const;
-    int hlTypeSize(Function *) const;
-    hlType expType(Function *pproc) const;
-    bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId);
+    QString walkCondExpr(Function *pProc, int *numLoc) const override;
+    int hlTypeSize(Function *) const override;
+    hlType expType(Function *pproc) const override;
+    bool xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId) override;
 };

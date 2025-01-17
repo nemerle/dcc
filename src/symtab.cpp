@@ -33,7 +33,6 @@
 /* Probably has to be a power of 2 */
 #define STRTABSIZE 256              /* Size string table is inc'd by */
 
-using namespace std;
 static  char *pStrTab;              /* Pointer to the current string table */
 static  int   strTabNext;           /* Next free index into pStrTab */
 namespace std
@@ -66,8 +65,8 @@ private:
     SYMTABLE *valTab;   /* Pointer to the value  hashed table */
     uint16_t      numEntry; /* Number of entries in this table */
     uint16_t      tableSize;/* Size of the table (entries) */
-    unordered_map<string,SYMTABLE> z;
-    unordered_map<SYMTABLE,string> z2;
+    std::unordered_map<std::string,SYMTABLE> z;
+    std::unordered_map<SYMTABLE, std::string> z2;
 };
 
 static TABLEINFO_TYPE tableInfo[NUM_TABLE_TYPES];   /* Array of info about tables */

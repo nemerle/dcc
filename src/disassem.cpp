@@ -22,9 +22,6 @@
 // Note: for the time being, there is no interactive disassembler
 // for unix
 
-using namespace std;
-
-
 #define POS_LAB     15              /* Position of label */
 #define POS_OPC     20              /* Position of opcode */
 #define POS_OPR     25              /* Position of operand */
@@ -86,8 +83,10 @@ bool callArg(uint16_t off, char *temp);  /* Check for procedure name */
 
 //static  FILE   *dis_g_fp;
 static  CIcodeRec pc;
-static  int     cb, j, numIcode, allocIcode;
-static  map<int,int> pl;
+static  int j;
+static  int numIcode;
+static  int allocIcode;
+static  std::map<int,int> pl;
 static  uint32_t   nextInst;
 static  bool    fImpure;
 //static  int     g_lab;
@@ -98,7 +97,7 @@ struct POSSTACK_ENTRY
     int     ic;                 /* An icode offset */
     Function *   pProc;              /* A pointer to a PROCEDURE structure */
 } ;
-static vector<POSSTACK_ENTRY> posStack; /* position stack */
+static std::vector<POSSTACK_ENTRY> posStack; /* position stack */
 //static uint8_t              iPS;          /* Index into the stack */
 
 
@@ -144,8 +143,7 @@ void Disassembler::disassem(Function * ppProc)
 
     pProc = ppProc;             /* Save the passes pProc */
     createSymTables();
-    allocIcode = numIcode = pProc->Icode.entries.size();
-    cb = allocIcode * sizeof(ICODE);
+    allocIcode = numIcode = (int)pProc->Icode.entries.size();
     if (numIcode == 0)
     {
         return;  /* No Icode */
@@ -211,7 +209,7 @@ void Disassembler::disassem(Function * ppProc)
  * i is index into Icode for this proc                                      *
  * It is assumed that icode i is already scanned                            *
  ****************************************************************************/
-void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
+void Disassembler::dis1Line(LLInst &inst,int loc_ip, int dis_pass)
 {
     PROG &prog(Project::get()->prog);
     QString oper_contents;
@@ -240,7 +238,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     }
     if (inst.testFlags(TARGET | CASE))
     {
-        if (pass == 3)
+        if (dis_pass == 3)
             cCode.appendCode("\n"); /* Print to c code buffer */
         else
             m_fp<< "\n";              /* No, print to the stream */
@@ -251,13 +249,12 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         nextInst = inst.label;
     else
     {
-        cb = (uint32_t) inst.numBytes;
-        nextInst = inst.label + cb;
+        nextInst = inst.label + inst.numBytes;
 
         /* Output hex code in program image */
-        if (pass != 3)
+        if (dis_pass != 3)
         {
-            for (j = 0; j < cb; j++)
+            for (j = 0; j < inst.numBytes; j++)
             {
                 hex_bytes += QString("%1").arg(uint16_t(prog.image()[inst.label + j]),2,16,QChar('0')).toUpper();
             }
@@ -492,7 +489,7 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
     {
         for (j = inst.label; j > 0 and j < (int)nextInst; j++)
         {
-            fImpure |= BITMAP(j, BM_DATA);
+            fImpure |= BITMAP(j, BM_DATA)!=0;
         }
     }
     result_stream.setFieldWidth(54);
@@ -542,12 +539,12 @@ void Disassembler::dis1Line(LLInst &inst,int loc_ip, int pass)
         inst.writeIntComment(result_stream);
 
     /* Display output line */
-    if(pass==3)
+    if(dis_pass==3)
     {
         /* output to .b code buffer */
         if (inst.testFlags(SYNTHETIC))
             result_stream<<";Synthetic inst";
-        if (pass == 3) {		/* output to .b code buffer */
+        if (dis_pass == 3) {		/* output to .b code buffer */
             cCode.appendCode("%s\n", qPrintable(result_contents));
         }
 

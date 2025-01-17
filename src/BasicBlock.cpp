@@ -8,13 +8,8 @@
 #include <QtCore/QTextStream>
 #include <cassert>
 #include <string>
-#include <boost/range/rbegin.hpp>
-#include <boost/range/rend.hpp>
 
-using namespace std;
-using namespace boost;
-
-BB *BB::Create(void */*ctx*/, const string &/*s*/, Function *parent, BB */*insertBefore*/)
+BB *BB::Create(void */*ctx*/, const std::string &/*s*/, Function *parent, BB */*insertBefore*/)
 {
     BB *pnewBB = new BB;
     pnewBB->Parent = parent;
@@ -54,7 +49,7 @@ BB *BB::Create(const rCODE &r,eBBKind _nodeType, Function *parent)
 BB *BB::CreateIntervalBB(Function *parent)
 {
     iICODE endOfParent = parent->Icode.entries.end();
-    return Create(make_iterator_range(endOfParent,endOfParent),INTERVAL_NODE,nullptr);
+    return Create(boost::make_iterator_range(endOfParent,endOfParent),INTERVAL_NODE,nullptr);
 }
 
 static const char *const s_nodeType[] = {
@@ -144,7 +139,8 @@ ICODE* BB::writeLoopHeader(int &indLevel, Function* pProc, int *numLoc, BB *&lat
     latch = pProc->m_dfsLast[this->latchNode];
     QString ostr_contents;
     QTextStream ostr(&ostr_contents);
-    ICODE* picode;
+    ICODE* picode=nullptr;
+
     switch (loopType)
     {
     case eNodeHeaderType::WHILE_TYPE:
@@ -383,7 +379,7 @@ void BB::writeBB(QTextStream &ostr,int lev, Function * pProc, int *numLoc)
 {
     /* Save the index into the code table in case there is a later goto
      * into this instruction (first instruction of the BB) */
-    front().ll()->codeIdx = cCode.code.nextIdx();
+    front().ll()->codeIdx = (uint32_t)cCode.code.nextIdx();
 
     /* Generate code for each hlicode that is not a HLI_JCOND */
 

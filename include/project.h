@@ -1,9 +1,6 @@
 #pragma once
-#include <string>
 #include <stdint.h>
-#include <cassert>
 #include <list>
-#include <unordered_set>
 #include <QtCore/QString>
 #include "symtab.h"
 #include "BinaryImage.h"
@@ -44,23 +41,23 @@ public:
             bool        load();
     const   QString &   output_path() const {return m_output_path; }
             void        set_output_path(const QString &path) { m_output_path=path; }
-    const   QString &   project_name() const {return m_project_name;}
-    const   QString &   binary_path() const {return m_fname;}
+    const   QString &   project_name() const override {return m_project_name;}
+    const   QString &   binary_path() const override {return m_fname;}
             QString     output_name(const char *ext);
             ilFunction  funcIter(Function *to_find);
             ilFunction  findByEntry(uint32_t entry);
             ilFunction  createFunction(FunctionType *f, const QString & name);
             bool        valid(ilFunction iter);
 
-            int         getSymIdxByAddr(uint32_t adr);
-            bool        validSymIdx(size_t idx);
+            size_t      getSymIdxByAddr(uint32_t adr);
+            bool        validSymIdx(size_t idx) const;
             size_t      symbolSize(size_t idx);
             hlType      symbolType(size_t idx);
     const   QString &   symbolName(size_t idx);
     const   SYM &       getSymByIdx(size_t idx) const;
 
     static  Project *   get();
-            PROG *      binary() {return &prog;}
+            PROG *      binary() override {return &prog;}
             SourceMachine *machine();
 
     const   FunctionListType &functions() const { return pProcList; }

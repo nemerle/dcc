@@ -60,8 +60,6 @@ static void displayMemMap();
 ***************************************************************************/
 void PROG::displayLoadInfo()
 {
-    int	i;
-
     printf("File type is %s\n", (fCOM)?"COM":"EXE");
     if (not fCOM) {
         printf("Signature            = %02X%02X\n", header.sigLo, header.sigHi);
@@ -72,14 +70,14 @@ void PROG::displayLoadInfo()
         printf("Minimum allocation   = %04X paras\n", LH(&header.minAlloc));
         printf("Maximum allocation   = %04X paras\n", LH(&header.maxAlloc));
     }
-    printf("Load image size      = %08lX\n", cbImage - sizeof(PSP));
+    printf("Load image size      = %08lX\n", cbImage - (int)sizeof(PSP));
     printf("Initial SS:SP        = %04X:%04X\n", initSS, initSP);
     printf("Initial CS:IP        = %04X:%04X\n", initCS, initIP);
 
     if (option.VeryVerbose and cReloc)
     {
         printf("\nRelocation Table\n");
-        for (i = 0; i < cReloc; i++)
+        for (int i = 0; i < cReloc; i++)
         {
             printf("%06X -> [%04X]\n", relocTable[i],LH(image() + relocTable[i]));
         }
@@ -94,9 +92,8 @@ static void fill(int ip, char *bf)
 {
     PROG &prog(Project::get()->prog);
     static uint8_t type[4] = {'.', 'd', 'c', 'x'};
-    uint8_t	i;
 
-    for (i = 0; i < 16; i++, ip++)
+    for (uint8_t i = 0; i < 16; i++, ip++)
     {
         *bf++ = ' ';
         *bf++ = (ip < prog.cbImage)? type[(prog.map[ip >> 2] >> ((ip & 3) * 2)) & 3]: ' ';
@@ -199,7 +196,7 @@ protected:
         // calculate psp segment offset from the start of program data
         prog.pspSegmentOffset = ((sz + 15) & ~0xF) >> 4;
         /* Read in the image past where a PSP would go */
-        if (sz != fp.read((char *)prog.Imagez,sz))
+        if (sz != (size_t)fp.read((char *)prog.Imagez,sz))
             fatalError(CANNOT_READ, fp.fileName().toLocal8Bit().data());
     }
 };

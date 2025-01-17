@@ -8,18 +8,24 @@
 
 struct TPL_PatternCollector : public PatternCollector {
 protected:
-    uint16_t cmap, pmap, csegBase, unitBase;
-    uint16_t offStCseg, skipPmap;
+    uint16_t cmap;
+    uint16_t pmap;
+    uint16_t csegBase;
+    uint16_t unitBase;
+    uint16_t offStCseg;
+    uint16_t skipPmap;
     int count = 0;
     int	cAllocSym = 0;
     int unitNum = 0;
-    char version, charProc, charFunc;
+    char version;
+    char charProc;
+    char charFunc;
     uint16_t csegoffs[100];
     uint16_t csegIdx;
     std::vector<long int> positionStack;
 
     void enterSym(FILE *f,const char *name, uint16_t pmapOffset);
-    void allocSym(int count);
+    void allocSym(int sym_count);
     void readCmapOffsets(FILE *f);
     void enterSystemUnit(FILE *f);
     void readString(FILE *f);

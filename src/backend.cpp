@@ -26,8 +26,6 @@
 #include <string.h>
 #include <stdio.h>
 
-using namespace std;
-
 bundle cCode;            /* Procedure declaration and code */
 
 /* Returns a unique index to the next label */
@@ -342,7 +340,7 @@ static void backBackEnd (CALL_GRAPH * pcallGraph, QIODevice &_ios)
     }
 
     /* Generate code for this procedure */
-    stats.numLLIcode = pcallGraph->proc->Icode.entries.size();
+    stats.numLLIcode = (int)pcallGraph->proc->Icode.entries.size();
     stats.numHLIcode = 0;
     pcallGraph->proc->codeGen (_ios);
 

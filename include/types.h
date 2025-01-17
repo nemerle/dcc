@@ -70,8 +70,8 @@ struct eDuVal
     }
     bool isUSE_VAL() {return use and val;}  //Use and Val
 };
-static constexpr const char * hlTypes[13] = {
-    "",
+static constexpr const char * hlTypes[TYPE_MAX] = {
+    "", //TYPE_UNKNOWN
     "char",
     "unsigned char",
     "int",
@@ -81,7 +81,7 @@ static constexpr const char * hlTypes[13] = {
     "record",
     "int *",
     "char *",
-    "",
+    "", //TYPE_RECORD
     "float",
     "double"
 };
@@ -106,7 +106,7 @@ struct TypeContainer
             case TYPE_FLOAT:
                 return 4;
             default:
-                return ~0;
+                return ~0U;
         }
         return 0;
     }

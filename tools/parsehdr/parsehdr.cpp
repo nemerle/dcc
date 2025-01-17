@@ -52,7 +52,7 @@ int allocArg;        /* How many elements allocated so far */
 int headArg;         /* Head of the arguements linked list */
 }
 // DO Callback
-boolT phDoCB(int id, char *data) {
+boolT phDoCB(int /*id*/, char * /*data*/) {
   /*	return callback(hDCX, id, data, userval);*/
   return true;
 }
@@ -145,7 +145,7 @@ void ProcessBuffer(int id) {
   }
 }
 
-void phInit(char *filename) // filename is for reference only!!!
+void phInit(char */*filename*/) // filename is for reference only!!!
 {
   slosh = last_slosh = start = func = comment = double_slash = hash = ignore1 =
       quote1 = quote2 = hash_ext = false;
@@ -412,7 +412,7 @@ boolT phData(char *buff, int ndata) {
 #endif
 
   if (ndata < 1) {
-    ndata = strlen(buff);
+    ndata = (int)strlen(buff);
   }
   j = 0;
 
@@ -727,14 +727,14 @@ int getToken(void) {
   memset(token, 0, sizeof(token));
   while (*p && ((*p == ' ') || (*p == '\n')))
     p++;
-  lastTokPos = p - buffP; /* For error messages */
+  lastTokPos = (int)(p - buffP); /* For error messages */
   if (lastChar) {
     ch = lastChar;
     lastChar = '\0';
     return ch;
   }
 
-  while (ch = *p++) {
+  while ((ch = *p++)) {
     switch (ch) {
     case '*':
     case '[':
@@ -971,12 +971,10 @@ hlType convType(void) {
     array is logically sorted by a linked list. Note that numArg is filled
     in later */
 boolT addNewFunc(char *name, hlType typ) {
-  int i, prev, res;
-
+  int prev = NIL;
   /* First see if the name already exists */
-  prev = NIL;
-  for (i = headFunc; i != NIL; i = pFunc[i].next) {
-    res = strcmp(pFunc[i].name, name);
+  for (int i = headFunc; i != NIL; i = pFunc[i].next) {
+    int res = strcmp(pFunc[i].name, name);
     if (res > 0) {
       break; /* Exit this loop when just past insert point */
     }
@@ -990,9 +988,9 @@ boolT addNewFunc(char *name, hlType typ) {
   if (numFunc >= allocFunc) {
     allocFunc += DELTA_FUNC;
     pFunc = (PH_FUNC_STRUCT *)realloc(pFunc, allocFunc * sizeof(PH_FUNC_STRUCT));
-    if (pFunc == NULL) {
+    if (pFunc == nullptr) {
       fprintf(stderr, "Could not allocate %ud bytes for function array\n",
-              allocFunc * sizeof(PH_FUNC_STRUCT));
+              int(allocFunc * sizeof(PH_FUNC_STRUCT)));
       exit(1);
     }
     memset(&pFunc[allocFunc - DELTA_FUNC], 0,
@@ -1021,7 +1019,7 @@ void addNewArg(char *name, hlType typ) {
   if (numArg >= allocArg) {
     allocArg += DELTA_FUNC;
     pArg = (PH_ARG_STRUCT *)realloc(pArg, allocArg * sizeof(PH_ARG_STRUCT));
-    if (pArg == NULL) {
+    if (pArg == nullptr) {
       fprintf(stderr, "Could not allocate %ud bytes for arguement array\n",
               allocArg * sizeof(PH_ARG_STRUCT));
       exit(1);
@@ -1106,7 +1104,7 @@ void phBuffToFunc(char *buff) {
   pFunc[numFunc - 1].numArg = argNum; /* Number of args this func */
 }
 
-void phBuffToDef(char *buff) {}
+void phBuffToDef(char * /*buff*/) {}
 
 void writeFile(char *buffer, int len) {
   if ((int)fwrite(buffer, 1, len, datFile) != len) {
@@ -1162,20 +1160,20 @@ int main(int argc, char *argv[]) {
   }
 
   fl = fopen(argv[1], "rt");
-  if (fl == NULL) {
+  if (fl == nullptr) {
     printf("Could not open file list file %s\n", argv[1]);
     exit(1);
   }
 
   datFile = fopen("dcclibs.dat", "wb");
-  if (datFile == NULL) {
+  if (datFile == nullptr) {
     printf("Could not open output file dcclibs.dat\n");
     exit(2);
   }
 
   /* Allocate the arrys for function and proto names and types */
   pFunc = (PH_FUNC_STRUCT *)malloc(DELTA_FUNC * sizeof(PH_FUNC_STRUCT));
-  if (pFunc == 0) {
+  if (pFunc == nullptr) {
     fprintf(stderr, "Could not malloc %ud bytes for function name array\n",
             DELTA_FUNC * sizeof(PH_FUNC_STRUCT));
     exit(1);
@@ -1185,7 +1183,7 @@ int main(int argc, char *argv[]) {
   numFunc = 0;
 
   pArg = (PH_ARG_STRUCT *)malloc(DELTA_FUNC * sizeof(PH_ARG_STRUCT));
-  if (pArg == 0) {
+  if (pArg == nullptr) {
     fprintf(stderr, "Could not malloc %ud bytes for arguement array\n",
             DELTA_FUNC * sizeof(PH_ARG_STRUCT));
     exit(1);
@@ -1196,17 +1194,17 @@ int main(int argc, char *argv[]) {
 
   headFunc = headArg = NIL;
 
-  buf = NULL;
+  buf = nullptr;
   while (!feof(fl)) {
     /* Get another filename from the file list */
     p = fgets(fileName, 80, fl);
-    if (p == NULL)
+    if (p == nullptr)
       break; /* Otherwise read last filename twice */
     i = strlen(fileName) - 1;
     if (fileName[i] == '\n')
       fileName[i] = '\0';
     f = fopen(fileName, "rt");
-    if (f == NULL) {
+    if (f == nullptr) {
       printf("Could not open header file %s\n", fileName);
       exit(1);
     }
@@ -1220,7 +1218,7 @@ int main(int argc, char *argv[]) {
     if (buf)
       free(buf);
     buf = (char *)malloc(ndata);
-    if (buf == 0) {
+    if (buf == nullptr) {
       printf("Could not malloc input file buffer of %d bytes\n", ndata);
       exit(1);
     }

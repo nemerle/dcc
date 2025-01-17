@@ -3,9 +3,6 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
-using namespace std;
-
-
 /*****************************************************************************
  * idiom8 - Shift right by 1 (signed long ops)
  *      SAR reg, 1

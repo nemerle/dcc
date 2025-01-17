@@ -3,8 +3,6 @@
 #include "dcc.h"
 #include "msvc_fixes.h"
 
-using namespace std;
-
 /*****************************************************************************
  * idiom21 - Assign long kte with high part zero
  *		XOR regH, regH
@@ -20,7 +18,6 @@ using namespace std;
  ****************************************************************************/
 bool Idiom21::match (iICODE picode)
 {
-    LLOperand *dst, *src;
     if(distance(picode,m_end)<2)
         return false;
     m_icodes[0]=picode++;
@@ -29,8 +26,8 @@ bool Idiom21::match (iICODE picode)
     if (not m_icodes[1]->ll()->testFlags(I))
         return false;
 
-    dst = &m_icodes[0]->ll()->m_dst;
-    src = &m_icodes[0]->ll()->src();
+    LLOperand* dst = &m_icodes[0]->ll()->m_dst;
+    LLOperand* src = &m_icodes[0]->ll()->src();
     if ((dst->regi == src->getReg2()) and (dst->getReg2() > 0) and (dst->getReg2() < INDEX_BX_SI))
     {
         if ((dst->getReg2() == rDX) and m_icodes[1]->ll()->match(rAX))
@@ -42,11 +39,9 @@ bool Idiom21::match (iICODE picode)
 }
 int Idiom21::action()
 {
-    Expr *rhs;
-    AstIdent *lhs;
-
-    lhs = AstIdent::Long (&m_func->localId, DST, m_icodes[0],HIGH_FIRST, m_icodes[0], eDEF, *m_icodes[1]->ll());
-    rhs = new Constant(m_icodes[1]->ll()->src().getImm2(), 4);
+    AstIdent* lhs = AstIdent::Long(&m_func->localId, DST, m_icodes[0], HIGH_FIRST, m_icodes[0], eDEF,
+                                   *m_icodes[1]->ll());
+    Expr* rhs = new Constant(m_icodes[1]->ll()->src().getImm2(), 4);
     m_icodes[0]->setAsgn(lhs, rhs);
     m_icodes[0]->du.use.reset();		/* clear register used in iXOR */
     m_icodes[1]->invalidate();
@@ -64,10 +59,9 @@ bool Idiom7::match(iICODE picode)
 {
     if(picode==m_end)
         return false;
-    const LLOperand *dst, *src;
     m_icode=picode;
-    dst = &picode->ll()->m_dst;
-    src = &picode->ll()->src();
+    const LLOperand* dst = &picode->ll()->m_dst;
+    const LLOperand* src = &picode->ll()->src();
     if (dst->regi == 0)                 /* global variable */
     {
         if ((dst->segValue == src->segValue) and (dst->off == src->off))
@@ -87,8 +81,7 @@ bool Idiom7::match(iICODE picode)
 }
 int Idiom7::action()
 {
-    Expr *lhs;
-    lhs = AstIdent::id (*m_icode->ll(), DST, m_func, m_icode, *m_icode, NONE);
+    Expr *lhs = AstIdent::id (*m_icode->ll(), DST, m_func, m_icode, *m_icode, NONE);
     m_icode->setAsgn(dynamic_cast<AstIdent *>(lhs), new Constant(0, 2));
     m_icode->du.use.reset();    /* clear register used in iXOR */
     m_icode->ll()->setFlags(I);

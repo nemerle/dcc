@@ -11,8 +11,8 @@
 
 #include <string.h>
 
-using namespace std;
 using namespace boost;
+
 extern Project g_proj;
 //static BB *  rmJMP(Function * pProc, int marker, BB * pBB);
 //static void mergeFallThrough(Function * pProc, BB * pBB);
@@ -43,8 +43,6 @@ void Function::createCFG()
      * 6) End of procedure
      */
 
-    BB *        psBB;
-    BB *        pBB;
     iICODE 	pIcode = Icode.entries.begin();
 
     stats.numBBbef = stats.numBBaft = 0;
@@ -52,7 +50,7 @@ void Function::createCFG()
     for (; pIcode!=Icode.entries.end(); ++pIcode,current_range.advance_end(1))
     {
         iICODE nextIcode = ++iICODE(pIcode);
-        pBB = nullptr;
+        BB* pBB = nullptr;
 
         LLInst *ll = pIcode->ll();
         /* Only process icodes that have valid instructions */
@@ -153,7 +151,7 @@ void Function::createCFG()
             auto iter2=m_ip_to_bb.find(ip);
             if(iter2==m_ip_to_bb.end())
                 fatalError(NO_BB, ip, qPrintable(name));
-            psBB = iter2->second;
+            BB* psBB = iter2->second;
             elem.BBptr = psBB;
             psBB->inEdges.push_back((BB *)nullptr);
         }
@@ -202,8 +200,6 @@ void Function::freeCFG()
  ****************************************************************************/
 void Function::compressCFG()
 {
-    int first=0, last;
-
     /* First pass over BB list removes redundant jumps of the form
          * (Un)Conditional -> Unconditional jump  */
     for (BB *pBB : m_actual_cfg) //m_cfg
@@ -248,7 +244,7 @@ void Function::compressCFG()
         }
         else
         {
-            pBB->inEdgeCount = pBB->inEdges.size();
+            pBB->inEdgeCount = (int)pBB->inEdges.size();
         }
         entry_node=false;
     }
@@ -258,7 +254,8 @@ void Function::compressCFG()
     m_dfsLast.resize(numBBs,nullptr); // = (BB **)allocMem(numBBs * sizeof(BB *))
 
     /* Now do a dfs numbering traversal and fill in the inEdges[] array */
-    last = numBBs - 1;
+    int first = 0;
+    int last = (int)numBBs - 1;
     m_actual_cfg.front()->dfsNumbering(m_dfsLast, &first, &last);
     for (const auto* v : m_dfsLast)
         assert(v);

@@ -32,5 +32,5 @@ public:
 public:
     void disassem(Function *ppProc);
     void disassem(Function *ppProc, int i);
-    void dis1Line(LLInst &inst, int loc_ip, int pass);
+    void dis1Line(LLInst &inst, int loc_ip, int dis_pass);
 };

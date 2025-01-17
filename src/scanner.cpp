@@ -364,7 +364,7 @@ static void convertUsedFlags(x86_insn_t &from,ICODE &to)
     if(from.containsFlag(insn_eflag_direction,from.flags_tested))
         to.ll()->flagDU.u |= Df;
 }
-static void convertPrefix(x86_insn_prefix prefix,ICODE &to)
+static void convertPrefix(x86_insn_prefix prefix,ICODE & /*to*/)
 {
     if(prefix ==insn_no_prefix)
         return;

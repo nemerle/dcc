@@ -125,15 +125,15 @@ public:
                             ID(hlType t, const LONG_STKID_TYPE &s);
                             ID(hlType t, const LONGGLB_TYPE &s);
     bool                    isSigned() const { return (type==TYPE_BYTE_SIGN) or (type==TYPE_WORD_SIGN) or (type==TYPE_LONG_SIGN);}
-    uint16_t                typeBitsize() const
+    uint32_t                typeBitsize() const
                             {
-                                return TypeContainer::typeSize(type)*8;
+                                return (uint32_t)(TypeContainer::typeSize(type)*8);
                             }
     bool                    isLong() const { return (type==TYPE_LONG_UNSIGN) or (type==TYPE_LONG_SIGN); }
     void                    setLocalName(int i)
                             {
                                 char buf[32];
-                                sprintf (buf, "loc%d", i);
+                                snprintf (buf,32, "loc%d", i);
                                 name=buf;
                             }
     bool                    isLongRegisterPair() const { return (loc == REG_FRAME) and isLong();}
@@ -164,7 +164,7 @@ public:
     void newIdent(hlType t, frameType f);
     void flagByteWordId(int off);
     void propLongId(uint8_t regL, uint8_t regH, const QString & name);
-    size_t csym() const {return id_arr.size();}
+    int csym() const { return (int)id_arr.size();}
     void newRegArg(ICODE & picode, ICODE & ticode) const;
     void processTargetIcode(ICODE & picode, int &numHlIcodes, ICODE & ticode, bool isLong) const;
     void forwardSubs(Expr *lhs, Expr *rhs, ICODE & picode, ICODE & ticode, int &numHlIcodes) const;

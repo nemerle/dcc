@@ -13,7 +13,7 @@
 #include <string.h>
 #include <sstream>
 #include <QTextStream>
-using namespace std;
+
 #define intSize        40
 
 static const char *int21h[] =

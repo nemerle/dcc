@@ -197,7 +197,7 @@ public:
 
     void preprocessReturnDU(LivenessSet& _liveOut);
     Expr* adjustActArgType(Expr* _exp, hlType forType);
-    QString writeCall(Function* tproc, STKFRAME& args, int* numLoc);
+    QString writeCall(Function* tproc, STKFRAME& frame_args, int* numLoc);
     void processDosInt(STATE* pstate, PROG& prog, bool done);
     ICODE* translate_DIV(LLInst* ll, ICODE& _Icode);
     ICODE* translate_XCHG(LLInst* ll, ICODE& r_Icode);

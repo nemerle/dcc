@@ -634,11 +634,11 @@ void STATE::checkStartup()
 
 
     int startOff;       /* Offset into the Image of the initial CS:IP */
-    int i, rel, para, init;
+    int i, rel, para;
     char chModel = 'x';
     char chVendor = 'x';
     char chVersion = 'x';
-    char temp[4];
+
 
     startOff = ((uint32_t)prog.initCS << 4) + prog.initIP;
 
@@ -650,7 +650,7 @@ void STATE::checkStartup()
                         determine the version from that */
         rel = LH(&prog.image()[startOff+1]);  	 /* This is abs off of init */
         para= LH(&prog.image()[startOff+3]);/* This is abs seg of init */
-        init = ((uint32_t)para << 4) + rel;
+        int init = ((uint32_t)para << 4) + rel;
         if (locatePattern(prog.image(), init, init+26, pattBorl4Init,
                           sizeof(pattBorl4Init), &i))
         {

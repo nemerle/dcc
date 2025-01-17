@@ -90,28 +90,23 @@ void CALL_GRAPH::write()
  * Note: register(s) are only included once in the table.   */
 void LOCAL_ID::newRegArg(ICODE &picode, ICODE &ticode) const
 {
-    AstIdent *lhs;
-    STKFRAME* call_args_stackframe;
-    STKFRAME* target_stackframe;
     const ID *id;
-    int tidx;
+    int tidx=0;
     bool regExist=false;
-    condId type;
-    Function * tproc;
     eReg regL = rUNDEF;
     eReg regH;		/* Registers involved in arguments */
 
     /* Flag ticode as having register arguments */
-    tproc = ticode.hl()->call.proc;
+    Function* tproc = ticode.hl()->call.proc;
     tproc->flg |= REG_ARGS;
 
     /* Get registers and index into target procedure's local list */
-    call_args_stackframe = ticode.hl()->call.args;
-    target_stackframe = &tproc->args;
-    lhs = dynamic_cast<AstIdent *>(picode.hl()->asgn.lhs());
+    STKFRAME* call_args_stackframe = ticode.hl()->call.args;
+    STKFRAME* target_stackframe = &tproc->args;
+    AstIdent* lhs = dynamic_cast<AstIdent*>(picode.hl()->asgn.lhs());
     RegisterNode *lhs_reg = dynamic_cast<RegisterNode *>(lhs);
     assert(lhs);
-    type = lhs->ident.type();
+    condId type = lhs->ident.type();
     if(type==REGISTER)
         assert(lhs_reg);
     if(type==LONG_VAR)
@@ -163,7 +158,7 @@ void LOCAL_ID::newRegArg(ICODE &picode, ICODE &ticode) const
     {
         STKSYM newsym;
 
-        newsym.setArgName(target_stackframe->size());
+        newsym.setArgName((int)target_stackframe->size());
 
         if (type == REGISTER)
         {
@@ -188,7 +183,7 @@ void LOCAL_ID::newRegArg(ICODE &picode, ICODE &ticode) const
 
     /* Do ps (actual arguments) */
     STKSYM newsym;
-    newsym.setArgName(call_args_stackframe->size());
+    newsym.setArgName((int)call_args_stackframe->size());
     newsym.actual = picode.hl()->asgn.m_rhs;
     newsym.regs = lhs;
     /* Mask off high and low register(s) in picode */
@@ -224,13 +219,12 @@ bool CallType::newStkArg(Expr *exp, llIcode opcode, Function * pproc)
 {
     RegisterNode *expr = dynamic_cast<RegisterNode *>(exp);
 
-    uint8_t regi;
     /* Check for far procedure call, in which case, references to segment
          * registers are not be considered another parameter (i.e. they are
          * long references to another segment) */
     if (expr)
     {
-        regi =  pproc->localId.id_arr[expr->regiIdx].id.regi;
+        eReg regi = pproc->localId.id_arr[expr->regiIdx].id.regi;
         if ((regi >= rES) and (regi <= rDS))
         {
             return opcode != iCALLF;

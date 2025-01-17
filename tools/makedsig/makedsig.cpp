@@ -130,8 +130,7 @@ void writeFileShort(FILE *fl,uint16_t w)
 
 void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll)
 {
-    int i, len;
-    const uint16_t *pTable;
+    int i;
 
     writeFile(fl,"dccs", 4);					/* Signature */
     writeFileShort(fl,numKeys);				/* Number of keys */
@@ -141,16 +140,16 @@ void saveFile(FILE *fl, const PerfectHash &p_hash, PatternCollector *coll)
 
     /* Write out the tables T1 and T2, with their sig and byte lengths in front */
     writeFile(fl,"T1", 2);						/* "Signature" */
-    pTable = p_hash.readT1();
-    len = PATLEN * 256;
-    writeFileShort(fl,len * sizeof(uint16_t));
+    const uint16_t* pTable = p_hash.readT1();
+    int len = PATLEN * 256;
+    writeFileShort(fl,uint16_t(len * sizeof(uint16_t)));
     for (i=0; i < len; i++)
     {
         writeFileShort(fl,pTable[i]);
     }
     writeFile(fl,"T2", 2);
     pTable = p_hash.readT2();
-    writeFileShort(fl,len * sizeof(uint16_t));
+    writeFileShort(fl, uint16_t(len * sizeof(uint16_t)));
     for (i=0; i < len; i++)
     {
         writeFileShort(fl,pTable[i]);

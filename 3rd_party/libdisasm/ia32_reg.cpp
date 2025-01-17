@@ -220,13 +220,11 @@ void ia32_handle_register( x86_reg_t *reg, size_t id ) {
 }
 
 size_t ia32_true_register_id( size_t id ) {
-    size_t reg;
-
     if (! id || id > sz_regtable ) {
         return 0;
     }
 
-    reg = id;
+    size_t reg = id;
     if (ia32_reg_table[reg].alias) {
         reg = ia32_reg_aliases[ia32_reg_table[reg].alias].alias;
     }

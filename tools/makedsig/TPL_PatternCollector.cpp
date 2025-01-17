@@ -15,43 +15,37 @@
 extern void fixWildCards(uint8_t pat[]);
 void TPL_PatternCollector::enterSym(FILE *f, const char *name, uint16_t pmapOffset)
 {
-    uint16_t pm, cm, codeOffset, pcode;
-    uint16_t j;
-
     /* Enter a symbol with given name */
     allocSym(count);
     strcpy(keys[count].name, name);
-    pm = pmap + pmapOffset;			/* Pointer to the 4 byte pmap structure */
-    fseek(f, unitBase+pm, SEEK_SET);/* Go there */
-    cm = readShort(f);				/* CSeg map offset */
-    codeOffset = readShort(f);		/* How far into the code segment is our rtn */
-    j = cm / 8;						/* Index into the cmap array */
-    pcode = csegBase+csegoffs[j]+codeOffset;
+    uint16_t pm = pmap + pmapOffset;		/* Pointer to the 4 byte pmap structure */
+    fseek(f, unitBase+pm, SEEK_SET);        /* Go there */
+    uint16_t cm = readShort(f);				/* CSeg map offset */
+    uint16_t codeOffset = readShort(f);		/* How far into the code segment is our rtn */
+    uint16_t j = cm / 8;					/* Index into the cmap array */
+    uint16_t pcode = csegBase + csegoffs[j] + codeOffset;
     fseek(f, unitBase+pcode, SEEK_SET);		/* Go there */
-    grab(f,PATLEN);					/* Grab the pattern to buf[] */
-    fixWildCards(buf);				/* Fix the wild cards */
+    grab(f,PATLEN);     					/* Grab the pattern to buf[] */
+    fixWildCards(buf);	        			/* Fix the wild cards */
     memcpy(keys[count].pat, buf, PATLEN);	/* Copy to the key array */
-    count++;						/* Done one more */
+    count++;					        	/* Done one more */
 }
 
-void TPL_PatternCollector::allocSym(int count)
+void TPL_PatternCollector::allocSym(int sym_count)
 {
-    keys.resize(count);
+    keys.resize(sym_count);
 }
 
 void TPL_PatternCollector::readCmapOffsets(FILE *f)
 {
-    uint16_t cumsize, csize;
-    uint16_t i;
-
     /* Read the cmap table to find the start address of each segment */
     fseek(f, unitBase+cmap, SEEK_SET);
-    cumsize = 0;
+    uint16_t cumsize = 0;
     csegIdx = 0;
-    for (i=cmap; i < pmap; i+=8)
+    for (uint16_t i = cmap; i < pmap; i+=8)
     {
         readShort(f);					/* Always 0 */
-        csize = readShort(f);
+        uint16_t csize = readShort(f);
         if (csize == 0xFFFF) continue;	/* Ignore the first one... unit init */
         csegoffs[csegIdx++] = cumsize;
         cumsize += csize;
@@ -128,9 +122,8 @@ void TPL_PatternCollector::readString(FILE *f)
 void TPL_PatternCollector::unknown(FILE *f, unsigned j, unsigned k)
 {
     /* Mark calls j to k (not inclusive) as unknown */
-    unsigned i;
 
-    for (i=j; i < k; i+= 4)
+    for (unsigned i = j; i < k; i+= 4)
     {
         sprintf((char *)buf, "UNKNOWN%03X", i);
         enterSym(f,(char *)buf, i);
@@ -141,13 +134,11 @@ void TPL_PatternCollector::nextUnit(FILE *f)
 {
     /* Find the start of the next unit */
 
-    uint16_t dsegBase, sizeSyms, sizeOther1, sizeOther2;
-
     fseek(f, unitBase+offStCseg, SEEK_SET);
-    dsegBase = roundUp(readShort(f));
-    sizeSyms = roundUp(readShort(f));
-    sizeOther1 = roundUp(readShort(f));
-    sizeOther2 = roundUp(readShort(f));
+    uint16_t dsegBase = roundUp(readShort(f));
+    uint16_t sizeSyms = roundUp(readShort(f));
+    uint16_t sizeOther1 = roundUp(readShort(f));
+    uint16_t sizeOther2 = roundUp(readShort(f));
 
     unitBase += dsegBase + sizeSyms + sizeOther1 + sizeOther2;
 

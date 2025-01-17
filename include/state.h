@@ -21,9 +21,9 @@ struct STATE
 
     void setState(uint16_t reg, int16_t value);
     void checkStartup();
-    bool isKnown(eReg v) {return f[v];}
+    bool isKnown(eReg v) const {return f[v];}
     void kill(eReg v) { f[v]=false;}
-    void setMemoryByte(uint32_t addr,uint8_t val)
+    void setMemoryByte(uint32_t /*addr*/,uint8_t /*val*/) 
     {
         //TODO: make this into a full scale value tracking class !
     }

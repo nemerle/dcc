@@ -17,17 +17,17 @@ protected:
 };
 
 struct C_CallingConvention : public CConv {
-    virtual void processHLI(Function *func, Expr *_exp, iICODE picode);
-    virtual void writeComments(QTextStream &);
+    void processHLI(Function *func, Expr *_exp, iICODE picode) override;
+    void writeComments(QTextStream &) override;
 
 private:
     int processCArg(Function *callee, Function *pProc, ICODE *picode, size_t numArgs);
 };
 struct Pascal_CallingConvention : public CConv {
-    virtual void processHLI(Function *func, Expr *_exp, iICODE picode);
-    virtual void writeComments(QTextStream &);
+    void processHLI(Function *func, Expr *_exp, iICODE picode) override;
+    void writeComments(QTextStream &) override;
 };
 struct Unknown_CallingConvention : public CConv {
-    void processHLI(Function *func, Expr *_exp, iICODE picode) {}
-    virtual void writeComments(QTextStream &);
+    void processHLI(Function * /*func*/, Expr * /*_exp*/, iICODE /*picode*/) override {}
+    void writeComments(QTextStream &) override;
 };

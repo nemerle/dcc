@@ -272,15 +272,14 @@ void flagNodes (nodeList &l, int f, Function * pProc)
  * Note: graph should be reducible */
 void Function::findImmedDom ()
 {
-    BB * currNode;
     for (size_t currIdx = 0; currIdx < numBBs; currIdx++)
     {
-        currNode = m_dfsLast[currIdx];
+        BB* currNode = m_dfsLast[currIdx];
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
         for (BB * inedge : currNode->inEdges)
         {
-            size_t predIdx = inedge->dfsLastNum;
+            int predIdx = inedge->dfsLastNum;
             if (predIdx < currIdx)
                 currNode->immedDom = commonDom (currNode->immedDom, predIdx, this);
         }
@@ -291,12 +290,7 @@ void Function::findImmedDom ()
 /** Algorithm for structuring loops */
 void Function::structLoops(derSeq *derivedG)
 {
-    interval *Ii;
-    BB * intHead,      	/* interval header node         	*/
-            * pred,     /* predecessor node         		*/
-            * latchNode;/* latching node (in case of loops) */
-    size_t  level = 0;  /* derived sequence level       	*/
-    interval *initInt;  /* initial interval         		*/
+    int level = 0;  /* derived sequence level       	*/
     queue intNodes;  	/* list of interval nodes       	*/
 
     /* Structure loops */
@@ -304,17 +298,16 @@ void Function::structLoops(derSeq *derivedG)
     for(auto & elem : derivedG->entries)
     {
         level++;
-        for (Ii = elem.Ii; Ii!=nullptr; Ii = Ii->next)       /* for all intervals Ii of Gi */
+        for (interval* Ii = elem.Ii; Ii!=nullptr; Ii = Ii->next)       /* for all intervals Ii of Gi */
         {
-            latchNode = nullptr;
+            BB* latchNode = nullptr; /* latching node (in case of loops) */
             intNodes.clear();
 
-            /* Find interval head (original BB node in G1) and create
-           * list of nodes of interval Ii.              */
-            initInt = Ii;
+            /* Find interval head (original BB node in G1) and create list of nodes of interval Ii. */
+            interval* initInt = Ii; /* initial interval */
             for (size_t i = 1; i < level; i++)
                 initInt = initInt->nodes.front()->correspInt;
-            intHead = initInt->nodes.front();
+            BB* intHead = initInt->nodes.front(); /* interval header node         	*/
 
             /* Find nodes that belong to the interval (nodes from G1) */
             findNodesInInt (intNodes, level, Ii);
@@ -322,7 +315,7 @@ void Function::structLoops(derSeq *derivedG)
             /* Find greatest enclosing back edge (if any) */
             for (size_t i = 0; i < intHead->inEdges.size(); i++)
             {
-                pred = intHead->inEdges[i];
+                BB* pred = intHead->inEdges[i]; /* predecessor node */
                 if (inInt(pred, intNodes) and isBackEdge(pred, intHead))
                 {
                     if (nullptr == latchNode)
@@ -360,15 +353,15 @@ void Function::structCases()
 
     /* Linear scan of the nodes in reverse dfsLast order, searching for
      * case nodes                           */
-    for (int i = numBBs - 1; i >= 0; i--)
+    for (int i = (int)numBBs - 1; i >= 0; i--)
     {
         if ((m_dfsLast[i]->nodeType != MULTI_BRANCH))
             continue;
-        BB * caseHeader = m_dfsLast[i];;    /* case header node         */
+        BB * caseHeader = m_dfsLast[i];    /* case header node         */
 
         /* Find descendant node which has as immediate predecessor
                          * the current header node, and is not a successor.    */
-        for (size_t j = i + 2; j < numBBs; j++)
+        for (int j = i + 2; j < (int)numBBs; j++)
         {
             if ((not successor(j, i, this)) and (m_dfsLast[j]->immedDom == i))
             {
@@ -398,35 +391,29 @@ void Function::structCases()
 /* Structures if statements */
 void Function::structIfs ()
 {
-    size_t followInEdges;			/* Largest # in-edges so far 			*/
-    int curr,    				/* Index for linear scan of nodes   	*/
-            /*desc,*/ 				/* Index for descendant         		*/
-            follow;  				/* Possible follow node 				*/
     nodeList domDesc,    /* List of nodes dominated by curr  	*/
             unresolved 	/* List of unresolved if nodes  		*/
             ;
-    BB * currNode,    			/* Pointer to current node  			*/
-       * pbb;
 
     /* Linear scan of nodes in reverse dfsLast order */
-    for (curr = numBBs - 1; curr >= 0; curr--)
+    for (int curr = (int)numBBs - 1; curr >= 0; curr--)
     {
-        currNode = m_dfsLast[curr];
+        BB* currNode = m_dfsLast[curr]; /* Pointer to current node */
         if (currNode->flg & INVALID_BB)		/* Do not process invalid BBs */
             continue;
 
         if ((currNode->nodeType == TWO_BRANCH) and (not currNode->back().ll()->testFlags(JX_LOOP)))
         {
-            followInEdges = 0;
-            follow = 0;
+            size_t followInEdges = 0; /* Largest # in-edges so far */
+            int follow = 0; /* Possible follow node */
 
             /* Find all nodes that have this node as immediate dominator */
-            for (size_t desc = curr+1; desc < numBBs; desc++)
+            for (int desc = curr+1; desc < (int)numBBs; desc++)
             {
                 if (m_dfsLast[desc]->immedDom == curr)
                 {
                     domDesc.push_back(desc);
-                    pbb = m_dfsLast[desc];
+                    BB* pbb = m_dfsLast[desc]; /* Pointer to current node */
                     if ((pbb->inEdges.size() - pbb->numBackEdges) >= followInEdges)
                     {
                         follow = desc;
@@ -564,7 +551,6 @@ bool Function::Case_X_or_Y(BB* pbb, BB* thenBB, BB* elseBB)
  * into one block with the appropriate condition */
 void Function::compoundCond()
 {
-    BB * pbb, * thenBB, * elseBB;
     bool change = true;
     while (change)
     {
@@ -574,15 +560,15 @@ void Function::compoundCond()
          * compound condition is analysed first */
         for (size_t i = 0; i < this->numBBs; i++)
         {
-            pbb = this->m_dfsLast[i];
+            BB* pbb = this->m_dfsLast[i];
             if (pbb->flg & INVALID_BB)
                 continue;
 
             if (pbb->nodeType != TWO_BRANCH)
                 continue;
 
-            thenBB = pbb->edges[THEN].BBptr;
-            elseBB = pbb->edges[ELSE].BBptr;
+            BB* thenBB = pbb->edges[THEN].BBptr;
+            BB* elseBB = pbb->edges[ELSE].BBptr;
 
             change = true; //assume change
 

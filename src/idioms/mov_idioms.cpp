@@ -3,8 +3,6 @@
 #include "Procedure.h"
 #include "msvc_fixes.h"
 
-using namespace std;
-
 /*****************************************************************************
  * idiom 14 - Long uint16_t assign
  *      MOV regL, mem/reg

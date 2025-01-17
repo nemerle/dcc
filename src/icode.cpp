@@ -21,7 +21,7 @@ CIcodeRec::CIcodeRec()
 ICODE * CIcodeRec::addIcode(ICODE *pIcode)
 {
     entries.push_back(*pIcode);
-    entries.back().loc_ip = entries.size()-1;
+    entries.back().loc_ip = (int)entries.size()-1;
     return &entries.back();
 }
 

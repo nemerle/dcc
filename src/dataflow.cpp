@@ -22,7 +22,6 @@
 
 using namespace boost;
 using namespace boost::adaptors;
-using namespace std;
 namespace
 {
 struct ExpStack
@@ -40,8 +39,8 @@ struct ExpStack
         }
         return nullptr;
     }
-    int         numElem();
-    bool       empty();
+    int        numElem() const;
+    bool       empty() const;
     void processExpPush(int &numHlIcodes, ICODE &picode)
     {
         RegisterNode *rn = dynamic_cast<RegisterNode *>(picode.hlU()->expr());
@@ -61,7 +60,7 @@ Expr *srcIdent (const LLInst &ll_insn, Function * pProc, iICODE i, ICODE & duIco
     if (src_op->isImmediate())   /* immediate operand ll_insn.testFlags(I)*/
     {
         //if (ll_insn.testFlags(B))
-        return new Constant(src_op->getImm2(), src_op->byteWidth());
+        return new Constant(src_op->getImm2(), (uint8_t)src_op->byteWidth());
     }
     // otherwise
     return AstIdent::id (ll_insn, SRC, pProc, i, duIcode, du);
@@ -136,13 +135,13 @@ Expr *ExpStack::pop()
 }
 
 /* Returns the number of elements available in the expression stack */
-int ExpStack::numElem()
+int ExpStack::numElem() const
 {
-    return expStk.size();
+    return (int)expStk.size();
 }
 
 /* Returns whether the expression stack is empty or not */
-bool ExpStack::empty()
+bool ExpStack::empty() const
 {
     return expStk.empty();
 }
@@ -160,8 +159,6 @@ size_t STKFRAME::getLocVar(int off)
 /* Eliminates all condition codes and generates new hlIcode instructions */
 void Function::elimCondCodes ()
 {
-    //    int i;
-
     uint8_t use;           /* Used flags bit vector                  */
     uint8_t def;           /* Defined flags bit vector               */
     bool notSup;       /* Use/def combination not supported      */
@@ -207,7 +204,7 @@ void Function::elimCondCodes ()
                         lhs = defIcode.hl()->asgn.lhs()->clone();
                         useAt->copyDU(*defAt, eUSE, eDEF);
                         //if (defAt->ll()->testFlags(B))
-                        rhs = new Constant(0, dest_ll->byteWidth());
+                        rhs = new Constant(0, (uint8_t)dest_ll->byteWidth());
                         break;
 
                     case iTEST:
@@ -215,17 +212,17 @@ void Function::elimCondCodes ()
                         lhs = dstIdent (*defIcode.ll(),this, befDefAt,*useAt, eUSE);
                         lhs = BinaryOperator::And(lhs, rhs);
                         //                            if (defAt->ll()->testFlags(B))
-                        rhs = new Constant(0, dest_ll->byteWidth());
+                        rhs = new Constant(0, (uint8_t)dest_ll->byteWidth());
                         break;
                     case iINC:
                     case iDEC: //WARNING: verbatim copy from iOR needs fixing ?
                         lhs = defIcode.hl()->asgn.lhs()->clone();
                         useAt->copyDU(*defAt, eUSE, eDEF);
-                        rhs = new Constant(0, dest_ll->byteWidth());
+                        rhs = new Constant(0, (uint8_t)dest_ll->byteWidth());
                         break;
                     default:
                         notSup = true;
-                        std::cout << hex<<defIcode.loc_ip;
+                        std::cout << std::hex<<defIcode.loc_ip;
                         reportError (JX_NOT_DEF, defIcode.ll()->getOpcode());
                         flg |= PROC_ASM;		/* generate asm */
                     }
@@ -658,7 +655,7 @@ bool BinaryOperator::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCA
         return false;
     return m_lhs->xClear (range_to_check, lastBBinst, locs);
 }
-bool AstIdent::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID &locId)
+bool AstIdent::xClear(rICODE range_to_check, iICODE lastBBinst, const LOCAL_ID & /*locId*/)
 {
     if (ident.idType != REGISTER)
         return true;
@@ -807,14 +804,11 @@ void LOCAL_ID::processTargetIcode(ICODE &picode, int &numHlIcodes, ICODE &ticode
 
     }
 }
-void C_CallingConvention::processHLI(Function *func,Expr *_exp, iICODE picode) {
-    Function * pp;
-    int cb, numArgs;
-    int k;
-    pp = picode->hl()->call.proc;
-    cb = picode->hl()->call.args->cb;
-    numArgs = 0;
-    k = 0;
+void C_CallingConvention::processHLI(Function *func,Expr * /*_exp*/, iICODE picode) {
+    Function* pp = picode->hl()->call.proc;
+    int cb = picode->hl()->call.args->cb;
+    int numArgs = 0;
+    int k = 0;
     if (cb)
     {
         while ( k < cb )

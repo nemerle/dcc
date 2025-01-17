@@ -134,14 +134,13 @@ eReg Machine_X86::compositeParent(eReg reg)
         case rDL: case rDH: return rDX;
         case rBL: case rBH: return rBX;
         default:
-            return rUNDEF;
+            ;
     }
     return rUNDEF;
 }
 void Machine_X86::writeRegVector (QTextStream &ostr,const LivenessSet &regi)
 {
-    int j;
-    for (j = rAX; j < INDEX_BX_SI; j++)
+    for (int j = rAX; j < INDEX_BX_SI; j++)
     {
         if (regi.testReg(j))
             ostr << regName(eReg(j))<<" ";

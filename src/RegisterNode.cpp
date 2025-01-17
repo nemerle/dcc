@@ -13,7 +13,6 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range.hpp>
 
-using namespace std;
 using namespace boost::adaptors;
 RegisterNode::RegisterNode(const LLOperand &op, LOCAL_ID *locsym)
 {

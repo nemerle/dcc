@@ -136,5 +136,5 @@ int Idiom1::action()
         m_func->args.m_minOff = m_min_off;
         m_func->flg |= PROC_IS_HLL;
     }
-    return m_icodes.size();
+    return (int)m_icodes.size();
 }

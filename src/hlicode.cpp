@@ -13,7 +13,7 @@
 #include <string.h>
 #include <string>
 #include <sstream>
-using namespace std;
+
 
 /* Places the new HLI_ASSIGN high-level operand in the high-level icode array */
 void HLTYPE::setAsgn(Expr *lhs, Expr *rhs)
@@ -333,7 +333,7 @@ void Function::highLevelGen()
             }
         if(ll->getOpcode()==iPUSH) {
             if(ll->testFlags(I)) {
-                lhs = new Constant(src_ll->opz,src_ll->byteWidth());
+                lhs = new Constant(src_ll->opz, (uint8_t)src_ll->byteWidth());
             }
 //            lhs = AstIdent::id (*pIcode->ll(), DST, this, i, *pIcode, NONE);
         }
@@ -476,11 +476,11 @@ void Function::highLevelGen()
 
 /* Returns the string that represents the procedure call of tproc (ie. with
  * actual parameters) */
-QString Function::writeCall (Function * tproc, STKFRAME & args, int *numLoc)
+QString Function::writeCall (Function * tproc, STKFRAME & frame_args, int *numLoc)
 {
     //string condExp;
     QStringList slist;
-    for(const STKSYM &sym : args)
+    for(const STKSYM &sym : frame_args)
     {
         if(sym.actual)
             slist.push_back(sym.actual->walkCondExpr(this, numLoc));

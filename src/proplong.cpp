@@ -565,7 +565,7 @@ void Function::propLong()
 {
     /* Pointer to current local identifier */
     //TODO: change into range based for
-    for (size_t i = 0; i < localId.csym(); i++)
+    for (int i = 0; i < localId.csym(); i++)
     {
         const ID &pLocId(localId.id_arr[i]);
         if ((pLocId.type!=TYPE_LONG_SIGN) and (pLocId.type!=TYPE_LONG_UNSIGN))

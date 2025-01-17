@@ -9,26 +9,31 @@ public:
     {
         m_current_func = Project::get()->functions().end();
     }
-    void Init(QObject *tgt) override
+
+    void Init(QObject */*tgt*/) override
     {
     }
+
     ilFunction GetFirstFuncHandle() override
     {
         return Project::get()->functions().begin();
     }
+
     ilFunction GetCurFuncHandle() override
     {
         return m_current_func;
     }
+
     void analysis_Once() override
     {
     }
-    void load(QString name) override
+
+    void load(const QString& name) override
     {
         option.filename = name;
         Project::get()->create(name);
     }
-    void prtout_asm(IXmlTarget *, int level) override
+    void prtout_asm(IXmlTarget *, int /*level*/) override
     {
     }
     void prtout_cpp(IXmlTarget *, int level) override
@@ -42,7 +47,7 @@ public:
     {
         return Project::get()->functions();
     }
-    void SetCurFunc_by_Name(QString v) override
+    void SetCurFunc_by_Name(const QString& v) override
     {
         lFunction & funcs(Project::get()->functions());
         for(auto iter=funcs.begin(),fin=funcs.end(); iter!=fin; ++iter) {
@@ -55,7 +60,7 @@ public:
     QDir installDir() override {
         return QDir(".");
     }
-    QDir dataDir(QString kind) override { // return directory containing decompilation helper data -> signatures/includes/etc.
+    QDir dataDir(const QString& kind) override { // return directory containing decompilation helper data -> signatures/includes/etc.
         QDir res(installDir());
         res.cd(kind);
         return res;

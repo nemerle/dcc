@@ -244,9 +244,9 @@ struct LLOperand
         int     cb;		/*   # actual arg bytes			*/
     } proc;
     LLOperand() : seg(rUNDEF),segOver(rUNDEF),segValue(0),regi(rUNDEF),off(0),
-        opz(0),immed(0),is_offset(false),is_compound(0),width(0)
+        opz(0),immed(false),is_offset(false),is_compound(false),width(0)
     {
-        proc.proc=0;
+        proc.proc=nullptr;
         proc.cb=0;
     }
     LLOperand(eReg r,size_t w) : LLOperand()
@@ -285,7 +285,7 @@ struct LLOperand
         Op.regi = (eReg)Val;
         return Op;
     }
-    bool isSet()
+    bool isSet() const
     {
         return not (*this == LLOperand());
     }
@@ -302,7 +302,7 @@ protected:
     uint32_t        flg;            /* icode flags                  */
     LLOperand       m_src;            /* source operand               */
 public:
-    int             codeIdx;    	/* Index into cCode.code            */
+    uint32_t        codeIdx;    	/* Index into cCode.code            */
     uint8_t         numBytes;       /* Number of bytes this instr   */
     uint32_t        label;          /* offset in image (20-bit adr) */
     LLOperand       m_dst;            /* destination operand          */
@@ -313,7 +313,7 @@ public:
 
     llIcode     getOpcode() const { return m_opcode;}
     void        setOpcode(uint32_t op) { m_opcode=(llIcode)op; }
-    bool        conditionalJump()
+    bool        conditionalJump() const
                 {
                     return (getOpcode() >= iJB) and (getOpcode() < iJCXZ);
                 }
@@ -333,35 +333,35 @@ public:
     void SetImmediateOp(uint32_t dw) {m_src.SetImmediateOp(dw);}
 
 
-    bool match(llIcode op)
+    bool match(llIcode op) const
     {
         return (getOpcode()==op);
     }
-    bool matchWithRegDst(llIcode op)
+    bool matchWithRegDst(llIcode op) const
     {
         return (getOpcode()==op) and m_dst.isReg();
     }
-    bool match(llIcode op,eReg dest)
+    bool match(llIcode op,eReg dest) const
     {
         return (getOpcode()==op)&&m_dst.regi==dest;
     }
-    bool match(llIcode op,eReg dest,uint32_t flgs)
+    bool match(llIcode op,eReg dest,uint32_t flgs) const
     {
         return (getOpcode()==op) and (m_dst.regi==dest) and testFlags(flgs);
     }
-    bool match(llIcode op,eReg dest,eReg src_reg)
+    bool match(llIcode op,eReg dest,eReg src_reg) const
     {
         return (getOpcode()==op) and (m_dst.regi==dest) and (m_src.regi==src_reg);
     }
-    bool match(eReg dest,eReg src_reg)
+    bool match(eReg dest,eReg src_reg) const
     {
         return (m_dst.regi==dest) and (m_src.regi==src_reg);
     }
-    bool match(eReg dest)
+    bool match(eReg dest) const
     {
         return (m_dst.regi==dest);
     }
-    bool match(llIcode op,uint32_t flgs)
+    bool match(llIcode op,uint32_t flgs) const
     {
         return (getOpcode()==op) and testFlags(flgs);
     }
@@ -439,20 +439,20 @@ public:
     template<int FLAG>
     struct FlagFilter
     {
-        bool operator()(ICODE *ic) {return ic->ll()->testFlags(FLAG);}
-        bool operator()(ICODE &ic) {return ic.ll()->testFlags(FLAG);}
+        bool operator()(const ICODE *ic) const {return ic->ll()->testFlags(FLAG);}
+        bool operator()(const ICODE &ic) const {return ic.ll()->testFlags(FLAG);}
     };
     template<int TYPE>
     struct TypeFilter
     {
-        bool operator()(ICODE *ic) {return ic->type==TYPE;}
-        bool operator()(ICODE &ic) {return ic.type==TYPE;}
+        bool operator()(const ICODE *ic) const {return ic->type==TYPE;}
+        bool operator()(const ICODE &ic) const {return ic.type==TYPE;}
     };
     template<int TYPE>
     struct TypeAndValidFilter
     {
-        bool operator()(ICODE *ic) {return (ic->type==TYPE) and (ic->valid());}
-        bool operator()(ICODE &ic) {return (ic.type==TYPE) and ic.valid();}
+        bool operator()(const ICODE *ic) const {return (ic->type==TYPE) and (ic->valid());}
+        bool operator()(const ICODE &ic) const {return (ic.type==TYPE) and ic.valid();}
     };
     static TypeFilter<HIGH_LEVEL_ICODE> select_high_level;
     static TypeAndValidFilter<HIGH_LEVEL_ICODE> select_valid_high_level;
@@ -486,7 +486,7 @@ public:
             std::vector<std::list<ICODE>::iterator> uses; // use locations [MAX_USES]
             void removeUser(std::list<ICODE>::iterator us)
             {
-                // ic is no no longer an user
+                // ic is no longer an user
                 auto iter=std::find(uses.begin(),uses.end(),us);
                 if(iter==uses.end())
                     return;
@@ -504,7 +504,7 @@ public:
         }
         int     numUses(int regIdx) const
         {
-            return idx[regIdx].uses.size();
+            return (int)idx[regIdx].uses.size();
         }
         void recordUse(int regIdx,std::list<ICODE>::iterator location)
         {
@@ -521,9 +521,9 @@ public:
         }
         int getNumRegsDef() const {return numRegsDef;}
         void clearAllDefs() {numRegsDef=0;}
-        DU1 &addDef(eReg r) {numRegsDef++; return *this;}
-        DU1 &setDef(eReg r) {numRegsDef=1; return *this;}
-        void removeDef(eReg r) {numRegsDef--;}
+        DU1 &addDef(eReg /*r*/) {numRegsDef++; return *this;}
+        DU1 &setDef(eReg /*r*/) {numRegsDef=1; return *this;}
+        void removeDef(eReg /*r*/) {numRegsDef--;}
     };
     icodeType           type;           /* Icode type                       */
     DU_ICODE            du;             /* Def/use regs/vars                */
@@ -560,9 +560,8 @@ public:
     void setUnary(hlIcode op, Expr *_exp);
     void setJCond(Expr *cexp);
 
-    void emitGotoLabel(int indLevel);
     void copyDU(const ICODE &duIcode, operDu _du, operDu duDu);
-    bool valid() {return not invalid;}
+    bool valid() const {return not invalid;}
     void setParent(MachineBasicBlock *P) { Parent = P; }
 public:
     bool removeDefRegi(eReg regi, int thisDefIdx, LOCAL_ID *locId);
@@ -571,7 +570,7 @@ public:
     {
         return hlU()->call.newStkArg(exp,opcode,pproc);
     }
-    ICODE() : m_ll(this),Parent(0),invalid(false),type(NOT_SCANNED_ICODE),loc_ip(0)
+    ICODE() : m_ll(this),Parent(nullptr),invalid(false),type(NOT_SCANNED_ICODE),loc_ip(0)
     {
     }
 public:
